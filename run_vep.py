@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 __version__ = 0.3
 __author__ = 'Joon An'
 __date__ = 'October 5th, 2018'
