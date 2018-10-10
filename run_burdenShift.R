@@ -3,7 +3,7 @@
 
 args <- commandArgs(trailingOnly=TRUE)
   
-# Test if all required arguments are supplied
+# Check if all required arguments are supplied
 if (length(args)<5) {
   stop("Missing 1 or more required arguments. Required: \n(1) <path to file with 'true' (observed) results>\n(2) <path to file with burden shift p-values from all annotation categories (rows) and permutations (columns)> \n(3) <path to table listing category names and category set membership ,as 0s and 1s in subsequent columns>\n(4) <number of permutations in results file (n columns - 1)>\n(5) <maximum p-value threshold for counting (2-sided binomial test)>\n(6) <name tag for output files>",call.=FALSE)
 }
