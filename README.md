@@ -158,3 +158,7 @@ list_catSetMembership.txt \ # Matrix for a large category membership
 cwas  # Tag for output
 ```
 
+## Step 7. Risk score analysis and Annotation clustering 
+
+The scripts for risk score analysis and annotation clustering is not located in this repository. Please refer to https://github.com/lingxuez/WGS-Analysis
+
