@@ -1,12 +1,8 @@
 #!/usr/bin/env python
-
 import pandas as pd
 import os,sys
 from functools import partial
 cimport cython
-# cimport numpy as np
-# import numpy as np
-# import scipy.stats as ss
 
 # get column index from the header
 def get_col_index(info, geneMat_file):
