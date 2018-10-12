@@ -2,6 +2,15 @@
 
 This README contains the run command for the category-based burden test in the An et al. (2018). The scripts and materials are distributed in Amazon Machine Images and you can deploy the workflow using Amazon Web Services (AWS). The AMI ID is `ami-0e1757919181cfb66`, name 'An 2018 to share', and has 180 Gib size. For the instance setting, we recommend large AWS instance series like `m4.x2large` or `m4.x4large`.
 
+The AMI includes:
+
+- List of de novo variants from An et al. (2018). The annotated version will be provided via Dryad (Link will be uploaded soon).
+- Script for annotation
+- Annotation files
+- List of redundant categories to be trimmed
+- List of gene sets 
+- List of large category for burdenshift analysis
+- Adjustment factor for burden test 
 
 ## Step 1. Annotation
 
@@ -93,7 +102,7 @@ File with 1 row per sampleID listing adjustment factor (e.g. from regression) to
 ```bash
 python getBinomtest.py \
 -i result.sumVar.cwas.trimmed.txt \
--a list_paternal_age.txt \
+-a list_adjustmentFactors.txt \
 -r list_redundant_categories.txt \
 -o cwas
 ```
@@ -132,7 +141,7 @@ python doperm.py -m index -s swapFams.cwas.p -n 1902
 python doperm.py \
 -m perm \
 -i result.sumVar.cwas.trimmed.txt.gz \
--a list_paternal_age.txt \
+-a list_adjustmentFactors.txt \
 -r list_redundant_categories.txt \
 -b result.burden.cwas.noPerm.txt \
 -s swapFams.cwas.p \
