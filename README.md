@@ -4,7 +4,7 @@ This README contains the run command for the category-based burden test in the A
 
 The AMI includes:
 
-- List of de novo variants from An et al. (2018). The annotated version will be provided via Dryad (Link will be uploaded soon).
+- List of de novo variants from An et al. (2018). 
 - Script for annotation
 - Annotation files
 - List of redundant categories to be trimmed
