@@ -205,7 +205,7 @@ cpdef check_cons(info, header_index):
 					out[ header_index['Cons']['Names'][n] ] = 1 
 
 		else:
-			print 'Unknown Cons'
+			print('Unknown Cons')
 	
 	del info, header_index
 	return out
@@ -313,7 +313,7 @@ cpdef check_effect_genelist(info, header_index):
 		elif 'non_coding_transcript_exon_variant' in e or 'mature_miRNA_variant' in e:
 			out_effects['NoncodingRegion'] = 1
 		else:
-			print e
+			print(e)
 
 	elif Gene in header_index['geneList']['List']['geneSet_Antisense']:
 		out_effects['NoncodingRegion'] = 1

@@ -17,7 +17,7 @@ def main(infile, number_threads):
 		vep_path = '/home/ec2-user/ensembl-vep/vep'
 		custom_path = '/home/ec2-user/custom/'
 	else:
-		print expanduser("~")
+		print(expanduser("~"))
 		sys.exit(0)
 
 	## Split input file for a single chromosome

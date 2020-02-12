@@ -49,7 +49,7 @@ cpdef perm(np.ndarray[long] vals1, np.ndarray[long] vals2, list swap_index): # v
 
 cpdef doperm(df_sumvar, df_burden, swap_index):
 	cat = df_sumvar.columns.tolist()[0]
-	print cat
+	print(cat)
 	cdef double rr_original, perm_p, perm_rr, pval, rr
 	cdef int perm_over, p, s
 	cdef list perm_results
@@ -129,8 +129,8 @@ cpdef check_pToZ(np.ndarray[double] p):
 	cdef np.ndarray[double] z
 	# Transform to 1 - p
 	p1 = 1 - p
-	print p1[:10]
+	print(p1[:10])
 	# Convert to z score
 	z = ss.norm.ppf(p1)
-	print z[:10]
+	print(z[:10])
 	return(z)

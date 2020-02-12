@@ -21,12 +21,12 @@ import doperm as ctest
 def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, number_threads, cats_start, cats_end, s3_path, family_number):
 	## Get swap index information
 	if mode == 'index':
-		print '[Progress] The option for creating family swap index is given'
+		print('[Progress] The option for creating family swap index is given')
 		list_idx = ctest.create_index(family_number)
 
 		## cPickle
 		cPickle.dump(list_idx, open(swap_file, 'wb')) 
-		print '[Progress] Done creating family swap index'
+		print('[Progress] Done creating family swap index')
 		sys.exit(0)
 		
 	elif mode == 'trim':
@@ -37,19 +37,19 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 		## Remove redundant categories
 		rdd_cats = open(trim_file).read().splitlines()
 		df_raw = df_raw[df_raw.columns[~df_raw.columns.isin(rdd_cats)]]
-		print df_raw.shape
+		print(df_raw.shape)
 
 		## Write an output
 		outfile = infile.replace('txt','trimmed.txt')
 		df_raw.to_csv(outfile, sep='\t', index=False, compression='gzip')
-		print '[Progress] Done trimming redundant categories'
+		print('[Progress] Done trimming redundant categories')
 		sys.exit(0)
 
 	elif mode == 'perm':
 		## Load family swap index
-		print '[Progress] Loading a file for family swap index. File: %s' % swap_file
+		print('[Progress] Loading a file for family swap index. File: %s' % swap_file)
 		list_idx = cPickle.load(open(swap_file, 'rb'))
-		print '[Progress] Loaded family swap index. Index contains %s lists and %s families ' % (str(len(list_idx)), str(len(list_idx[0])))
+		print('[Progress] Loaded family swap index. Index contains %s lists and %s families ' % (str(len(list_idx)), str(len(list_idx[0]))))
 
 	elif mode == 'merge':
 		## merge p-values
@@ -84,7 +84,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 
 		fs = sorted(glob.glob('perm_rr.*.gz'))
 		for f in fs:
-			print fs.index(f)
+			print(fs.index(f))
 			cat = f.split('.')[1]
 			fh = gzip.open(f).read().splitlines()
 			perm_rr = [cat] + fh[0:10000] # all permutation rr
@@ -101,7 +101,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 
 		fs = sorted(glob.glob('perm_count.*.gz'))
 		for f in fs:
-			print fs.index(f)
+			print(fs.index(f))
 			cat = f.split('.')[1]
 			fh = gzip.open(f).read().splitlines()
 			perm_pro = [cat] 
@@ -116,16 +116,16 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 
 		## Send file to s3
 		if s3_path != 'no':
-			print '[Progress] Copy results to s3 %s' % s3_path
+			print('[Progress] Copy results to s3 %s' % s3_path)
 			cmd = ' '.join(['for file in result.perm_*gz; do aws s3 cp $file', s3_path, '; done'])
 			os.system(cmd)
 		else:
-			print '[Progress] No option is given for s3'
+			print('[Progress] No option is given for s3')
 
 		sys.exit(0)
 
 	else:
-		print '[Error] Please specify your mode (-m)'
+		print('[Error] Please specify your mode (-m)')
 		sys.exit(0)
 
 	## Load sumvar data
@@ -134,7 +134,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 		option_usecols = 'None'
 	else:
 		option_usecols = [0] + range(cats_start, cats_end)
-		print option_usecols
+		print(option_usecols)
 	option_compression = 'gzip' if '.gz' in infile else None
 	df_raw = pd.io.parsers.read_csv(infile, sep='\t', index_col=False, compression=option_compression, usecols=option_usecols)
 
@@ -144,15 +144,15 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 
 	## Check the number of families between sumvar and family swap index
 	if len(df_raw.SampleID.unique()) == (len(list_idx[1]) * 2):
-		print '[Progress] The number of families is matching between sumvar and family swap index'
+		print('[Progress] The number of families is matching between sumvar and family swap index')
 	else:
-		print '[Progress] The number of families is not matching between sumvar and family swap index'
+		print('[Progress] The number of families is not matching between sumvar and family swap index')
 		sys.exit(0)
 
 	## Adjust the rate of de novo variants by covariates
 	nSamples = len(df_raw.SampleID.unique())
-	print '[Progress] Total %s samples in this dataset' % str(nSamples)
-	print '[Progress] Adjust the rate of de novo variants based on %s' % adj_file
+	print('[Progress] Total %s samples in this dataset' % str(nSamples))
+	print('[Progress] Adjust the rate of de novo variants based on %s' % adj_file)
 
 	## Get the number of categories
 	ncols = len(df_raw.columns)
@@ -163,10 +163,10 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 	## Check all samples in an adjustment file
 	nOverlap = len(list(set(adj_info['SampleID']).intersection(set(df_raw['SampleID']))))
 	if nOverlap == nSamples:
-		print '[Progress] Adjustment information is given for all samples'
+		print('[Progress] Adjustment information is given for all samples')
 	else:
 		nMissing = nSamples - nOverlap
-		print '[Progress] Adjustment information is missing in %s sample(s)' % str(nMissing)
+		print('[Progress] Adjustment information is missing in %s sample(s)' % str(nMissing))
 		sys.exit(0)
 
 	## Merge into the cats dataframe
@@ -178,37 +178,37 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 	cols = df_adj.columns.tolist()
 	cols = cols[-1:] + cols[:-1]
 	df_adj = df_adj.loc[:, cols]
-	print '[Progress] Adjustment for the DNV rate'
+	print('[Progress] Adjustment for the DNV rate')
 
 	## Add Fam and Role
-	print '[Progress] Update information for family and role'
+	print('[Progress] Update information for family and role')
 	df_adj[['Fam', 'Role']] = df_adj['SampleID'].str.split('_', expand=True)
 	df_adj = df_adj.drop('SampleID', 1)
 	df_adj.loc[ df_adj.Role.isin(['s2','s3']), 'Role'] = 's1'
 
 	## Do Permutation!
-	print '[Progress] Start permutation'
+	print('[Progress] Start permutation')
 	cats = df_adj.columns.tolist()
 	cats.remove('Fam')
 	cats.remove('Role')
 	df_cats = [df_adj[[c,'Fam','Role']] for c in df_adj[cats].columns]
-	print '[Progress] Total %s categories to be permuted' % str(len(cats))
+	print('[Progress] Total %s categories to be permuted' % str(len(cats)))
 	pool = mp.Pool(number_threads)
 	pool.map_async(partial(ctest.doperm, df_burden=df_burden, swap_index=list_idx), df_cats)
 	pool.close() 
 	pool.join() 
-	print '[Progress] Completed permutation'
+	print('[Progress] Completed permutation')
 
 	## Send file to s3
 	if s3_path != 'no':
-		print '[Progress] Copy results to s3 %s' % s3_path
+		print('[Progress] Copy results to s3 %s' % s3_path)
 		comp = '.'.join(['set_perm',str(cats_start),'tar.gz'])
 		os.system(' '.join(['tar', '-czvf', comp, 'perm*gz']))
 		cmd = ' '.join(['for file in set_perm*gz; do aws s3 cp $file', s3_path, '; done'])
 		os.system(cmd)
 		os.system('rm perm*gz set_perm*')
 	else:
-		print '[Progress] No option is given for s3'
+		print('[Progress] No option is given for s3')
 
 
 if __name__ == "__main__":

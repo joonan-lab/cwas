@@ -24,7 +24,7 @@ import doperm as ctest
 def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
 	## Calculate binom test for Adjusted variants.
 	if adj0 == 'no':
-		print '[Progress] Delete df_adj0 to keep memory'
+		print('[Progress] Delete df_adj0 to keep memory')
 		# this option does not need a data frame with adjustment
 		del df_adj0
 	else:
@@ -32,7 +32,7 @@ def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
 
 	## Raw rate
 	## Collapse the number of variant by phenotype
-	print '[Progress] Calculate binomial statistics for the unadjusted DNV rate'
+	print('[Progress] Calculate binomial statistics for the unadjusted DNV rate')
 	df_raw0 = df_raw0.drop('Fam', 1)
 	df_raw0 = df_raw0.drop('SampleID', 1)
 	cols = df_raw0.columns.tolist()[1:]
@@ -56,17 +56,17 @@ def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
 
 	## (Optional) Convert to z-score
 	if cwas == 'Yes':
-		print '[Progress] Convert p-values to z scores.'
+		print('[Progress] Convert p-values to z scores.')
 		burdenMat_raw['Binom_Z_raw'] = ctest.check_pToZ(burdenMat_raw.Binom_p_1side_raw.values)
 
 	else:
-		print '[Progress] No option given for convert p-values.'
+		print('[Progress] No option given for convert p-values.')
 
 	## Calculate binom test for Adjusted variants.
 	if adj0 == 'no':
-		print '[Progress] No option given to calculate binomial statistics for the adjusted DNV rate'
+		print('[Progress] No option given to calculate binomial statistics for the adjusted DNV rate')
 	else:
-		print '[Progress] Calculate binomial statistics for the adjusted DNV rate'
+		print('[Progress] Calculate binomial statistics for the adjusted DNV rate')
 		## Collapse the number of variant by phenotype
 		df_adj0 = df_adj0.drop('Fam', 1)
 		df_adj0 = df_adj0.drop('SampleID', 1)
@@ -97,7 +97,7 @@ def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
 		
 
 	## Out to CSV
-	print '[Progress] Save the result to csv'
+	print('[Progress] Save the result to csv')
 	## Merge into the cats dataframe
 	outfile = '.'.join(['result','burden', output_tag0, 'txt'])
 	if adj0 == 'no':
@@ -116,7 +116,7 @@ def main(infile, adj, trim_file, output_tag, cwas):
 		for h in header.split('\t')[1:]:
 			dtypes[h] = 'int'
 		## Open the infile
-		print '[Progress] Loading data: gzip compressed file'
+		print('[Progress] Loading data: gzip compressed file')
 		df_raw = pd.io.parsers.read_csv(infile, sep='\t', index_col=False, compression='gzip', dtype=dtypes)
 	else:
 		## Set dtypes
@@ -126,10 +126,10 @@ def main(infile, adj, trim_file, output_tag, cwas):
 		for h in header.split('\t')[1:]:
 			dtypes[h] = 'int'
 		## Open the infile
-		print '[Progress] Loading data: text file'
+		print('[Progress] Loading data: text file')
 		df_raw = pd.io.parsers.read_csv(infile, sep='\t', index_col=False, dtype=dtypes)
 
-	print '[Progress] DataFrame of input is %s' % (df_raw.shape,) 
+	print('[Progress] DataFrame of input is %s' % (df_raw.shape,))
 
 	## Remove redundant categories
 	if trim_file == 'no':
@@ -140,7 +140,7 @@ def main(infile, adj, trim_file, output_tag, cwas):
 
 	## Adjust the rate of de novo variants by covariates
 	nSamples = len(df_raw.SampleID.unique())
-	print '[Progress] Total %s samples in this dataset' % str(nSamples)
+	print('[Progress] Total %s samples in this dataset' % str(nSamples))
 	if adj == 'no':
 		df_adj = 'to_be_deleted'
 
@@ -153,7 +153,7 @@ def main(infile, adj, trim_file, output_tag, cwas):
 		df_raw = df_raw.loc[:, cols] 
 
 	else:
-		print '[Progress] Adjust the rate of de novo variants based on %s' % adj
+		print('[Progress] Adjust the rate of de novo variants based on %s' % adj)
 		## Get the number of categories
 		ncols = len(df_raw.columns)
 		## Load information for adjustment
@@ -161,10 +161,10 @@ def main(infile, adj, trim_file, output_tag, cwas):
 		## Check all samples in an adjustment file
 		nOverlap = len(list(set(adj_info['SampleID']).intersection(set(df_raw['SampleID']))))
 		if nOverlap == nSamples:
-			print '[Progress] Adjustment information is given for all samples'
+			print('[Progress] Adjustment information is given for all samples')
 		else:
 			nMissing = nSamples - nOverlap
-			print '[Progress] Adjustment information is missing in %s sample(s)' % str(nMissing)
+			print('[Progress] Adjustment information is missing in %s sample(s)' % str(nMissing))
 			sys.exit(0)
 		## Merge into the cats dataframe
 		df_adj = pd.merge(df_raw, adj_info, how='inner', on='SampleID')
@@ -187,7 +187,7 @@ def main(infile, adj, trim_file, output_tag, cwas):
 
 	## Random label assign for case/control
 	if cwas == 'Yes':
-		print '[Progress] CWAS option is given'
+		print('[Progress] CWAS option is given')
 		fams_to_be_random = df_raw.Fam.unique()
 		no_fams = len(fams_to_be_random) # 1902
 		fams_swap = list(fams_to_be_random[np.random.binomial(1, 0.5, size=no_fams)==1])
