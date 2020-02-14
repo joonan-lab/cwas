@@ -154,10 +154,10 @@ def get_col_index(info, geneMat_file):
 cpdef buildCats(header_index):
 	catDict_keys = [ '_'.join([a,b,c,d,e])  \
 				for a in sorted(header_index['varType']['Names']) \
-				for b in ['Any'] + header_index['geneList']['Names'].values()\
-				for c in ['All'] + header_index['Cons']['Names'].values()\
-				for d in ['Any'] + header_index['Effect']['Names'].keys()\
-				for e in ['Any'] + header_index['Reg']['Names'].values()
+				for b in ['Any'] + list(header_index['geneList']['Names'].values())\
+				for c in ['All'] + list(header_index['Cons']['Names'].values())\
+				for d in ['Any'] + list(header_index['Effect']['Names'].keys())\
+				for e in ['Any'] + list(header_index['Reg']['Names'].values())
 				]
 	del header_index
 

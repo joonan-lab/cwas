@@ -9,12 +9,12 @@ description = '''
 
 import os,sys,argparse,glob,gzip
 import pandas as pd
-import cPickle
+import pickle
 
 import multiprocessing as mp
 from multiprocessing import Pool
 from functools import partial
-import pyximport; pyximport.install()
+import pyximport; pyximport.install(language_level=3)
 import doperm as ctest
 
 
@@ -24,8 +24,8 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 		print('[Progress] The option for creating family swap index is given')
 		list_idx = ctest.create_index(family_number)
 
-		## cPickle
-		cPickle.dump(list_idx, open(swap_file, 'wb')) 
+		## pickle
+		pickle.dump(list_idx, open(swap_file, 'wb'))
 		print('[Progress] Done creating family swap index')
 		sys.exit(0)
 		
@@ -41,14 +41,14 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 
 		## Write an output
 		outfile = infile.replace('txt','trimmed.txt')
-		df_raw.to_csv(outfile, sep='\t', index=False, compression='gzip')
+		df_raw.to_csv(outfile, sep='\t', index=False)
 		print('[Progress] Done trimming redundant categories')
 		sys.exit(0)
 
 	elif mode == 'perm':
 		## Load family swap index
 		print('[Progress] Loading a file for family swap index. File: %s' % swap_file)
-		list_idx = cPickle.load(open(swap_file, 'rb'))
+		list_idx = pickle.load(open(swap_file, 'rb'))
 		print('[Progress] Loaded family swap index. Index contains %s lists and %s families ' % (str(len(list_idx)), str(len(list_idx[0]))))
 
 	elif mode == 'merge':

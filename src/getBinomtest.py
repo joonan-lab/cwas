@@ -17,7 +17,7 @@ import numpy as np
 import multiprocessing as mp
 from multiprocessing import Pool, cpu_count
 from functools import partial
-import pyximport; pyximport.install()
+import pyximport; pyximport.install(language_level=3)
 import doperm as ctest
 
 
