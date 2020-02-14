@@ -15,7 +15,7 @@ import multiprocessing as mp
 from multiprocessing import Pool
 from functools import partial
 import pyximport; pyximport.install(language_level=3)
-import doperm as ctest
+import perm as ctest
 
 
 def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, number_threads, cats_start, cats_end, s3_path, family_number):
