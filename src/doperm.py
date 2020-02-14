@@ -133,7 +133,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
 	if cats_start == 'no':
 		option_usecols = 'None'
 	else:
-		option_usecols = [0] + range(cats_start, cats_end)
+		option_usecols = [0] + list(range(cats_start, cats_end))
 		print(option_usecols)
 	option_compression = 'gzip' if '.gz' in infile else None
 	df_raw = pd.io.parsers.read_csv(infile, sep='\t', index_col=False, compression=option_compression, usecols=option_usecols)
