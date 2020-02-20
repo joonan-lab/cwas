@@ -440,7 +440,7 @@ cpdef doCats(l, header_index):
 def parCat(df, header_index):
 
 	filename = '.'.join([ 'tmp_catego', df.SampleID.unique().tolist()[0], 'txt'])
-	df.apply(partial(doCats, header_index = header_index), axis=1).sum(axis=0).to_csv(filename, sep=';', index=True)
+	df.apply(partial(doCats, header_index = header_index), axis=1).sum(axis=0).to_csv(filename, sep=';', header=False)
 	
 	del df
 	del header_index
