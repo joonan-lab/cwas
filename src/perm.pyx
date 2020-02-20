@@ -99,7 +99,7 @@ cpdef doperm(df_sumvar, df_burden, swap_index):
 		perm_sib = perm_sib + perm_results2[3]
 
 	## Save pvalues to file
-	o = gzip.open(permfile_pvalue, 'w')
+	o = gzip.open(permfile_pvalue, 'wt')
 	o.write(str(perm_p) + '\n')
 	# o.write('\n'.join([str(pval) for pval, rr in zip(pvals, rrs) if rr >= 1 else str(-1 * pval)]))
 	o.write('\n'.join([str(pval) if rr >=1 else str(-pval) for pval, rr in zip(pvals, rrs) ]))
@@ -107,13 +107,13 @@ cpdef doperm(df_sumvar, df_burden, swap_index):
 	o.close()
 
 	## Save rrs to file
-	o = gzip.open(permfile_rr, 'w')
+	o = gzip.open(permfile_rr, 'wt')
 	o.write('\n'.join([str(rr) for rr in rrs]))
 	o.write('\n')
 	o.close()
 
 	## Save count (pro and sib) to file
-	o = gzip.open(permfile_count, 'w')
+	o = gzip.open(permfile_count, 'wt')
 	for p,s in zip(perm_pro, perm_sib):
 		o.write('\t'.join([str(p), str(s)]) + '\n')
 	o.close()
