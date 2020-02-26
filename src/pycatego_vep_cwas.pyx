@@ -135,7 +135,9 @@ def get_col_index(info, geneMat_file):
         'fantom5_enhancer_robust':'EnhancerFantom',
         'EncodeDNaseClustersUCSC':'EncodeDNase',
         'EncodeTfbsClusterV2UCSC':'EncodeTFBS',
-        'vistaEnhancerUCSC':'EnhancerVista'
+        'vistaEnhancerUCSC':'EnhancerVista',
+        'Yale_H3K27ac_CBC':'YaleH3K27acCBC',
+        'Yale_H3K27ac_DFC':'YaleH3K27acDFC',
     }
 
     regCols_idx = {n3 : info.index(n3) for n3 in regNames.keys()}
