@@ -7,19 +7,25 @@ description = '''
                 Script for burden permutation.
             '''
 
-import os,sys,argparse,glob,gzip
+import argparse
+import glob
+import gzip
+import multiprocessing as mp
+import os
+import pickle
+import sys
+from functools import partial
+
 import numpy as np
 import pandas as pd
-import pickle
+import pyximport
 
-import multiprocessing as mp
-from multiprocessing import Pool
-from functools import partial
-import pyximport; pyximport.install(language_level=3, setup_args={'include_dirs': np.get_include()})
+pyximport.install(language_level=3, setup_args={'include_dirs': np.get_include()})
 import perm as ctest
 
 
-def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, number_threads, cats_start, cats_end, s3_path, family_number):
+def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, number_threads, cats_start, cats_end,
+         s3_path, family_number):
     ## Get swap index information
     if mode == 'index':
         print('[Progress] The option for creating family swap index is given')
@@ -41,7 +47,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
         print(df_raw.shape)
 
         ## Write an output
-        outfile = infile.replace('txt','trimmed.txt')
+        outfile = infile.replace('txt', 'trimmed.txt')
         df_raw.to_csv(outfile, sep='\t', index=False)
         print('[Progress] Done trimming redundant categories')
         sys.exit(0)
@@ -50,23 +56,24 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
         ## Load family swap index
         print('[Progress] Loading a file for family swap index. File: %s' % swap_file)
         list_idx = pickle.load(open(swap_file, 'rb'))
-        print('[Progress] Loaded family swap index. Index contains %s lists and %s families ' % (str(len(list_idx)), str(len(list_idx[0]))))
+        print('[Progress] Loaded family swap index. Index contains %s lists and %s families ' % (
+        str(len(list_idx)), str(len(list_idx[0]))))
 
     elif mode == 'merge':
         ## merge p-values
-        outfile_perm_p = '.'.join(['result','perm_p', output_tag, 'txt.gz'])
-        outfile_burdenshift = '.'.join(['result','perm_burdenshift', output_tag, 'txt.gz'])
+        outfile_perm_p = '.'.join(['result', 'perm_p', output_tag, 'txt.gz'])
+        outfile_burdenshift = '.'.join(['result', 'perm_burdenshift', output_tag, 'txt.gz'])
         o = gzip.open(outfile_burdenshift, 'w')
         fs = sorted(glob.glob('perm_p.*.gz'))
         list_perm_p1 = [['Annotation_combo', 'Perm_p']]
-        header = ['Annotation_combo'] + [str(n) for n in range(1,10001)]
+        header = ['Annotation_combo'] + [str(n) for n in range(1, 10001)]
         o.write('\t'.join(header) + '\n')
         for f in fs:
             cat = f.split('.')[1]
             fh = gzip.open(f).read().splitlines()
-            perm_p1 = [cat, fh[0]] # perm p values / permutations
+            perm_p1 = [cat, fh[0]]  # perm p values / permutations
             list_perm_p1.append(perm_p1)
-            perm_p2 = [cat] + fh[1:10001] # all permutation p values
+            perm_p2 = [cat] + fh[1:10001]  # all permutation p values
             o.write('\t'.join(perm_p2) + '\n')
 
         o.close()
@@ -76,10 +83,11 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
         option_compression = 'gzip' if '.gz' in burden_file else None
         df_burden = pd.io.parsers.read_csv(burden_file, sep='\t', index_col=False, compression=option_compression)
         df_burden = df_burden[df_burden['Annotation_combo'].isin(df_perm['Annotation_combo'].tolist())]
-        pd.merge(df_burden, df_perm, how='inner', on='Annotation_combo').to_csv(outfile_perm_p, sep='\t', index=False, compression='gzip')
+        pd.merge(df_burden, df_perm, how='inner', on='Annotation_combo').to_csv(outfile_perm_p, sep='\t', index=False,
+                                                                                compression='gzip')
 
         ## merge rr
-        outfile_perm_rr = '.'.join(['result','perm_rr', output_tag, 'txt.gz'])
+        outfile_perm_rr = '.'.join(['result', 'perm_rr', output_tag, 'txt.gz'])
         o = gzip.open(outfile_perm_rr, 'w')
         o.write('\t'.join(header) + '\n')
 
@@ -88,13 +96,13 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
             print(fs.index(f))
             cat = f.split('.')[1]
             fh = gzip.open(f).read().splitlines()
-            perm_rr = [cat] + fh[0:10000] # all permutation rr
+            perm_rr = [cat] + fh[0:10000]  # all permutation rr
             o.write('\t'.join(perm_rr) + '\n')
         o.close()
 
         ## merge counts
-        outfile_perm_count_pro = '.'.join(['result','perm_count_pro', output_tag, 'txt.gz'])
-        outfile_perm_count_sib = '.'.join(['result','perm_count_sib', output_tag, 'txt.gz'])
+        outfile_perm_count_pro = '.'.join(['result', 'perm_count_pro', output_tag, 'txt.gz'])
+        outfile_perm_count_sib = '.'.join(['result', 'perm_count_sib', output_tag, 'txt.gz'])
         o_pro = gzip.open(outfile_perm_count_pro, 'w')
         o_sib = gzip.open(outfile_perm_count_sib, 'w')
         o_pro.write('\t'.join(header) + '\n')
@@ -137,7 +145,8 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
         option_usecols = [0] + list(range(cats_start, cats_end))
         print(option_usecols)
     option_compression = 'gzip' if '.gz' in infile else None
-    df_raw = pd.io.parsers.read_csv(infile, sep='\t', index_col=False, compression=option_compression, usecols=option_usecols)
+    df_raw = pd.io.parsers.read_csv(infile, sep='\t', index_col=False, compression=option_compression,
+                                    usecols=option_usecols)
 
     ## Load burden data (without permutation)
     option_compression = 'gzip' if '.gz' in burden_file else None
@@ -173,7 +182,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
     ## Merge into the cats dataframe
     df_adj = pd.merge(df_raw, adj_info, how='inner', on='SampleID')
     ## Multiple by the rate adjustment
-    df_adj = df_adj.iloc[:,1:ncols].multiply(df_adj['AdjustFactor'], axis="index")
+    df_adj = df_adj.iloc[:, 1:ncols].multiply(df_adj['AdjustFactor'], axis="index")
     df_adj['SampleID'] = df_raw['SampleID']
     del df_raw
     cols = df_adj.columns.tolist()
@@ -185,14 +194,14 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
     print('[Progress] Update information for family and role')
     df_adj[['Fam', 'Role']] = df_adj['SampleID'].str.split('_', expand=True)
     df_adj = df_adj.drop('SampleID', 1)
-    df_adj.loc[ df_adj.Role.isin(['s2','s3']), 'Role'] = 's1'
+    df_adj.loc[df_adj.Role.isin(['s2', 's3']), 'Role'] = 's1'
 
     ## Do Permutation!
     print('[Progress] Start permutation')
     cats = df_adj.columns.tolist()
     cats.remove('Fam')
     cats.remove('Role')
-    df_cats = [df_adj[[c,'Fam','Role']] for c in df_adj[cats].columns]
+    df_cats = [df_adj[[c, 'Fam', 'Role']] for c in df_adj[cats].columns]
     print('[Progress] Total %s categories to be permuted' % str(len(cats)))
     pool = mp.Pool(number_threads)
     pool.map_async(partial(ctest.doperm, df_burden=df_burden, swap_index=list_idx), df_cats)
@@ -203,7 +212,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
     ## Send file to s3
     if s3_path != 'no':
         print('[Progress] Copy results to s3 %s' % s3_path)
-        comp = '.'.join(['set_perm',str(cats_start),'tar.gz'])
+        comp = '.'.join(['set_perm', str(cats_start), 'tar.gz'])
         os.system(' '.join(['tar', '-czvf', comp, 'perm*gz']))
         cmd = ' '.join(['for file in set_perm*gz; do aws s3 cp $file', s3_path, '; done'])
         os.system(cmd)
@@ -216,21 +225,23 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=description)
 
     ## Arguments for perm
-    parser.add_argument('-m','--mode', required=True, type=str, choices=['perm', 'index', 'trim', 'merge'],
+    parser.add_argument('-m', '--mode', required=True, type=str, choices=['perm', 'index', 'trim', 'merge'],
                         help='Please choose a mode to do permutations (perm) or create family swap index (index)')
-    parser.add_argument('-i','--infile', type=str, help='Input File', default='no')
-    parser.add_argument('-b','--burden_file', type=str, help='Non-permutaiton burden matrix file', default='no')
-    parser.add_argument('-a','--adj_file', required=False, type=str, help='File to adjust the DNV rate for covariates', default='no')
-    parser.add_argument('-r','--trim_file', required=False, type=str, help='File to remove redundant categories', default='no')
-    parser.add_argument('-o','--output_tag', required=False, type=str, help='Output tag', default='output')
-    parser.add_argument('-t','--number_threads', required=False, type=int, help='Number of threads', default=4)
-    parser.add_argument('-s','--swap_file', type=str, help='File for family swap index', default='no')
-    parser.add_argument('-cats_start','--cats_start', type=int, help='Start position of categories', default=0)
-    parser.add_argument('-cats_end','--cats_end', type=int, help='End position of categories', default=1)
-    parser.add_argument('-s3_path','--s3_path', type=str, help='Copy path for s3', default='no')
+    parser.add_argument('-i', '--infile', type=str, help='Input File', default='no')
+    parser.add_argument('-b', '--burden_file', type=str, help='Non-permutaiton burden matrix file', default='no')
+    parser.add_argument('-a', '--adj_file', required=False, type=str, help='File to adjust the DNV rate for covariates',
+                        default='no')
+    parser.add_argument('-r', '--trim_file', required=False, type=str, help='File to remove redundant categories',
+                        default='no')
+    parser.add_argument('-o', '--output_tag', required=False, type=str, help='Output tag', default='output')
+    parser.add_argument('-t', '--number_threads', required=False, type=int, help='Number of threads', default=4)
+    parser.add_argument('-s', '--swap_file', type=str, help='File for family swap index', default='no')
+    parser.add_argument('-cats_start', '--cats_start', type=int, help='Start position of categories', default=0)
+    parser.add_argument('-cats_end', '--cats_end', type=int, help='End position of categories', default=1)
+    parser.add_argument('-s3_path', '--s3_path', type=str, help='Copy path for s3', default='no')
 
     ## Arguments for index
-    parser.add_argument('-n','--family_number', type=int, help='File to save family swap index', default=0)
+    parser.add_argument('-n', '--family_number', type=int, help='File to save family swap index', default=0)
 
     args = parser.parse_args()
 
