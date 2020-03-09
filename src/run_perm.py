@@ -20,8 +20,8 @@ import numpy as np
 import pandas as pd
 import pyximport
 
-pyximport.install(language_level=3, setup_args={'include_dirs': np.get_include()})
-import perm as ctest
+pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
+from permutation import create_index, doperm
 
 
 def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, number_threads, cats_start, cats_end,
@@ -29,7 +29,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
     ## Get swap index information
     if mode == 'index':
         print('[Progress] The option for creating family swap index is given')
-        list_idx = ctest.create_index(family_number)
+        list_idx = create_index(family_number)
 
         ## pickle
         pickle.dump(list_idx, open(swap_file, 'wb'))
@@ -204,7 +204,7 @@ def main(mode, infile, burden_file, adj_file, trim_file, swap_file, output_tag, 
     df_cats = [df_adj[[c, 'Fam', 'Role']] for c in df_adj[cats].columns]
     print('[Progress] Total %s categories to be permuted' % str(len(cats)))
     pool = mp.Pool(number_threads)
-    pool.map_async(partial(ctest.doperm, df_burden=df_burden, swap_index=list_idx), df_cats)
+    pool.map_async(partial(doperm, df_burden=df_burden, swap_index=list_idx), df_cats)
     pool.close()
     pool.join()
     print('[Progress] Completed permutation')

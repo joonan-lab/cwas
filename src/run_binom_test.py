@@ -19,8 +19,8 @@ import numpy as np
 
 import pyximport
 
-pyximport.install(language_level=3, setup_args={'include_dirs': np.get_include()})
-import perm as ctest
+pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
+from permutation import binomTest, binomTest_onesided, check_pToZ
 
 
 def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
@@ -51,17 +51,17 @@ def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
     burdenMat_raw['Unadjusted_relative_risk'] = burdenMat_raw['Case_count_raw'] / burdenMat_raw['Con_count_raw']
 
     ## Calculate binom test
-    burdenMat_raw['Binom_p_raw'] = pd.Series(ctest.binomTest(burdenMat_raw.Case_count_raw.astype('int64').values,
+    burdenMat_raw['Binom_p_raw'] = pd.Series(binomTest(burdenMat_raw.Case_count_raw.astype('int64').values,
                                                              burdenMat_raw.Con_count_raw.astype('int64').values),
                                              index=burdenMat_raw.index)
     burdenMat_raw['Binom_p_1side_raw'] = pd.Series(
-        ctest.binomTest_onesided(burdenMat_raw.Case_count_raw.astype('int64').values,
+        binomTest_onesided(burdenMat_raw.Case_count_raw.astype('int64').values,
                                  burdenMat_raw.Con_count_raw.astype('int64').values), index=burdenMat_raw.index)
 
     ## (Optional) Convert to z-score
     if cwas == 'Yes':
         print('[Progress] Convert p-values to z scores.')
-        burdenMat_raw['Binom_Z_raw'] = ctest.check_pToZ(burdenMat_raw.Binom_p_1side_raw.values)
+        burdenMat_raw['Binom_Z_raw'] = check_pToZ(burdenMat_raw.Binom_p_1side_raw.values)
 
     else:
         print('[Progress] No option given for convert p-values.')
@@ -88,12 +88,12 @@ def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
 
         ## Calculate binom test
         burdenMat_adj['Binom_p'] = pd.Series(
-            ctest.binomTest(burdenMat_adj['Case_count_adj'].round(decimals=0).astype('int64').values,
-                            burdenMat_adj['Con_count_adj'].round(decimals=0).astype('int64').values),
+            binomTest(burdenMat_adj['Case_count_adj'].round(decimals=0).astype('int64').values,
+                      burdenMat_adj['Con_count_adj'].round(decimals=0).astype('int64').values),
             index=burdenMat_adj.index)
         burdenMat_adj['Binom_p_1side'] = pd.Series(
-            ctest.binomTest_onesided(burdenMat_adj['Case_count_adj'].round(decimals=0).astype('int64').values,
-                                     burdenMat_adj['Con_count_adj'].round(decimals=0).astype('int64').values),
+            binomTest_onesided(burdenMat_adj['Case_count_adj'].round(decimals=0).astype('int64').values,
+                               burdenMat_adj['Con_count_adj'].round(decimals=0).astype('int64').values),
             index=burdenMat_adj.index)
 
         ## Rounding numbers

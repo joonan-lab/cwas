@@ -17,8 +17,8 @@ from functools import partial
 import pandas as pd
 import pyximport
 
-pyximport.install(language_level=3)
-import pycatego_vep_cwas as ctest
+pyximport.install(language_level=3, reload_support=True)
+from categorization import get_col_index, buildCats, parCat
 
 
 def main(infile, gene_matrix, number_threads, output_tag, af_known):
@@ -87,8 +87,8 @@ def main(infile, gene_matrix, number_threads, output_tag, af_known):
     # df.to_csv(outfile_temp, sep='\t', index=False)
 
     # Creating the header information
-    header_index = ctest.get_col_index(list(df.columns), gene_matrix)
-    no_cats = ctest.buildCats(header_index)
+    header_index = get_col_index(list(df.columns), gene_matrix)
+    no_cats = buildCats(header_index)
     print('[Progress] Combined the annotations. Total %s domains' % len(no_cats))
     print('[Progress] Start processing' + '\n')
 
@@ -99,7 +99,7 @@ def main(infile, gene_matrix, number_threads, output_tag, af_known):
 
     # Creating a pool for parallel processing
     pool = mp.Pool(number_threads)
-    pool.imap_unordered(partial(ctest.parCat, header_index=header_index), inputs)
+    pool.imap_unordered(partial(parCat, header_index=header_index), inputs)
     pool.close()
     pool.join()
     print('[Progress] Calculation for each samples are done' + '\n')
