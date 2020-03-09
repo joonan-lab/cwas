@@ -20,7 +20,7 @@ import numpy as np
 import pyximport
 
 pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
-from permutation import binomTest, binomTest_onesided, check_pToZ
+from binom_test import binomTest, binomTest_onesided, check_pToZ
 
 
 def run_binom(df_raw0, df_adj0, adj0, output_tag0, cwas):
