@@ -9,9 +9,9 @@ description = '''
 
 import argparse
 import glob
-import gzip
 import multiprocessing as mp
 import os
+import re
 from functools import partial
 
 import pandas as pd
@@ -21,63 +21,35 @@ pyximport.install(language_level=3, reload_support=True)
 from categorization import get_col_index, buildCats, parCat
 
 
-def main(infile, gene_matrix, number_threads, output_tag, af_known):
+def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     # Print the run setting
-    print('[Setting] Input file: %s' % infile)
-    print('[Setting] Gene matrix file: %s' % gene_matrix)
-    print('[Setting] Number of threads: %s' % number_threads)
+    print('[Setting] Input file: %s' % vep_vcf_path)  # This file contains the list of the variants annotated by VEP.
+    print('[Setting] Gene matrix file: %s' % gene_mat_path)
+    print('[Setting] Number of threads: %s' % num_threads)
     print('[Setting] Output tag: %s' % output_tag)
     print('[Progress] Loading the input file into the data frame' + '\n')
 
-    # Load data
-    colnames = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
-    if '.gz' in infile:
-        df = pd.read_csv(infile, sep='\t', index_col=False, comment='#', compression='gzip', names=colnames,
-                         header=None)
-        # Get the columns of annotations
-        with gzip.open(infile) as fh:
-            for l in fh:
-                # Get annotations from the commented line
-                if '#INFO=<ID=CSQ' in l:
-                    colnames_annots = l.split(' Format: ')[1].split('"')[0].split('|')
-                    break
-    else:
-        df = pd.read_csv(infile, sep='\t', comment='#', index_col=False,
-                         names=colnames, header=None)
-        # Get the columns of annotations
-        with open(infile) as fh:
-            for l in fh:
-                if '#INFO=<ID=CSQ' in l:
-                    colnames_annots = l.split(' Format: ')[1].split('"')[0].split('|')
-                    break
-    print('DataFrame of input is %s' % (df.shape,))
-
-    # Remove columns that are not needed in categorization
-    cols_rm = ["CHROM", "POS", "QUAL", "FILTER", "INFO",
-               "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type", "Feature",
-               "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position", "Amino_acids",
-               "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
-               "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE",
-               "CADD_RAW", "CADD_PHRED", "gnomADg"]
-
-    df[colnames_annots] = df['INFO'].str.split('|', expand=True)
-    df[['SampleID', 'Batch', 'Allele_Rm']] = df['Allele'].str.split(';', expand=True)
-    df = df[df.columns[~df.columns.isin(cols_rm)]]
+    # Make the DataFrame of the annotated variants from the VCF file
+    rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type",
+                    "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
+                    "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
+                    "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]
+    variant_df = parse_vep_vcf(vep_vcf_path, rdd_colnames)
 
     # (Optional) Filter known gnomad variants
     if af_known == 'No':
-        df = df[df['gnomADg_AF'] == '']
+        variant_df = variant_df[variant_df['gnomADg_AF'] == '']
         print('[Progress] Filtering known variants')
-        print('After filtering DataFrame of input is %s' % (df.shape,))
+        print('After filtering DataFrame of input is %s' % (variant_df.shape,))
     elif af_known == 'Only':
-        df = df[df['gnomADg_AF'] != '']
+        variant_df = variant_df[variant_df['gnomADg_AF'] != '']
         print('[Progress] Filtering unknown variants')
-        print('After filtering DataFrame of input is %s' % (df.shape,))
+        print('After filtering DataFrame of input is %s' % (variant_df.shape,))
     else:
         print('[Progress] Keep known variants')
 
     # Get sample information
-    samples = sorted(df.SampleID.unique())
+    samples = sorted(variant_df.SampleID.unique())
     print('[Progress] Total %s samples are ready for analysis' % str(len(samples)))
     print(samples[:10])
     print(samples[-10:])
@@ -87,18 +59,18 @@ def main(infile, gene_matrix, number_threads, output_tag, af_known):
     # df.to_csv(outfile_temp, sep='\t', index=False)
 
     # Creating the header information
-    header_index = get_col_index(list(df.columns), gene_matrix)
+    header_index = get_col_index(list(variant_df.columns), gene_mat_path)
     no_cats = buildCats(header_index)
     print('[Progress] Combined the annotations. Total %s domains' % len(no_cats))
     print('[Progress] Start processing' + '\n')
 
     # Split dataframes by samples
-    s = df.groupby('SampleID')
+    s = variant_df.groupby('SampleID')
     inputs = [s.get_group(x) for x in s.groups]
     print('[Progress] Split the dataframe by samples. Total %s dataframes' % len(inputs))
 
     # Creating a pool for parallel processing
-    pool = mp.Pool(number_threads)
+    pool = mp.Pool(num_threads)
     pool.imap_unordered(partial(parCat, header_index=header_index), inputs)
     pool.close()
     pool.join()
@@ -143,6 +115,51 @@ def main(infile, gene_matrix, number_threads, output_tag, af_known):
 
     # Clean up
     os.system('rm tmp*')
+
+
+def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
+    """ Parse the VCF file from VEP and make a pandas.DataFrame object for the list of the annotated variants.
+
+    :param vep_vcf_path: The path of the VCF file that contains the list of the annotated variants by VEP
+    :param rm_colnames: The list of column names that should be removed from the DataFrame.
+                        (Note: the column names must exist in the original DataFrame.)
+    :return: The DataFrame object that consists of the annotated variants
+    """
+    variant_df_rows = []
+    variant_df_colnames = []
+    info_field_names = []  # The list of the field names that make up the INFO field of the VCF file
+
+    # Parse the VCF file
+    with open(vep_vcf_path, 'r') as vep_vcf_file:
+        for line in vep_vcf_file:
+            if line.startswith('#'):  # The comments
+                if line.startswith('#CHROM'):  # The header
+                    variant_df_colnames = line[1:].rstrip('\n').split('\t')
+                elif line.startswith('##INFO<=ID<CSQ'):
+                    csq_line = line.rstrip('">\n')
+                    info_format_start_idx = re.search(r'Format: ', csq_line).span()[1]
+                    info_field_names = csq_line[info_format_start_idx:].split('|')
+            else:
+                variant_df_row = line.rstrip('\n').split('\t')
+                variant_df_rows.append(variant_df_row)
+
+    assert variant_df_rows
+    assert variant_df_colnames
+    assert info_field_names
+
+    variant_df = pd.DataFrame(variant_df_rows, columns=variant_df_colnames)
+
+    # Expand the INFO column
+    variant_df[info_field_names] = variant_df['INFO'].str.split('|', expand=True)
+
+    # Expand the Allele column (which is one field of the INFO)
+    allele_field_names = ['SampleID', 'Batch', 'Allele_Rm']
+    variant_df[allele_field_names] = variant_df['Allele'].str.split(';', expand=True)
+
+    if rm_colnames is not None:
+        variant_df.drop(columns=rm_colnames, inplace=True)
+
+    return variant_df
 
 
 if __name__ == "__main__":
