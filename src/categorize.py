@@ -27,33 +27,32 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     print('[Setting] Gene matrix file: %s' % gene_mat_path)
     print('[Setting] Number of threads: %s' % num_threads)
     print('[Setting] Output tag: %s' % output_tag)
-    print('[Progress] Loading the input file into the data frame' + '\n')
+    print('[Progress] Loading the input file into the data frame')
 
     # Make the DataFrame of the annotated variants from the VCF file
     rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type",
                     "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
-                    "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]
+                    "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # the list of redundant columns
     variant_df = parse_vep_vcf(vep_vcf_path, rdd_colnames)
 
-    # (Optional) Filter known gnomad variants
-    if af_known == 'No':
+    print(f'[Progress] The number of the input variants: {len(variant_df.index)}')
+
+    # (Optional) Filter variants by whether allele frequency is known or not in gnomAD
+    if af_known == 'no':
         variant_df = variant_df[variant_df['gnomADg_AF'] == '']
-        print('[Progress] Filtering known variants')
-        print('After filtering DataFrame of input is %s' % (variant_df.shape,))
-    elif af_known == 'Only':
+        print(f'[Progress] Remove AF-known variants (The number of the remained variants: {len(variant_df.index)})')
+    elif af_known == 'only':
         variant_df = variant_df[variant_df['gnomADg_AF'] != '']
-        print('[Progress] Filtering unknown variants')
-        print('After filtering DataFrame of input is %s' % (variant_df.shape,))
+        print(f'[Progress] Remove AF-unknown variants (The number of the remained variants: {len(variant_df.index)})')
     else:
-        print('[Progress] Keep known variants')
+        print('[Progress] Keep all the variants')
 
     # Get sample information
     samples = sorted(variant_df.SampleID.unique())
     print('[Progress] Total %s samples are ready for analysis' % str(len(samples)))
     print(samples[:10])
     print(samples[-10:])
-
     # # Save to local
     # outfile_temp = '.'.join(['result','temp', output_tag, 'txt'])
     # df.to_csv(outfile_temp, sep='\t', index=False)
@@ -169,7 +168,7 @@ if __name__ == "__main__":
                         default='geneMatrixV38_v1.txt')
     parser.add_argument('-t', '--number_threads', required=False, type=int, help='Number of threads', default=1)
     parser.add_argument('-o', '--output_tag', required=False, type=str, help='Output tag', default='output')
-    parser.add_argument('-a', '--af_known', required=False, type=str, help='Keep known variants', default='Yes')
+    parser.add_argument('-a', '--af_known', required=False, type=str, help='Keep known variants', default='yes')
 
     # Arguments that are not used yet
     parser.add_argument('-lof', '--lof', required=False, type=str, help='Keep lof variants', default='No')
