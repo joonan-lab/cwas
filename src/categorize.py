@@ -18,7 +18,7 @@ import pandas as pd
 import pyximport
 
 pyximport.install(language_level=3, reload_support=True)
-from categorization import get_col_index, buildCats, parCat
+from categorization import get_col_index, parCat
 
 
 def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
@@ -33,7 +33,7 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type",
                     "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
-                    "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # the list of redundant columns
+                    "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # The list of redundant columns
     variant_df = parse_vep_vcf(vep_vcf_path, rdd_colnames)
 
     print(f'[Progress] The number of the input variants: {len(variant_df.index)}')
@@ -48,19 +48,12 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     else:
         print('[Progress] Keep all the variants')
 
-    # Get sample information
-    samples = sorted(variant_df.SampleID.unique())
-    print('[Progress] Total %s samples are ready for analysis' % str(len(samples)))
-    print(samples[:10])
-    print(samples[-10:])
-    # # Save to local
-    # outfile_temp = '.'.join(['result','temp', output_tag, 'txt'])
-    # df.to_csv(outfile_temp, sep='\t', index=False)
+    # Get the sample information
+    sample_ids = variant_df['SampleID'].unique()
+    print(f'[Progress] Total {len(sample_ids)} samples are ready for analysis.')
 
     # Creating the header information
     header_index = get_col_index(list(variant_df.columns), gene_mat_path)
-    no_cats = buildCats(header_index)
-    print('[Progress] Combined the annotations. Total %s domains' % len(no_cats))
     print('[Progress] Start processing' + '\n')
 
     # Split dataframes by samples

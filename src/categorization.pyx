@@ -150,19 +150,6 @@ def get_col_index(info, geneMat_file):
 
     return header_index
 
-# Build the annotation categories
-cpdef buildCats(header_index):
-    catDict_keys = ['_'.join([a, b, c, d, e]) \
-                    for a in sorted(header_index['varType']['Names']) \
-                    for b in ['Any'] + list(header_index['geneList']['Names'].values()) \
-                    for c in ['All'] + list(header_index['Cons']['Names'].values()) \
-                    for d in ['Any'] + list(header_index['Effect']['Names'].keys()) \
-                    for e in ['Any'] + list(header_index['Reg']['Names'].values())
-                    ]
-    del header_index
-
-    return catDict_keys
-
 ## Category 1: variant type
 cpdef check_varType(info, header_index):
     cdef dict out
@@ -275,8 +262,7 @@ cpdef check_effect_genelist(info, header_index):
             else:
                 pass
 
-        elif (
-                'inframe_deletion' in e or 'inframe_insertion' in e):  # CHECK this consequence only in the protein coding transcript
+        elif ('inframe_deletion' in e or 'inframe_insertion' in e):  # CHECK this consequence only in the protein coding transcript
             out_effects['InFrameRegion'] = 1
             out_effects['CodingRegion'] = 1
 
