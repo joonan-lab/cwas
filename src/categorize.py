@@ -127,7 +127,7 @@ def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
             if line.startswith('#'):  # The comments
                 if line.startswith('#CHROM'):  # The header
                     variant_df_colnames = line[1:].rstrip('\n').split('\t')
-                elif line.startswith('##INFO<=ID<CSQ'):
+                elif line.startswith('##INFO=<ID=CSQ'):
                     csq_line = line.rstrip('">\n')
                     info_format_start_idx = re.search(r'Format: ', csq_line).span()[1]
                     info_field_names = csq_line[info_format_start_idx:].split('|')
