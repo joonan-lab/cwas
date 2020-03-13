@@ -14,6 +14,7 @@ import os
 import re
 from functools import partial
 
+import numpy as np
 import pandas as pd
 import pyximport
 
@@ -152,6 +153,29 @@ def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
         variant_df.drop(columns=rm_colnames, inplace=True)
 
     return variant_df
+
+
+def parse_gene_mat(gene_mat_path: str) -> dict:
+    """ Parse the gene matrix file and make a dictionary which key and value are a gene symbol and the set of categories
+    of this gene, respectively.
+
+    :param gene_mat_path: The path of the gene matrix file
+    :return: The dictionary which key and value are a gene symbol and the set of categories of this gene, respectively.
+    """
+    gene_cat_set_dict = {}
+
+    with open(gene_mat_path, 'r') as gene_mat_file:
+        header = gene_mat_file.readline()
+        categories = np.array(header.rstrip('\n').split('\t')[1:])
+
+        for line in gene_mat_file:
+            fields = line.rstrip('\n').split('\t')
+            gene_symbol = fields[0]
+            in_cat_arr = (np.array(fields[1:]) == '1')  # Convert to the boolean array
+            gene_cats = categories[in_cat_arr]
+            gene_cat_set_dict[gene_symbol] = set(gene_cats)
+
+    return gene_cat_set_dict
 
 
 if __name__ == "__main__":
