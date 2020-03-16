@@ -4,6 +4,125 @@ from functools import partial
 import pandas as pd
 
 
+cpdef get_cwas_cat() -> (dict, dict):
+    """ Return two dictionaries that are for a list of CWAS categories and for indices of CWAS categories, respectively.
+
+    --- The domains of the CWAS categories ---
+    1. Variant types (var_type)
+    2. Conservation (cons)
+    3. Gene lists (gene_list)
+    4. GENCODE annotation categories (effect)
+    5. Functional annotation categories (region)
+
+    :returns
+    1. A dictionary which key is a domain name and value is the list of CWAS categories of this domain.
+    2. A dictionary which key is a domain name and value is the dictionary
+       which key is a CWAS category name of this domain and value is the index of the category.
+    """
+    cdef list var_type_cats
+    cdef list cons_cats
+    cdef list gene_list_cats
+    cdef list effect_cats
+    cdef list region_cats
+
+    cdef dict cwas_cat_dict
+    cdef dict cwas_cat_idx_dict
+
+    # The lists of CWAS categories
+    var_type_cats = [
+        'SNV',
+        'Indel'
+    ]
+    cons_cats = [
+        'phyloP46wayVt',
+        'phastCons46wayVt',
+    ]
+    gene_list_cats = [
+        'ASD_TADA_FDR03',
+        'Willsey_Union',
+        'geneSet_PLI90Score',
+        'geneSet_PSD',
+        'geneSet_DDD',
+        'geneSet_BE',
+        'geneSet_CHD8_Common',
+        'geneSet_FMRP_Darnell',
+        'geneSet_Protein_Coding',
+        'geneSet_Pseudogene',
+        'geneSet_lincRNA',
+        'geneSet_Antisense',
+        'geneSet_Processed_Transcript',
+    ]
+    effect_cats = [
+        'CodingRegion',
+        'FrameshiftRegion',
+        'InFrameRegion',
+        'SilentRegion',
+        'LoFRegion',
+        'MissenseHVARDRegionSimple',
+        'MissenseRegion',
+        'NoncodingRegion',
+        'SpliceSiteNoncanonRegion',
+        'IntronRegion',
+        'PromoterRegion',
+        'IntergenicRegion',
+        'UTRsRegion',
+        'AntisenseRegion',
+        'lincRnaRegion',
+        'OtherTranscriptRegion',
+    ]
+    region_cats = [
+        'ChmmState15_E1_Brain',
+        'ChmmState15_E2_Brain',
+        'ChmmState15_E3_Brain',
+        'ChmmState15_E4_Brain',
+        'ChmmState15_E5_Brain',
+        'ChmmState15_E6_Brain',
+        'ChmmState15_E7_Brain',
+        'ChmmState15_E8_Brain',
+        'ChmmState15_E9_Brain',
+        'ChmmState15_E10_Brain',
+        'ChmmState15_E11_Brain',
+        'ChmmState15_E12_Brain',
+        'ChmmState15_E13_Brain',
+        'ChmmState15_E14_Brain',
+        'ChmmState15_E15_Brain',
+        'EpigenomeByGroup4_DNaseFDR001_Brain',
+        'EpigenomeByGroup4_H3K27ac_Brain',
+        'EpigenomeByGroup4_H3K27me3_Brain',
+        'EpigenomeByGroup4_H3K36me3_Brain',
+        'EpigenomeByGroup4_H3K4me1_Brain',
+        'EpigenomeByGroup4_H3K4me3_Brain',
+        'EpigenomeByGroup4_H3K9ac_Brain',
+        'EpigenomeByGroup4_H3K9me3_Brain',
+        'H3K27ac_160407_multiInt_filtBy2_merge_3col',
+        'atac_norep_160407_multiInt_filtBy2_merge_3col',
+        'HARs_Doan2016',
+        'fantom5_enhancer_robust',
+        'EncodeDNaseClustersUCSC',
+        'EncodeTfbsClusterV2UCSC',
+        'vistaEnhancerUCSC',
+        'Yale_H3K27ac_CBC',
+        'Yale_H3K27ac_DFC',
+    ]
+
+    cwas_cat_dict = {
+        'var_type': var_type_cats,
+        'cons': cons_cats,
+        'gene_list': gene_list_cats,
+        'effect': effect_cats,
+        'region': region_cats,
+    }
+    cwas_cat_idx_dict = {
+        'var_type': {cat: i for i, cat in enumerate(var_type_cats)},
+        'cons': {cat: i for i, cat in enumerate(cons_cats)},
+        'gene_list': {cat: i for i, cat in enumerate(gene_list_cats)},
+        'effect': {cat: i for i, cat in enumerate(effect_cats)},
+        'region': {cat: i for i, cat in enumerate(region_cats)},
+    }
+
+    return cwas_cat_dict, cwas_cat_idx_dict
+
+
 ## Category 1: variant type
 cpdef check_varType(info, header_index):
     cdef dict out
