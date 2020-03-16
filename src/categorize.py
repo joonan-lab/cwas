@@ -19,7 +19,7 @@ import pandas as pd
 import pyximport
 
 pyximport.install(language_level=3, reload_support=True)
-from categorization import get_col_index, parCat
+from categorization import parCat
 
 
 def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
@@ -54,8 +54,8 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     print(f'[Progress] Total {len(sample_ids)} samples are ready for analysis.')
 
     # Creating the header information
-    header_index = get_col_index(list(variant_df.columns), gene_mat_path)
     print('[Progress] Start processing' + '\n')
+    header_index = None
 
     # Split dataframes by samples
     s = variant_df.groupby('SampleID')
