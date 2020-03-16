@@ -19,7 +19,7 @@ import pandas as pd
 import pyximport
 
 pyximport.install(language_level=3, reload_support=True)
-from categorization import get_cwas_cat, parCat
+from categorization import get_cwas_cat, get_cat_name_conv, parCat
 
 
 def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
@@ -56,6 +56,7 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     # Create the information for CWAS categories
     print('[Progress] Start processing' + '\n')
     cwas_cat_dict, cwas_cat_idx_dict = get_cwas_cat()
+    cwas_cat_name_conv = get_cat_name_conv()
 
     # Split dataframes by samples
     s = variant_df.groupby('SampleID')

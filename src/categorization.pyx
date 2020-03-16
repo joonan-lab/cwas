@@ -4,6 +4,7 @@ from functools import partial
 import pandas as pd
 
 
+# Functions for the information of CWAS categories
 cpdef get_cwas_cat() -> (dict, dict):
     """ Return two dictionaries that are for a list of CWAS categories and for indices of CWAS categories, respectively.
 
@@ -121,6 +122,83 @@ cpdef get_cwas_cat() -> (dict, dict):
     }
 
     return cwas_cat_dict, cwas_cat_idx_dict
+
+
+cpdef get_cat_name_conv() -> dict:
+    """ Return the dictionary to convert the names of CWAS categories in 'cons', 'gene_list', and 'region' domains.
+    This is for backward compatibility with the previous CWAS.
+    """
+    cdef dict cons_name_conv
+    cdef dict gene_list_name_conv
+    cdef dict region_name_conv
+    cdef dict cwas_cat_name_conv
+
+    cons_name_conv = {
+        'All': 'All',
+        'phyloP46wayVt': 'phyloP46way',
+        'phastCons46wayVt': 'phastCons46way',
+    }
+
+    gene_list_name_conv = {
+        'Any': 'Any',
+        'ASD_TADA_FDR03': 'ASDTADAFDR03',
+        'Willsey_Union': 'WillseyUnion',
+        'geneSet_PLI90Score': 'PLI90Score',
+        'geneSet_PSD': 'PSD',
+        'geneSet_DDD': 'DDD',
+        'geneSet_BE': 'BE',
+        'geneSet_CHD8_Common': 'CHD8Common',
+        'geneSet_FMRP_Darnell': 'FMRPDarnell',
+        'geneSet_Protein_Coding': 'ProteinCoding',
+        'geneSet_Pseudogene': 'Pseudogene',
+        'geneSet_lincRNA': 'lincRNA',
+        'geneSet_Antisense': 'Antisense',
+        'geneSet_Processed_Transcript': 'ProcessedTranscript',
+     }
+
+    region_name_conv = {
+        'Any': 'Any',
+        'ChmmState15_E1_Brain': 'ChmE1',
+        'ChmmState15_E2_Brain': 'ChmE2',
+        'ChmmState15_E3_Brain': 'ChmE3',
+        'ChmmState15_E4_Brain': 'ChmE4',
+        'ChmmState15_E5_Brain': 'ChmE5',
+        'ChmmState15_E6_Brain': 'ChmE6',
+        'ChmmState15_E7_Brain': 'ChmE7',
+        'ChmmState15_E8_Brain': 'ChmE8',
+        'ChmmState15_E9_Brain': 'ChmE9',
+        'ChmmState15_E10_Brain': 'ChmE10',
+        'ChmmState15_E11_Brain': 'ChmE11',
+        'ChmmState15_E12_Brain': 'ChmE12',
+        'ChmmState15_E13_Brain': 'ChmE13',
+        'ChmmState15_E14_Brain': 'ChmE14',
+        'ChmmState15_E15_Brain': 'ChmE15',
+        'EpigenomeByGroup4_DNaseFDR001_Brain': 'EpiDNase',
+        'EpigenomeByGroup4_H3K27ac_Brain': 'EpiH3K27ac',
+        'EpigenomeByGroup4_H3K27me3_Brain': 'EpiH3K27me3',
+        'EpigenomeByGroup4_H3K36me3_Brain': 'EpiH3K36me3',
+        'EpigenomeByGroup4_H3K4me1_Brain': 'EpiH3K4me1',
+        'EpigenomeByGroup4_H3K4me3_Brain': 'EpiH3K4me3',
+        'EpigenomeByGroup4_H3K9ac_Brain': 'EpiH3K9ac',
+        'EpigenomeByGroup4_H3K9me3_Brain': 'EpiH3K9me3',
+        'H3K27ac_160407_multiInt_filtBy2_merge_3col': 'MidFetalH3K27ac',
+        'atac_norep_160407_multiInt_filtBy2_merge_3col': 'MidFetalATAC',
+        'HARs_Doan2016': 'HARs',
+        'fantom5_enhancer_robust': 'EnhancerFantom',
+        'EncodeDNaseClustersUCSC': 'EncodeDNase',
+        'EncodeTfbsClusterV2UCSC': 'EncodeTFBS',
+        'vistaEnhancerUCSC': 'EnhancerVista',
+        'Yale_H3K27ac_CBC': 'YaleH3K27acCBC',
+        'Yale_H3K27ac_DFC': 'YaleH3K27acDFC',
+    }
+
+    cwas_cat_name_conv = {
+        'cons': cons_name_conv,
+        'gene_list': gene_list_name_conv,
+        'region': region_name_conv,
+    }
+
+    return cwas_cat_name_conv
 
 
 ## Category 1: variant type
