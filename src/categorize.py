@@ -8,27 +8,23 @@ description = '''
 			'''
 
 import argparse
-import glob
-import multiprocessing as mp
-import os
 import re
-from functools import partial
 
 import numpy as np
 import pandas as pd
 import pyximport
 
-pyximport.install(language_level=3, reload_support=True)
-from categorization import get_cwas_annot, get_annot_term_conv, parCat
+pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
+from categorization import cwas_cat
 
 
 def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     # Print the run setting
-    print('[Setting] Input file: %s' % vep_vcf_path)  # This file contains the list of the variants annotated by VEP.
+    print('[Setting] Input VCF file: %s' % vep_vcf_path)  # This contains the list of the variants annotated by VEP.
     print('[Setting] Gene matrix file: %s' % gene_mat_path)
     print('[Setting] Number of threads: %s' % num_threads)
     print('[Setting] Output tag: %s' % output_tag)
-    print('[Progress] Loading the input file into the data frame')
+    print('[Progress] Load the input VCF file into the DataFrame')
 
     # Make the DataFrame of the annotated variants from the VCF file
     rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type",
@@ -36,8 +32,10 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
                     "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # The list of redundant columns
     variant_df = parse_vep_vcf(vep_vcf_path, rdd_colnames)
+    print(f'[Progress] No. the input variants: {len(variant_df.index)}')
 
-    print(f'[Progress] The number of the input variants: {len(variant_df.index)}')
+    # Create the information for the 'gene_list' annotation terms for each gene symbol
+    gene_list_set_dict = parse_gene_mat(gene_mat_path)
 
     # (Optional) Filter variants by whether allele frequency is known or not in gnomAD
     if af_known == 'no':
@@ -49,67 +47,19 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     else:
         print('[Progress] Keep all the variants')
 
-    # Get the sample information
-    sample_ids = variant_df['SampleID'].unique()
-    print(f'[Progress] Total {len(sample_ids)} samples are ready for analysis.')
-
-    # Create the information of the annotation terms for CWAS
-    print('[Progress] Start processing' + '\n')
-    gene_list_set_dict = parse_gene_mat(gene_mat_path)
-    cwas_annot_dict, cwas_annot_idx_dict = get_cwas_annot()
-    cwas_annot_term_conv = get_annot_term_conv()
-
     # Split the DataFrame by SampleIDs
+    print('[Progress] Split the DataFrame by SampleIDs')
     groupby_sample = variant_df.groupby('SampleID')
     sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in groupby_sample.groups]
-    print('[Progress] Split the DataFrame by SampleIDs. Total %s dataframes' % len(sample_var_dfs))
+    print(f'[Progress] Total No. the DataFrames: {len(sample_var_dfs):,d}')
 
-    # Create a pool for parallel processing
-    pool = mp.Pool(num_threads)
-    pool.imap_unordered(partial(parCat, header_index=header_index), inputs)
-    pool.close()
-    pool.join()
-    print('[Progress] Calculation for each samples are done' + '\n')
+    # Categorize the variants in each sample
+    print('[Progress] Categorize the variants in each samples' + '\n')
+    cat_results = []  # Item: pd.Series object
 
-    # Merging files after run
-    fs = sorted(glob.glob('tmp_catego*'))
-    print('[Progress] Start merging %s files' % str(len(fs)))
-    f = fs[0]
-    fh = open(f).read().splitlines()
-    out = []
-    sample_id = f.replace('tmp_catego.', '').replace('.txt', '').replace('.', '_')
-    match = ['SampleID'] + [a.split(';')[0] for a in fh]
-    out.append(match)
-    match = [sample_id] + [int(a.split(';')[1]) for a in fh]
-    out.append(match)
-
-    for f in fs[1:]:
-        match = [f.replace('tmp_catego.', '').replace('.txt', '').replace('.', '_')]
-        print(fs.index(f))
-        with open(f) as fh:
-            for l in fh:
-                match.append(int(l.rstrip('\n').split(';')[1]))
-        out.append(match)
-
-    df = pd.DataFrame(out[1:], columns=out[0])
-
-    # Writing out cat var matrix
-    outfile_sumvar = '.'.join(['result', 'sumVar', output_tag, 'txt'])
-    file_cats_zero = '.'.join(['result', 'cats_zero', output_tag, 'txt'])
-    print('[Progress] Remove columns with zero variant')
-    is_zero_df = pd.DataFrame(df == 0)
-    df_zero = df.loc[:, is_zero_df.any(axis=0)]
-    o = open(file_cats_zero, 'w')
-    for l in list(df_zero.columns):
-        o.write(l + '\n')
-    o.close()
-    is_nonzero_df = pd.DataFrame(df != 0)
-    df = df.loc[:, is_nonzero_df.any(axis=0)]
-    print('[Progress] Writing the sumvar matrix to csv files')
-    df.to_csv(outfile_sumvar, sep='\t', index=False)
-
-    # Clean up
-    os.system('rm tmp*')
+    for sample_var_df in sample_var_dfs:
+        cat_result_dict = cwas_cat(sample_var_df, gene_list_set_dict)
+        cat_results.append(pd.Series(cat_result_dict))
 
 
 def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:

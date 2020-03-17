@@ -1,11 +1,74 @@
 #!/usr/bin/env python
-from functools import partial
-
+cimport numpy as cnp
+import numpy as np
 import pandas as pd
 
 
+cpdef dict cwas_cat(variant_df: pd.DataFrame, gene_list_set_dict: dict):
+    """ Categorize the variants in the input data frame into the combinations of the annotation terms in the 5 groups
+    and return the dictionary that contains the distribution of the variants for the combinations. These combinations
+    are defined as CWAS categories.
+
+    :param variant_df: The DataFrame object that contains the annotated variants from VEP 
+    :param gene_list_set_dict: The dictionary which key and value are a gene symbol and the set of the names of 
+                               the gene lists where this gene is involved, respectively.
+    :return: The dictionary which key and value are a CWAS category and the number of the variants in this category, 
+             respectively
+    """
+    cdef dict cwas_annot_dict, cwas_annot_idx_dict, cwas_annot_term_conv, cat_result_dict
+    cdef cnp.ndarray var_type_annot_ints, cons_annot_ints, gene_list_annot_ints, effect_annot_ints, region_annot_ints
+    cdef int var_type_int, cons_int, gene_list_int, effect_int, region_int
+    cdef list var_type_annots, cons_annots, gene_list_annots, effect_annots, region_annots
+    cdef str var_type_annot, cons_annot, gene_list_annot, effect_annot, region_annot
+
+    cwas_annot_dict, cwas_annot_idx_dict = get_cwas_annot()
+    cwas_annot_term_conv = get_annot_term_conv()
+
+    # For annotating each variant with multiple annotation terms from each group efficiently,
+    # "Annotation integer" (annot_int) is used.
+    # Annotation integer: A bitwise representation of the annotation of each variant where each bit means
+    # each annotation term
+    # e.g. If a list of annotation terms is ['A', 'B', 'C'] and the annotation integer is 0b101, it means that
+    # the variant is annotated as 'A' and 'B'.
+    var_type_annot_ints = annot_var_type(variant_df, cwas_annot_idx_dict['var_type'])
+    cons_annot_ints = annot_cons(variant_df, cwas_annot_idx_dict['cons'])
+    gene_list_annot_ints = annot_gene_list(variant_df, cwas_annot_idx_dict['gene_list'], gene_list_set_dict)
+    effect_annot_ints = annot_effect(variant_df, cwas_annot_idx_dict['effect'], gene_list_set_dict)
+    region_annot_ints = annot_region(variant_df, cwas_annot_idx_dict['region'])
+
+    # Categorize by the annotation terms for each variant
+    cat_result_dict = {}
+
+    for var_type_annot_int, cons_annot_int, gene_list_annot_int, effect_annot_int, region_annot_int in \
+            zip(var_type_annot_ints, cons_annot_ints, gene_list_annot_ints, effect_annot_ints, region_annot_ints):
+        var_type_annots = ['All'] + parse_annot_int(var_type_annot_int, cwas_annot_dict['var_type'])
+        cons_annots = ['All'] + parse_annot_int(cons_annot_int, cwas_annot_dict['cons'])
+        gene_list_annots = ['Any'] + parse_annot_int(gene_list_annot_int, cwas_annot_dict['gene_list'])
+        effect_annots = ['Any'] + parse_annot_int(effect_annot_int, cwas_annot_dict['effect'])
+        region_annots = ['Any'] + parse_annot_int(region_annot_int, cwas_annot_dict['region'])
+
+        # Make combinations using the annotation terms
+        for var_type_annot in var_type_annots:
+            for cons_annot in cons_annots:
+                for gene_list_annot in gene_list_annots:
+                    for effect_annot in effect_annots:
+                        for region_annot in region_annots:
+                            cwas_cat = f'{var_type_annot}' \
+                                       f'_{cwas_annot_term_conv["gene_list"][gene_list_annot]}' \
+                                       f'_{cwas_annot_term_conv["cons"][cons_annot]}' \
+                                       f'_{effect_annot}' \
+                                       f'_{cwas_annot_term_conv["region"][region_annot]}'
+
+                            if cat_result_dict.get(cwas_cat) is None:
+                                cat_result_dict[cwas_cat] = 1
+                            else:
+                                cat_result_dict[cwas_cat] += 1
+
+    return cat_result_dict
+
+
 # Functions for the information of annotation terms for CWAS
-cpdef get_cwas_annot() -> (dict, dict):
+cdef tuple get_cwas_annot():
     """ Return the dictionary for a list of annotation terms for CWAS and the dictionary 
     for indices of the annotation terms. 
 
@@ -21,14 +84,9 @@ cpdef get_cwas_annot() -> (dict, dict):
     2. A dictionary which key is a group name and value is the dictionary
        which key is an annotation term of this group and value is the index of the annotation term.
     """
-    cdef list var_type_annots
-    cdef list cons_annots
-    cdef list gene_list_annots
-    cdef list effect_annots
-    cdef list region_annots
-
-    cdef dict cwas_annot_dict
-    cdef dict cwas_annot_idx_dict
+    cdef list var_type_annots, cons_annots, gene_list_annots, effect_annots, region_annots
+    cdef dict cwas_annot_dict, cwas_annot_idx_dict
+    cdef tuple returns
 
     # The lists of CWAS categories
     var_type_annots = [
@@ -121,18 +179,16 @@ cpdef get_cwas_annot() -> (dict, dict):
         'effect': {annot: i for i, annot in enumerate(effect_annots)},
         'region': {annot: i for i, annot in enumerate(region_annots)},
     }
+    returns = (cwas_annot_dict, cwas_annot_idx_dict)
 
-    return cwas_annot_dict, cwas_annot_idx_dict
+    return returns
 
 
-cpdef get_annot_term_conv() -> dict:
+cdef dict get_annot_term_conv():
     """ Return the dictionary to convert the annotation terms in 'cons', 'gene_list', and 'region' groups to the 
     previous annotation terms. This is for backward compatibility with the previous CWAS.
     """
-    cdef dict cons_term_conv
-    cdef dict gene_list_term_conv
-    cdef dict region_term_conv
-    cdef dict cwas_cat_term_conv
+    cdef dict cons_term_conv, gene_list_term_conv, region_term_conv, cwas_annot_term_conv
 
     cons_term_conv = {
         'All': 'All',
@@ -202,286 +258,200 @@ cpdef get_annot_term_conv() -> dict:
     return cwas_annot_term_conv
 
 
-## Category 1: variant type
-cpdef check_varType(info, header_index):
-    cdef dict out
+# Functions for annotation of the variants
+# The functions below make an annotation integer for each variant.
+# Step 1: Annotate by the types (e.g. SNV) of variants
+cdef cnp.ndarray annot_var_type(variant_df: pd.DataFrame, var_type_annot_idx_dict: dict):
+    cdef cnp.ndarray refs, alts, is_snv_arr, annot_ints
 
-    out = {'All': 1, 'SNV': 1, 'Indel': 0} if len(info[header_index['varType']['Cols_idx']['REF']]) == 1 and len(
-        info[header_index['varType']['Cols_idx']['ALT']]) == 1 else {'All': 1, 'SNV': 0, 'Indel': 1}
+    refs = variant_df['REF'].values
+    alts = variant_df['ALT'].values
 
-    del info, header_index
-    return out
+    is_snv_arr = (np.vectorize(len)(refs) == 1) & (np.vectorize(len)(alts) == 1)
+    annot_int_conv = \
+        lambda is_snv: 2 ** var_type_annot_idx_dict['SNV'] if is_snv else 2 ** var_type_annot_idx_dict['Indel']
+    annot_ints = np.vectorize(annot_int_conv)(is_snv_arr)
 
-## Category 3: Conservation scores
-cpdef check_cons(info, header_index):
-    cdef dict out
-    cdef str score
-    cdef float score1
+    return annot_ints
 
-    out = {'All': 1}
-    for n in header_index['Cons']['Names'].keys():
-        out[header_index['Cons']['Names'][n]] = 0
-        score = ''
-        score1 = 0
 
-        if n == 'phyloP46wayVt':
-            ## PhyloP
-            score = info[header_index['Cons']['Cols_idx'][n]]
-            if score == '':
-                score1 = -2.0
-            else:
-                score1 = max([float(a) for a in info[header_index['Cons']['Cols_idx'][n]].split('&')])
-                if float(score1) >= 2.0:
-                    out[header_index['Cons']['Names'][n]] = 1
+# Step 2: Annotate by conservation scores
+cdef cnp.ndarray annot_cons(variant_df: pd.DataFrame, cons_annot_idx_dict: dict):
+    cdef cnp.ndarray phylop_scores, phast_scores, is_phylop_cons_arr, is_phast_cons_arr, annot_ints
 
-        elif n == 'phastCons46wayVt':
-            ## PhastCons
-            score = info[header_index['Cons']['Cols_idx'][n]]
-            if score == '':
-                score1 = 0.0
-            else:
-                score1 = max([float(a) for a in info[header_index['Cons']['Cols_idx'][n]].split('&')])
-                if float(score1) >= 0.20:
-                    out[header_index['Cons']['Names'][n]] = 1
+    phylop_conv_func = lambda x: -2.0 if x == '' else max(map(float, x.split('&')))
+    phast_conv_func = lambda x: 0.0 if x == '' else max(map(float, x.split('&')))
 
+    phylop_scores = variant_df['phyloP46wayVt'].values
+    phylop_scores = np.vectorize(phylop_conv_func)(phylop_scores)
+    phast_scores = variant_df['phastCons46wayVt'].values
+    phast_scores = np.vectorize(phast_conv_func)(phast_scores)
+
+    is_phylop_cons_arr = phylop_scores >= 2.0
+    is_phast_cons_arr = phast_scores >= 0.2
+
+    annot_ints = \
+        np.vectorize(lambda is_phylop_cons: 2 ** cons_annot_idx_dict['phyloP46wayVt'] if is_phylop_cons else 0)\
+        (is_phylop_cons_arr)
+    annot_ints += \
+        np.vectorize(lambda is_phast_cons: 2 ** cons_annot_idx_dict['phastCons46wayVt'] if is_phast_cons else 0)\
+        (is_phast_cons_arr)
+
+    return annot_ints
+
+
+# Step 3: Annotate by the names of the gene lists where the variant-associated genes are involved
+cdef cnp.ndarray annot_gene_list(variant_df: pd.DataFrame, gene_annot_idx_dict: dict, gene_list_set_dict: dict):
+    cdef cnp.ndarray gene_symbols, gene_nearests, effects
+    cdef list annot_ints
+    cdef dict annot_int_dict
+    cdef str symbol, nearest, effect, gene
+    cdef int annot_int
+    cdef set gene_list_set
+
+    gene_symbols = variant_df['SYMBOL'].values
+    gene_nearests = variant_df['NEAREST'].values
+    effects = variant_df['Consequence'].values  # GENCODE annotations
+
+    annot_ints = []
+    annot_int_dict = {}  # Key: a gene symbol, Value: its category integer (For memorization)
+
+    for symbol, nearest, effect in zip(gene_symbols, gene_nearests, effects):
+        gene = nearest if 'downstream_gene_variant' in effect or 'intergenic_variant' in effect else symbol
+        annot_int = annot_int_dict.get(gene, 0)
+
+        if annot_int == 0:
+            gene_list_set = gene_list_set_dict.get(gene, set())
+
+            if gene_list_set:
+                for gene_cat in gene_annot_idx_dict:
+                    if gene_cat in gene_list_set:
+                        annot_int += 2 ** gene_annot_idx_dict[gene_cat]
+
+        annot_ints.append(annot_int)
+
+    return np.array(annot_ints)
+
+
+# Step 4: Annotate by the effects (GENCODE annotations)
+cdef cnp.ndarray annot_effect(variant_df: pd.DataFrame, effect_annot_idx_dict: dict, gene_list_set_dict: dict):
+    cdef cnp.ndarray gene_symbols, gene_nearests, effects, polyphens
+    cdef list annot_ints
+    cdef str symbol, nearest, effect, polyphen, gene
+    cdef int annot_int
+    cdef bint is_in_coding
+
+    gene_symbols = variant_df['SYMBOL'].values
+    gene_nearests = variant_df['NEAREST'].values
+    effects = variant_df['Consequence'].values
+    polyphens = variant_df['PolyPhen'].values
+
+    annot_ints = []
+
+    for symbol, nearest, effect, polyphen in zip(gene_symbols, gene_nearests, effects, polyphens):
+        gene = nearest if 'downstream_gene_variant' in effect or 'intergenic_variant' in effect else symbol
+        gene_cat_set = gene_list_set_dict.get(gene, set())
+        annot_int = 0
+        is_in_coding = False
+
+        if 'geneSet_Protein_Coding' in gene_cat_set:
+            is_in_coding = True
+            annot_int += 2 ** effect_annot_idx_dict['CodingRegion']
+
+            # Coding region
+            if 'stop_gained' in effect \
+                    or 'splice_donor' in effect \
+                    or 'splice_acceptor' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['LoFRegion']
+            elif 'frameshift_variant' in effect \
+                    or 'transcript_amplification' in effect \
+                    or 'transcript_ablation' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['LoFRegion']
+                annot_int += 2 ** effect_annot_idx_dict['FrameshiftRegion']
+            elif 'missense_variant' in effect \
+                    or 'start_lost' in effect \
+                    or 'stop_lost' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['MissenseRegion']
+
+                if 'probably_damaging' in polyphen:
+                    annot_int += 2 ** effect_annot_idx_dict['MissenseHVARDRegionSimple']
+
+            elif 'inframe_deletion' in effect \
+                    or 'inframe_insertion' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['InFrameRegion']
+            elif 'synonymous_variant' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['SilentRegion']
+            elif 'stop_retained_variant' not in effect \
+                    and 'incomplete_terminal_codon_variant' not in effect \
+                    and 'protein_altering_variant' not in effect \
+                    and 'coding_sequence_variant' not in effect:
+                # Noncoding
+                annot_int = 0
+                is_in_coding = False  # This variant is in a noncoding region of the protein coding gene
+
+        if not is_in_coding:
+            annot_int += 2 ** effect_annot_idx_dict['NoncodingRegion']
+
+            if '_UTR_' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['UTRsRegion']
+            elif 'upstream_gene_variant' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['PromoterRegion']
+            elif 'intron_variant' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['IntronRegion']
+            elif 'splice_region_variant' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['SpliceSiteNoncanonRegion']
+            elif 'downstream_gene_variant' in effect \
+                    or 'intergenic_variant' in effect:
+                annot_int += 2 ** effect_annot_idx_dict['IntergenicRegion']
+            elif 'geneSet_Protein_Coding' not in gene_cat_set:
+                if 'geneSet_Antisense' in gene_cat_set:
+                    annot_int += 2 ** effect_annot_idx_dict['AntisenseRegion']
+                elif 'geneSet_lincRNA' in gene_cat_set:
+                    annot_int += 2 ** effect_annot_idx_dict['lincRnaRegion']
+                else:
+                    annot_int += 2 ** effect_annot_idx_dict['OtherTranscriptRegion']
+
+        annot_ints.append(annot_int)
+
+    return np.array(annot_ints)
+
+
+# Step 5: Annotate by the annotation terms of the regions where the variants are
+cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, effect_annot_idx_dict: dict):
+    cdef cnp.ndarray annot_ints, region_vals
+    cdef str region
+
+    annot_ints = np.zeros(len(variant_df.index), dtype=int)
+
+    for region in effect_annot_idx_dict.keys():
+        region_vals = variant_df[region].values
+
+        if region.startswith('Yale_H3K27ac'):
+            region_val_conv_func = lambda x: 0 if x == '' else max([int(y.split('_')[0]) for y in x.split('&')])
+            region_vals = np.vectorize(region_val_conv_func)(region_vals)
+            annot_int_conv_func = lambda x: 2 ** effect_annot_idx_dict[region] if x > 1 else 0
         else:
-            print('Unknown Cons')
+            annot_int_conv_func = lambda x: 0 if x == '' else 2 ** effect_annot_idx_dict[region]
 
-    del info, header_index
-    return out
+        annot_ints += np.vectorize(annot_int_conv_func)(region_vals)
 
-cpdef check_effect_genelist(info, header_index):
-    ## https://www.ensembl.org/info/genome/variation/predicted_data.html
-    ## http://www.gencodegenes.org/releases/27.html
-    cdef dict out_genes
-    cdef dict out_effects
-    cdef str genelist, e, Gene, NEAREST, PolyPhen, SYMBOL
+    return annot_ints
 
-    Gene = info[header_index['Effect']['Cols_idx']['SYMBOL']] \
-        if info[header_index['Effect']['Cols_idx']['SYMBOL']] != '' \
-        else info[header_index['Effect']['Cols_idx']['NEAREST']]
-    out_genes = {'Any': 1}
-    for genelist in sorted(header_index['geneList']['Names'].keys()):
-        out_genes[header_index['geneList']['Names'][genelist]] = 1 if Gene in header_index['geneList']['List'][
-            genelist] else 0
 
-    ## Fill cats with zero
-    out_genes = {'Any': 1}
-    for genelist in header_index['geneList']['Names'].keys():
-        out_genes[header_index['geneList']['Names'][genelist]] = 0
+cdef list parse_annot_int(annot_int: int, all_annot_terms: list):
+    """ From the list of annotation terms, choose the appropriate subset by parsing the annotation integer.
+    """
+    cdef int annot_idx
+    cdef list annot_terms
 
-    out_effects = {'Any': 1}
-    for e in header_index['Effect']['Names'].keys():
-        out_effects[e] = 0
+    annot_idx = 0
+    annot_terms = []
 
-    e = info[header_index['Effect']['Cols_idx']['Consequence']]
-    SYMBOL = info[header_index['Effect']['Cols_idx']['SYMBOL']]
-    NEAREST = info[header_index['Effect']['Cols_idx']['NEAREST']]
-    PolyPhen = info[header_index['Effect']['Cols_idx']['PolyPhen']]
-    Gene = ''
+    while annot_int != 0:
+        if annot_int % 2 == 1:
+            annot_terms.append(all_annot_terms[annot_idx])
 
-    ## Category 2: Gene list
-    if 'downstream_gene_variant' not in e and 'intergenic_variant' not in e:
-        Gene = SYMBOL
-        for genelist in sorted(header_index['geneList']['Names'].keys()):
-            if Gene in header_index['geneList']['List'][genelist]:
-                out_genes[header_index['geneList']['Names'][genelist]] = 1
+        annot_int >>= 1
+        annot_idx += 1
 
-    else:
-        ## Intergenic
-        Gene = NEAREST
-        for genelist in sorted(header_index['geneList']['Names'].keys()):
-            if Gene in header_index['geneList']['List'][genelist]:
-                out_genes[header_index['geneList']['Names'][genelist]] = 1
-
-    ## Category 4: Effect
-    if Gene in header_index['geneList']['List']['geneSet_Protein_Coding']:
-        # Coding
-        if 'stop_gained' in e or 'splice_donor' in e or 'splice_acceptor' in e:
-            out_effects['LoFRegion'] = 1
-            out_effects['CodingRegion'] = 1
-
-        elif 'frameshift_variant' in e or 'transcript_amplification' in e or 'transcript_ablation' in e:
-            out_effects['LoFRegion'] = 1
-            out_effects['FrameshiftRegion'] = 1
-            out_effects['CodingRegion'] = 1
-
-        elif 'missense_variant' in e or 'start_lost' in e or 'stop_lost' in e:
-            out_effects['MissenseRegion'] = 1
-            out_effects['CodingRegion'] = 1
-            if 'probably_damaging' in PolyPhen:
-                out_effects['MissenseHVARDRegionSimple'] = 1
-            else:
-                pass
-
-        elif ('inframe_deletion' in e or 'inframe_insertion' in e):  # CHECK this consequence only in the protein coding transcript
-            out_effects['InFrameRegion'] = 1
-            out_effects['CodingRegion'] = 1
-
-        elif 'synonymous_variant' in e:
-            out_effects['SilentRegion'] = 1
-            out_effects['CodingRegion'] = 1
-
-        elif 'stop_retained_variant' in e or 'incomplete_terminal_codon_variant' in e or 'protein_altering_variant' in e or 'coding_sequence_variant' in e:
-            out_effects['CodingRegion'] = 1
-
-        ## Noncoding
-        elif '_UTR_' in e:
-            out_effects['NoncodingRegion'] = 1
-            out_effects['UTRsRegion'] = 1
-
-        elif 'upstream_gene_variant' in e:
-            out_effects['NoncodingRegion'] = 1
-            out_effects['PromoterRegion'] = 1
-
-        elif 'intron_variant' in e:
-            out_effects['NoncodingRegion'] = 1
-            out_effects['IntronRegion'] = 1
-
-        elif 'splice_region_variant' in e:
-            out_effects['NoncodingRegion'] = 1
-            out_effects['SpliceSiteNoncanonRegion'] = 1
-
-        elif 'downstream_gene_variant' in e:
-            out_effects['NoncodingRegion'] = 1
-            out_effects['IntergenicRegion'] = 1
-
-        elif 'intergenic_variant' in e:
-            out_effects['NoncodingRegion'] = 1
-            out_effects['IntergenicRegion'] = 1
-
-        ## Noncoding transcripts
-        elif 'non_coding_transcript_exon_variant' in e or 'mature_miRNA_variant' in e:
-            out_effects['NoncodingRegion'] = 1
-        else:
-            print(e)
-
-    elif Gene in header_index['geneList']['List']['geneSet_Antisense']:
-        out_effects['NoncodingRegion'] = 1
-
-        ## Noncoding but Antisense
-        if '_UTR_' in e:
-            out_effects['UTRsRegion'] = 1
-
-        elif 'upstream_gene_variant' in e:
-            out_effects['PromoterRegion'] = 1
-
-        elif 'intron_variant' in e:
-            out_effects['IntronRegion'] = 1
-
-        elif 'splice_region_variant' in e:
-            out_effects['SpliceSiteNoncanonRegion'] = 1
-
-        elif 'downstream_gene_variant' in e:
-            out_effects['IntergenicRegion'] = 1
-
-        elif 'intergenic_variant' in e:
-            out_effects['IntergenicRegion'] = 1
-
-        else:
-            out_effects['AntisenseRegion'] = 1
-
-    elif Gene in header_index['geneList']['List']['geneSet_lincRNA']:
-        out_effects['NoncodingRegion'] = 1
-
-        ## Noncoding but lincRNA
-        if '_UTR_' in e:
-            out_effects['UTRsRegion'] = 1
-
-        elif 'upstream_gene_variant' in e:
-            out_effects['PromoterRegion'] = 1
-
-        elif 'intron_variant' in e:
-            out_effects['IntronRegion'] = 1
-
-        elif 'splice_region_variant' in e:
-            out_effects['SpliceSiteNoncanonRegion'] = 1
-
-        elif 'downstream_gene_variant' in e or 'intergenic_variant' in e:
-            out_effects['IntergenicRegion'] = 1
-
-        else:
-            out_effects['lincRnaRegion'] = 1
-
-    else:
-        ## Noncoding but other transcripts
-        out_effects['NoncodingRegion'] = 1
-        if '_UTR_' in e:
-            out_effects['UTRsRegion'] = 1
-
-        elif 'upstream_gene_variant' in e:
-            out_effects['PromoterRegion'] = 1
-
-        elif 'intron_variant' in e:
-            out_effects['IntronRegion'] = 1
-
-        elif 'splice_region_variant' in e:
-            out_effects['SpliceSiteNoncanonRegion'] = 1
-
-        elif 'downstream_gene_variant' in e or 'intergenic_variant' in e:
-            out_effects['IntergenicRegion'] = 1
-
-        else:
-            out_effects['OtherTranscriptRegion'] = 1
-
-    del info, header_index, genelist, e, Gene, NEAREST, PolyPhen, SYMBOL
-
-    return [out_genes, out_effects]
-
-## Category 5: Regional annotations
-cpdef check_region(info, header_index):
-    cdef dict out_reg
-    cdef str r
-    cdef int n_ind
-
-    out_reg = {'Any': 1}
-    for r in header_index['Reg']['Cols_idx'].keys():
-
-        if 'Yale_H3K27ac' in r:
-            if info[header_index['Reg']['Cols_idx'][r]] != '':
-                n_ind = 0
-                n_ind = max([int(a.split('_')[0]) for a in info[header_index['Reg']['Cols_idx'][r]].split('&')])
-                out_reg[header_index['Reg']['Names'][r]] = 1 if n_ind > 1 else 0
-            else:
-                out_reg[header_index['Reg']['Names'][r]] = 0
-        else:
-            out_reg[header_index['Reg']['Names'][r]] = 1 if info[header_index['Reg']['Cols_idx'][r]] != '' else 0
-
-    del info, header_index
-
-    return out_reg
-
-cpdef doCats(l, header_index):
-    info = l.tolist()
-
-    cdef dict varType
-    cdef list gene_effect
-    cdef dict genelist
-    cdef dict cons
-    cdef dict effect
-    cdef dict reg
-
-    varType, gene_effect, cons, reg = check_varType(info, header_index), check_effect_genelist(info,
-                                                                                               header_index), check_cons(
-        info, header_index), check_region(info, header_index)
-    genelist, effect = gene_effect[0], gene_effect[1]
-
-    cdef int a1, b1, c1, d1, e1
-    catRes = pd.Series({'_'.join([a, b, c, d, e]): a1 * b1 * c1 * d1 * e1 \
-                        for a, a1 in varType.items() \
-                        for b, b1 in genelist.items() \
-                        for c, c1 in cons.items() \
-                        for d, d1 in effect.items() \
-                        for e, e1 in reg.items()
-                        })
-
-    del l, header_index, varType, gene_effect, genelist, cons, effect, reg
-
-    return catRes
-
-def parCat(df, header_index):
-    filename = '.'.join(['tmp_catego', df.SampleID.unique().tolist()[0], 'txt'])
-    df.apply(partial(doCats, header_index=header_index), axis=1).sum(axis=0).to_csv(filename, sep=';', header=False)
-
-    del df
-    del header_index
+    return annot_terms
