@@ -23,8 +23,8 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
     print(f'[Setting] The input VCF file: {vep_vcf_path}')  # VCF from VEP
     print(f'[Setting] The gene matrix file: {gene_mat_path}')
     print(f'[Setting] The path of the list of redundant CWAS categories: {rdd_cat_path}')
-    print(f'[Setting] The path of output: {outfile_path}')
-    print(f'[Setting] Keep the variants which allele frequencies are known: {af_known}')
+    print(f'[Setting] The path of the output: {outfile_path}')
+    print(f'[Setting] Keep the variants with known allele frequencies: {af_known}')
     print()
 
     print(f'[Progress] Load the input VCF file into the DataFrame')
@@ -34,7 +34,7 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
                     "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # The list of redundant columns
     variant_df = parse_vep_vcf(vep_vcf_path, rdd_colnames)
-    print(f'[Progress] No. the input variants: {len(variant_df.index)}')
+    print(f'[Progress] No. the input variants: {len(variant_df.index):,d}')
 
     # Create the information for the 'gene_list' annotation terms for each gene symbol
     gene_list_set_dict = parse_gene_mat(gene_mat_path)
@@ -42,10 +42,12 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
     # (Optional) Filter variants by whether allele frequency is known or not in gnomAD
     if af_known == 'no':
         variant_df = variant_df[variant_df['gnomADg_AF'] == '']
-        print(f'[Progress] Remove AF-known variants (The number of the remained variants: {len(variant_df.index)})')
+        print(f'[Progress] Remove AF-known variants '
+              f'(No. the remained variants: {len(variant_df.index):,d})')
     elif af_known == 'only':
         variant_df = variant_df[variant_df['gnomADg_AF'] != '']
-        print(f'[Progress] Remove AF-unknown variants (The number of the remained variants: {len(variant_df.index)})')
+        print(f'[Progress] Remove AF-unknown variants '
+              f'(No. the remained variants: {len(variant_df.index):,d})')
     else:
         print('[Progress] Keep all the variants')
 
@@ -54,10 +56,10 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
     groupby_sample = variant_df.groupby('SampleID')
     sample_ids = groupby_sample.groups
     sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in sample_ids]
-    print(f'[Progress] Total No. the DataFrames (No. of the samples): {len(sample_var_dfs):,d}')
+    print(f'[Progress] No. the DataFrames (No. of the samples): {len(sample_var_dfs):,d}')
 
     # Categorize the variants in each sample
-    print('[Progress] Categorize the variants in each samples' + '\n')
+    print('[Progress] Categorize the variants in each samples')
     cat_results = []  # Item: pd.Series object
     sample_ids = []
 
@@ -72,6 +74,23 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
     cat_result_df = pd.DataFrame(cat_results).fillna(0)
     cat_result_df = cat_result_df.astype(int)
     cat_result_df['SampleID'] = sample_ids
+    print(f'[Progress] No. CWAS categories with at least 1 variant: '
+          f'{len(cat_result_df.columns) - 1:,d}')
+
+    # Remove redundant categories
+    if rdd_cat_path is None:
+        print('[Progress] Keep redundant categories')
+    else:
+        with open(rdd_cat_path, 'r') as rdd_cat_file:
+            rdd_cats = rdd_cat_file.read().splitlines()
+
+        cat_result_df.drop(rdd_cats, axis='columns', inplace=True, errors='ignore')  # Remove only existing columns
+        print(f'[Progress] No. non-redundant CWAS categories with at least 1 variant: '
+              f'{len(cat_result_df.columns) - 1:,d}')
+
+    # Write the result of the categorization
+    print('[Progress] Write the result of the categorization')
+    cat_result_df.to_csv(outfile_path, sep='\t', index=False)
 
 
 def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
@@ -153,12 +172,13 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='The path of the output', default='cwas_cat_result.txt')
     parser.add_argument('-a', '--af_known', dest='af_known', required=False, type=str,
-                        help='Keep known variants (yes | no | only)', default='yes')
+                        help='Keep the variants with known allele frequencies (yes | no | only)', default='yes')
 
     # Arguments that are not used yet
     parser.add_argument('-t', '--number_threads', dest='num_threads', required=False, type=int,
                         help='Number of threads', default=1)
-    parser.add_argument('-lof', '--lof', required=False, type=str, help='Keep LoF variants', default='no')
+    parser.add_argument('-lof', '--lof', required=False, type=str,
+                        help='Keep LoF variants (yes | no | only)', default='no')
 
     args = parser.parse_args()
     main(args.in_vcf_path, args.gene_mat_path, args.rdd_cat_path, args.outfile_path, args.af_known)
