@@ -4,11 +4,12 @@ from functools import partial
 import pandas as pd
 
 
-# Functions for the information of CWAS categories
-cpdef get_cwas_cat() -> (dict, dict):
-    """ Return two dictionaries that are for a list of CWAS categories and for indices of CWAS categories, respectively.
+# Functions for the information of annotation terms for CWAS
+cpdef get_cwas_annot() -> (dict, dict):
+    """ Return the dictionary for a list of annotation terms for CWAS and the dictionary 
+    for indices of the annotation terms. 
 
-    --- The domains of the CWAS categories ---
+    --- The groups of the annotation terms for CWAS ---
     1. Variant types (var_type)
     2. Conservation (cons)
     3. Gene lists (gene_list)
@@ -16,29 +17,29 @@ cpdef get_cwas_cat() -> (dict, dict):
     5. Functional annotation categories (region)
 
     :returns
-    1. A dictionary which key is a domain name and value is the list of CWAS categories of this domain.
-    2. A dictionary which key is a domain name and value is the dictionary
-       which key is a CWAS category name of this domain and value is the index of the category.
+    1. A dictionary which key is a group name and value is the list of the annotation terms of this group.
+    2. A dictionary which key is a group name and value is the dictionary
+       which key is an annotation term of this group and value is the index of the annotation term.
     """
-    cdef list var_type_cats
-    cdef list cons_cats
-    cdef list gene_list_cats
-    cdef list effect_cats
-    cdef list region_cats
+    cdef list var_type_annots
+    cdef list cons_annots
+    cdef list gene_list_annots
+    cdef list effect_annots
+    cdef list region_annots
 
-    cdef dict cwas_cat_dict
-    cdef dict cwas_cat_idx_dict
+    cdef dict cwas_annot_dict
+    cdef dict cwas_annot_idx_dict
 
     # The lists of CWAS categories
-    var_type_cats = [
+    var_type_annots = [
         'SNV',
         'Indel'
     ]
-    cons_cats = [
+    cons_annots = [
         'phyloP46wayVt',
         'phastCons46wayVt',
     ]
-    gene_list_cats = [
+    gene_list_annots = [
         'ASD_TADA_FDR03',
         'Willsey_Union',
         'geneSet_PLI90Score',
@@ -53,7 +54,7 @@ cpdef get_cwas_cat() -> (dict, dict):
         'geneSet_Antisense',
         'geneSet_Processed_Transcript',
     ]
-    effect_cats = [
+    effect_annots = [
         'CodingRegion',
         'FrameshiftRegion',
         'InFrameRegion',
@@ -71,7 +72,7 @@ cpdef get_cwas_cat() -> (dict, dict):
         'lincRnaRegion',
         'OtherTranscriptRegion',
     ]
-    region_cats = [
+    region_annots = [
         'ChmmState15_E1_Brain',
         'ChmmState15_E2_Brain',
         'ChmmState15_E3_Brain',
@@ -106,40 +107,40 @@ cpdef get_cwas_cat() -> (dict, dict):
         'Yale_H3K27ac_DFC',
     ]
 
-    cwas_cat_dict = {
-        'var_type': var_type_cats,
-        'cons': cons_cats,
-        'gene_list': gene_list_cats,
-        'effect': effect_cats,
-        'region': region_cats,
+    cwas_annot_dict = {
+        'var_type': var_type_annots,
+        'cons': cons_annots,
+        'gene_list': gene_list_annots,
+        'effect': effect_annots,
+        'region': region_annots,
     }
-    cwas_cat_idx_dict = {
-        'var_type': {cat: i for i, cat in enumerate(var_type_cats)},
-        'cons': {cat: i for i, cat in enumerate(cons_cats)},
-        'gene_list': {cat: i for i, cat in enumerate(gene_list_cats)},
-        'effect': {cat: i for i, cat in enumerate(effect_cats)},
-        'region': {cat: i for i, cat in enumerate(region_cats)},
+    cwas_annot_idx_dict = {
+        'var_type': {annot: i for i, annot in enumerate(var_type_annots)},
+        'cons': {annot: i for i, annot in enumerate(cons_annots)},
+        'gene_list': {annot: i for i, annot in enumerate(gene_list_annots)},
+        'effect': {annot: i for i, annot in enumerate(effect_annots)},
+        'region': {annot: i for i, annot in enumerate(region_annots)},
     }
 
-    return cwas_cat_dict, cwas_cat_idx_dict
+    return cwas_annot_dict, cwas_annot_idx_dict
 
 
-cpdef get_cat_name_conv() -> dict:
-    """ Return the dictionary to convert the names of CWAS categories in 'cons', 'gene_list', and 'region' domains.
-    This is for backward compatibility with the previous CWAS.
+cpdef get_annot_term_conv() -> dict:
+    """ Return the dictionary to convert the annotation terms in 'cons', 'gene_list', and 'region' groups to the 
+    previous annotation terms. This is for backward compatibility with the previous CWAS.
     """
-    cdef dict cons_name_conv
-    cdef dict gene_list_name_conv
-    cdef dict region_name_conv
-    cdef dict cwas_cat_name_conv
+    cdef dict cons_term_conv
+    cdef dict gene_list_term_conv
+    cdef dict region_term_conv
+    cdef dict cwas_cat_term_conv
 
-    cons_name_conv = {
+    cons_term_conv = {
         'All': 'All',
         'phyloP46wayVt': 'phyloP46way',
         'phastCons46wayVt': 'phastCons46way',
     }
 
-    gene_list_name_conv = {
+    gene_list_term_conv = {
         'Any': 'Any',
         'ASD_TADA_FDR03': 'ASDTADAFDR03',
         'Willsey_Union': 'WillseyUnion',
@@ -156,7 +157,7 @@ cpdef get_cat_name_conv() -> dict:
         'geneSet_Processed_Transcript': 'ProcessedTranscript',
      }
 
-    region_name_conv = {
+    region_term_conv = {
         'Any': 'Any',
         'ChmmState15_E1_Brain': 'ChmE1',
         'ChmmState15_E2_Brain': 'ChmE2',
@@ -192,13 +193,13 @@ cpdef get_cat_name_conv() -> dict:
         'Yale_H3K27ac_DFC': 'YaleH3K27acDFC',
     }
 
-    cwas_cat_name_conv = {
-        'cons': cons_name_conv,
-        'gene_list': gene_list_name_conv,
-        'region': region_name_conv,
+    cwas_annot_term_conv = {
+        'cons': cons_term_conv,
+        'gene_list': gene_list_term_conv,
+        'region': region_term_conv,
     }
 
-    return cwas_cat_name_conv
+    return cwas_annot_term_conv
 
 
 ## Category 1: variant type

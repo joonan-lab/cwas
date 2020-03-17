@@ -19,7 +19,7 @@ import pandas as pd
 import pyximport
 
 pyximport.install(language_level=3, reload_support=True)
-from categorization import get_cwas_cat, get_cat_name_conv, parCat
+from categorization import get_cwas_annot, get_annot_term_conv, parCat
 
 
 def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
@@ -53,17 +53,18 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     sample_ids = variant_df['SampleID'].unique()
     print(f'[Progress] Total {len(sample_ids)} samples are ready for analysis.')
 
-    # Create the information for CWAS categories
+    # Create the information of the annotation terms for CWAS
     print('[Progress] Start processing' + '\n')
-    cwas_cat_dict, cwas_cat_idx_dict = get_cwas_cat()
-    cwas_cat_name_conv = get_cat_name_conv()
+    gene_list_set_dict = parse_gene_mat(gene_mat_path)
+    cwas_annot_dict, cwas_annot_idx_dict = get_cwas_annot()
+    cwas_annot_term_conv = get_annot_term_conv()
 
-    # Split dataframes by samples
-    s = variant_df.groupby('SampleID')
-    inputs = [s.get_group(x) for x in s.groups]
-    print('[Progress] Split the dataframe by samples. Total %s dataframes' % len(inputs))
+    # Split the DataFrame by SampleIDs
+    groupby_sample = variant_df.groupby('SampleID')
+    sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in groupby_sample.groups]
+    print('[Progress] Split the DataFrame by SampleIDs. Total %s dataframes' % len(sample_var_dfs))
 
-    # Creating a pool for parallel processing
+    # Create a pool for parallel processing
     pool = mp.Pool(num_threads)
     pool.imap_unordered(partial(parCat, header_index=header_index), inputs)
     pool.close()
@@ -157,26 +158,26 @@ def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
 
 
 def parse_gene_mat(gene_mat_path: str) -> dict:
-    """ Parse the gene matrix file and make a dictionary which key and value are a gene symbol and the set of categories
-    of this gene, respectively.
+    """ Parse the gene matrix file and make a dictionary which key and value are a gene symbol and the set of the names
+    of the gene lists where this gene is involved, respectively.
 
     :param gene_mat_path: The path of the gene matrix file
-    :return: The dictionary which key and value are a gene symbol and the set of categories of this gene, respectively.
+    :return: The dictionary that is mentioned above
     """
-    gene_cat_set_dict = {}
+    gene_list_set_dict = {}
 
     with open(gene_mat_path, 'r') as gene_mat_file:
         header = gene_mat_file.readline()
-        categories = np.array(header.rstrip('\n').split('\t')[1:])
+        all_gene_list_names = np.array(header.rstrip('\n').split('\t')[1:])
 
         for line in gene_mat_file:
             fields = line.rstrip('\n').split('\t')
             gene_symbol = fields[0]
-            in_cat_arr = (np.array(fields[1:]) == '1')  # Convert to the boolean array
-            gene_cats = categories[in_cat_arr]
-            gene_cat_set_dict[gene_symbol] = set(gene_cats)
+            in_gene_list_arr = (np.array(fields[1:]) == '1')  # Convert to the boolean array
+            gene_list_names = all_gene_list_names[in_gene_list_arr]
+            gene_list_set_dict[gene_symbol] = set(gene_list_names)
 
-    return gene_cat_set_dict
+    return gene_list_set_dict
 
 
 if __name__ == "__main__":
