@@ -1,4 +1,17 @@
-#!/usr/bin/env python
+"""
+Module for the categorization of the variants into CWAS categories and counting the number of variants in each category.
+CWAS category is a combination of annotation terms from each of annotation groups.
+
+There are currently 5 groups of annotation terms.
+
+--- The groups of the annotation terms for CWAS ---
+    1. Variant types (var_type)
+    2. Conservation (cons)
+    3. Gene lists (gene_list)
+    4. GENCODE annotation categories (effect)
+    5. Functional annotation categories (region)
+
+"""
 cimport numpy as cnp
 import numpy as np
 import pandas as pd

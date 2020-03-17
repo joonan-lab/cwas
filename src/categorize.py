@@ -1,12 +1,11 @@
 #!/usr/bin/env python
-__version__ = 0.2
-__author__ = 'Joon An'
-__date__ = 'October 5th, 2018'
+"""
+Script for categorizing variants annotated by VEP into CWAS categories, which are combinations of annotation terms,
+and counting the number of variants for each category.
 
-description = '''
-				Script for categorization and summerization.
-			'''
+For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
+"""
 import argparse
 import re
 
@@ -162,7 +161,7 @@ def parse_gene_mat(gene_mat_path: str) -> dict:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
                         help='The path of an input VCF file from VEP')
     parser.add_argument('-g', '--gene_matrix', dest='gene_mat_path', required=True, type=str,
