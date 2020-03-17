@@ -18,14 +18,16 @@ pyximport.install(language_level=3, reload_support=True, setup_args={'include_di
 from categorization import cwas_cat
 
 
-def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
+def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
     # Print the run setting
-    print('[Setting] Input VCF file: %s' % vep_vcf_path)  # This contains the list of the variants annotated by VEP.
-    print('[Setting] Gene matrix file: %s' % gene_mat_path)
-    print('[Setting] Number of threads: %s' % num_threads)
-    print('[Setting] Output tag: %s' % output_tag)
-    print('[Progress] Load the input VCF file into the DataFrame')
+    print(f'[Setting] The input VCF file: {vep_vcf_path}')  # VCF from VEP
+    print(f'[Setting] The gene matrix file: {gene_mat_path}')
+    print(f'[Setting] The path of the list of redundant CWAS categories: {rdd_cat_path}')
+    print(f'[Setting] The path of output: {outfile_path}')
+    print(f'[Setting] Keep the variants which allele frequencies are known: {af_known}')
+    print()
 
+    print(f'[Progress] Load the input VCF file into the DataFrame')
     # Make the DataFrame of the annotated variants from the VCF file
     rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type",
                     "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
@@ -70,7 +72,6 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     cat_result_df = pd.DataFrame(cat_results).fillna(0)
     cat_result_df = cat_result_df.astype(int)
     cat_result_df['SampleID'] = sample_ids
-
 
 
 def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
@@ -143,15 +144,21 @@ def parse_gene_mat(gene_mat_path: str) -> dict:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=description)
-    parser.add_argument('-i', '--infile', required=True, type=str, help='Input File')
-    parser.add_argument('-g', '--gene_matrix', required=False, type=str, help='Gene matrix File',
-                        default='geneMatrixV38_v1.txt')
-    parser.add_argument('-t', '--number_threads', required=False, type=int, help='Number of threads', default=1)
-    parser.add_argument('-o', '--output_tag', required=False, type=str, help='Output tag', default='output')
-    parser.add_argument('-a', '--af_known', required=False, type=str, help='Keep known variants', default='yes')
+    parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
+                        help='The path of an input VCF file from VEP')
+    parser.add_argument('-g', '--gene_matrix', dest='gene_mat_path', required=True, type=str,
+                        help='The path of a gene matrix file')
+    parser.add_argument('-r', '--redundant_category', dest='rdd_cat_path', required=False, type=str,
+                        help='The path of the file written the list of redundant CWAS categories', default=None)
+    parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
+                        help='The path of the output', default='cwas_cat_result.txt')
+    parser.add_argument('-a', '--af_known', dest='af_known', required=False, type=str,
+                        help='Keep known variants (yes | no | only)', default='yes')
 
     # Arguments that are not used yet
-    parser.add_argument('-lof', '--lof', required=False, type=str, help='Keep lof variants', default='No')
+    parser.add_argument('-t', '--number_threads', dest='num_threads', required=False, type=int,
+                        help='Number of threads', default=1)
+    parser.add_argument('-lof', '--lof', required=False, type=str, help='Keep LoF variants', default='no')
 
     args = parser.parse_args()
-    main(args.infile, args.gene_matrix, args.number_threads, args.output_tag, args.af_known)
+    main(args.in_vcf_path, args.gene_mat_path, args.rdd_cat_path, args.outfile_path, args.af_known)
