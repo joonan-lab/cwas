@@ -50,16 +50,27 @@ def main(vep_vcf_path, gene_mat_path, num_threads, output_tag, af_known):
     # Split the DataFrame by SampleIDs
     print('[Progress] Split the DataFrame by SampleIDs')
     groupby_sample = variant_df.groupby('SampleID')
-    sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in groupby_sample.groups]
-    print(f'[Progress] Total No. the DataFrames: {len(sample_var_dfs):,d}')
+    sample_ids = groupby_sample.groups
+    sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in sample_ids]
+    print(f'[Progress] Total No. the DataFrames (No. of the samples): {len(sample_var_dfs):,d}')
 
     # Categorize the variants in each sample
     print('[Progress] Categorize the variants in each samples' + '\n')
     cat_results = []  # Item: pd.Series object
+    sample_ids = []
 
     for sample_var_df in sample_var_dfs:
+        sample_id = sample_var_df['SampleID'].values[0]
+        sample_ids.append(sample_id)
         cat_result_dict = cwas_cat(sample_var_df, gene_list_set_dict)
         cat_results.append(pd.Series(cat_result_dict))
+
+    # Create the DataFrame for the result of the categorization
+    print('[Progress] Create the DataFrame for the result of the categorization')
+    cat_result_df = pd.DataFrame(cat_results).fillna(0)
+    cat_result_df = cat_result_df.astype(int)
+    cat_result_df['SampleID'] = sample_ids
+
 
 
 def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
