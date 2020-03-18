@@ -7,6 +7,7 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
 """
 import argparse
+import os
 import re
 from datetime import datetime
 
@@ -23,10 +24,19 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
     print(__doc__)
     print(f'[Setting] The input VCF file: {vep_vcf_path}')  # VCF from VEP
     print(f'[Setting] The gene matrix file: {gene_mat_path}')
-    print(f'[Setting] The path of the list of redundant CWAS categories: {rdd_cat_path}')
-    print(f'[Setting] The path of the output: {outfile_path}')
+    print(f'[Setting] The list of redundant CWAS categories: {rdd_cat_path}')
+    print(f'[Setting] The output path: {outfile_path}')
     print(f'[Setting] Keep the variants with known allele frequencies: {af_known}')
     print()
+
+    # Check the validity of the settings
+    assert os.path.isfile(vep_vcf_path), f'The input VCF file "{vep_vcf_path}" cannot be found.'
+    assert os.path.isfile(gene_mat_path), f'The gene matrix file: "{gene_mat_path}" cannot be found.'
+    if rdd_cat_path is not None:
+        assert os.path.isfile(rdd_cat_path), f'The list of redundant CWAS categories "{rdd_cat_path}" cannot be found.'
+    outfile_dir = os.path.dirname(outfile_path)
+    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    assert af_known in {'yes', 'no', 'only'}, f'Invalid value of --af_known "{af_known}"'
 
     print(f'[{get_curr_time()}, Progress] Load the input VCF file into the DataFrame')
     # Make the DataFrame of the annotated variants from the VCF file
@@ -181,13 +191,13 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='The path of the output', default='cwas_cat_result.txt')
     parser.add_argument('-a', '--af_known', dest='af_known', required=False, type=str,
-                        help='Keep the variants with known allele frequencies (yes | no | only)', default='yes')
+                        help='Keep the variants with known allele frequencies {yes, no, only}', default='yes')
 
     # Arguments that are not used yet
     parser.add_argument('-t', '--number_threads', dest='num_threads', required=False, type=int,
                         help='Number of threads', default=1)
     parser.add_argument('-lof', '--lof', required=False, type=str,
-                        help='Keep LoF variants (yes | no | only)', default='no')
+                        help='Keep LoF variants {yes, no, only}', default='no')
 
     args = parser.parse_args()
     main(args.in_vcf_path, args.gene_mat_path, args.rdd_cat_path, args.outfile_path, args.af_known)
