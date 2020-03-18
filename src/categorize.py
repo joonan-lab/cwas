@@ -19,7 +19,8 @@ from categorization import cwas_cat
 
 
 def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
-    # Print the run setting
+    # Print the description and run settings
+    print(__doc__)
     print(f'[Setting] The input VCF file: {vep_vcf_path}')  # VCF from VEP
     print(f'[Setting] The gene matrix file: {gene_mat_path}')
     print(f'[Setting] The path of the list of redundant CWAS categories: {rdd_cat_path}')
