@@ -7,9 +7,12 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
 """
 import argparse
+import multiprocessing as mp
 import os
 import re
+import sys
 from datetime import datetime
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -19,13 +22,14 @@ pyximport.install(language_level=3, reload_support=True, setup_args={'include_di
 from categorization import cwas_cat
 
 
-def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
+def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_known):
     # Print the description and run settings
     print(__doc__)
     print(f'[Setting] The input VCF file: {vep_vcf_path}')  # VCF from VEP
     print(f'[Setting] The gene matrix file: {gene_mat_path}')
     print(f'[Setting] The list of redundant CWAS categories: {rdd_cat_path}')
     print(f'[Setting] The output path: {outfile_path}')
+    print(f'[Setting] No. processes for this script: {num_proc:,d}')
     print(f'[Setting] Keep the variants with known allele frequencies: {af_known}')
     print()
 
@@ -36,6 +40,8 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
         assert os.path.isfile(rdd_cat_path), f'The list of redundant CWAS categories "{rdd_cat_path}" cannot be found.'
     outfile_dir = os.path.dirname(outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    assert 1 <= num_proc <= mp.cpu_count(), \
+        f'Invalid number of processes "{num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
     assert af_known in {'yes', 'no', 'only'}, f'Invalid value of --af_known "{af_known}"'
 
     print(f'[{get_curr_time()}, Progress] Load the input VCF file into the DataFrame')
@@ -71,14 +77,27 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, af_known):
 
     # Categorize the variants in each sample
     print(f'[{get_curr_time()}, Progress] Categorize the variants in each samples')
-    cat_results = []  # Item: pd.Series object
-    sample_ids = []
+    if num_proc == 1:
+        cat_results, sample_ids = cwas_cat_samples(sample_var_dfs, gene_list_set_dict)
+    else:
+        try:
+            var_df_sub_lists = div_list(sample_var_dfs, num_proc)
+        except AssertionError:
+            print(f'[{get_curr_time()}, ERROR] Too many number of processes "{num_proc:,d}". '
+                  f'Please make it less than the number of samples.', file=sys.stderr)
+            raise
 
-    for sample_var_df in sample_var_dfs:
-        sample_id = sample_var_df['SampleID'].values[0]
-        sample_ids.append(sample_id)
-        cat_result_dict = cwas_cat(sample_var_df, gene_list_set_dict)
-        cat_results.append(pd.Series(cat_result_dict))
+        pool = mp.Pool(num_proc)
+        proc_outputs = pool.map(partial(cwas_cat_samples, gene_list_set_dict=gene_list_set_dict), var_df_sub_lists)
+        pool.close()
+        pool.join()
+
+        cat_results = []
+        sample_ids = []
+
+        for proc_cat_results, proc_sample_ids in proc_outputs:
+            cat_results += proc_cat_results
+            sample_ids += proc_sample_ids
 
     # Create the DataFrame for the result of the categorization
     print(f'[{get_curr_time()}, Progress] Create the DataFrame for the result of the categorization')
@@ -174,6 +193,45 @@ def parse_gene_mat(gene_mat_path: str) -> dict:
     return gene_list_set_dict
 
 
+def cwas_cat_samples(sample_var_dfs: list, gene_list_set_dict: dict) -> (list, list):
+    """ This is a wrapper function to execute 'cwas_cat' for multiple samples
+
+    :param sample_var_dfs: The list of pd.DataFrame objects for each sample's variants
+    :param gene_list_set_dict: The dictionary from 'parse_gene_mat' function
+    :returns:
+        1. The list of the pd.Series objects for 'cwas_cat' results of the samples
+        2. The list of the sample IDs
+    """
+    cat_results = []  # Item: pd.Series object
+    sample_ids = []
+
+    for sample_var_df in sample_var_dfs:
+        sample_id = sample_var_df['SampleID'].values[0]
+        sample_ids.append(sample_id)
+        cat_result_dict = cwas_cat(sample_var_df, gene_list_set_dict)
+        cat_results.append(pd.Series(cat_result_dict))
+
+    return cat_results, sample_ids
+
+
+def div_list(in_list: list, n_sub: int) -> list:
+    """ Divide the input list into multiple sub-lists """
+    sub_lists = []
+    sub_len = len(in_list) // n_sub
+
+    if sub_len == 0:
+        raise AssertionError(f'The number of sub-lists ("{n_sub:,d}") are larger than '
+                             f'the length of the input list ("{len(in_list):,d}").')
+
+    for i in range(n_sub - 1):
+        sub_list = in_list[sub_len * i : sub_len * (i + 1)]
+        sub_lists.append(sub_list)
+
+    sub_lists.append(in_list[sub_len * (n_sub - 1) :])
+
+    return sub_lists
+
+
 def get_curr_time() -> str:
     now = datetime.now()
     curr_time = now.strftime('%H:%M:%S %m/%d/%y')
@@ -190,14 +248,14 @@ if __name__ == "__main__":
                         help='The path of the file written the list of redundant CWAS categories', default=None)
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='The path of the output', default='cwas_cat_result.txt')
+    parser.add_argument('-p', '--number_processes', dest='num_proc', required=False, type=int,
+                        help='Number of processes for this script', default=1)
     parser.add_argument('-a', '--af_known', dest='af_known', required=False, type=str,
                         help='Keep the variants with known allele frequencies {yes, no, only}', default='yes')
 
     # Arguments that are not used yet
-    parser.add_argument('-t', '--number_threads', dest='num_threads', required=False, type=int,
-                        help='Number of threads', default=1)
     parser.add_argument('-lof', '--lof', required=False, type=str,
-                        help='Keep LoF variants {yes, no, only}', default='no')
+                        help='Keep LoF variants {yes, no, only}. This argument is not available yet.', default='no')
 
     args = parser.parse_args()
-    main(args.in_vcf_path, args.gene_mat_path, args.rdd_cat_path, args.outfile_path, args.af_known)
+    main(args.in_vcf_path, args.gene_mat_path, args.rdd_cat_path, args.outfile_path, args.num_proc, args.af_known)
