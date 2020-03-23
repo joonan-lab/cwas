@@ -104,6 +104,7 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_k
     cat_result_df = pd.DataFrame(cat_results).fillna(0)
     cat_result_df = cat_result_df.astype(int)
     cat_result_df['SampleID'] = sample_ids
+    cat_result_df = cat_result_df.set_index('SampleID')
     print(f'[{get_curr_time()}, Progress] No. CWAS categories with at least 1 variant: '
           f'{len(cat_result_df.columns) - 1:,d}')
 
@@ -120,7 +121,7 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_k
 
     # Write the result of the categorization
     print(f'[{get_curr_time()}, Progress] Write the result of the categorization')
-    cat_result_df.to_csv(outfile_path, sep='\t', index=False)
+    cat_result_df.to_csv(outfile_path, sep='\t')
 
     print(f'[{get_curr_time()}, Progress] Done')
 
