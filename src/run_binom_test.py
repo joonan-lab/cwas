@@ -11,10 +11,7 @@ import argparse
 
 import numpy as np
 import pandas as pd
-import pyximport
-
-pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
-from binom_test import binomTest, binomTest_onesided
+from scipy.stats import binom_test
 
 
 def main(cat_result_path, adj_file_path, outfile_path):
@@ -64,9 +61,13 @@ def run_burden_binom(cwas_cat_df):
     burden_df['Relative_Risk'] = burden_df['Case_DNV_Count'].values / burden_df['Ctrl_DNV_Count'].values
 
     # Burden analysis via binomial test
-    burden_df['Binom_P'] = binomTest(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
-    burden_df['Binom_P_1side'] = \
-        binomTest_onesided(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
+    binom_two_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='two-sided')
+    binom_one_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='greater') if n1 > n2 \
+        else binom_test(x=n2, n=n1+n2, p=0.5, alternative='greater')
+    burden_df['Binom_P'] = \
+        np.vectorize(binom_two_tail)(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
+    burden_df['Binom_P_1tail'] = \
+        np.vectorize(binom_one_tail)(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
 
     return burden_df
 
