@@ -1,12 +1,10 @@
 #!/usr/bin/env python
-__version__ = 0.2
-__author__ = 'Joon An'
-__date__ = 'October 5th, 2018'
+"""
+Script for mutation burden analysis for each CWAS category using binomial test
 
-description = '''
-				Script for burden test.
-			'''
+For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
+"""
 import argparse
 
 import numpy as np
@@ -44,7 +42,12 @@ def main(cat_result_path, adj_file_path, outfile_path):
         output_df.to_csv(outfile_path, sep='\t')
 
 
-def run_burden_binom(cwas_cat_df):
+def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
+    """ Function for the mutation burden analysis using binomial test
+
+    :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
+    :return: A DataFrame that contains binomial p-values and other statistics for each CWAS category
+    """
     # Count the number of de novo variants (DNV) for probands and siblings
     is_prob_func = lambda sample_id: 'p' in sample_id
     sample_ids = cwas_cat_df.index.values
@@ -73,7 +76,7 @@ def run_burden_binom(cwas_cat_df):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=description)
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
                         help='The path of a result of the CWAS categorization')
     parser.add_argument('-a', '--adj', dest='adj_file_path', required=False, type=str,
