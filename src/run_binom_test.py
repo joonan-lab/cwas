@@ -6,6 +6,8 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
 """
 import argparse
+import os
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -13,33 +15,50 @@ from scipy.stats import binom_test
 
 
 def main(cat_result_path, adj_file_path, outfile_path):
+    # Print the description and run settings
+    print(__doc__)
+    print(f'[Setting] The input CWAS categorization result: {cat_result_path}')
+    print(f'[Setting] The file with adjustment factors for No. DNVs: {adj_file_path}')
+    print(f'[Setting] The output path: {outfile_path}')
+    print()
+
+    # Check the validity of the settings
+    assert os.path.isfile(cat_result_path), f'The input file "{cat_result_path}" cannot be found.'
+    assert adj_file_path is None or os.path.isfile(adj_file_path), f'The input file "{adj_file_path}" cannot be found.'
+    outfile_dir = os.path.dirname(outfile_path)
+    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+
+    # Load and parse the input data
     if adj_file_path is None:
+        print(f'[{get_curr_time()}, Progress] Burden analysis without adjusting No. DNVs')
+        print(f'[{get_curr_time()}, Progress] Load the categorization result into DataFrame')
         cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
-        burden_df = run_burden_binom(cwas_cat_df)
-        burden_df.to_csv(outfile_path, sep='\t')
     else:
-        # Load the input data
+        print(f'[{get_curr_time()}, Progress] Burden analysis with adjusting No. DNVs')
+        print(f'[{get_curr_time()}, Progress] Load the input files into DataFrames')
         cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
         adj_factor_df = pd.read_table(adj_file_path)
 
         # Match the format of sample IDs in the adjustment file with that of the previous categorization result
         adj_factor_df['SampleID'] = np.vectorize(lambda x: x.replace('_', '.'))(adj_factor_df['SampleID'].values)
         are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
-        assert np.all(are_same_samples)
+        assert np.all(are_same_samples), "The lists of sample IDs from thw two input files are not consistent."
 
-        # Adjust the rate of de novo variants by adjustment factors for every sample
-        adj_cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
-        adj_cwas_cat_df.index.name = 'SampleID'
-        adj_cwas_cat_df = adj_cwas_cat_df.astype('int64')
+        # Adjust the number of de novo variants of each sample by adjustment factors
+        print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample')
+        cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
+        cwas_cat_df.index.name = 'SampleID'
+        cwas_cat_df = cwas_cat_df.astype('int64')
 
-        # Run burden analysis using binomial test
-        burden_df = run_burden_binom(cwas_cat_df)
-        adj_burden_df = run_burden_binom(adj_cwas_cat_df)
+    # Run burden analysis
+    print(f'[{get_curr_time()}, Progress] Burden analysis via binomial tests')
+    burden_df = run_burden_binom(cwas_cat_df)
 
-        # Write the result
-        adj_burden_df = adj_burden_df.rename(columns=lambda colname: 'Adj_' + colname)
-        output_df = pd.concat([burden_df, adj_burden_df], axis='columns')
-        output_df.to_csv(outfile_path, sep='\t')
+    # Write the burden analysis result
+    print(f'[{get_curr_time()}, Progress] Write the result of the burden analysis')
+    burden_df.to_csv(outfile_path, sep='\t')
+
+    print(f'[{get_curr_time()}, Progress] Done')
 
 
 def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
@@ -67,12 +86,18 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
     binom_two_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='two-sided')
     binom_one_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='greater') if n1 > n2 \
         else binom_test(x=n2, n=n1+n2, p=0.5, alternative='greater')
-    burden_df['Binom_P'] = \
+    burden_df['P_Two-tail'] = \
         np.vectorize(binom_two_tail)(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
-    burden_df['Binom_P_1tail'] = \
+    burden_df['P_One-tail'] = \
         np.vectorize(binom_one_tail)(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
 
     return burden_df
+
+
+def get_curr_time() -> str:
+    now = datetime.now()
+    curr_time = now.strftime('%H:%M:%S %m/%d/%y')
+    return curr_time
 
 
 if __name__ == "__main__":
