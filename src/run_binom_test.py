@@ -7,6 +7,7 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 """
 import argparse
 import os
+import re
 from datetime import datetime
 
 import numpy as np
@@ -33,16 +34,18 @@ def main(cat_result_path, adj_file_path, outfile_path):
         print(f'[{get_curr_time()}, Progress] Burden analysis without adjusting No. DNVs')
         print(f'[{get_curr_time()}, Progress] Load the categorization result into DataFrame')
         cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
+        check_sample_id_format(cwas_cat_df.index.values)
     else:
         print(f'[{get_curr_time()}, Progress] Burden analysis with adjusting No. DNVs')
         print(f'[{get_curr_time()}, Progress] Load the input files into DataFrames')
         cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
+        check_sample_id_format(cwas_cat_df.index.values)
         adj_factor_df = pd.read_table(adj_file_path)
 
         # Match the format of sample IDs in the adjustment file with that of the previous categorization result
         adj_factor_df['SampleID'] = np.vectorize(lambda x: x.replace('_', '.'))(adj_factor_df['SampleID'].values)
         are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
-        assert np.all(are_same_samples), "The lists of sample IDs from thw two input files are not consistent."
+        assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
 
         # Adjust the number of de novo variants of each sample by adjustment factors
         print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample')
@@ -59,6 +62,15 @@ def main(cat_result_path, adj_file_path, outfile_path):
     burden_df.to_csv(outfile_path, sep='\t')
 
     print(f'[{get_curr_time()}, Progress] Done')
+
+
+def check_sample_id_format(sample_ids: np.ndarray):
+    """ Function to check whether formats of the sample IDs are matched with the asserted format """
+    sample_id_f = re.compile(r'^\d+[.]([ps])\d$')
+
+    for sample_id in sample_ids:
+        assert sample_id_f.match(sample_id), \
+            f'Wrong sample ID format "{sample_id}". The regular expression of a sample ID is "^\d+[.]([ps])\d$".'
 
 
 def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
