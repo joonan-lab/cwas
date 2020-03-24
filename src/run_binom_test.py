@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
-Script for mutation burden analysis for each CWAS category using binomial test
+Script to run burden tests for de novo variants (DNVs) of cases and controls in each CWAS category.
+Binomial tests and permutation tests are available in this script.
 
 For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
@@ -20,7 +21,7 @@ def main(cat_result_path, adj_file_path, outfile_path):
     # Print the description and run settings
     print(__doc__)
     print(f'[Setting] The input CWAS categorization result: {cat_result_path}')
-    print(f'[Setting] The file with adjustment factors of No. DNVs for each sample: {adj_file_path}')
+    print(f'[Setting] The list of adjustment factors for No. DNVs of each sample: {adj_file_path}')
     print(f'[Setting] The output path: {outfile_path}')
     print()
 
@@ -49,12 +50,12 @@ def main(cat_result_path, adj_file_path, outfile_path):
         cwas_cat_df.index.name = 'SampleID'
         cwas_cat_df = cwas_cat_df.astype('int64')
 
-    # Run burden analysis
-    print(f'[{get_curr_time()}, Progress] Burden analysis via binomial tests')
+    # Run burden tests
+    print(f'[{get_curr_time()}, Progress] Burden tests via binomial tests')
     burden_df = run_burden_binom(cwas_cat_df)
 
-    # Write the burden analysis result
-    print(f'[{get_curr_time()}, Progress] Write the result of the burden analysis')
+    # Write results of the burden tests
+    print(f'[{get_curr_time()}, Progress] Write the result of the burden tests')
     burden_df.to_csv(outfile_path, sep='\t')
 
     print(f'[{get_curr_time()}, Progress] Done')
@@ -70,7 +71,7 @@ def check_sample_id_format(sample_ids: np.ndarray):
 
 
 def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
-    """ Function for mutation burden analysis using binomial test
+    """ Function for burden tests via binomial tests
 
     :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
     :return: A DataFrame that contains binomial p-values and other statistics for each CWAS category
@@ -84,13 +85,13 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
     sib_dnv_cnt = cat_df_vals[~are_prob, :].sum(axis=0)
     dnv_cnt_arr = np.concatenate([prob_dnv_cnt[:, np.newaxis], sib_dnv_cnt[:, np.newaxis]], axis=1)
 
-    # Make a DataFrame for burden analysis results
+    # Make a DataFrame for the results of binomial tests
     burden_df = \
         pd.DataFrame(dnv_cnt_arr, index=cwas_cat_df.columns.values, columns=['Case_DNV_Count', 'Ctrl_DNV_Count'])
     burden_df.index.name = 'Category'
     burden_df['Relative_Risk'] = burden_df['Case_DNV_Count'].values / burden_df['Ctrl_DNV_Count'].values
 
-    # Burden analysis via binomial test
+    # Binomial tests
     binom_two_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='two-sided')
     binom_one_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='greater') if n1 > n2 \
         else binom_test(x=n2, n=n1+n2, p=0.5, alternative='greater')
@@ -103,12 +104,12 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int) -> (pd.DataFrame, pd.DataFrame):
-    """ Function for mutation burden analysis using permutation test
+    """ Function for burden tests via permutation tests
 
     :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
     :param num_perm: The number of permutation trials
     :returns:
-        1. A DataFrame that contains binomial p-values and other statistics for each CWAS category
+        1. A DataFrame that contains permutation p-values and other statistics for each CWAS category
         2. A DataFrame that contains relative risks for each category after each permutation trial
     """
     is_prob_func = lambda sample_id: 'p' in sample_id
@@ -135,7 +136,7 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int) -> (pd.DataFrame, 
     sib_dnv_cnt = cat_df_vals[~are_prob, :].sum(axis=0)
     rr = prob_dnv_cnt / sib_dnv_cnt
 
-    # Get permutation p-values
+    # Permutation tests
     # Check whether a permutation RR is more extreme than the original RR
     are_ext_rr = ((rr >= 1) & (perm_rrs >= rr)) | ((rr < 1) & (perm_rrs <= rr))
     ext_rr_cnt = are_ext_rr.sum(axis=0)
