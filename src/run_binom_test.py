@@ -8,6 +8,7 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 import argparse
 import os
 import re
+import sys
 from datetime import datetime
 
 import numpy as np
@@ -69,7 +70,7 @@ def check_sample_id_format(sample_ids: np.ndarray):
 
 
 def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
-    """ Function for the mutation burden analysis using binomial test
+    """ Function for mutation burden analysis using binomial test
 
     :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
     :return: A DataFrame that contains binomial p-values and other statistics for each CWAS category
@@ -99,6 +100,90 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
         np.vectorize(binom_one_tail)(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
 
     return burden_df
+
+
+def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int) -> (pd.DataFrame, pd.DataFrame):
+    """ Function for mutation burden analysis using permutation test
+
+    :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
+    :param num_perm: The number of permutation trials
+    :returns:
+        1. A DataFrame that contains binomial p-values and other statistics for each CWAS category
+        2. A DataFrame that contains relative risks for each category after each permutation trial
+    """
+    is_prob_func = lambda sample_id: 'p' in sample_id
+    sample_ids = cwas_cat_df.index.values
+    cwas_cats = cwas_cat_df.columns.values
+    cat_df_vals = cwas_cat_df.values
+
+    # Calculate relative risks after permutation
+    perm_rrs = []
+
+    for _ in range(num_perm):
+        swap_sample_ids = swap_label(sample_ids)
+        are_prob = np.vectorize(is_prob_func)(swap_sample_ids)
+        prob_dnv_cnt = cat_df_vals[are_prob, :].sum(axis=0)
+        sib_dnv_cnt = cat_df_vals[~are_prob, :].sum(axis=0)
+        perm_rr = prob_dnv_cnt / sib_dnv_cnt
+        perm_rrs.append(perm_rr[np.newaxis, :])
+
+    perm_rrs = np.concatenate(perm_rrs, axis=0)
+
+    # Calculate an original relative risk
+    are_prob = np.vectorize(is_prob_func)(sample_ids)
+    prob_dnv_cnt = cat_df_vals[are_prob, :].sum(axis=0)
+    sib_dnv_cnt = cat_df_vals[~are_prob, :].sum(axis=0)
+    rr = prob_dnv_cnt / sib_dnv_cnt
+
+    # Get permutation p-values
+    # Check whether a permutation RR is more extreme than the original RR
+    are_ext_rr = ((rr >= 1) & (perm_rrs >= rr)) | ((rr < 1) & (perm_rrs <= rr))
+    ext_rr_cnt = are_ext_rr.sum(axis=0)
+    perm_p = ext_rr_cnt / num_perm
+
+    # Return the results as a DataFrame
+    burden_df = pd.concat([
+        pd.Series(prob_dnv_cnt, index=cwas_cats, name='Case_DNV_Count'),
+        pd.Series(sib_dnv_cnt, index=cwas_cats, name='Ctrl_DNV_Count'),
+        pd.Series(rr, index=cwas_cats, name='Relative_Risk'),
+        pd.Series(perm_p, index=cwas_cats, name='P_Perm'),
+    ], axis=1)
+    burden_df.index.name = 'Category'
+
+    perm_rr_df = pd.DataFrame(perm_rrs, columns=cwas_cats)
+    perm_rr_df.index += 1
+    perm_rr_df.index.name = 'Trial'
+
+    return burden_df, perm_rr_df
+
+
+def swap_label(sample_ids: np.ndarray) -> np.ndarray:
+    """ Randomly swap labels (proband and sibling) of each family in the samples
+    and return a list of the sample IDs after swapped.
+    """
+    fam_to_hit_cnt = {}  # Key: A family, Value: The number of times the same family is referred
+    fam_to_idx = {}  # Key: A family, Value: The index of a sample ID firstly matched with the family
+    swap_sample_ids = np.copy(sample_ids)
+
+    for i, sample_id in enumerate(sample_ids):
+        fam = sample_id.split('.')[0]
+
+        if fam_to_hit_cnt.get(fam, 0) == 0:
+            fam_to_hit_cnt[fam] = 1
+            fam_to_idx[fam] = i
+        elif fam_to_hit_cnt.get(fam, 0) == 1:
+            fam_to_hit_cnt[fam] += 1
+            prev_idx = fam_to_idx[fam]
+            # Swap
+            do_swap = np.random.binomial(1, 0.5)
+            if do_swap:
+                swap_sample_ids[i] = sample_ids[prev_idx]
+                swap_sample_ids[prev_idx] = sample_id
+        else:
+            print(f'[ERROR] The fam {fam} has more than 2 samples.', file=sys.stderr)
+            raise AssertionError('One family must have two samples (one proband and one sibling).')
+
+    return swap_sample_ids
 
 
 def get_curr_time() -> str:
