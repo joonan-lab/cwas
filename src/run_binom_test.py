@@ -19,7 +19,7 @@ def main(cat_result_path, adj_file_path, outfile_path):
     # Print the description and run settings
     print(__doc__)
     print(f'[Setting] The input CWAS categorization result: {cat_result_path}')
-    print(f'[Setting] The file with adjustment factors for No. DNVs: {adj_file_path}')
+    print(f'[Setting] The file with adjustment factors of No. DNVs for each sample: {adj_file_path}')
     print(f'[Setting] The output path: {outfile_path}')
     print()
 
@@ -30,16 +30,12 @@ def main(cat_result_path, adj_file_path, outfile_path):
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
 
     # Load and parse the input data
-    if adj_file_path is None:
-        print(f'[{get_curr_time()}, Progress] Burden analysis without adjusting No. DNVs')
-        print(f'[{get_curr_time()}, Progress] Load the categorization result into DataFrame')
-        cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
-        check_sample_id_format(cwas_cat_df.index.values)
-    else:
-        print(f'[{get_curr_time()}, Progress] Burden analysis with adjusting No. DNVs')
-        print(f'[{get_curr_time()}, Progress] Load the input files into DataFrames')
-        cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
-        check_sample_id_format(cwas_cat_df.index.values)
+    print(f'[{get_curr_time()}, Progress] Load the categorization result into DataFrame')
+    cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
+    check_sample_id_format(cwas_cat_df.index.values)  # It can raise AssertionError.
+
+    if adj_file_path is not None:
+        print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample')
         adj_factor_df = pd.read_table(adj_file_path)
 
         # Match the format of sample IDs in the adjustment file with that of the previous categorization result
@@ -48,7 +44,6 @@ def main(cat_result_path, adj_file_path, outfile_path):
         assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
 
         # Adjust the number of de novo variants of each sample by adjustment factors
-        print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample')
         cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
         cwas_cat_df.index.name = 'SampleID'
         cwas_cat_df = cwas_cat_df.astype('int64')
