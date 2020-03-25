@@ -22,7 +22,7 @@ from scipy.stats import binom_test
 def main(cat_result_path, adj_file_path, outfile_path, test_type, num_perm, num_proc, perm_rr_path):
     # Check the validity of the settings
     assert os.path.isfile(cat_result_path), f'The input file "{cat_result_path}" cannot be found.'
-    assert adj_file_path is None or os.path.isfile(adj_file_path), f'The input file "{adj_file_path}" cannot be found.'
+    assert adj_file_path == '' or os.path.isfile(adj_file_path), f'The input file "{adj_file_path}" cannot be found.'
     outfile_dir = os.path.dirname(outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
     assert test_type == 'binom' or test_type == 'perm', \
@@ -48,23 +48,11 @@ def main(cat_result_path, adj_file_path, outfile_path, test_type, num_perm, num_
     print()
 
     # Load and parse the input data
-    print(f'[{get_curr_time()}, Progress] Load the categorization result into DataFrame')
-    cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
-    check_sample_id_format(cwas_cat_df.index.values)  # It can raise AssertionError.
-
-    if adj_file_path is not None:
-        print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample')
-        adj_factor_df = pd.read_table(adj_file_path)
-
-        # Match the format of sample IDs in the adjustment file with that of the previous categorization result
-        adj_factor_df['SampleID'] = np.vectorize(lambda x: x.replace('_', '.'))(adj_factor_df['SampleID'].values)
-        are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
-        assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
-
-        # Adjust the number of de novo variants of each sample by adjustment factors
-        cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
-        cwas_cat_df.index.name = 'SampleID'
-        cwas_cat_df = cwas_cat_df.astype('int64')
+    if adj_file_path:
+        print(f'[{get_curr_time()}, Progress] Parse the categorization result into DataFrame with adjustment No. DNVs')
+    else:
+        print(f'[{get_curr_time()}, Progress] Parse the categorization result into DataFrame')
+    cwas_cat_df = parse_cat_result(cat_result_path, adj_file_path)
 
     # Run burden tests
     if test_type == 'binom':
@@ -83,6 +71,34 @@ def main(cat_result_path, adj_file_path, outfile_path, test_type, num_perm, num_
     burden_df.to_csv(outfile_path, sep='\t')
 
     print(f'[{get_curr_time()}, Progress] Done')
+
+
+def parse_cat_result(cat_result_path: str, adj_file_path: str) -> pd.DataFrame:
+    """ Parse a result of CWAS categorization into a DataFrame. No. DNVs of each sample is adjusted
+    if the file with a list of adjustment factors for each sample is available.
+
+    :param cat_result_path: A path of a CWAS categorization result
+    :param adj_file_path: A path of a list of adjustment factors for each sample
+    :return: A DataFrame that contains the CWAS categorization result
+    """
+    cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
+    check_sample_id_format(cwas_cat_df.index.values)  # It can raise AssertionError.
+
+    # Adjust No. DNVs of each sample
+    if adj_file_path:
+        adj_factor_df = pd.read_table(adj_file_path)
+
+        # Match the format of sample IDs in the adjustment file with that of the previous categorization result
+        adj_factor_df['SampleID'] = np.vectorize(lambda x: x.replace('_', '.'))(adj_factor_df['SampleID'].values)
+        are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
+        assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
+
+        # Adjust the number of de novo variants of each sample by adjustment factors
+        cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
+        cwas_cat_df.index.name = 'SampleID'
+        cwas_cat_df = cwas_cat_df.astype('int64')
+
+    return cwas_cat_df
 
 
 def check_sample_id_format(sample_ids: np.ndarray):
@@ -264,7 +280,7 @@ if __name__ == "__main__":
                         help='Path of a result of the CWAS categorization')
     parser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
                         help='File that contains adjustment factors for No. DNVs of each sample',
-                        default=None)
+                        default='')
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of results of burden tests', default='cwas_burden_result.txt')
     parser.add_argument('-t', '--test', dest='test_type', required=False, type=str, choices=['binom', 'perm'],
