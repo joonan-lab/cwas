@@ -7,10 +7,12 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
 """
 import argparse
+import multiprocessing as mp
 import os
 import re
 import sys
 from datetime import datetime
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -103,34 +105,39 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
     return burden_df
 
 
-def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int) -> (pd.DataFrame, pd.DataFrame):
+def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int, num_proc: int) -> (pd.DataFrame, pd.DataFrame):
     """ Function for burden tests via permutation tests
 
     :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
     :param num_perm: The number of permutation trials
+    :param num_proc: The number of processes used in this function (for multiprocessing)
     :returns:
         1. A DataFrame that contains permutation p-values and other statistics for each CWAS category
         2. A DataFrame that contains relative risks for each category after each permutation trial
     """
+    # Calculate relative risks after permutation
+    if num_proc == 1:
+        perm_rr_list = get_perm_rr(num_perm, cwas_cat_df)
+    else:
+        num_perms = div_dist_num(num_perm, num_proc)
+        pool = mp.Pool(num_proc)
+        proc_outputs = pool.map(partial(get_perm_rr, cwas_cat_df=cwas_cat_df), num_perms)
+        pool.close()
+        pool.join()
+
+        perm_rr_list = []
+
+        for proc_output in proc_outputs:
+            perm_rr_list += proc_output
+
+    perm_rrs = np.concatenate(perm_rr_list, axis=0)
+
+    # Calculate an original relative risk
     is_prob_func = lambda sample_id: 'p' in sample_id
     sample_ids = cwas_cat_df.index.values
     cwas_cats = cwas_cat_df.columns.values
     cat_df_vals = cwas_cat_df.values
 
-    # Calculate relative risks after permutation
-    perm_rrs = []
-
-    for _ in range(num_perm):
-        swap_sample_ids = swap_label(sample_ids)
-        are_prob = np.vectorize(is_prob_func)(swap_sample_ids)
-        prob_dnv_cnt = cat_df_vals[are_prob, :].sum(axis=0)
-        sib_dnv_cnt = cat_df_vals[~are_prob, :].sum(axis=0)
-        perm_rr = prob_dnv_cnt / sib_dnv_cnt
-        perm_rrs.append(perm_rr[np.newaxis, :])
-
-    perm_rrs = np.concatenate(perm_rrs, axis=0)
-
-    # Calculate an original relative risk
     are_prob = np.vectorize(is_prob_func)(sample_ids)
     prob_dnv_cnt = cat_df_vals[are_prob, :].sum(axis=0)
     sib_dnv_cnt = cat_df_vals[~are_prob, :].sum(axis=0)
@@ -156,6 +163,26 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int) -> (pd.DataFrame, 
     perm_rr_df.index.name = 'Trial'
 
     return burden_df, perm_rr_df
+
+
+def get_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame) -> list:
+    """ Calculate relative risks of each category after each permutation trial.
+    The length of the returned list equals to the number of permutations.
+    """
+    is_prob_func = lambda sample_id: 'p' in sample_id
+    sample_ids = cwas_cat_df.index.values
+    cat_df_vals = cwas_cat_df.values
+    perm_rr_list = []
+
+    for _ in range(num_perm):
+        swap_sample_ids = swap_label(sample_ids)
+        are_prob = np.vectorize(is_prob_func)(swap_sample_ids)
+        prob_dnv_cnt = cat_df_vals[are_prob, :].sum(axis=0)
+        sib_dnv_cnt = cat_df_vals[~are_prob, :].sum(axis=0)
+        perm_rr = prob_dnv_cnt / sib_dnv_cnt
+        perm_rr_list.append(perm_rr[np.newaxis, :])
+
+    return perm_rr_list
 
 
 def swap_label(sample_ids: np.ndarray) -> np.ndarray:
@@ -185,6 +212,22 @@ def swap_label(sample_ids: np.ndarray) -> np.ndarray:
             raise AssertionError('One family must have two samples (one proband and one sibling).')
 
     return swap_sample_ids
+
+
+def div_dist_num(num: int, num_group: int) -> list:
+    """ Divide and distribute the number to each group almost equally. """
+    num_per_groups = []
+    num_per_group = num // num_group
+    remain_num = num % num_group
+
+    for _ in range(num_group):
+        if remain_num == 0:
+            num_per_groups.append(num_per_group)
+        else:
+            num_per_groups.append(num_per_group + 1)
+            remain_num -= 1
+
+    return num_per_groups
 
 
 def get_curr_time() -> str:
