@@ -87,7 +87,13 @@ def main():
 
     # Load and parse the input data
     print(f'[{get_curr_time()}, Progress] Parse the categorization result into DataFrame')
-    cwas_cat_df = parse_cat_result(args.cat_result_path, args.adj_file_path)
+    cwas_cat_df = pd.read_table(args.cat_result_path, index_col='SampleID')
+    check_sample_id_format(cwas_cat_df.index.values)  # It can raise AssertionError.
+
+    # Adjust No. DNVs of each sample in the categorization result
+    if args.adj_file_path:
+        print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample in the categorization result')
+        cwas_cat_df = adjust_cat_df(cwas_cat_df, args.adj_file_path)
 
     # Run burden tests
     if args.test_type == 'binom':
@@ -108,30 +114,25 @@ def main():
     print(f'[{get_curr_time()}, Progress] Done')
 
 
-def parse_cat_result(cat_result_path: str, adj_file_path: str) -> pd.DataFrame:
-    """ Parse a result of CWAS categorization into a DataFrame. No. DNVs of each sample is adjusted
-    if the file with a list of adjustment factors for each sample is available.
+def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_file_path: str) -> pd.DataFrame:
+    """ Adjust No. DNVs of each sample in a DataFrame for the result of CWAS categorization
+    by adjustment factors for each sample
 
-    :param cat_result_path: A path of a CWAS categorization result
+    :param cwas_cat_df: A DataFrame that contains the CWAS categorization result
     :param adj_file_path: A path of a list of adjustment factors for each sample
-    :return: A DataFrame that contains the CWAS categorization result
+    :return: A DataFrame that contains the CWAS categorization result with adjusted No. DNVs
     """
-    cwas_cat_df = pd.read_table(cat_result_path, index_col='SampleID')
-    check_sample_id_format(cwas_cat_df.index.values)  # It can raise AssertionError.
+    adj_factor_df = pd.read_table(adj_file_path)
 
-    # Adjust No. DNVs of each sample
-    if adj_file_path:
-        adj_factor_df = pd.read_table(adj_file_path)
+    # Match the format of sample IDs in the adjustment file with that of the previous categorization result
+    adj_factor_df['SampleID'] = np.vectorize(lambda x: x.replace('_', '.'))(adj_factor_df['SampleID'].values)
+    are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
+    assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
 
-        # Match the format of sample IDs in the adjustment file with that of the previous categorization result
-        adj_factor_df['SampleID'] = np.vectorize(lambda x: x.replace('_', '.'))(adj_factor_df['SampleID'].values)
-        are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
-        assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
-
-        # Adjust the number of de novo variants of each sample by adjustment factors
-        cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
-        cwas_cat_df.index.name = 'SampleID'
-        cwas_cat_df = cwas_cat_df.astype('int64')
+    # Adjust the number of de novo variants of each sample by adjustment factors
+    cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
+    cwas_cat_df.index.name = 'SampleID'
+    cwas_cat_df = cwas_cat_df.astype('int64')
 
     return cwas_cat_df
 
