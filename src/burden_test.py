@@ -19,19 +19,33 @@ import pandas as pd
 from scipy.stats import binom_test
 
 
-def main(cat_result_path, adj_file_path, outfile_path):
-    # Print the description and run settings
-    print(__doc__)
-    print(f'[Setting] The input CWAS categorization result: {cat_result_path}')
-    print(f'[Setting] The list of adjustment factors for No. DNVs of each sample: {adj_file_path}')
-    print(f'[Setting] The output path: {outfile_path}')
-    print()
-
+def main(cat_result_path, adj_file_path, outfile_path, test_type, num_perm, num_proc, perm_rr_path):
     # Check the validity of the settings
     assert os.path.isfile(cat_result_path), f'The input file "{cat_result_path}" cannot be found.'
     assert adj_file_path is None or os.path.isfile(adj_file_path), f'The input file "{adj_file_path}" cannot be found.'
     outfile_dir = os.path.dirname(outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    assert test_type == 'binom' or test_type == 'perm', \
+        f'Invalid type of burden tests "{test_type}". It must be binom (binomial test) or perm (permutation test).'
+    assert 1 <= num_proc <= mp.cpu_count(), \
+        f'Invalid number of processes "{num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
+    perm_rr_dir = None if perm_rr_path is None else os.path.dirname(perm_rr_path)
+    assert perm_rr_dir is None or perm_rr_dir == '' or os.path.isdir(perm_rr_dir), \
+        f'The permutation RR outfile directory "{perm_rr_dir}" cannot be found.'
+
+    # Print the description and run settings
+    print(__doc__)
+    print(f'[Setting] The input CWAS categorization result: {cat_result_path}')
+    print(f'[Setting] The list of adjustment factors for No. DNVs of each sample: {adj_file_path}')
+    print(f'[Setting] The output path: {outfile_path}')
+
+    if test_type == 'binom':
+        print(f'[Setting] The type of burden tests: binomial test')
+    else:  # test_type == 'perm':
+        print(f'[Setting] The type of burden tests: permutation test')
+        print(f'[Setting] No. processes for the tests: {num_proc:,d}')
+        print(f'[Setting] The permutation RR output path: {perm_rr_path}')
+    print()
 
     # Load and parse the input data
     print(f'[{get_curr_time()}, Progress] Load the categorization result into DataFrame')
@@ -53,8 +67,16 @@ def main(cat_result_path, adj_file_path, outfile_path):
         cwas_cat_df = cwas_cat_df.astype('int64')
 
     # Run burden tests
-    print(f'[{get_curr_time()}, Progress] Burden tests via binomial tests')
-    burden_df = run_burden_binom(cwas_cat_df)
+    if test_type == 'binom':
+        print(f'[{get_curr_time()}, Progress] Burden tests via binomial tests')
+        burden_df = run_burden_binom(cwas_cat_df)
+    else:  # test_type == 'perm'
+        print(f'[{get_curr_time()}, Progress] Burden tests via permutation tests')
+        burden_df, perm_rr_df = run_burden_perm(cwas_cat_df, num_perm, num_proc)
+
+        if perm_rr_path is not None:
+            print(f'[{get_curr_time()}, Progress] Write lists of relative risks from label-swapping permutations')
+            perm_rr_df.to_csv(perm_rr_path, sep='\t')
 
     # Write results of the burden tests
     print(f'[{get_curr_time()}, Progress] Write the result of the burden tests')
@@ -109,13 +131,13 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int, num_proc: int) -> 
     """ Function for burden tests via permutation tests
 
     :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
-    :param num_perm: The number of permutation trials
+    :param num_perm: The number of label-swapping permutation trials
     :param num_proc: The number of processes used in this function (for multiprocessing)
     :returns:
         1. A DataFrame that contains permutation p-values and other statistics for each CWAS category
-        2. A DataFrame that contains relative risks for each category after each permutation trial
+        2. A DataFrame that contains relative risks for each category from each permutation trial
     """
-    # Calculate relative risks after permutation
+    # Calculate relative risks from label-swapping permutations
     if num_proc == 1:
         perm_rr_list = get_perm_rr(num_perm, cwas_cat_df)
     else:
@@ -166,8 +188,8 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int, num_proc: int) -> 
 
 
 def get_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame) -> list:
-    """ Calculate relative risks of each category after each permutation trial.
-    The length of the returned list equals to the number of permutations.
+    """ Calculate relative risks of each category in each permutation trial.
+    The length of the returned list equals to the number of the permutations.
     """
     is_prob_func = lambda sample_id: 'p' in sample_id
     sample_ids = cwas_cat_df.index.values
@@ -239,11 +261,26 @@ def get_curr_time() -> str:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
-                        help='The path of a result of the CWAS categorization')
-    parser.add_argument('-a', '--adj', dest='adj_file_path', required=False, type=str,
-                        help='The file that contains adjustment factors for No. DNVs of each sample',
+                        help='Path of a result of the CWAS categorization')
+    parser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
+                        help='File that contains adjustment factors for No. DNVs of each sample',
                         default=None)
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
-                        help='The path of a result of this script', default='cwas_burden_binom_result.txt')
+                        help='Path of results of burden tests', default='cwas_burden_result.txt')
+    parser.add_argument('-t', '--test', dest='test_type', required=False, type=str, choices=['binom', 'perm'],
+                        help='Type of the burden test, b (binomial test) or p (permutation test)', default='binom')
+
+    # Arguments for permutation tests
+    parser.add_argument('-n', '--num_perm', dest='num_perm', required=False, type=int,
+                        help='Number of processes used in permutation tests (not for binomial tests)',
+                        default=10000)
+    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                        help='Number of processes used in permutation tests (not for binomial tests)',
+                        default=1)
+    parser.add_argument('-po', '--perm_outfile', dest='perm_rr_path', required=False, type=str,
+                        help='Path of relative risk (RR) outputs from permutations (not for binomial tests)',
+                        default=None)
+
     args = parser.parse_args()
-    main(args.cat_result_path, args.adj_file_path, args.outfile_path)
+    main(args.cat_result_path, args.adj_file_path, args.outfile_path, args.test_type,
+         args.num_perm, args.num_proc, args.perm_rr_path)
