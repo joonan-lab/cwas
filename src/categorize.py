@@ -22,27 +22,43 @@ pyximport.install(language_level=3, reload_support=True, setup_args={'include_di
 from categorization import cwas_cat
 
 
-def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_known):
-    # Print the description and run settings
-    print(__doc__)
-    print(f'[Setting] The input VCF file: {vep_vcf_path}')  # VCF from VEP
-    print(f'[Setting] The gene matrix file: {gene_mat_path}')
-    print(f'[Setting] The list of redundant CWAS categories: {rdd_cat_path}')
-    print(f'[Setting] The output path: {outfile_path}')
-    print(f'[Setting] No. processes for this script: {num_proc:,d}')
-    print(f'[Setting] Keep the variants with known allele frequencies: {af_known}')
-    print()
+def main():
+    # Create the argument parser
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
+                        help='Input VCF file from VEP')
+    parser.add_argument('-g', '--gene_matrix', dest='gene_mat_path', required=True, type=str,
+                        help='Gene matrix file')
+    parser.add_argument('-r', '--rdd_cat_file', dest='rdd_cat_path', required=False, type=str,
+                        help='File that contains a list of redundant CWAS categories', default='')
+    parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
+                        help='Path of the output', default='cwas_cat_result.txt')
+    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                        help='Number of processes for this script', default=1)
+    parser.add_argument('-a', '--af_known', dest='af_known', required=False, type=str, choices=['yes', 'no', 'only'],
+                        help='Keep the variants with known allele frequencies', default='yes')
 
-    # Check the validity of the settings
-    assert os.path.isfile(vep_vcf_path), f'The input VCF file "{vep_vcf_path}" cannot be found.'
-    assert os.path.isfile(gene_mat_path), f'The gene matrix file: "{gene_mat_path}" cannot be found.'
-    if rdd_cat_path is not None:
-        assert os.path.isfile(rdd_cat_path), f'The list of redundant CWAS categories "{rdd_cat_path}" cannot be found.'
-    outfile_dir = os.path.dirname(outfile_path)
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Print the description
+    print(__doc__)
+
+    # Print and check the validity of the settings
+    print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
+    print(f'[Setting] The gene matrix file: {args.gene_mat_path}')
+    print(f'[Setting] The list of redundant CWAS categories: {args.rdd_cat_path}')
+    print(f'[Setting] The output path: {args.outfile_path}')
+    print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
+    assert os.path.isfile(args.in_vcf_path), f'The input VCF file "{args.in_vcf_path}" cannot be found.'
+    assert os.path.isfile(args.gene_mat_path), f'The gene matrix file: "{args.gene_mat_path}" cannot be found.'
+    assert args.rdd_cat_path == '' or os.path.isfile(args.rdd_cat_path), \
+        f'The list of redundant CWAS categories "{args.rdd_cat_path}" cannot be found.'
+    outfile_dir = os.path.dirname(args.outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
-    assert 1 <= num_proc <= mp.cpu_count(), \
-        f'Invalid number of processes "{num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
-    assert af_known in {'yes', 'no', 'only'}, f'Invalid value of --af_known "{af_known}"'
+    assert 1 <= args.num_proc <= mp.cpu_count(), \
+        f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
+    print()
 
     print(f'[{get_curr_time()}, Progress] Load the input VCF file into the DataFrame')
     # Make the DataFrame of the annotated variants from the VCF file
@@ -50,18 +66,18 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_k
                     "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
                     "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # The list of redundant columns
-    variant_df = parse_vep_vcf(vep_vcf_path, rdd_colnames)
+    variant_df = parse_vep_vcf(args.in_vcf_path, rdd_colnames)
     print(f'[{get_curr_time()}, Progress] No. the input variants: {len(variant_df.index):,d}')
 
     # Create the information for the 'gene_list' annotation terms for each gene symbol
-    gene_list_set_dict = parse_gene_mat(gene_mat_path)
+    gene_list_set_dict = parse_gene_mat(args.gene_mat_path)
 
     # (Optional) Filter variants by whether allele frequency is known or not in gnomAD
-    if af_known == 'no':
+    if args.af_known == 'no':
         variant_df = variant_df[variant_df['gnomADg_AF'] == '']
         print(f'[{get_curr_time()}, Progress] Remove AF-known variants '
               f'(No. the remained variants: {len(variant_df.index):,d})')
-    elif af_known == 'only':
+    elif args.af_known == 'only':
         variant_df = variant_df[variant_df['gnomADg_AF'] != '']
         print(f'[{get_curr_time()}, Progress] Remove AF-unknown variants '
               f'(No. the remained variants: {len(variant_df.index):,d})')
@@ -77,17 +93,17 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_k
 
     # Categorize the variants in each sample
     print(f'[{get_curr_time()}, Progress] Categorize the variants in each samples')
-    if num_proc == 1:
+    if args.num_proc == 1:
         cat_results, sample_ids = cwas_cat_samples(sample_var_dfs, gene_list_set_dict)
     else:
         try:
-            var_df_sub_lists = div_list(sample_var_dfs, num_proc)
+            var_df_sub_lists = div_list(sample_var_dfs, args.num_proc)
         except AssertionError:
-            print(f'[{get_curr_time()}, ERROR] Too many number of processes "{num_proc:,d}". '
+            print(f'[{get_curr_time()}, ERROR] Too many number of processes "{args.num_proc:,d}". '
                   f'Please make it less than the number of samples.', file=sys.stderr)
             raise
 
-        pool = mp.Pool(num_proc)
+        pool = mp.Pool(args.num_proc)
         proc_outputs = pool.map(partial(cwas_cat_samples, gene_list_set_dict=gene_list_set_dict), var_df_sub_lists)
         pool.close()
         pool.join()
@@ -109,10 +125,10 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_k
           f'{len(cat_result_df.columns) - 1:,d}')
 
     # Remove redundant categories
-    if rdd_cat_path is None:
+    if args.rdd_cat_path is None:
         print(f'[{get_curr_time()}, Progress] Keep redundant categories')
     else:
-        with open(rdd_cat_path, 'r') as rdd_cat_file:
+        with open(args.rdd_cat_path, 'r') as rdd_cat_file:
             rdd_cats = rdd_cat_file.read().splitlines()
 
         cat_result_df.drop(rdd_cats, axis='columns', inplace=True, errors='ignore')  # Remove only existing columns
@@ -121,7 +137,7 @@ def main(vep_vcf_path, gene_mat_path, rdd_cat_path, outfile_path, num_proc, af_k
 
     # Write the result of the categorization
     print(f'[{get_curr_time()}, Progress] Write the result of the categorization')
-    cat_result_df.to_csv(outfile_path, sep='\t')
+    cat_result_df.to_csv(args.outfile_path, sep='\t')
 
     print(f'[{get_curr_time()}, Progress] Done')
 
@@ -240,23 +256,4 @@ def get_curr_time() -> str:
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
-                        help='The path of an input VCF file from VEP')
-    parser.add_argument('-g', '--gene_matrix', dest='gene_mat_path', required=True, type=str,
-                        help='The path of a gene matrix file')
-    parser.add_argument('-r', '--redundant_category', dest='rdd_cat_path', required=False, type=str,
-                        help='The path of the file written the list of redundant CWAS categories', default=None)
-    parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
-                        help='The path of the output', default='cwas_cat_result.txt')
-    parser.add_argument('-p', '--number_processes', dest='num_proc', required=False, type=int,
-                        help='Number of processes for this script', default=1)
-    parser.add_argument('-a', '--af_known', dest='af_known', required=False, type=str,
-                        help='Keep the variants with known allele frequencies {yes, no, only}', default='yes')
-
-    # Arguments that are not used yet
-    parser.add_argument('-lof', '--lof', required=False, type=str,
-                        help='Keep LoF variants {yes, no, only}. This argument is not available yet.', default='no')
-
-    args = parser.parse_args()
-    main(args.in_vcf_path, args.gene_mat_path, args.rdd_cat_path, args.outfile_path, args.num_proc, args.af_known)
+    main()
