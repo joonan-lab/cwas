@@ -20,9 +20,6 @@ from scipy.stats import binom_test
 
 
 def main():
-    # Print the description
-    print(__doc__)
-
     # Cteate the top-level argument parser
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(description='Types of burden tests', dest='test_type')
@@ -60,6 +57,9 @@ def main():
 
     # Parse the arguments
     args = parser.parse_args()
+
+    # Print the description
+    print(__doc__)
 
     # Print and check the validity of the settings
     print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
