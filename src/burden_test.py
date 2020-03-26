@@ -164,16 +164,16 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:
     burden_df = \
         pd.DataFrame(dnv_cnt_arr, index=cwas_cat_df.columns.values, columns=['Case_DNV_Count', 'Ctrl_DNV_Count'])
     burden_df.index.name = 'Category'
-    burden_df['Relative_Risk'] = burden_df['Case_DNV_Count'].values / burden_df['Ctrl_DNV_Count'].values
+    burden_df['Relative_Risk'] = prob_dnv_cnt / sib_dnv_cnt
 
     # Binomial tests
     binom_two_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='two-sided')
     binom_one_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='greater') if n1 > n2 \
         else binom_test(x=n2, n=n1+n2, p=0.5, alternative='greater')
-    burden_df['P_Two-tail'] = \
-        np.vectorize(binom_two_tail)(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
-    burden_df['P_One-tail'] = \
-        np.vectorize(binom_one_tail)(burden_df['Case_DNV_Count'].values, burden_df['Ctrl_DNV_Count'].values)
+    burden_df['P'] = \
+        np.vectorize(binom_two_tail)(prob_dnv_cnt.round(), sib_dnv_cnt.round())
+    burden_df['P_1side'] = \
+        np.vectorize(binom_one_tail)(prob_dnv_cnt.round(), sib_dnv_cnt.round())
 
     return burden_df
 
