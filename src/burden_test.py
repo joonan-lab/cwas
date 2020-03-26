@@ -93,7 +93,9 @@ def main():
     # Adjust No. DNVs of each sample in the categorization result
     if args.adj_file_path:
         print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample in the categorization result')
-        cwas_cat_df = adjust_cat_df(cwas_cat_df, args.adj_file_path)
+        adj_factor_df = pd.read_table(args.adj_file_path, index_col='SampleID')
+        check_sample_id_format(adj_factor_df.index.values)
+        cwas_cat_df = adjust_cat_df(cwas_cat_df, adj_factor_df)
 
     # Run burden tests
     if args.test_type == 'binom':
@@ -123,24 +125,22 @@ def check_sample_id_format(sample_ids: np.ndarray):
             f'Wrong sample ID format "{sample_id}". The regular expression of a sample ID is "^\d+[.]([ps])\d$".'
 
 
-def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_file_path: str) -> pd.DataFrame:
+def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
     """ Adjust No. DNVs of each sample in a DataFrame for the result of CWAS categorization
     by adjustment factors for each sample
 
     :param cwas_cat_df: A DataFrame that contains the CWAS categorization result
-    :param adj_file_path: A path of a list of adjustment factors for each sample
+    :param adj_factor_df: A DataFrame that contains a list of adjustment factors for each sample
     :return: A DataFrame that contains the CWAS categorization result with adjusted No. DNVs
     """
-    adj_factor_df = pd.read_table(adj_file_path)
-
-    # Compare the list of sample IDs
-    are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
-    assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
+    # Reorder the adjustment factors
+    sample_ids = cwas_cat_df.index.values
+    adj_factor_dict = adj_factor_df.to_dict()['AdjustFactor']
+    adj_factors = [adj_factor_dict[sample_id] for sample_id in sample_ids]
 
     # Adjust the number of de novo variants of each sample by adjustment factors
-    cwas_cat_df = cwas_cat_df.multiply(adj_factor_df['AdjustFactor'].values, axis='index')
+    cwas_cat_df = cwas_cat_df.multiply(adj_factors, axis='index')
     cwas_cat_df.index.name = 'SampleID'
-    cwas_cat_df = cwas_cat_df.astype('int64')
 
     return cwas_cat_df
 
