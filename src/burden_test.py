@@ -114,6 +114,15 @@ def main():
     print(f'[{get_curr_time()}, Progress] Done')
 
 
+def check_sample_id_format(sample_ids: np.ndarray):
+    """ Function to check whether formats of the sample IDs are matched with the asserted format """
+    sample_id_f = re.compile(r'^\d+[_]([ps])\d$')
+
+    for sample_id in sample_ids:
+        assert sample_id_f.match(sample_id), \
+            f'Wrong sample ID format "{sample_id}". The regular expression of a sample ID is "^\d+[.]([ps])\d$".'
+
+
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_file_path: str) -> pd.DataFrame:
     """ Adjust No. DNVs of each sample in a DataFrame for the result of CWAS categorization
     by adjustment factors for each sample
@@ -124,8 +133,7 @@ def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_file_path: str) -> pd.DataFrame
     """
     adj_factor_df = pd.read_table(adj_file_path)
 
-    # Match the format of sample IDs in the adjustment file with that of the previous categorization result
-    adj_factor_df['SampleID'] = np.vectorize(lambda x: x.replace('_', '.'))(adj_factor_df['SampleID'].values)
+    # Compare the list of sample IDs
     are_same_samples = cwas_cat_df.index.values == adj_factor_df['SampleID'].values
     assert np.all(are_same_samples), "The lists of sample IDs from the two input files are not consistent."
 
@@ -135,15 +143,6 @@ def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_file_path: str) -> pd.DataFrame
     cwas_cat_df = cwas_cat_df.astype('int64')
 
     return cwas_cat_df
-
-
-def check_sample_id_format(sample_ids: np.ndarray):
-    """ Function to check whether formats of the sample IDs are matched with the asserted format """
-    sample_id_f = re.compile(r'^\d+[.]([ps])\d$')
-
-    for sample_id in sample_ids:
-        assert sample_id_f.match(sample_id), \
-            f'Wrong sample ID format "{sample_id}". The regular expression of a sample ID is "^\d+[.]([ps])\d$".'
 
 
 def run_burden_binom(cwas_cat_df: pd.DataFrame) -> pd.DataFrame:

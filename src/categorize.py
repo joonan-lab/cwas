@@ -213,6 +213,9 @@ def categorize_variant(variant_df: pd.DataFrame, gene_list_set_dict: dict, num_p
             cat_results += proc_cat_results
             sample_ids += proc_sample_ids
 
+    # Change the format of the sample IDs for backward compatibility
+    sample_ids = np.vectorize(lambda sample_id: sample_id.replace('.', '_'))(sample_ids)
+
     # Create the DataFrame for the result of the categorization
     cat_result_df = pd.DataFrame(cat_results).fillna(0)
     cat_result_df = cat_result_df.astype(int)
