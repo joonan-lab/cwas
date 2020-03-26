@@ -94,7 +94,7 @@ def main():
         raise
     print(f'[{get_curr_time()}, Progress] No. samples: {len(cat_result_df.index.values):,d}')
     print(f'[{get_curr_time()}, Progress] No. CWAS categories with at least 1 DNV: ' 
-          f'{len(cat_result_df.columns) - 1:,d}')
+          f'{len(cat_result_df.columns):,d}')
 
     # Remove redundant categories
     if args.rdd_cat_path is None:
@@ -105,7 +105,7 @@ def main():
 
         cat_result_df.drop(rdd_cats, axis='columns', inplace=True, errors='ignore')  # Remove only existing columns
         print(f'[{get_curr_time()}, Progress] No. non-redundant CWAS categories with at least 1 DNV: '
-              f'{len(cat_result_df.columns) - 1:,d}')
+              f'{len(cat_result_df.columns):,d}')
 
     # Write the result of the categorization
     print(f'[{get_curr_time()}, Progress] Write the result of the categorization')
