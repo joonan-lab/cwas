@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
-Script for categorizing variants annotated by VEP into CWAS categories, which are combinations of annotation terms,
-and counting the number of variants for each category.
+Script for categorizing de novo variants (DNVs) annotated by VEP into CWAS categories,
+which are combinations of annotation terms, and counting the number of variants for each category.
 
 For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
@@ -60,19 +60,19 @@ def main():
         f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
     print()
 
-    print(f'[{get_curr_time()}, Progress] Load the input VCF file into the DataFrame')
+    print(f'[{get_curr_time()}, Progress] Load the input VCF file into a DataFrame')
     # Make the DataFrame of the annotated variants from the VCF file
     rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type",
                     "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
                     "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # The list of redundant columns
     variant_df = parse_vep_vcf(args.in_vcf_path, rdd_colnames)
-    print(f'[{get_curr_time()}, Progress] No. the input variants: {len(variant_df.index):,d}')
+    print(f'[{get_curr_time()}, Progress] No. input DNVs: {len(variant_df.index):,d}')
 
     # Create the information for the 'gene_list' annotation terms for each gene symbol
     gene_list_set_dict = parse_gene_mat(args.gene_mat_path)
 
-    # (Optional) Filter variants by whether allele frequency is known or not in gnomAD
+    # (Optional) Filter the DNVs by whether allele frequency is known or not in gnomAD
     if args.af_known == 'no':
         variant_df = variant_df[variant_df['gnomADg_AF'] == '']
         print(f'[{get_curr_time()}, Progress] Remove AF-known variants '
@@ -82,46 +82,18 @@ def main():
         print(f'[{get_curr_time()}, Progress] Remove AF-unknown variants '
               f'(No. the remained variants: {len(variant_df.index):,d})')
     else:
-        print(f'[{get_curr_time()}, Progress] Keep all the variants')
+        print(f'[{get_curr_time()}, Progress] Keep all variants')
 
-    # Split the DataFrame by SampleIDs
-    print(f'[{get_curr_time()}, Progress] Split the DataFrame by SampleIDs')
-    groupby_sample = variant_df.groupby('SampleID')
-    sample_ids = groupby_sample.groups
-    sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in sample_ids]
-    print(f'[{get_curr_time()}, Progress] No. the DataFrames (No. of the samples): {len(sample_var_dfs):,d}')
-
-    # Categorize the variants in each sample
-    print(f'[{get_curr_time()}, Progress] Categorize the variants in each samples')
-    if args.num_proc == 1:
-        cat_results, sample_ids = cwas_cat_samples(sample_var_dfs, gene_list_set_dict)
-    else:
-        try:
-            var_df_sub_lists = div_list(sample_var_dfs, args.num_proc)
-        except AssertionError:
-            print(f'[{get_curr_time()}, ERROR] Too many number of processes "{args.num_proc:,d}". '
-                  f'Please make it less than the number of samples.', file=sys.stderr)
-            raise
-
-        pool = mp.Pool(args.num_proc)
-        proc_outputs = pool.map(partial(cwas_cat_samples, gene_list_set_dict=gene_list_set_dict), var_df_sub_lists)
-        pool.close()
-        pool.join()
-
-        cat_results = []
-        sample_ids = []
-
-        for proc_cat_results, proc_sample_ids in proc_outputs:
-            cat_results += proc_cat_results
-            sample_ids += proc_sample_ids
-
-    # Create the DataFrame for the result of the categorization
-    print(f'[{get_curr_time()}, Progress] Create the DataFrame for the result of the categorization')
-    cat_result_df = pd.DataFrame(cat_results).fillna(0)
-    cat_result_df = cat_result_df.astype(int)
-    cat_result_df['SampleID'] = sample_ids
-    cat_result_df = cat_result_df.set_index('SampleID')
-    print(f'[{get_curr_time()}, Progress] No. CWAS categories with at least 1 variant: '
+    # Categorize the DNVs
+    print(f'[{get_curr_time()}, Progress] Categorize DNVs for each sample')
+    try:
+        cat_result_df = categorize_variant(variant_df, gene_list_set_dict, args.num_proc)
+    except AssertionError:
+        print(f'[{get_curr_time()}, ERROR] Too many number of processes "{args.num_proc:,d}". '
+              f'This number must be lower than the number of the samples.', file=sys.stderr)
+        raise
+    print(f'[{get_curr_time()}, Progress] No. samples: {len(cat_result_df.index.values):,d}')
+    print(f'[{get_curr_time()}, Progress] No. CWAS categories with at least 1 DNV: ' 
           f'{len(cat_result_df.columns) - 1:,d}')
 
     # Remove redundant categories
@@ -132,7 +104,7 @@ def main():
             rdd_cats = rdd_cat_file.read().splitlines()
 
         cat_result_df.drop(rdd_cats, axis='columns', inplace=True, errors='ignore')  # Remove only existing columns
-        print(f'[{get_curr_time()}, Progress] No. non-redundant CWAS categories with at least 1 variant: '
+        print(f'[{get_curr_time()}, Progress] No. non-redundant CWAS categories with at least 1 DNV: '
               f'{len(cat_result_df.columns) - 1:,d}')
 
     # Write the result of the categorization
@@ -208,6 +180,46 @@ def parse_gene_mat(gene_mat_path: str) -> dict:
             gene_list_set_dict[gene_symbol] = set(gene_list_names)
 
     return gene_list_set_dict
+
+
+def categorize_variant(variant_df: pd.DataFrame, gene_list_set_dict: dict, num_proc: int) -> pd.DataFrame:
+    """ Categorize the variants in the input DataFrame into CWAS categories and return DataFrame that contains
+    No. variants of each CWAS category for each sample.
+
+    :param variant_df: The DataFrame that contains a list of variants annotated by VEP
+    :param gene_list_set_dict: The dictionary from 'parse_gene_mat' function
+    :param num_proc: No. processes used for the categorization
+    :return: The DataFrame that contains No. variants of each CWAS category for each sample (Sample IDs are its indices)
+    """
+    # Split the DataFrame by SampleIDs
+    groupby_sample = variant_df.groupby('SampleID')
+    sample_ids = groupby_sample.groups
+    sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in sample_ids]
+
+    # Categorize the variants in each sample
+    if num_proc == 1:
+        cat_results, sample_ids = cwas_cat_samples(sample_var_dfs, gene_list_set_dict)
+    else:
+        var_df_sub_lists = div_list(sample_var_dfs, num_proc)  # It can raise AssertionError.
+        pool = mp.Pool(num_proc)
+        proc_outputs = pool.map(partial(cwas_cat_samples, gene_list_set_dict=gene_list_set_dict), var_df_sub_lists)
+        pool.close()
+        pool.join()
+
+        cat_results = []
+        sample_ids = []
+
+        for proc_cat_results, proc_sample_ids in proc_outputs:
+            cat_results += proc_cat_results
+            sample_ids += proc_sample_ids
+
+    # Create the DataFrame for the result of the categorization
+    cat_result_df = pd.DataFrame(cat_results).fillna(0)
+    cat_result_df = cat_result_df.astype(int)
+    cat_result_df['SampleID'] = sample_ids
+    cat_result_df = cat_result_df.set_index('SampleID')
+
+    return cat_result_df
 
 
 def cwas_cat_samples(sample_var_dfs: list, gene_list_set_dict: dict) -> (list, list):
