@@ -190,11 +190,11 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int, num_proc: int) -> 
     """
     # Calculate relative risks from label-swapping permutations
     if num_proc == 1:
-        perm_rr_list = get_perm_rr(num_perm, cwas_cat_df)
+        perm_rr_list = cal_perm_rr(num_perm, cwas_cat_df)
     else:
         num_perms = div_dist_num(num_perm, num_proc)
         pool = mp.Pool(num_proc)
-        proc_outputs = pool.map(partial(get_perm_rr, cwas_cat_df=cwas_cat_df), num_perms)
+        proc_outputs = pool.map(partial(cal_perm_rr, cwas_cat_df=cwas_cat_df), num_perms)
         pool.close()
         pool.join()
 
@@ -238,7 +238,7 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, num_perm: int, num_proc: int) -> 
     return burden_df, perm_rr_df
 
 
-def get_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame) -> list:
+def cal_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame) -> list:
     """ Calculate relative risks of each category in each permutation trial.
     The length of the returned list equals to the number of the permutations.
     """
