@@ -17,7 +17,7 @@ import numpy as np
 import pandas as pd
 
 
-cpdef dict cwas_cat(variant_df: pd.DataFrame, gene_list_set_dict: dict):
+cpdef dict cwas_cat(variant_df: pd.DataFrame, dict gene_list_set_dict):
     """ Categorize the variants in the input data frame into the combinations of the annotation terms in the 5 groups
     and return the dictionary that contains the distribution of the variants for the combinations. These combinations
     are defined as CWAS categories.
@@ -29,8 +29,9 @@ cpdef dict cwas_cat(variant_df: pd.DataFrame, gene_list_set_dict: dict):
              respectively
     """
     cdef dict cwas_annot_dict, cwas_annot_idx_dict, cwas_annot_term_conv, cat_result_dict
-    cdef cnp.ndarray var_type_annot_ints, cons_annot_ints, gene_list_annot_ints, effect_annot_ints, region_annot_ints
-    cdef int var_type_int, cons_int, gene_list_int, effect_int, region_int
+    cdef cnp.ndarray[long] var_type_annot_ints, cons_annot_ints, gene_list_annot_ints
+    cdef cnp.ndarray[long] effect_annot_ints, region_annot_ints
+    cdef long var_type_int, cons_int, gene_list_int, effect_int, region_int
     cdef list var_type_annots, cons_annots, gene_list_annots, effect_annots, region_annots
     cdef str var_type_annot, cons_annot, gene_list_annot, effect_annot, region_annot
 
@@ -274,13 +275,15 @@ cdef dict get_annot_term_conv():
 # Functions for annotation of the variants
 # The functions below make an annotation integer for each variant.
 # Step 1: Annotate by the types (e.g. SNV) of variants
-cdef cnp.ndarray annot_var_type(variant_df: pd.DataFrame, var_type_annot_idx_dict: dict):
-    cdef cnp.ndarray refs, alts, is_snv_arr, annot_ints
+cdef cnp.ndarray[long] annot_var_type(variant_df: pd.DataFrame, dict var_type_annot_idx_dict):
+    cdef cnp.ndarray[str] refs, alts
+    cdef cnp.ndarray[bint] is_snv_arr
+    cdef cnp.ndarray[long] annot_ints
 
     refs = variant_df['REF'].values
     alts = variant_df['ALT'].values
 
-    is_snv_arr = (np.vectorize(len)(refs) == 1) & (np.vectorize(len)(alts) == 1)
+    is_snv_arr = ((np.vectorize(len)(refs) == 1) & (np.vectorize(len)(alts) == 1)).astype(np.int32)
     annot_int_conv = \
         lambda is_snv: 2 ** var_type_annot_idx_dict['SNV'] if is_snv else 2 ** var_type_annot_idx_dict['Indel']
     annot_ints = np.vectorize(annot_int_conv)(is_snv_arr)
@@ -289,19 +292,19 @@ cdef cnp.ndarray annot_var_type(variant_df: pd.DataFrame, var_type_annot_idx_dic
 
 
 # Step 2: Annotate by conservation scores
-cdef cnp.ndarray annot_cons(variant_df: pd.DataFrame, cons_annot_idx_dict: dict):
-    cdef cnp.ndarray phylop_scores, phast_scores, is_phylop_cons_arr, is_phast_cons_arr, annot_ints
+cdef cnp.ndarray[long] annot_cons(variant_df: pd.DataFrame, dict cons_annot_idx_dict):
+    cdef cnp.ndarray[double] phylop_scores, phast_scores
+    cdef cnp.ndarray[bint] is_phylop_cons_arr, is_phast_cons_arr
+    cdef cnp.ndarray[long] annot_ints
 
     phylop_conv_func = lambda x: -2.0 if x == '' else max(map(float, x.split('&')))
     phast_conv_func = lambda x: 0.0 if x == '' else max(map(float, x.split('&')))
 
-    phylop_scores = variant_df['phyloP46wayVt'].values
-    phylop_scores = np.vectorize(phylop_conv_func)(phylop_scores)
-    phast_scores = variant_df['phastCons46wayVt'].values
-    phast_scores = np.vectorize(phast_conv_func)(phast_scores)
+    phylop_scores = np.vectorize(phylop_conv_func)(variant_df['phyloP46wayVt'].values)
+    phast_scores = np.vectorize(phast_conv_func)(variant_df['phastCons46wayVt'].values)
 
-    is_phylop_cons_arr = phylop_scores >= 2.0
-    is_phast_cons_arr = phast_scores >= 0.2
+    is_phylop_cons_arr = (phylop_scores >= 2.0).astype(np.int32)
+    is_phast_cons_arr = (phast_scores >= 0.2).astype(np.int32)
 
     annot_ints = \
         np.vectorize(lambda is_phylop_cons: 2 ** cons_annot_idx_dict['phyloP46wayVt'] if is_phylop_cons else 0)\
@@ -314,12 +317,12 @@ cdef cnp.ndarray annot_cons(variant_df: pd.DataFrame, cons_annot_idx_dict: dict)
 
 
 # Step 3: Annotate by the names of the gene lists where the variant-associated genes are involved
-cdef cnp.ndarray annot_gene_list(variant_df: pd.DataFrame, gene_annot_idx_dict: dict, gene_list_set_dict: dict):
-    cdef cnp.ndarray gene_symbols, gene_nearests, effects
+cdef cnp.ndarray[long] annot_gene_list(variant_df: pd.DataFrame, dict gene_annot_idx_dict, dict gene_list_set_dict):
+    cdef cnp.ndarray[str] gene_symbols, gene_nearests, effects
     cdef list annot_ints
     cdef dict annot_int_dict
     cdef str symbol, nearest, effect, gene
-    cdef int annot_int
+    cdef long annot_int
     cdef set gene_list_set
 
     gene_symbols = variant_df['SYMBOL'].values
@@ -347,11 +350,11 @@ cdef cnp.ndarray annot_gene_list(variant_df: pd.DataFrame, gene_annot_idx_dict: 
 
 
 # Step 4: Annotate by the effects (GENCODE annotations)
-cdef cnp.ndarray annot_effect(variant_df: pd.DataFrame, effect_annot_idx_dict: dict, gene_list_set_dict: dict):
-    cdef cnp.ndarray gene_symbols, gene_nearests, effects, polyphens
+cdef cnp.ndarray[long] annot_effect(variant_df: pd.DataFrame, dict effect_annot_idx_dict, dict gene_list_set_dict):
+    cdef cnp.ndarray[str] gene_symbols, gene_nearests, effects, polyphens
     cdef list annot_ints
     cdef str symbol, nearest, effect, polyphen, gene
-    cdef int annot_int
+    cdef long annot_int
     cdef bint is_in_coding
 
     gene_symbols = variant_df['SYMBOL'].values
@@ -430,8 +433,9 @@ cdef cnp.ndarray annot_effect(variant_df: pd.DataFrame, effect_annot_idx_dict: d
 
 
 # Step 5: Annotate by the annotation terms of the regions where the variants are
-cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, effect_annot_idx_dict: dict):
-    cdef cnp.ndarray annot_ints, region_vals
+cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, dict effect_annot_idx_dict):
+    cdef cnp.ndarray[long] annot_ints
+    cdef cnp.ndarray[str] region_vals
     cdef str region
 
     annot_ints = np.zeros(len(variant_df.index), dtype=int)
@@ -441,17 +445,16 @@ cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, effect_annot_idx_dict: d
 
         if region.startswith('Yale_H3K27ac'):
             region_val_conv_func = lambda x: 0 if x == '' else max([int(y.split('_')[0]) for y in x.split('&')])
-            region_vals = np.vectorize(region_val_conv_func)(region_vals)
             annot_int_conv_func = lambda x: 2 ** effect_annot_idx_dict[region] if x > 1 else 0
+            annot_ints += np.vectorize(annot_int_conv_func)(np.vectorize(region_val_conv_func)(region_vals))
         else:
             annot_int_conv_func = lambda x: 0 if x == '' else 2 ** effect_annot_idx_dict[region]
-
-        annot_ints += np.vectorize(annot_int_conv_func)(region_vals)
+            annot_ints += np.vectorize(annot_int_conv_func)(region_vals)
 
     return annot_ints
 
 
-cdef list parse_annot_int(annot_int: int, all_annot_terms: list):
+cdef list parse_annot_int(long annot_int, list all_annot_terms):
     """ From the list of annotation terms, choose the appropriate subset by parsing the annotation integer.
     """
     cdef int annot_idx
