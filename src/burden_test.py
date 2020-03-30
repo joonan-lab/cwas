@@ -74,7 +74,7 @@ def main():
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
 
     if args.test_type == 'perm':
-        print(f'[Setting] No. processes for the tests: {args.num_perm:,d}')
+        print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
         print(f'[Setting] No. processes for the tests: {args.num_proc:,d}')
         print(f'[Setting] The permutation RR output path: {args.perm_rr_path if args.perm_rr_path else "None"}')
         assert 1 <= args.num_proc <= mp.cpu_count(), \
@@ -266,8 +266,13 @@ def swap_label(sample_ids: np.ndarray) -> np.ndarray:
     fam_to_idx = {}  # Key: A family, Value: The index of a sample ID firstly matched with the family
     swap_sample_ids = np.copy(sample_ids)
 
+    # Make an array for random swapping
+    fam_size = len(sample_ids) // 2  # One family has two samples (proband and sibling)
+    fam_idx = 0
+    do_swaps = np.random.binomial(1, 0.5, size=fam_size)
+
     for i, sample_id in enumerate(sample_ids):
-        fam = sample_id.split('.')[0]
+        fam = sample_id.split('_')[0]
 
         if fam_to_hit_cnt.get(fam, 0) == 0:
             fam_to_hit_cnt[fam] = 1
@@ -275,11 +280,14 @@ def swap_label(sample_ids: np.ndarray) -> np.ndarray:
         elif fam_to_hit_cnt.get(fam, 0) == 1:
             fam_to_hit_cnt[fam] += 1
             prev_idx = fam_to_idx[fam]
+
             # Swap
-            do_swap = np.random.binomial(1, 0.5)
+            do_swap = do_swaps[fam_idx]
             if do_swap:
                 swap_sample_ids[i] = sample_ids[prev_idx]
                 swap_sample_ids[prev_idx] = sample_id
+
+            fam_idx += 1
         else:
             print(f'[ERROR] The fam {fam} has more than 2 samples.', file=sys.stderr)
             raise AssertionError('One family must have two samples (one proband and one sibling).')
