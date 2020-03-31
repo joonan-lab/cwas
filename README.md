@@ -1,5 +1,8 @@
 # Category-based burden test (An et al. 2018)
 
+*Note: This is a modified version of the original CWAS repository.*
+*The original CWAS repository: [sanderslab/cwas](https://github.com/sanderslab/cwas)*
+
 This README contains the run command for the category-based burden test in the An et al. (2018). The scripts and materials are distributed in Amazon Machine Images and you can deploy the workflow using Amazon Web Services (AWS). The AMI ID is `ami-0e1757919181cfb66`, name 'An 2018 to share', and has 180 Gib size. For the instance setting, we recommend large AWS instance series like `m4.x2large` or `m4.x4large`.
 
 The AMI includes:
@@ -12,16 +15,18 @@ The AMI includes:
 - List of large category for burdenshift analysis
 - Adjustment factor for burden test 
 
+
 ## Step 1. Annotation
 
 Using Variant Effect Predictor (VEP; https://www.ensembl.org/vep), de novo variants will be annotated for genomic regions, functional regions, and functional/conservation scores.
 
-Script: `run_vep.py`
+##### Script: 
+`run_vep.py`
 
-Required arguments:
+##### Required arguments:
 
-- -i, --infile = path to file listing variants (VCF format).
-- -t, --number_threads = number of threads to use
+- -i, --infile = Path to file listing variants (VCF format).
+- -t, --number_threads = Number of threads to use
 
 ```bash
 # Example
@@ -32,127 +37,105 @@ python run_vep.py \
 
 ## Step 2. Variant categorization
 
-The annotated variants will be grouped by annotation categories and individuals. 
+The annotated variants will be grouped by annotation categories (or CWAS categories) and individuals (or samples). 
 
-Script: `vep_pycatego.py`
-Requirement: Cython (http://cython.org/). Please note that this script will use Cython. So you need to compile a Cython script (`pycatego_vep_cwas.pyx`) for the run.
+##### Script: 
+`categorize.py`
 
+##### Requirement: 
+Cython (http://cython.org/). Please note that this script will use Cython. So you need to compile a Cython script (`categorization.pyx`) to run run.
 
-Required arguments:
+##### Required arguments:
 
-- -i, --infile = path to file listing annotated variants. Input file format described below.
-- -g, --gene_matrix = path to file listing genesets. You can find the file from the AMI.
+- -i, --infile = Path to file listing variants annotated by VEP. Input file format described below.
+- -g, --gene_matrix = Path to file listing gene sets (gene matrix file). You can find the file from the AMI.
 
-Optional arguments:
+##### Optional arguments:
 
-- -o, --output_tag = text string that will be used for naming output files, e.g. analysis name or date. Default is 'output'.
-- -a, --AF_known = Keep the variants with known allele frequency by gnomAD. Default is 'Yes'.
-- -lof, --lof = Keep LoF variants. Default is 'No'.
-- -t, --number_threads = number of threads to use
+- -r, --rdd_cat_file = Path to file listing redundant CWAS categories. Default is *'' (empty string)*, which means there are no redundant categories so any of categories will not be removed.
+- -o, --outfile = Path to the categorization result. Default path is *cwas_cat_result.txt*.
+- -p, --num_proc = Number of processes for this script. Default is *1*.
+- -a, --af_known = Keep the variants with known allele frequencies by gnomAD. Possible values are *{yes, no, only}*. Default is *yes*.
 
-Input file format:
-Annotated variant list, output from run_vep.py, above.
-
-```bash
-python vep_pycatego.py \
--i table.hq_dnvs.vep_gene.txt \
--g geneMatrix_hg38.txt \
--t 16 \
--o cwas \
--a Yes
-```
-
-## Step 3. Trim cats
-
-To speed up burden testing in the following step, categories with 0 variants will be removed from the file.
-
-Script: `doperm.py`
-Requirement: Cython (http://cython.org/). Please note that this script will use Cython. So you need to compile a Cython script (`doperm.pyx`) for the run.
-
-```
-
-python doperm.py \
--m trim \
--i result.sumVar.cwas.txt \
--r list_redundant_categories.txt
-
-```
-
-## Step 4. Run burden (binomial) test on annotation categories
-
-Each remaining category after the trimming step 3 will be subject to burden test using the binomial test on total variant counts per category between cases and unaffected controls. 
-
-Script: `getBinomtest.py`
-Requirement: Cython (http://cython.org/). Please note that this script will use Cython. So you need to compile a Cython script (`doperm.pyx`) for the run.
-
-Required arguments:
--i, --infile = path to file with filtered categories (or the non-filtered version of this file). Input file format described below.
-
-Optional arguments:
-
-- -o, --output_tag = text string that will be used for naming output files, e.g. analysis name or date. Default is 'out'.
-- -a, --adj = file specifying adjustment to variant rate, e.g. from regression vs. covariates. Adjustment file format described below. Default is text string 'no', which will bypass this adjustment step.
-
-Input file format:
-File listing the number of variants per sample that belong to each annotation category, optionally with 0-variant and redundant or user-specified categories removed (trimming these additional categories will speed up run time for the remaining steps). Output file from run_filterCategories.py (or from run_categorizeVars.py), above. One row per sampleID, the first column should be `Sample ID` (format: `familyID_phenotype`) and one additional column for each annotation category.
-
-Adjustment file format
-File with 1 row per sampleID listing adjustment factor (e.g. from regression) to multiply by total variant counts. Requires columns named `SampleID` and "AdjustFactor"
+##### Argument formats
+ - **Input file format**:
+A list of variants annotated by VEP, output from `run_vep.py`, above.
 
 ```bash
-python getBinomtest.py \
--i result.sumVar.cwas.trimmed.txt \
--a list_adjustmentFactors.txt \
--r list_redundant_categories.txt \
--o cwas
+# Help
+./categorize -h
+
+# Usage
+./categorization.py \
+-i IN_VCF_PATH \
+-g GENE_MAT_PATH \
+[-r RDD_CAT_PATH] \
+[-o OUTFILE_PATH]  \
+[-p NUM_PROC] \
+[-a {yes, no, only}]
+
+# Note: '[]' means they are optional arguments. '{}' contains possible values for the argument. 
 ```
 
+## Step 3. Burden tests on the CWAS categories
+
+Each category from the step 2 will be subject to burden tests using binomial tests or permutation tests on total variant counts per category between cases and unaffected controls. 
+
+##### Script: 
+`burden_test.py`
+
+##### Required arguments:
+
+- -i, --infile = Path to a result of the categorization. Input file format described below.
+
+##### Optional arguments:
+
+- -a, --adj_file = Path to a file specifying adjustment factors the the number of variants of each individual. Adjustment file format described below. Default is *'' (empty string)*, which will bypass this adjustment step.
+- -o, --outfile = Path to a result of the burden tests. Default is *cwas_burden_binom_result.txt* if you have excuted binomial tests, or *cwas_burden_perm_result.txt* if you have excuted permutation tests.
+
+##### Optional arguments *only for permutation tests*:
+
+- -n, --num_perm = Number of label-swapping permutations. Default is *10,000*.
+- -p, --num_proc = Number of processes for this script. Default is *1*.
+- -po, --perm_outfile = Path to a file listing relative risks after permutations for each category. Default is *'' (empty string)*, which will not save the relative risks after permutations.
+
+##### Argument formats
+
+- **Input file format**: File listing the number of variants per sample that belong to each annotation category, optionally redundant or user-specified categories removed (trimming these additional categories will speed up run time for the remaining steps). Output file from `categorize.py`, above. Rows for each sample, one of columns should be *Sample ID* (format: *familyID_phenotype*) and the other columns for each annotation category.
+
+- **Adjustment file format**: File with a row for each sample listing adjustment factors (e.g. from regression) to multiply by total variant counts. Requires columns named *SampleID* and *AdjustFactor*.
+
+```bash
+# For binomial tests
+# Help
+./burden_test.py binom -h
+
+# Usage
+./burden_test.py binom \
+-i CAT_RESULT_PATH \
+[-a ADJ_FILE_PATH] \
+[-o OUTFILE_PATH]
 
 
-## Step 5. Run permutation
+# For permutation tests
+# Help
+./burden_test.py perm -h
 
-Each remaining category after the trimming step 3 will be subject to permutated burden test using the binomial test on total variant counts per category between cases and unaffected controls.
+# Usage
+./burden_test.py perm \
+-i CAT_RESULT_PATH \
+[-a ADJ_FILE_PATH] \
+[-o OUTFILE_PATH] \
+[-n NUM_PERM] \
+[-p NUM_PROC] \
+[-po PERM_RR_PATH]
 
-Script: `doperm.py`
-Requirement: Cython (http://cython.org/). Please note that this script will use Cython. So you need to compile a Cython script (`doperm.pyx`) for the run.
-
-Required arguments:
-
-- -i, --infile = path to file with filtered categories (or the non-filtered version of this file). Input file format described below.
-- -m, --mode = Please choose a mode to do permutations (perm) or create family swap index (index). 
-
-Optional arguments:
-
-- -o, --output_tag = text string that will be used for naming output files, e.g. analysis name or date. Default is 'out'.
-- -b, --burden_file = Non-permutaiton burden matrix file. Default is text string 'No'. This will only be required for burden testing.
-- -a, --adj = file specifying adjustment to variant rate, e.g. from regression vs. covariates. Adjustment file format described below. Default is text string 'No', which will bypass this adjustment step.
-- -r, --trim_file = File to remove redundant categories. Default is text string 'No', which will bypass this trimming step.
-- -t, --number_threads = number of threads to use. Default it '4'
-- -cats_start, --cats_start = Start position of categories. Default it '0'
-- -cats_start, --cats_start = End position of categories. Default it '1'
-- -s3_path, --s3_path = Copy path for s3. Default it 'No'
-
-
+# Note: '[]' means they are optional arguments.
 ```
-# Step 5-1. Creating family swap index
-python doperm.py -m index -s swapFams.cwas.p -n 1902
 
-# Step 5-2. Permutation
-python doperm.py \
--m perm \
--i result.sumVar.cwas.trimmed.txt.gz \
--a list_adjustmentFactors.txt \
--r list_redundant_categories.txt \
--b result.burden.cwas.noPerm.txt \
--s swapFams.cwas.p \
--cats_start 1 \
--cats_end 100 \
--t 16
-```
+## Step 4. Run burdenshift
 
-## Step 6. Run burdenshift
-
-This script will generate global burdenshift cross a large category (e.g. promoters, missenses). This is based on permutation files generated from the step 5. 
+This script will generate global burdenshift cross a large category (e.g. promoters, missenses). This is based on permutation files generated from the step 3. 
 
 Script: run_burdenShift.R
 
@@ -167,7 +150,7 @@ list_catSetMembership.txt \ # Matrix for a large category membership
 cwas  # Tag for output
 ```
 
-## Step 7. Risk score analysis and Annotation clustering 
+## Step 5. Risk score analysis and Annotation clustering 
 
 The scripts for risk score analysis and annotation clustering is not located in this repository. Please refer to https://github.com/lingxuez/WGS-Analysis
 
