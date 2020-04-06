@@ -168,7 +168,7 @@ def _parse_info_str(info_str: str) -> dict:
     key_value_pairs = info_str.split(';')
 
     for key_value_pair in key_value_pairs:
-        key, value = key_value_pair.split('=')
+        key, value = key_value_pair.split('=', 1)
         info_dict[key] = value
 
     return info_dict
