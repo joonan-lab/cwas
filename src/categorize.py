@@ -62,7 +62,7 @@ def main():
 
     print(f'[{get_curr_time()}, Progress] Load the input VCF file into a DataFrame')
     # Make the DataFrame of the annotated variants from the VCF file
-    rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "Allele_Rm", "IMPACT", "Gene", "Feature_type",
+    rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "IMPACT", "Gene", "Feature_type",
                     "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
                     "CANONICAL", "TSL", "APPRIS", "CCDS", "SOURCE", "gnomADg"]  # The list of redundant columns
@@ -114,17 +114,17 @@ def main():
     print(f'[{get_curr_time()}, Progress] Done')
 
 
-def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
-    """ Parse the VCF file from VEP and make a pandas.DataFrame object for the list of the annotated variants.
+def parse_vep_vcf(vep_vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
+    """ Parse the VCF file from VEP and make a pandas.DataFrame object listing the annotated variants.
 
-    :param vep_vcf_path: The path of the VCF file that contains the list of the annotated variants by VEP
-    :param rm_colnames: The list of column names that should be removed from the DataFrame.
-                        (Note: the column names must exist in the original DataFrame.)
-    :return: The DataFrame object that consists of the annotated variants
+    :param vep_vcf_path: The path of the VCF file listing annotated variants by VEP
+    :param rdd_colnames: The list of column names redundant for CWAS
+                         (Warning: Unavailable column names will be ignored.)
+    :return: The DataFrame object listing annotated variants
     """
     variant_df_rows = []
     variant_df_colnames = []
-    info_field_names = []  # The list of the field names that make up the INFO field of the VCF file
+    csq_field_names = []  # The list of the field names that make up the CSQ information (the VEP result)
 
     # Parse the VCF file
     with open(vep_vcf_path, 'r') as vep_vcf_file:
@@ -132,31 +132,46 @@ def parse_vep_vcf(vep_vcf_path: str, rm_colnames: list = None) -> pd.DataFrame:
             if line.startswith('#'):  # The comments
                 if line.startswith('#CHROM'):  # The header
                     variant_df_colnames = line[1:].rstrip('\n').split('\t')
-                elif line.startswith('##INFO=<ID=CSQ'):
+                elif line.startswith('##INFO=<ID=CSQ'):  # A VCF from VEP must contain this line.
                     csq_line = line.rstrip('">\n')
                     info_format_start_idx = re.search(r'Format: ', csq_line).span()[1]
-                    info_field_names = csq_line[info_format_start_idx:].split('|')
+                    csq_field_names = csq_line[info_format_start_idx:].split('|')
             else:
                 variant_df_row = line.rstrip('\n').split('\t')
                 variant_df_rows.append(variant_df_row)
 
-    assert variant_df_rows
-    assert variant_df_colnames
-    assert info_field_names
+    vep_vcf_df = pd.DataFrame(variant_df_rows, columns=variant_df_colnames)
 
-    variant_df = pd.DataFrame(variant_df_rows, columns=variant_df_colnames)
+    # Parse the INFO field
+    info_strs  = vep_vcf_df['INFO'].values
+    info_dicts = list(map(_parse_info_str, info_strs))
+    info_df = pd.DataFrame(info_dicts)
 
-    # Expand the INFO column
-    variant_df[info_field_names] = variant_df['INFO'].str.split('|', expand=True)
+    # Parse the CSQ strings (VEP results)
+    csq_strs = info_df['CSQ'].values
+    csq_records = list(map(lambda csq_str: csq_str.split('|'), csq_strs))
+    csq_df = pd.DataFrame(csq_records, columns=csq_field_names)
 
-    # Expand the Allele column (which is one field of the INFO)
-    allele_field_names = ['SampleID', 'Batch', 'Allele_Rm']
-    variant_df[allele_field_names] = variant_df['Allele'].str.split(';', expand=True)
+    # Concatenate those DataFrames
+    variant_df = pd.concat([vep_vcf_df.drop(columns='INFO'), info_df.drop(columns='CSQ'), csq_df], axis='columns')
 
-    if rm_colnames is not None:
-        variant_df.drop(columns=rm_colnames, inplace=True)
+    # Trim the columns redundant for CWAS
+    if rdd_colnames is not None:
+        variant_df.drop(columns=rdd_colnames, inplace=True, errors='ignore')
 
     return variant_df
+
+
+def _parse_info_str(info_str: str) -> dict:
+    """ Parse the string in the INFO field of the VCF file from VEP and make a dictionary """
+    info_dict = {}
+    key_value_pairs = info_str.split(';')
+
+    for key_value_pair in key_value_pairs:
+        key, value = key_value_pair.split('=')
+        info_dict[key] = value
+
+    return info_dict
 
 
 def parse_gene_mat(gene_mat_path: str) -> dict:
