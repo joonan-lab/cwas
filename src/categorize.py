@@ -207,58 +207,48 @@ def categorize_variant(variant_df: pd.DataFrame, gene_list_set_dict: dict, num_p
     :return: The DataFrame that contains No. variants of each CWAS category for each sample (Sample IDs are its indices)
     """
     # Split the DataFrame by SampleIDs
-    groupby_sample = variant_df.groupby('SampleID')
-    sample_ids = groupby_sample.groups
+    groupby_sample = variant_df.groupby('SAMPLE')
+    sample_ids = list(groupby_sample.groups)
     sample_var_dfs = [groupby_sample.get_group(sample_id) for sample_id in sample_ids]
 
     # Categorize the variants in each sample
     if num_proc == 1:
-        cat_results, sample_ids = cwas_cat_samples(sample_var_dfs, gene_list_set_dict)
+        cat_result_dicts = _cwas_cat_samples(sample_var_dfs, gene_list_set_dict)
     else:
         var_df_sub_lists = div_list(sample_var_dfs, num_proc)  # It can raise AssertionError.
         pool = mp.Pool(num_proc)
-        proc_outputs = pool.map(partial(cwas_cat_samples, gene_list_set_dict=gene_list_set_dict), var_df_sub_lists)
+        proc_outputs = pool.map(partial(_cwas_cat_samples, gene_list_set_dict=gene_list_set_dict), var_df_sub_lists)
         pool.close()
         pool.join()
 
-        cat_results = []
-        sample_ids = []
+        cat_result_dicts = []
 
-        for proc_cat_results, proc_sample_ids in proc_outputs:
-            cat_results += proc_cat_results
-            sample_ids += proc_sample_ids
-
-    # Change the format of the sample IDs for backward compatibility
-    sample_ids = np.vectorize(lambda sample_id: sample_id.replace('.', '_'))(sample_ids)
+        for proc_output in proc_outputs:
+            cat_result_dicts += proc_output
 
     # Create the DataFrame for the result of the categorization
-    cat_result_df = pd.DataFrame(cat_results).fillna(0)
+    cat_result_df = pd.DataFrame(cat_result_dicts).fillna(0)
     cat_result_df = cat_result_df.astype(int)
-    cat_result_df['SampleID'] = sample_ids
-    cat_result_df = cat_result_df.set_index('SampleID')
+    cat_result_df['SAMPLE'] = sample_ids
+    cat_result_df = cat_result_df.set_index('SAMPLE')
 
     return cat_result_df
 
 
-def cwas_cat_samples(sample_var_dfs: list, gene_list_set_dict: dict) -> (list, list):
+def _cwas_cat_samples(sample_var_dfs: list, gene_list_set_dict: dict) -> list:
     """ This is a wrapper function to execute 'cwas_cat' for multiple samples
 
-    :param sample_var_dfs: The list of pd.DataFrame objects for each sample's variants
+    :param sample_var_dfs: The list of pd.DataFrame objects listing each sample's variants
     :param gene_list_set_dict: The dictionary from 'parse_gene_mat' function
-    :returns:
-        1. The list of the pd.Series objects for 'cwas_cat' results of the samples
-        2. The list of the sample IDs
+    :return: The list of dictionaries for each sample's 'cwas_cat' result
     """
-    cat_results = []  # Item: pd.Series object
-    sample_ids = []
+    cat_result_dicts = []  # Item:
 
     for sample_var_df in sample_var_dfs:
-        sample_id = sample_var_df['SampleID'].values[0]
-        sample_ids.append(sample_id)
         cat_result_dict = cwas_cat(sample_var_df, gene_list_set_dict)
-        cat_results.append(pd.Series(cat_result_dict))
+        cat_result_dicts.append(cat_result_dict)
 
-    return cat_results, sample_ids
+    return cat_result_dicts
 
 
 def div_list(in_list: list, n_sub: int) -> list:
