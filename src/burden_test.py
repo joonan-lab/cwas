@@ -93,18 +93,22 @@ def main():
 
     # Load and parse the input data
     print(f'[{get_curr_time()}, Progress] Parse the categorization result into DataFrame')
-    cwas_cat_df = pd.read_table(args.cat_result_path, index_col='SampleID')
-    check_sample_id_format(cwas_cat_df.index.values)  # It can raise AssertionError.
+    cwas_cat_df = pd.read_table(args.cat_result_path, index_col='SAMPLE')
 
     # Load and parse the file listing sample IDs
     print(f'[{get_curr_time()}, Progress] Parse the file listing sample IDs')
     sample_df = pd.read_table(args.sample_file_path, index_col='SAMPLE')
+    assert cmp_two_arr(cwas_cat_df.index.values, sample_df.index.values), \
+        f'The samples IDs of the categorization result are not the same ' \
+        f'with the sample IDs of the file listing samples.'
 
     # Adjust No. DNVs of each sample in the categorization result
     if args.adj_file_path:
         print(f'[{get_curr_time()}, Progress] Adjust No. DNVs of each sample in the categorization result')
-        adj_factor_df = pd.read_table(args.adj_file_path, index_col='SampleID')
-        check_sample_id_format(adj_factor_df.index.values)
+        adj_factor_df = pd.read_table(args.adj_file_path, index_col='SAMPLE')
+        assert cmp_two_arr(adj_factor_df.index.values, sample_df.index.values), \
+            f'The samples IDs of the categorization result are not the same ' \
+            f'with the sample IDs of the file listing samples.'
         cwas_cat_df = adjust_cat_df(cwas_cat_df, adj_factor_df)
 
     # Run burden tests
@@ -126,13 +130,18 @@ def main():
     print(f'[{get_curr_time()}, Progress] Done')
 
 
-def check_sample_id_format(sample_ids: np.ndarray):
-    """ Function to check whether formats of the sample IDs are matched with the asserted format """
-    sample_id_f = re.compile(r'^\d+[_]([ps])\d$')
+def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
+    """ Return True if two arrays have the same items regardless of the order, else return False """
+    if len(array1) != len(array2):
+        return False
 
-    for sample_id in sample_ids:
-        assert sample_id_f.match(sample_id), \
-            f'Wrong sample ID format "{sample_id}". The regular expression of a sample ID is "^\d+[.]([ps])\d$".'
+    array1_item_set = set(array1)
+
+    for item in array2:
+        if item not in array1_item_set:
+            return False
+
+    return True
 
 
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
