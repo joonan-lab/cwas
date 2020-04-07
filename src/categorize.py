@@ -242,7 +242,7 @@ def _cwas_cat_samples(sample_var_dfs: list, gene_list_set_dict: dict) -> list:
     :param gene_list_set_dict: The dictionary from 'parse_gene_mat' function
     :return: The list of dictionaries for each sample's 'cwas_cat' result
     """
-    cat_result_dicts = []  # Item:
+    cat_result_dicts = []
 
     for sample_var_df in sample_var_dfs:
         cat_result_dict = cwas_cat(sample_var_df, gene_list_set_dict)
@@ -251,20 +251,20 @@ def _cwas_cat_samples(sample_var_dfs: list, gene_list_set_dict: dict) -> list:
     return cat_result_dicts
 
 
-def div_list(in_list: list, n_sub: int) -> list:
+def div_list(in_list: list, num_sub_list: int) -> list:
     """ Divide the input list into multiple sub-lists """
     sub_lists = []
-    sub_len = len(in_list) // n_sub
+    sub_len = len(in_list) // num_sub_list
 
     if sub_len == 0:
-        raise AssertionError(f'The number of sub-lists ("{n_sub:,d}") are larger than '
+        raise AssertionError(f'The number of sub-lists ("{num_sub_list:,d}") are larger than '
                              f'the length of the input list ("{len(in_list):,d}").')
 
-    for i in range(n_sub - 1):
+    for i in range(num_sub_list - 1):
         sub_list = in_list[sub_len * i : sub_len * (i + 1)]
         sub_lists.append(sub_list)
 
-    sub_lists.append(in_list[sub_len * (n_sub - 1) :])
+    sub_lists.append(in_list[sub_len * (num_sub_list - 1):])
 
     return sub_lists
 
