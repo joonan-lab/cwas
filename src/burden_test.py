@@ -29,6 +29,8 @@ def main():
                                          help='Binomial tests (arg "binom -h" for usage)')
     parser_binom.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
                               help='Path of a result of the CWAS categorization')
+    parser_binom.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                              help='File listing sample IDs with their families and phenotypes (case or ctrl)')
     parser_binom.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
                               help='File that contains adjustment factors for No. DNVs of each sample',
                               default='')
@@ -40,6 +42,8 @@ def main():
                                         help='Permutation tests (arg "perm -h" for usage)')
     parser_perm.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
                               help='Path of a result of the CWAS categorization')
+    parser_perm.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                              help='File listing sample IDs with their families and phenotypes (case or ctrl)')
     parser_perm.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
                               help='File that contains adjustment factors for No. DNVs of each sample',
                               default='')
@@ -64,10 +68,12 @@ def main():
     # Print and check the validity of the settings
     print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
     print(f'[Setting] The input CWAS categorization result: {args.cat_result_path}')
+    print(f'[Setting] The list of sample IDs: {args.sample_file_path}')
     print(f'[Setting] The list of adjustment factors for No. DNVs of each sample: '
           f'{args.adj_file_path if args.adj_file_path else "None"}')
     print(f'[Setting] The output path: {args.outfile_path}')
     assert os.path.isfile(args.cat_result_path), f'The input file "{args.cat_result_path}" cannot be found.'
+    assert os.path.isfile(args.sample_file_path), f'The input file "{args.sample_file_path}" cannot be found.'
     assert args.adj_file_path == '' or os.path.isfile(args.adj_file_path), \
         f'The input file "{args.adj_file_path}" cannot be found.'
     outfile_dir = os.path.dirname(args.outfile_path)
@@ -89,6 +95,10 @@ def main():
     print(f'[{get_curr_time()}, Progress] Parse the categorization result into DataFrame')
     cwas_cat_df = pd.read_table(args.cat_result_path, index_col='SampleID')
     check_sample_id_format(cwas_cat_df.index.values)  # It can raise AssertionError.
+
+    # Load and parse the file listing sample IDs
+    print(f'[{get_curr_time()}, Progress] Parse the file listing sample IDs')
+    sample_df = pd.read_table(args.sample_file_path, index_col='SAMPLE')
 
     # Adjust No. DNVs of each sample in the categorization result
     if args.adj_file_path:
