@@ -3,7 +3,7 @@
 *Note: This is a modified version of the original CWAS repository.*
 *The original CWAS repository: [sanderslab/cwas](https://github.com/sanderslab/cwas)*
 
-This README contains the run command for the category-based burden test in the An et al. (2018). The scripts and materials are distributed in Amazon Machine Images and you can deploy the workflow using Amazon Web Services (AWS). The AMI ID is `ami-0e1757919181cfb66`, name 'An 2018 to share', and has 180 Gib size. For the instance setting, we recommend large AWS instance series like `m4.x2large` or `m4.x4large`.
+This README contains data requirements and run commands for the category-based burden test in the An et al. (2018). The scripts and materials are distributed in Amazon Machine Images and you can deploy the workflow using Amazon Web Services (AWS). The AMI ID is `ami-0e1757919181cfb66`, name 'An 2018 to share', and has 180 Gib size. For the instance setting, we recommend large AWS instance series like `m4.x2large` or `m4.x4large`.
 
 The AMI includes:
 
@@ -16,8 +16,50 @@ The AMI includes:
 - Adjustment factor for burden test 
 
 
-## Step 1. Annotation
+## Data requirements
+Following data must be prepared for CWAS. Here are details.
 
+### 1. Input VCF data
+```
+#CHROM  POS ID  REF ALT QUAL    FILTER  INFO
+chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1;BATCH=P231
+chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1;BATCH=P231
+chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
+```
+- The input VCF data must follow the [specification of VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf).
+- The *INFO* field must contain the sample ID of each variant with this format `SAMPLE={sample_id}`. 
+
+### 2. List of samples
+| SAMPLE | FAMILY | PHENOTYPE |
+|:---:|:---:|:---:|
+| 11000.p1 | 11000 | case |
+| 11000.s1 | 11000 | ctrl |
+| 11002.p1 | 11002 | case |
+| 11002.s1 | 11002 | ctrl |
+- CWAS requires the file like above listing sample IDs with its family IDs and phenotypes (Case=*case*,  Control=*ctrl*).
+- Here are details of the required format.
+    - Tab separated
+    - 3 essential columns: *SAMPLE*, *FAMILY*, and *PHENOTYPE*
+    - A value in the *PHENOTYPE* must be *case* or *ctrl*.
+- The values in the *SAMPLE* must be matched with the sample IDs of variants in the input VCF file.
+
+### 3. List of adjustment factors (Optional)
+| SAMPLE | AdjustFactor |
+|:---:|:---:|
+| 11000.p1 | 0.932 |
+| 11000.s1 | 1.082 |
+| 11002.p1 | 0.895 |
+| 11002.s1 | 1.113 |
+- The file like above is required if you want to adjust the number of variants for each sample in CWAS.
+- Here are details of the required format.
+    - Tab separated
+    - 2 essential columns: *SAMPLE* and *AdjustFactor*
+    - A value in the *AdjustFactor* must be a float.
+- The values in the *SAMPLE* must be matched with the sample IDs of variants in the input VCF file.
+
+
+## Execution
+### Step 1. Annotation
 Using Variant Effect Predictor (VEP; https://www.ensembl.org/vep), de novo variants will be annotated for genomic regions, functional regions, and functional/conservation scores.
 
 ##### Script: 
@@ -25,7 +67,7 @@ Using Variant Effect Predictor (VEP; https://www.ensembl.org/vep), de novo varia
 
 ##### Required arguments:
 
-- -i, --infile = Path to file listing variants (VCF format).
+- -i, --infile = Path to file listing variants (VCF format), which format is described in **Data requirments** above.
 - -t, --number_threads = Number of threads to use
 
 ```bash
@@ -35,7 +77,7 @@ python run_vep.py \
 -t 2
 ```
 
-## Step 2. Variant categorization
+### Step 2. Variant categorization
 
 The annotated variants will be grouped by annotation categories (or CWAS categories) and individuals (or samples). 
 
@@ -47,7 +89,7 @@ Cython (http://cython.org/). Please note that this script will use Cython. So yo
 
 ##### Required arguments:
 
-- -i, --infile = Path to file listing variants annotated by VEP. Input file format described below.
+- -i, --infile = Path to file listing variants annotated by VEP, which is an output of `run_vep.py` (**Step 1**). 
 - -g, --gene_matrix = Path to file listing gene sets (gene matrix file). You can find the file from the AMI.
 
 ##### Optional arguments:
@@ -56,10 +98,6 @@ Cython (http://cython.org/). Please note that this script will use Cython. So yo
 - -o, --outfile = Path to the categorization result. Default path is *cwas_cat_result.txt*.
 - -p, --num_proc = Number of processes for this script. Default is *1*.
 - -a, --af_known = Keep the variants with known allele frequencies by gnomAD. Possible values are *{yes, no, only}*. Default is *yes*.
-
-##### Argument formats
- - **Input file format**:
-A list of variants annotated by VEP, output from `run_vep.py`, above.
 
 ```bash
 # Help
@@ -77,7 +115,7 @@ A list of variants annotated by VEP, output from `run_vep.py`, above.
 # Note: '[]' means they are optional arguments. '{}' contains possible values for the argument. 
 ```
 
-## Step 3. Burden tests on the CWAS categories
+### Step 3. Burden tests on the CWAS categories
 
 Each category from the step 2 will be subject to burden tests using binomial tests or permutation tests on total variant counts per category between cases and unaffected controls. 
 
@@ -86,11 +124,12 @@ Each category from the step 2 will be subject to burden tests using binomial tes
 
 ##### Required arguments:
 
-- -i, --infile = Path to a result of the categorization. Input file format described below.
+- -i, --infile = Path to a result of the categorization, which is an output `categorize.py` (**Step 2**).
+- -s, --sample_file = Path to a file listing sample IDs, which format is described in **Data requirments** above.
 
 ##### Optional arguments:
 
-- -a, --adj_file = Path to a file specifying adjustment factors the the number of variants of each individual. Adjustment file format described below. Default is *'' (empty string)*, which will bypass this adjustment step.
+- -a, --adj_file = Path to a file specifying adjustment factors the the number of variants of each individual, which format is described in **Data requirments** above. Default is *'' (empty string)*, which will bypass this adjustment step.
 - -o, --outfile = Path to a result of the burden tests. Default is *cwas_burden_binom_result.txt* if you have excuted binomial tests, or *cwas_burden_perm_result.txt* if you have excuted permutation tests.
 
 ##### Optional arguments *only for permutation tests*:
@@ -99,11 +138,6 @@ Each category from the step 2 will be subject to burden tests using binomial tes
 - -p, --num_proc = Number of processes for this script. Default is *1*.
 - -po, --perm_outfile = Path to a file listing relative risks after permutations for each category. Default is *'' (empty string)*, which will not save the relative risks after permutations.
 
-##### Argument formats
-
-- **Input file format**: File listing the number of variants per sample that belong to each annotation category, optionally redundant or user-specified categories removed (trimming these additional categories will speed up run time for the remaining steps). Output file from `categorize.py`, above. Rows for each sample, one of columns should be *Sample ID* (format: *familyID_phenotype*) and the other columns for each annotation category.
-
-- **Adjustment file format**: File with a row for each sample listing adjustment factors (e.g. from regression) to multiply by total variant counts. Requires columns named *SampleID* and *AdjustFactor*.
 
 ```bash
 # For binomial tests
@@ -113,6 +147,7 @@ Each category from the step 2 will be subject to burden tests using binomial tes
 # Usage
 ./burden_test.py binom \
 -i CAT_RESULT_PATH \
+-s SAMPLE_FILE_PATH \ 
 [-a ADJ_FILE_PATH] \
 [-o OUTFILE_PATH]
 
@@ -124,6 +159,7 @@ Each category from the step 2 will be subject to burden tests using binomial tes
 # Usage
 ./burden_test.py perm \
 -i CAT_RESULT_PATH \
+-s SAMPLE_FILE_PATH \ 
 [-a ADJ_FILE_PATH] \
 [-o OUTFILE_PATH] \
 [-n NUM_PERM] \
