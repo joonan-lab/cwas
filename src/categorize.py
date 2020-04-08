@@ -23,12 +23,18 @@ from categorization import cwas_cat
 
 
 def main():
+    # Print the description
+    print(__doc__)
+
+    # Paths to files essential for this script
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    gene_mat_path = os.path.join(os.path.dirname(curr_dir), 'data', 'geneMatrix_hg38.txt')
+    assert os.path.isfile(gene_mat_path), f'The gene matrix file "{gene_mat_path}" cannot be found.'
+
     # Create the argument parser
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
                         help='Input VCF file from VEP')
-    parser.add_argument('-g', '--gene_matrix', dest='gene_mat_path', required=True, type=str,
-                        help='Gene matrix file')
     parser.add_argument('-r', '--rdd_cat_file', dest='rdd_cat_path', required=False, type=str,
                         help='File that contains a list of redundant CWAS categories', default='')
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
@@ -41,27 +47,24 @@ def main():
     # Parse the arguments
     args = parser.parse_args()
 
-    # Print the description
-    print(__doc__)
-
-    # Print and check the validity of the settings
-    print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
-    print(f'[Setting] The gene matrix file: {args.gene_mat_path}')
-    print(f'[Setting] The list of redundant CWAS categories: {args.rdd_cat_path}')
-    print(f'[Setting] The output path: {args.outfile_path}')
-    print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
+    # Check the validity of the arguments
     assert os.path.isfile(args.in_vcf_path), f'The input VCF file "{args.in_vcf_path}" cannot be found.'
-    assert os.path.isfile(args.gene_mat_path), f'The gene matrix file: "{args.gene_mat_path}" cannot be found.'
     assert args.rdd_cat_path == '' or os.path.isfile(args.rdd_cat_path), \
         f'The list of redundant CWAS categories "{args.rdd_cat_path}" cannot be found.'
     outfile_dir = os.path.dirname(args.outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
     assert 1 <= args.num_proc <= mp.cpu_count(), \
         f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
+
+    # Print the settings (arguments)
+    print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
+    print(f'[Setting] The list of redundant CWAS categories: {args.rdd_cat_path}')
+    print(f'[Setting] The output path: {args.outfile_path}')
+    print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
     print()
 
-    print(f'[{get_curr_time()}, Progress] Load the input VCF file into a DataFrame')
     # Make the DataFrame of the annotated variants from the VCF file
+    print(f'[{get_curr_time()}, Progress] Load the input VCF file into a DataFrame')
     rdd_colnames = ["CHROM", "POS", "QUAL", "FILTER", "INFO", "Allele", "IMPACT", "Gene", "Feature_type",
                     "Feature", "EXON", "INTRON", "HGVSc", "HGVSp", "cDNA_position", "CDS_position", "Protein_position",
                     "Amino_acids", "Codons", "Existing_variation", "STRAND", "FLAGS", "SYMBOL_SOURCE", "HGNC_ID",
@@ -70,7 +73,7 @@ def main():
     print(f'[{get_curr_time()}, Progress] No. input DNVs: {len(variant_df.index):,d}')
 
     # Create the information for the 'gene_list' annotation terms for each gene symbol
-    gene_list_set_dict = parse_gene_mat(args.gene_mat_path)
+    gene_list_set_dict = parse_gene_mat(gene_mat_path)
 
     # (Optional) Filter the DNVs by whether allele frequency is known or not in gnomAD
     if args.af_known == 'no':
