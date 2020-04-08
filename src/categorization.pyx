@@ -17,26 +17,32 @@ import numpy as np
 import pandas as pd
 
 
-cpdef dict cwas_cat(variant_df: pd.DataFrame, dict gene_list_set_dict):
+cpdef dict cwas_cat(variant_df: pd.DataFrame, dict category_dict, dict gene_list_set_dict):
     """ Categorize the variants in the input data frame into the combinations of the annotation terms in the 5 groups
     and return the dictionary that contains the distribution of the variants for the combinations. These combinations
     are defined as CWAS categories.
 
     :param variant_df: The DataFrame object that contains the annotated variants from VEP 
+    :param category_dict: The dictionary from parsing the category configuration file
     :param gene_list_set_dict: The dictionary which key and value are a gene symbol and the set of the names of 
                                the gene lists where this gene is involved, respectively.
     :return: The dictionary which key and value are a CWAS category and the number of the variants in this category, 
              respectively
     """
-    cdef dict cwas_annot_dict, cwas_annot_idx_dict, cwas_annot_term_conv, cat_result_dict
+    cdef dict annot_terms_dict, annot_term_idx_dict, cat_result_dict
     cdef cnp.ndarray[long] var_type_annot_ints, cons_annot_ints, gene_list_annot_ints
     cdef cnp.ndarray[long] effect_annot_ints, region_annot_ints
     cdef long var_type_int, cons_int, gene_list_int, effect_int, region_int
     cdef list var_type_annots, cons_annots, gene_list_annots, effect_annots, region_annots
     cdef str var_type_annot, cons_annot, gene_list_annot, effect_annot, region_annot
 
-    cwas_annot_dict, cwas_annot_idx_dict = get_cwas_annot()
-    cwas_annot_term_conv = get_annot_term_conv()
+    annot_terms_dict = {}
+    annot_term_idx_dict = {}
+
+    for annot_group in category_dict:
+        annot_terms = list(category_dict[annot_group].keys())
+        annot_terms_dict[annot_group] = annot_terms
+        annot_term_idx_dict[annot_group] = get_idx_dict(annot_terms_dict[annot_group])
 
     # For annotating each variant with multiple annotation terms from each group efficiently,
     # "Annotation integer" (annot_int) is used.
@@ -44,22 +50,22 @@ cpdef dict cwas_cat(variant_df: pd.DataFrame, dict gene_list_set_dict):
     # each annotation term
     # e.g. If a list of annotation terms is ['A', 'B', 'C'] and the annotation integer is 0b101, it means that
     # the variant is annotated as 'A' and 'B'.
-    var_type_annot_ints = annot_var_type(variant_df, cwas_annot_idx_dict['var_type'])
-    cons_annot_ints = annot_cons(variant_df, cwas_annot_idx_dict['cons'])
-    gene_list_annot_ints = annot_gene_list(variant_df, cwas_annot_idx_dict['gene_list'], gene_list_set_dict)
-    effect_annot_ints = annot_effect(variant_df, cwas_annot_idx_dict['effect'], gene_list_set_dict)
-    region_annot_ints = annot_region(variant_df, cwas_annot_idx_dict['region'])
+    var_type_annot_ints = annot_var_type(variant_df, annot_term_idx_dict['var_type'])
+    cons_annot_ints = annot_cons(variant_df, annot_term_idx_dict['cons'])
+    gene_list_annot_ints = annot_gene_list(variant_df, annot_term_idx_dict['gene_list'], gene_list_set_dict)
+    effect_annot_ints = annot_effect(variant_df, annot_term_idx_dict['effect'], gene_list_set_dict)
+    region_annot_ints = annot_region(variant_df, annot_term_idx_dict['region'])
 
     # Categorize by the annotation terms for each variant
     cat_result_dict = {}
 
     for var_type_annot_int, cons_annot_int, gene_list_annot_int, effect_annot_int, region_annot_int in \
             zip(var_type_annot_ints, cons_annot_ints, gene_list_annot_ints, effect_annot_ints, region_annot_ints):
-        var_type_annots = ['All'] + parse_annot_int(var_type_annot_int, cwas_annot_dict['var_type'])
-        cons_annots = ['All'] + parse_annot_int(cons_annot_int, cwas_annot_dict['cons'])
-        gene_list_annots = ['Any'] + parse_annot_int(gene_list_annot_int, cwas_annot_dict['gene_list'])
-        effect_annots = ['Any'] + parse_annot_int(effect_annot_int, cwas_annot_dict['effect'])
-        region_annots = ['Any'] + parse_annot_int(region_annot_int, cwas_annot_dict['region'])
+        var_type_annots = parse_annot_int(var_type_annot_int, annot_terms_dict['var_type'])
+        cons_annots = parse_annot_int(cons_annot_int, annot_terms_dict['cons'])
+        gene_list_annots = parse_annot_int(gene_list_annot_int, annot_terms_dict['gene_list'])
+        effect_annots = parse_annot_int(effect_annot_int, annot_terms_dict['effect'])
+        region_annots = parse_annot_int(region_annot_int, annot_terms_dict['region'])
 
         # Make combinations using the annotation terms
         for var_type_annot in var_type_annots:
@@ -67,11 +73,11 @@ cpdef dict cwas_cat(variant_df: pd.DataFrame, dict gene_list_set_dict):
                 for gene_list_annot in gene_list_annots:
                     for effect_annot in effect_annots:
                         for region_annot in region_annots:
-                            cwas_cat = f'{var_type_annot}' \
-                                       f'_{cwas_annot_term_conv["gene_list"][gene_list_annot]}' \
-                                       f'_{cwas_annot_term_conv["cons"][cons_annot]}' \
-                                       f'_{effect_annot}' \
-                                       f'_{cwas_annot_term_conv["region"][region_annot]}'
+                            cwas_cat = f'{category_dict["var_type"][var_type_annot]}' \
+                                       f'_{category_dict["gene_list"][gene_list_annot]}' \
+                                       f'_{category_dict["cons"][cons_annot]}' \
+                                       f'_{category_dict["effect"][effect_annot]}' \
+                                       f'_{category_dict["region"][region_annot]}'
 
                             if cat_result_dict.get(cwas_cat) is None:
                                 cat_result_dict[cwas_cat] = 1
@@ -81,195 +87,20 @@ cpdef dict cwas_cat(variant_df: pd.DataFrame, dict gene_list_set_dict):
     return cat_result_dict
 
 
-# Functions for the information of annotation terms for CWAS
-cdef tuple get_cwas_annot():
-    """ Return the dictionary for a list of annotation terms for CWAS and the dictionary 
-    for indices of the annotation terms. 
+cdef dict get_idx_dict(list list_):
+    """ Return a dictionary which key and value are an item of the input list and its index, respectively. """
+    cdef dict idx_dict
+    cdef int idx
+    cdef str item
 
-    --- The groups of the annotation terms for CWAS ---
-    1. Variant types (var_type)
-    2. Conservation (cons)
-    3. Gene lists (gene_list)
-    4. GENCODE annotation categories (effect)
-    5. Functional annotation categories (region)
+    idx_dict = {}
+    idx = 0
 
-    :returns
-    1. A dictionary which key is a group name and value is the list of the annotation terms of this group.
-    2. A dictionary which key is a group name and value is the dictionary
-       which key is an annotation term of this group and value is the index of the annotation term.
-    """
-    cdef list var_type_annots, cons_annots, gene_list_annots, effect_annots, region_annots
-    cdef dict cwas_annot_dict, cwas_annot_idx_dict
-    cdef tuple returns
+    for item in list_:
+        idx_dict[item] = idx
+        idx += 1
 
-    # The lists of CWAS categories
-    var_type_annots = [
-        'SNV',
-        'Indel'
-    ]
-    cons_annots = [
-        'phyloP46wayVt',
-        'phastCons46wayVt',
-    ]
-    gene_list_annots = [
-        'ASD_TADA_FDR03',
-        'Willsey_Union',
-        'geneSet_PLI90Score',
-        'geneSet_PSD',
-        'geneSet_DDD',
-        'geneSet_BE',
-        'geneSet_CHD8_Common',
-        'geneSet_FMRP_Darnell',
-        'geneSet_Protein_Coding',
-        'geneSet_Pseudogene',
-        'geneSet_lincRNA',
-        'geneSet_Antisense',
-        'geneSet_Processed_Transcript',
-    ]
-    effect_annots = [
-        'CodingRegion',
-        'FrameshiftRegion',
-        'InFrameRegion',
-        'SilentRegion',
-        'LoFRegion',
-        'MissenseHVARDRegionSimple',
-        'MissenseRegion',
-        'NoncodingRegion',
-        'SpliceSiteNoncanonRegion',
-        'IntronRegion',
-        'PromoterRegion',
-        'IntergenicRegion',
-        'UTRsRegion',
-        'AntisenseRegion',
-        'lincRnaRegion',
-        'OtherTranscriptRegion',
-    ]
-    region_annots = [
-        'ChmmState15_E1_Brain',
-        'ChmmState15_E2_Brain',
-        'ChmmState15_E3_Brain',
-        'ChmmState15_E4_Brain',
-        'ChmmState15_E5_Brain',
-        'ChmmState15_E6_Brain',
-        'ChmmState15_E7_Brain',
-        'ChmmState15_E8_Brain',
-        'ChmmState15_E9_Brain',
-        'ChmmState15_E10_Brain',
-        'ChmmState15_E11_Brain',
-        'ChmmState15_E12_Brain',
-        'ChmmState15_E13_Brain',
-        'ChmmState15_E14_Brain',
-        'ChmmState15_E15_Brain',
-        'EpigenomeByGroup4_DNaseFDR001_Brain',
-        'EpigenomeByGroup4_H3K27ac_Brain',
-        'EpigenomeByGroup4_H3K27me3_Brain',
-        'EpigenomeByGroup4_H3K36me3_Brain',
-        'EpigenomeByGroup4_H3K4me1_Brain',
-        'EpigenomeByGroup4_H3K4me3_Brain',
-        'EpigenomeByGroup4_H3K9ac_Brain',
-        'EpigenomeByGroup4_H3K9me3_Brain',
-        'H3K27ac_160407_multiInt_filtBy2_merge_3col',
-        'atac_norep_160407_multiInt_filtBy2_merge_3col',
-        'HARs_Doan2016',
-        'fantom5_enhancer_robust',
-        'EncodeDNaseClustersUCSC',
-        'EncodeTfbsClusterV2UCSC',
-        'vistaEnhancerUCSC',
-        'Yale_H3K27ac_CBC',
-        'Yale_H3K27ac_DFC',
-    ]
-
-    cwas_annot_dict = {
-        'var_type': var_type_annots,
-        'cons': cons_annots,
-        'gene_list': gene_list_annots,
-        'effect': effect_annots,
-        'region': region_annots,
-    }
-    cwas_annot_idx_dict = {
-        'var_type': {annot: i for i, annot in enumerate(var_type_annots)},
-        'cons': {annot: i for i, annot in enumerate(cons_annots)},
-        'gene_list': {annot: i for i, annot in enumerate(gene_list_annots)},
-        'effect': {annot: i for i, annot in enumerate(effect_annots)},
-        'region': {annot: i for i, annot in enumerate(region_annots)},
-    }
-    returns = (cwas_annot_dict, cwas_annot_idx_dict)
-
-    return returns
-
-
-cdef dict get_annot_term_conv():
-    """ Return the dictionary to convert the annotation terms in 'cons', 'gene_list', and 'region' groups to the 
-    previous annotation terms. This is for backward compatibility with the previous CWAS.
-    """
-    cdef dict cons_term_conv, gene_list_term_conv, region_term_conv, cwas_annot_term_conv
-
-    cons_term_conv = {
-        'All': 'All',
-        'phyloP46wayVt': 'phyloP46way',
-        'phastCons46wayVt': 'phastCons46way',
-    }
-
-    gene_list_term_conv = {
-        'Any': 'Any',
-        'ASD_TADA_FDR03': 'ASDTADAFDR03',
-        'Willsey_Union': 'WillseyUnion',
-        'geneSet_PLI90Score': 'PLI90Score',
-        'geneSet_PSD': 'PSD',
-        'geneSet_DDD': 'DDD',
-        'geneSet_BE': 'BE',
-        'geneSet_CHD8_Common': 'CHD8Common',
-        'geneSet_FMRP_Darnell': 'FMRPDarnell',
-        'geneSet_Protein_Coding': 'ProteinCoding',
-        'geneSet_Pseudogene': 'Pseudogene',
-        'geneSet_lincRNA': 'lincRNA',
-        'geneSet_Antisense': 'Antisense',
-        'geneSet_Processed_Transcript': 'ProcessedTranscript',
-     }
-
-    region_term_conv = {
-        'Any': 'Any',
-        'ChmmState15_E1_Brain': 'ChmE1',
-        'ChmmState15_E2_Brain': 'ChmE2',
-        'ChmmState15_E3_Brain': 'ChmE3',
-        'ChmmState15_E4_Brain': 'ChmE4',
-        'ChmmState15_E5_Brain': 'ChmE5',
-        'ChmmState15_E6_Brain': 'ChmE6',
-        'ChmmState15_E7_Brain': 'ChmE7',
-        'ChmmState15_E8_Brain': 'ChmE8',
-        'ChmmState15_E9_Brain': 'ChmE9',
-        'ChmmState15_E10_Brain': 'ChmE10',
-        'ChmmState15_E11_Brain': 'ChmE11',
-        'ChmmState15_E12_Brain': 'ChmE12',
-        'ChmmState15_E13_Brain': 'ChmE13',
-        'ChmmState15_E14_Brain': 'ChmE14',
-        'ChmmState15_E15_Brain': 'ChmE15',
-        'EpigenomeByGroup4_DNaseFDR001_Brain': 'EpiDNase',
-        'EpigenomeByGroup4_H3K27ac_Brain': 'EpiH3K27ac',
-        'EpigenomeByGroup4_H3K27me3_Brain': 'EpiH3K27me3',
-        'EpigenomeByGroup4_H3K36me3_Brain': 'EpiH3K36me3',
-        'EpigenomeByGroup4_H3K4me1_Brain': 'EpiH3K4me1',
-        'EpigenomeByGroup4_H3K4me3_Brain': 'EpiH3K4me3',
-        'EpigenomeByGroup4_H3K9ac_Brain': 'EpiH3K9ac',
-        'EpigenomeByGroup4_H3K9me3_Brain': 'EpiH3K9me3',
-        'H3K27ac_160407_multiInt_filtBy2_merge_3col': 'MidFetalH3K27ac',
-        'atac_norep_160407_multiInt_filtBy2_merge_3col': 'MidFetalATAC',
-        'HARs_Doan2016': 'HARs',
-        'fantom5_enhancer_robust': 'EnhancerFantom',
-        'EncodeDNaseClustersUCSC': 'EncodeDNase',
-        'EncodeTfbsClusterV2UCSC': 'EncodeTFBS',
-        'vistaEnhancerUCSC': 'EnhancerVista',
-        'Yale_H3K27ac_CBC': 'YaleH3K27acCBC',
-        'Yale_H3K27ac_DFC': 'YaleH3K27acDFC',
-    }
-
-    cwas_annot_term_conv = {
-        'cons': cons_term_conv,
-        'gene_list': gene_list_term_conv,
-        'region': region_term_conv,
-    }
-
-    return cwas_annot_term_conv
+    return idx_dict
 
 
 # Functions for annotation of the variants
@@ -287,6 +118,7 @@ cdef cnp.ndarray[long] annot_var_type(variant_df: pd.DataFrame, dict var_type_an
     annot_int_conv = \
         lambda is_snv: 2 ** var_type_annot_idx_dict['SNV'] if is_snv else 2 ** var_type_annot_idx_dict['Indel']
     annot_ints = np.vectorize(annot_int_conv)(is_snv_arr)
+    annot_ints += 2 ** var_type_annot_idx_dict['All']
 
     return annot_ints
 
@@ -312,6 +144,7 @@ cdef cnp.ndarray[long] annot_cons(variant_df: pd.DataFrame, dict cons_annot_idx_
     annot_ints += \
         np.vectorize(lambda is_phast_cons: 2 ** cons_annot_idx_dict['phastCons46wayVt'] if is_phast_cons else 0)\
         (is_phast_cons_arr)
+    annot_ints += 2 ** cons_annot_idx_dict['All']
 
     return annot_ints
 
@@ -319,7 +152,8 @@ cdef cnp.ndarray[long] annot_cons(variant_df: pd.DataFrame, dict cons_annot_idx_
 # Step 3: Annotate by the names of the gene lists where the variant-associated genes are involved
 cdef cnp.ndarray[long] annot_gene_list(variant_df: pd.DataFrame, dict gene_annot_idx_dict, dict gene_list_set_dict):
     cdef cnp.ndarray[str] gene_symbols, gene_nearests, effects
-    cdef list annot_ints
+    cdef cnp.ndarray[long] annot_ints
+    cdef list annot_int_list
     cdef dict annot_int_dict
     cdef str symbol, nearest, effect, gene
     cdef long annot_int
@@ -329,7 +163,7 @@ cdef cnp.ndarray[long] annot_gene_list(variant_df: pd.DataFrame, dict gene_annot
     gene_nearests = variant_df['NEAREST'].values
     effects = variant_df['Consequence'].values  # GENCODE annotations
 
-    annot_ints = []
+    annot_int_list = []
     annot_int_dict = {}  # Key: a gene symbol, Value: its category integer (For memorization)
 
     for symbol, nearest, effect in zip(gene_symbols, gene_nearests, effects):
@@ -344,15 +178,19 @@ cdef cnp.ndarray[long] annot_gene_list(variant_df: pd.DataFrame, dict gene_annot
                     if gene_cat in gene_list_set:
                         annot_int += 2 ** gene_annot_idx_dict[gene_cat]
 
-        annot_ints.append(annot_int)
+        annot_int_list.append(annot_int)
 
-    return np.array(annot_ints)
+    annot_ints = np.asarray(annot_int_list)
+    annot_ints += 2 ** gene_annot_idx_dict['Any']
+
+    return annot_ints
 
 
 # Step 4: Annotate by the effects (GENCODE annotations)
 cdef cnp.ndarray[long] annot_effect(variant_df: pd.DataFrame, dict effect_annot_idx_dict, dict gene_list_set_dict):
     cdef cnp.ndarray[str] gene_symbols, gene_nearests, effects, polyphens
-    cdef list annot_ints
+    cdef cnp.ndarray[long] annot_ints
+    cdef list annot_int_list
     cdef str symbol, nearest, effect, polyphen, gene
     cdef long annot_int
     cdef bint is_in_coding
@@ -362,7 +200,7 @@ cdef cnp.ndarray[long] annot_effect(variant_df: pd.DataFrame, dict effect_annot_
     effects = variant_df['Consequence'].values
     polyphens = variant_df['PolyPhen'].values
 
-    annot_ints = []
+    annot_int_list = []
 
     for symbol, nearest, effect, polyphen in zip(gene_symbols, gene_nearests, effects, polyphens):
         gene = nearest if 'downstream_gene_variant' in effect or 'intergenic_variant' in effect else symbol
@@ -427,29 +265,37 @@ cdef cnp.ndarray[long] annot_effect(variant_df: pd.DataFrame, dict effect_annot_
                 else:
                     annot_int += 2 ** effect_annot_idx_dict['OtherTranscriptRegion']
 
-        annot_ints.append(annot_int)
+        annot_int_list.append(annot_int)
 
-    return np.array(annot_ints)
+    annot_ints = np.asarray(annot_int_list)
+    annot_ints += 2 ** effect_annot_idx_dict['Any']
+
+    return annot_ints
 
 
 # Step 5: Annotate by the annotation terms of the regions where the variants are
-cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, dict effect_annot_idx_dict):
+cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, dict region_annot_idx_dict):
     cdef cnp.ndarray[long] annot_ints
     cdef cnp.ndarray[str] region_vals
     cdef str region
 
     annot_ints = np.zeros(len(variant_df.index), dtype=int)
 
-    for region in effect_annot_idx_dict.keys():
+    for region in region_annot_idx_dict:
+        if region == 'Any':
+            continue
+
         region_vals = variant_df[region].values
 
         if region.startswith('Yale_H3K27ac'):
             region_val_conv_func = lambda x: 0 if x == '' else max([int(y.split('_')[0]) for y in x.split('&')])
-            annot_int_conv_func = lambda x: 2 ** effect_annot_idx_dict[region] if x > 1 else 0
+            annot_int_conv_func = lambda x: 2 ** region_annot_idx_dict[region] if x > 1 else 0
             annot_ints += np.vectorize(annot_int_conv_func)(np.vectorize(region_val_conv_func)(region_vals))
         else:
-            annot_int_conv_func = lambda x: 0 if x == '' else 2 ** effect_annot_idx_dict[region]
+            annot_int_conv_func = lambda x: 0 if x == '' else 2 ** region_annot_idx_dict[region]
             annot_ints += np.vectorize(annot_int_conv_func)(region_vals)
+
+    annot_ints += 2 ** region_annot_idx_dict['Any']
 
     return annot_ints
 

@@ -11,6 +11,7 @@ import multiprocessing as mp
 import os
 import re
 import sys
+import yaml
 from datetime import datetime
 from functools import partial
 
@@ -29,7 +30,9 @@ def main():
     # Paths to files essential for this script
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     gene_mat_path = os.path.join(os.path.dirname(curr_dir), 'data', 'geneMatrix_hg38.txt')
+    cat_conf_path = os.path.join(os.path.dirname(curr_dir), 'conf', 'categories.yaml')
     assert os.path.isfile(gene_mat_path), f'The gene matrix file "{gene_mat_path}" cannot be found.'
+    assert os.path.isfile(cat_conf_path), f'The category configuration file "{cat_conf_path}" cannot be found.'
 
     # Create the argument parser
     parser = argparse.ArgumentParser(description=__doc__)
@@ -89,8 +92,10 @@ def main():
 
     # Categorize the DNVs
     print(f'[{get_curr_time()}, Progress] Categorize DNVs for each sample')
+    with open(cat_conf_path, 'r') as cat_conf_file:
+        category_dict = yaml.safe_load(cat_conf_file)
     try:
-        cat_result_df = categorize_variant(variant_df, gene_list_set_dict, args.num_proc)
+        cat_result_df = categorize_variant(variant_df, category_dict, gene_list_set_dict, args.num_proc)
     except AssertionError:
         print(f'[{get_curr_time()}, ERROR] Too many number of processes "{args.num_proc:,d}". '
               f'This number must be lower than the number of the samples.', file=sys.stderr)
@@ -200,11 +205,13 @@ def parse_gene_mat(gene_mat_path: str) -> dict:
     return gene_list_set_dict
 
 
-def categorize_variant(variant_df: pd.DataFrame, gene_list_set_dict: dict, num_proc: int) -> pd.DataFrame:
+def categorize_variant(variant_df: pd.DataFrame, category_dict: dict, gene_list_set_dict: dict, num_proc: int) \
+        -> pd.DataFrame:
     """ Categorize the variants in the input DataFrame into CWAS categories and return DataFrame that contains
     No. variants of each CWAS category for each sample.
 
     :param variant_df: The DataFrame that contains a list of variants annotated by VEP
+    :param category_dict: The dictionary from parsing the category configuration file
     :param gene_list_set_dict: The dictionary from 'parse_gene_mat' function
     :param num_proc: No. processes used for the categorization
     :return: The DataFrame that contains No. variants of each CWAS category for each sample (Sample IDs are its indices)
@@ -216,11 +223,13 @@ def categorize_variant(variant_df: pd.DataFrame, gene_list_set_dict: dict, num_p
 
     # Categorize the variants in each sample
     if num_proc == 1:
-        cat_result_dicts = _cwas_cat_samples(sample_var_dfs, gene_list_set_dict)
+        cat_result_dicts = _cwas_cat_samples(sample_var_dfs, category_dict, gene_list_set_dict)
     else:
         var_df_sub_lists = div_list(sample_var_dfs, num_proc)  # It can raise AssertionError.
         pool = mp.Pool(num_proc)
-        proc_outputs = pool.map(partial(_cwas_cat_samples, gene_list_set_dict=gene_list_set_dict), var_df_sub_lists)
+        proc_outputs = \
+            pool.map(partial(_cwas_cat_samples, category_dict=category_dict, gene_list_set_dict=gene_list_set_dict),
+                     var_df_sub_lists)
         pool.close()
         pool.join()
 
@@ -238,17 +247,18 @@ def categorize_variant(variant_df: pd.DataFrame, gene_list_set_dict: dict, num_p
     return cat_result_df
 
 
-def _cwas_cat_samples(sample_var_dfs: list, gene_list_set_dict: dict) -> list:
+def _cwas_cat_samples(sample_var_dfs: list, category_dict: dict, gene_list_set_dict: dict) -> list:
     """ This is a wrapper function to execute 'cwas_cat' for multiple samples
 
     :param sample_var_dfs: The list of pd.DataFrame objects listing each sample's variants
+    :param category_dict: The dictionary from parsing the category configuration file
     :param gene_list_set_dict: The dictionary from 'parse_gene_mat' function
     :return: The list of dictionaries for each sample's 'cwas_cat' result
     """
     cat_result_dicts = []
 
     for sample_var_df in sample_var_dfs:
-        cat_result_dict = cwas_cat(sample_var_df, gene_list_set_dict)
+        cat_result_dict = cwas_cat(sample_var_df, category_dict, gene_list_set_dict)
         cat_result_dicts.append(cat_result_dict)
 
     return cat_result_dicts
