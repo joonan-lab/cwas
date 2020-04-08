@@ -86,3 +86,4 @@ region:
   EncodeTfbsClusterV2UCSC: EncodeTFBS
   vistaEnhancerUCSC: EnhancerVista
   Yale_H3K27ac_CBC: YaleH3K27acCBC
+  Yale_H3K27ac_DFC: YaleH3K27acDFC
