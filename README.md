@@ -90,11 +90,9 @@ Cython (http://cython.org/). Please note that this script will use Cython. So yo
 ##### Required arguments:
 
 - -i, --infile = Path to file listing variants annotated by VEP, which is an output of `run_vep.py` (**Step 1**). 
-- -g, --gene_matrix = Path to file listing gene sets (gene matrix file). You can find the file from the AMI.
 
 ##### Optional arguments:
 
-- -r, --rdd_cat_file = Path to file listing redundant CWAS categories. Default is *'' (empty string)*, which means there are no redundant categories so any of categories will not be removed.
 - -o, --outfile = Path to the categorization result. Default path is *cwas_cat_result.txt*.
 - -p, --num_proc = Number of processes for this script. Default is *1*.
 - -a, --af_known = Keep the variants with known allele frequencies by gnomAD. Possible values are *{yes, no, only}*. Default is *yes*.
@@ -106,8 +104,6 @@ Cython (http://cython.org/). Please note that this script will use Cython. So yo
 # Usage
 ./categorization.py \
 -i IN_VCF_PATH \
--g GENE_MAT_PATH \
-[-r RDD_CAT_PATH] \
 [-o OUTFILE_PATH]  \
 [-p NUM_PROC] \
 [-a {yes, no, only}]
