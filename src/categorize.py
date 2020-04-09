@@ -27,15 +27,22 @@ def main():
     # Print the description
     print(__doc__)
 
-    # Paths to files essential for this script
+    # Paths to essential configuration files
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
     cat_conf_path = os.path.join(project_dir, 'conf', 'categories.yaml')
-    gene_mat_path = os.path.join(project_dir, 'data', 'geneMatrix_hg38.txt')
-    rdd_cat_path = os.path.join(project_dir, 'data', 'list_redundant_categories.txt')
-    assert os.path.isfile(cat_conf_path), f'The category configuration file "{cat_conf_path}" cannot be found.'
-    assert os.path.isfile(gene_mat_path), f'The gene matrix file "{gene_mat_path}" cannot be found.'
-    assert os.path.isfile(rdd_cat_path), f'The file listing redundant categories "{cat_conf_path}" cannot be found.'
+    gene_mat_path = os.path.join(project_dir, 'conf', 'gene_matrix.txt')
+    rdd_cat_path = os.path.join(project_dir, 'conf', 'redundant_categories.txt')
+
+    # Configuration file validity check
+    try:
+        assert os.path.isfile(cat_conf_path), f'The category configuration file "{cat_conf_path}" cannot be found.'
+        assert os.path.isfile(gene_mat_path), f'The gene matrix file "{gene_mat_path}" cannot be found.'
+        assert os.path.isfile(rdd_cat_path), f'The file listing redundant categories "{cat_conf_path}" cannot be found.'
+    except AssertionError:
+        print('[ERROR] One of default configuration files cannot be found. '
+              'Please do not remove any files in the conf directory.', file=sys.stderr)
+        raise
 
     # Create the argument parser
     parser = argparse.ArgumentParser(description=__doc__)
