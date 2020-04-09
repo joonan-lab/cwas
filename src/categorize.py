@@ -29,17 +29,18 @@ def main():
 
     # Paths to files essential for this script
     curr_dir = os.path.dirname(os.path.abspath(__file__))
-    gene_mat_path = os.path.join(os.path.dirname(curr_dir), 'data', 'geneMatrix_hg38.txt')
-    cat_conf_path = os.path.join(os.path.dirname(curr_dir), 'conf', 'categories.yaml')
-    assert os.path.isfile(gene_mat_path), f'The gene matrix file "{gene_mat_path}" cannot be found.'
+    project_dir = os.path.dirname(curr_dir)
+    cat_conf_path = os.path.join(project_dir, 'conf', 'categories.yaml')
+    gene_mat_path = os.path.join(project_dir, 'data', 'geneMatrix_hg38.txt')
+    rdd_cat_path = os.path.join(project_dir, 'data', 'list_redundant_categories.txt')
     assert os.path.isfile(cat_conf_path), f'The category configuration file "{cat_conf_path}" cannot be found.'
+    assert os.path.isfile(gene_mat_path), f'The gene matrix file "{gene_mat_path}" cannot be found.'
+    assert os.path.isfile(rdd_cat_path), f'The file listing redundant categories "{cat_conf_path}" cannot be found.'
 
     # Create the argument parser
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
                         help='Input VCF file from VEP')
-    parser.add_argument('-r', '--rdd_cat_file', dest='rdd_cat_path', required=False, type=str,
-                        help='File that contains a list of redundant CWAS categories', default='')
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of the output', default='cwas_cat_result.txt')
     parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
@@ -52,8 +53,6 @@ def main():
 
     # Check the validity of the arguments
     assert os.path.isfile(args.in_vcf_path), f'The input VCF file "{args.in_vcf_path}" cannot be found.'
-    assert args.rdd_cat_path == '' or os.path.isfile(args.rdd_cat_path), \
-        f'The list of redundant CWAS categories "{args.rdd_cat_path}" cannot be found.'
     outfile_dir = os.path.dirname(args.outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
     assert 1 <= args.num_proc <= mp.cpu_count(), \
@@ -61,9 +60,9 @@ def main():
 
     # Print the settings (arguments)
     print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
-    print(f'[Setting] The list of redundant CWAS categories: {args.rdd_cat_path}')
     print(f'[Setting] The output path: {args.outfile_path}')
     print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
+    print(f'[Setting] Keep the variants with known allele frequencies: {args.af_known}')
     print()
 
     # Make the DataFrame of the annotated variants from the VCF file
@@ -105,15 +104,12 @@ def main():
           f'{len(cat_result_df.columns):,d}')
 
     # Remove redundant categories
-    if args.rdd_cat_path is None:
-        print(f'[{get_curr_time()}, Progress] Keep redundant categories')
-    else:
-        with open(args.rdd_cat_path, 'r') as rdd_cat_file:
-            rdd_cats = rdd_cat_file.read().splitlines()
+    with open(rdd_cat_path, 'r') as rdd_cat_file:
+        rdd_cats = rdd_cat_file.read().splitlines()
 
-        cat_result_df.drop(rdd_cats, axis='columns', inplace=True, errors='ignore')  # Remove only existing columns
-        print(f'[{get_curr_time()}, Progress] No. non-redundant CWAS categories with at least 1 DNV: '
-              f'{len(cat_result_df.columns):,d}')
+    cat_result_df.drop(rdd_cats, axis='columns', inplace=True, errors='ignore')  # Remove only existing columns
+    print(f'[{get_curr_time()}, Progress] No. non-redundant CWAS categories with at least 1 DNV: '
+          f'{len(cat_result_df.columns):,d}')
 
     # Write the result of the categorization
     print(f'[{get_curr_time()}, Progress] Write the result of the categorization')
