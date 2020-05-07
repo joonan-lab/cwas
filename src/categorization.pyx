@@ -17,15 +17,15 @@ import numpy as np
 import pandas as pd
 
 
-cpdef dict cwas_cat(variant_df: pd.DataFrame, dict category_dict, dict gene_list_set_dict):
+cpdef dict categorize_variant(variant_df: pd.DataFrame, dict category_dict, dict gene_list_dict):
     """ Categorize the variants in the input data frame into the combinations of the annotation terms in the 5 groups
     and return the dictionary that contains the distribution of the variants for the combinations. These combinations
     are defined as CWAS categories.
 
     :param variant_df: The DataFrame object that contains the annotated variants from VEP 
     :param category_dict: The dictionary from parsing the category configuration file
-    :param gene_list_set_dict: The dictionary which key and value are a gene symbol and the set of the names of 
-                               the gene lists where this gene is involved, respectively.
+    :param gene_list_dict: The dictionary which key and value are a gene symbol and the set of the names of 
+                               the gene lists where this gene is involved, respectively
     :return: The dictionary which key and value are a CWAS category and the number of the variants in this category, 
              respectively
     """
@@ -52,8 +52,8 @@ cpdef dict cwas_cat(variant_df: pd.DataFrame, dict category_dict, dict gene_list
     # the variant is annotated as 'A' and 'B'.
     var_type_annot_ints = annot_var_type(variant_df, annot_term_idx_dict['var_type'])
     cons_annot_ints = annot_cons(variant_df, annot_term_idx_dict['cons'])
-    gene_list_annot_ints = annot_gene_list(variant_df, annot_term_idx_dict['gene_list'], gene_list_set_dict)
-    effect_annot_ints = annot_effect(variant_df, annot_term_idx_dict['effect'], gene_list_set_dict)
+    gene_list_annot_ints = annot_gene_list(variant_df, annot_term_idx_dict['gene_list'], gene_list_dict)
+    effect_annot_ints = annot_effect(variant_df, annot_term_idx_dict['effect'], gene_list_dict)
     region_annot_ints = annot_region(variant_df, annot_term_idx_dict['region'])
 
     # Categorize by the annotation terms for each variant
