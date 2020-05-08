@@ -19,49 +19,11 @@ from scipy.stats import binom_test
 
 
 def main():
-    # Cteate the top-level argument parser
-    parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(description='Types of burden tests', dest='test_type')
-
-    # Create the parser for binomial tests
-    parser_binom = subparsers.add_parser('binom', description='Burden tests via binomial tests',
-                                         help='Binomial tests (arg "binom -h" for usage)')
-    parser_binom.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
-                              help='Path of a result of the CWAS categorization')
-    parser_binom.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
-                              help='File listing sample IDs with their families and phenotypes (case or ctrl)')
-    parser_binom.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
-                              help='File that contains adjustment factors for No. DNVs of each sample',
-                              default='')
-    parser_binom.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
-                              help='Path of results of burden tests', default='cwas_burden_binom_result.txt')
-
-    # Create the parser for permutation tests
-    parser_perm = subparsers.add_parser('perm', description='Burden tests via permutation tests',
-                                        help='Permutation tests (arg "perm -h" for usage)')
-    parser_perm.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
-                              help='Path of a result of the CWAS categorization')
-    parser_perm.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
-                              help='File listing sample IDs with their families and phenotypes (case or ctrl)')
-    parser_perm.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
-                              help='File that contains adjustment factors for No. DNVs of each sample',
-                              default='')
-    parser_perm.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
-                              help='Path of results of burden tests', default='cwas_burden_perm_result.txt')
-    parser_perm.add_argument('-n', '--num_perm', dest='num_perm', required=False, type=int,
-                             help='Number of label-swapping permutations',
-                             default=10000)
-    parser_perm.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                             help='Number of processes used in permutation tests',
-                             default=1)
-    parser_perm.add_argument('-po', '--perm_outfile', dest='perm_rr_path', required=False, type=str,
-                             help='Path of relative risk (RR) outputs from permutations',
-                             default='')
-
     # Parse the arguments
+    parser = create_arg_parser()
     args = parser.parse_args()
 
-    # Print the description
+    # Print the script description
     print(__doc__)
 
     # Print and check the validity of the settings
@@ -129,6 +91,47 @@ def main():
     print(f'[{get_curr_time()}, Progress] Done')
 
 
+def create_arg_parser() -> argparse.ArgumentParser:
+    """ Create an argument parser for this script and return it """
+    # Create the top-level argument parser
+    parser = argparse.ArgumentParser(description=__doc__)
+    subparsers = parser.add_subparsers(description='Types of burden tests', dest='test_type')
+
+    def add_common_args(subparser: argparse.ArgumentParser):
+        """ Add common arguments to the subparser """
+        subparser.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
+                               help='Path of a result of the CWAS categorization')
+        subparser.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                               help='File listing sample IDs with their families and phenotypes (case or ctrl)')
+        subparser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
+                               help='File that contains adjustment factors for No. DNVs of each sample', default='')
+
+    # Create the parser for binomial tests
+    parser_binom = subparsers.add_parser('binom', description='Burden tests via binomial tests',
+                                         help='Binomial tests (arg "binom -h" for usage)')
+    add_common_args(parser_binom)
+    parser_binom.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
+                              help='Path of results of burden tests', default='cwas_burden_binom_result.txt')
+
+    # Create the parser for permutation tests
+    parser_perm = subparsers.add_parser('perm', description='Burden tests via permutation tests',
+                                        help='Permutation tests (arg "perm -h" for usage)')
+    add_common_args(parser_perm)
+    parser_perm.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
+                             help='Path of results of burden tests', default='cwas_burden_perm_result.txt')
+    parser_perm.add_argument('-n', '--num_perm', dest='num_perm', required=False, type=int,
+                             help='Number of label-swapping permutations',
+                             default=10000)
+    parser_perm.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                             help='Number of processes used in permutation tests',
+                             default=1)
+    parser_perm.add_argument('-po', '--perm_outfile', dest='perm_rr_path', required=False, type=str,
+                             help='Path of relative risk (RR) outputs from permutations',
+                             default='')
+
+    return parser
+
+
 def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
     """ Return True if two arrays have the same items regardless of the order, else return False """
     if len(array1) != len(array2):
@@ -171,14 +174,7 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> pd.D
     :return: A DataFrame that contains binomial p-values and other statistics for each CWAS category
     """
     # Count the number of de novo variants (DNV) for cases and controls
-    sample_info_dict = sample_df.to_dict()
-    sample_ids = cwas_cat_df.index.values
-    sample_types = np.asarray([sample_info_dict['PHENOTYPE'][sample_id] for sample_id in sample_ids])
-    are_case = sample_types == 'case'
-
-    cat_df_vals = cwas_cat_df.values
-    case_dnv_cnt = cat_df_vals[are_case, :].sum(axis=0)
-    ctrl_dnv_cnt = cat_df_vals[~are_case, :].sum(axis=0)
+    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_df, sample_df)
     dnv_cnt_arr = np.concatenate([case_dnv_cnt[:, np.newaxis], ctrl_dnv_cnt[:, np.newaxis]], axis=1)
 
     # Make a DataFrame for the results of binomial tests
@@ -188,9 +184,13 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> pd.D
     burden_df['Relative_Risk'] = case_dnv_cnt / ctrl_dnv_cnt
 
     # Binomial tests
-    binom_two_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='two-sided')
-    binom_one_tail = lambda n1, n2: binom_test(x=n1, n=n1+n2, p=0.5, alternative='greater') if n1 > n2 \
-        else binom_test(x=n2, n=n1+n2, p=0.5, alternative='greater')
+    def binom_two_tail(n1, n2):
+        return binom_test(x=n1, n=n1 + n2, p=0.5, alternative='two-sided')
+
+    def binom_one_tail(n1, n2):
+        return binom_test(x=n1, n=n1 + n2, p=0.5, alternative='greater') if n1 > n2 \
+            else binom_test(x=n2, n=n1 + n2, p=0.5, alternative='greater')
+
     burden_df['P'] = \
         np.vectorize(binom_two_tail)(case_dnv_cnt.round(), ctrl_dnv_cnt.round())
     burden_df['P_1side'] = \
@@ -213,11 +213,11 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
     """
     # Calculate relative risks from label-swapping permutations
     if num_proc == 1:
-        perm_rr_list = cal_perm_rr(num_perm, cwas_cat_df, sample_df)
+        perm_rr_list = _cal_perm_rr(num_perm, cwas_cat_df, sample_df)
     else:
         num_perms = div_dist_num(num_perm, num_proc)
         pool = mp.Pool(num_proc)
-        proc_outputs = pool.map(partial(cal_perm_rr, cwas_cat_df=cwas_cat_df, sample_df=sample_df), num_perms)
+        proc_outputs = pool.map(partial(_cal_perm_rr, cwas_cat_df=cwas_cat_df, sample_df=sample_df), num_perms)
         pool.close()
         pool.join()
 
@@ -227,17 +227,8 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
             perm_rr_list += proc_output
 
     perm_rrs = np.concatenate(perm_rr_list, axis=0)
-
-    # Calculate an original relative risk
-    sample_info_dict = sample_df.to_dict()
-    sample_ids = cwas_cat_df.index.values
-    sample_types = np.asarray([sample_info_dict['PHENOTYPE'][sample_id] for sample_id in sample_ids])
-    are_case = sample_types == 'case'
-
-    cat_df_vals = cwas_cat_df.values
-    case_dnv_cnt = cat_df_vals[are_case, :].sum(axis=0)
-    ctrl_dnv_cnt = cat_df_vals[~are_case, :].sum(axis=0)
-    rr = case_dnv_cnt / ctrl_dnv_cnt
+    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_df, sample_df)
+    rr = case_dnv_cnt / ctrl_dnv_cnt  # Original relative risks
 
     # Permutation tests
     # Check whether a permutation RR is more extreme than the original RR
@@ -263,7 +254,22 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
     return burden_df, perm_rr_df
 
 
-def cal_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> list:
+def _cnt_case_ctrl_dnv(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> (float, float):
+    """ Count the number of the de novo variants for each phenotype, case and control.
+    """
+    sample_info_dict = sample_df.to_dict()
+    sample_ids = cwas_cat_df.index.values
+    sample_types = np.asarray([sample_info_dict['PHENOTYPE'][sample_id] for sample_id in sample_ids])
+    are_case = sample_types == 'case'
+
+    cat_df_vals = cwas_cat_df.values
+    case_dnv_cnt = cat_df_vals[are_case, :].sum(axis=0)
+    ctrl_dnv_cnt = cat_df_vals[~are_case, :].sum(axis=0)
+
+    return case_dnv_cnt, ctrl_dnv_cnt
+
+
+def _cal_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> list:
     """ Calculate relative risks of each category in each permutation trial.
     The length of the returned list equals to the number of the permutations.
     """
@@ -275,7 +281,7 @@ def cal_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame, sample_df: pd.DataFram
     perm_rr_list = []
 
     for _ in range(num_perm):
-        swap_sample_types = swap_label(sample_types, family_ids)
+        swap_sample_types = _swap_label(sample_types, family_ids)
         are_case = swap_sample_types == 'case'
         case_dnv_cnt = cat_df_vals[are_case, :].sum(axis=0)
         ctrl_dnv_cnt = cat_df_vals[~are_case, :].sum(axis=0)
@@ -285,7 +291,7 @@ def cal_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame, sample_df: pd.DataFram
     return perm_rr_list
 
 
-def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
+def _swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
     """ Randomly swap labels (case or control) in each group and return a list of swapped labels.
 
     :param labels: Array of labels
