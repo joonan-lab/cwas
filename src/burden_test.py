@@ -102,7 +102,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
         subparser.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
                                help='Path of a result of the CWAS categorization')
         subparser.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
-                               help='File listing sample IDs with their families and phenotypes (case or ctrl)')
+                               help='File listing sample IDs with their families and sample_types (case or ctrl)')
         subparser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
                                help='File that contains adjustment factors for No. DNVs of each sample', default='')
 
@@ -132,20 +132,6 @@ def create_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
-    """ Return True if two arrays have the same items regardless of the order, else return False """
-    if len(array1) != len(array2):
-        return False
-
-    array1_item_set = set(array1)
-
-    for item in array2:
-        if item not in array1_item_set:
-            return False
-
-    return True
-
-
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
     """ Adjust No. DNVs of each sample in a DataFrame for the result of CWAS categorization
     by adjustment factors for each sample
@@ -170,11 +156,15 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> pd.D
     """ Function for burden tests via binomial tests
 
     :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
-    :param sample_df: A DataFrame listing sample IDs with their families and phenotypes
+    :param sample_df: A DataFrame listing sample IDs with their families and sample_types
     :return: A DataFrame that contains binomial p-values and other statistics for each CWAS category
     """
     # Count the number of de novo variants (DNV) for cases and controls
-    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_df, sample_df)
+    cwas_cat_vals = cwas_cat_df.values
+    sample_info_dict = sample_df.to_dict()
+    sample_ids = cwas_cat_df.index.values
+    sample_types = np.vectorize(lambda sample_id: sample_info_dict['PHENOTYPE'][sample_id])(sample_ids)
+    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
     dnv_cnt_arr = np.concatenate([case_dnv_cnt[:, np.newaxis], ctrl_dnv_cnt[:, np.newaxis]], axis=1)
 
     # Make a DataFrame for the results of binomial tests
@@ -204,20 +194,32 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
     """ Function for burden tests via permutation tests
 
     :param cwas_cat_df: A DataFrame that contains the result of CWAS categorization
-    :param sample_df: A DataFrame listing sample IDs with their families and phenotypes
+    :param sample_df: A DataFrame listing sample IDs with their families and sample_types
     :param num_perm: The number of label-swapping permutation trials
     :param num_proc: The number of processes used in this function (for multiprocessing)
     :returns:
         1. A DataFrame that contains permutation p-values and other statistics for each CWAS category
         2. A DataFrame that contains relative risks for each category from each permutation trial
     """
+    # Arrays and a dictionary from the input DataFrames
+    cwas_cat_vals = cwas_cat_df.values
+    sample_info_dict = sample_df.to_dict()
+    sample_ids = cwas_cat_df.index.values
+    sample_types = np.vectorize(lambda sample_id: sample_info_dict['PHENOTYPE'][sample_id])(sample_ids)
+    family_ids = np.vectorize(lambda sample_id: sample_info_dict['FAMILY'][sample_id])(sample_ids)
+
     # Calculate relative risks from label-swapping permutations
     if num_proc == 1:
-        perm_rr_list = _cal_perm_rr(num_perm, cwas_cat_df, sample_df)
+        perm_rr_list = _cal_perm_rr(num_perm, cwas_cat_vals, sample_types, family_ids)
     else:
         num_perms = div_dist_num(num_perm, num_proc)
         pool = mp.Pool(num_proc)
-        proc_outputs = pool.map(partial(_cal_perm_rr, cwas_cat_df=cwas_cat_df, sample_df=sample_df), num_perms)
+        proc_outputs = \
+            pool.map(partial(_cal_perm_rr,
+                             sample_cat_vals=cwas_cat_vals,
+                             sample_types=sample_types,
+                             family_ids=family_ids),
+                     num_perms)
         pool.close()
         pool.join()
 
@@ -227,7 +229,7 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
             perm_rr_list += proc_output
 
     perm_rrs = np.concatenate(perm_rr_list, axis=0)
-    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_df, sample_df)
+    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
     rr = case_dnv_cnt / ctrl_dnv_cnt  # Original relative risks
 
     # Permutation tests
@@ -254,37 +256,25 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
     return burden_df, perm_rr_df
 
 
-def _cnt_case_ctrl_dnv(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> (float, float):
+def _cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> (float, float):
     """ Count the number of the de novo variants for each phenotype, case and control.
     """
-    sample_info_dict = sample_df.to_dict()
-    sample_ids = cwas_cat_df.index.values
-    sample_types = np.asarray([sample_info_dict['PHENOTYPE'][sample_id] for sample_id in sample_ids])
     are_case = sample_types == 'case'
-
-    cat_df_vals = cwas_cat_df.values
-    case_dnv_cnt = cat_df_vals[are_case, :].sum(axis=0)
-    ctrl_dnv_cnt = cat_df_vals[~are_case, :].sum(axis=0)
+    case_dnv_cnt = sample_cat_vals[are_case, :].sum(axis=0)
+    ctrl_dnv_cnt = sample_cat_vals[~are_case, :].sum(axis=0)
 
     return case_dnv_cnt, ctrl_dnv_cnt
 
 
-def _cal_perm_rr(num_perm: int, cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> list:
+def _cal_perm_rr(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, family_ids: np.ndarray) -> list:
     """ Calculate relative risks of each category in each permutation trial.
     The length of the returned list equals to the number of the permutations.
     """
-    sample_info_dict = sample_df.to_dict()
-    sample_ids = cwas_cat_df.index.values
-    family_ids = np.asarray([sample_info_dict['FAMILY'][sample_id] for sample_id in sample_ids])
-    sample_types = np.asarray([sample_info_dict['PHENOTYPE'][sample_id] for sample_id in sample_ids])
-    cat_df_vals = cwas_cat_df.values
     perm_rr_list = []
 
     for _ in range(num_perm):
         swap_sample_types = _swap_label(sample_types, family_ids)
-        are_case = swap_sample_types == 'case'
-        case_dnv_cnt = cat_df_vals[are_case, :].sum(axis=0)
-        ctrl_dnv_cnt = cat_df_vals[~are_case, :].sum(axis=0)
+        case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(sample_cat_vals, swap_sample_types)
         perm_rr = case_dnv_cnt / ctrl_dnv_cnt
         perm_rr_list.append(perm_rr[np.newaxis, :])
 
@@ -329,6 +319,20 @@ def _swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
             raise AssertionError('One group must have at most two labels.')
 
     return swap_labels
+
+
+def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
+    """ Return True if two arrays have the same items regardless of the order, else return False """
+    if len(array1) != len(array2):
+        return False
+
+    array1_item_set = set(array1)
+
+    for item in array2:
+        if item not in array1_item_set:
+            return False
+
+    return True
 
 
 def div_dist_num(num: int, num_group: int) -> list:
