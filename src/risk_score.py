@@ -68,6 +68,7 @@ def main():
 
     is_train_set = np.vectorize(lambda sample_id: sample_id in werling_sample_set)(cwas_cat_indice)
     train_sample_ids = cwas_cat_indice[is_train_set]
+    train_family_ids = np.unique([sample_info_dict['FAMILY'][sample_id] for sample_id in train_sample_ids])
     train_covariates = cwas_cat_vals[is_train_set]
     train_responses = np.vectorize(
         lambda sample_id: 1.0 if sample_info_dict['PHENOTYPE'][sample_id] == 'case' else -1.0)(train_sample_ids)
@@ -76,39 +77,45 @@ def main():
     test_responses = np.vectorize(
         lambda sample_id: 1.0 if sample_info_dict['PHENOTYPE'][sample_id] == 'case' else -1.0)(test_sample_ids)
 
-    # Randomly allocate fold IDs to each sample for cross validation
-    train_family_ids = np.unique([sample_info_dict['FAMILY'][sample_id] for sample_id in train_sample_ids])
-    train_family_ids = np.random.permutation(train_family_ids)
-
-    num_fold = 5
+    # Train and test a lasso model to generate de novo risk scores
+    num_trial = 10
+    num_fold = 5  # For cross-validation
     num_family_per_fold = div_dist_num(len(train_family_ids), num_fold)
-    family_to_fold_id = {}
-    start_family_idx = 0
+    coeffs = []
+    r_sqs = []
 
-    for i in range(num_fold):
-        num_family = num_family_per_fold[i]
-        end_family_idx = start_family_idx + num_family
+    for _ in range(num_trial):
+        # Randomly allocate fold IDs to each sample for cross validation
+        train_family_ids = np.random.permutation(train_family_ids)
+        family_to_fold_id = {}
+        start_family_idx = 0
 
-        for j in range(start_family_idx, end_family_idx):
-            family_to_fold_id[train_family_ids[j]] = i
+        for i in range(num_fold):
+            num_family = num_family_per_fold[i]
+            end_family_idx = start_family_idx + num_family
 
-        start_family_idx = end_family_idx
+            for j in range(start_family_idx, end_family_idx):
+                family_to_fold_id[train_family_ids[j]] = i
 
-    train_fold_ids = np.vectorize(lambda sample_id: family_to_fold_id[sample_info_dict['FAMILY'][sample_id]])(
-        train_sample_ids)
+            start_family_idx = end_family_idx
 
-    # Train Lasso model
-    lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
-                           standardize=True, nlambda=20)
-    opt_model_idx = np.argmin(lasso_model['cvm'])
-    opt_coeffs = lasso_model['glmnet_fit']['beta'][:, opt_model_idx]
+        train_fold_ids = np.vectorize(lambda sample_id: family_to_fold_id[sample_info_dict['FAMILY'][sample_id]])(
+            train_sample_ids)
 
-    # Prediction using the Lasso model
-    pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
-    mse = np.mean((pred_responses - test_responses) ** 2)
-    r_sq = 1 - mse
+        # Train Lasso model
+        lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
+                               standardize=True, nlambda=20)
+        opt_model_idx = np.argmin(lasso_model['cvm'])
+        opt_coeff = lasso_model['glmnet_fit']['beta'][:, opt_model_idx]
+        coeffs.append(opt_coeff)
 
-    print(r_sq, file=sys.stdout)
+        # Prediction using the Lasso model
+        pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
+        mse = np.mean((pred_responses - test_responses) ** 2)
+        r_sq = 1 - mse
+        r_sqs.append(r_sq)
+
+    print(np.mean(r_sqs), file=sys.stdout)
 
 
 def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
