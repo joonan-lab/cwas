@@ -51,7 +51,7 @@ def main():
     sample_info_dict = sample_df.to_dict()
     sample_types = np.vectorize(lambda sample_id: sample_info_dict['PHENOTYPE'][sample_id])(sample_ids)
     sample_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(sample_types)
-    sample_groups = np.vectorize(lambda sample_id: sample_info_dict['FAMILY'][sample_id])(sample_ids)
+    sample_families = np.vectorize(lambda sample_id: sample_info_dict['FAMILY'][sample_id])(sample_ids)
 
     # Filter categories and leave only rare categories (few variants in controls)
     print(f'[{get_curr_time()}, Progress] Filter categories and leave only rare categories')
@@ -60,7 +60,7 @@ def main():
     is_rare_cat = ctrl_dnv_cnt < ctrl_var_cnt_cutoff
     rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
 
-    # Divide the samples into training and test set
+    # Determine a training set
     print(f'[{get_curr_time()}, Progress] Divide the samples into training and test set')
     # FIXME: This part is for testing reproducibility, so it is not generalized version.
     project_dir = os.path.abspath('..')
@@ -68,16 +68,9 @@ def main():
     werling_sample_df = pd.read_excel(werling_sample_path, sheet_name='qcMetricsAndCounts_transform.tx')
     werling_sample_ids = werling_sample_df['sampleID'].values
     werling_sample_set = set(werling_sample_ids)
-
     is_train_set = np.vectorize(lambda sample_id: sample_id in werling_sample_set)(sample_ids)
-    train_sample_groups = sample_groups[is_train_set]
-    train_family_ids = np.unique(train_sample_groups)
-    train_covariates = rare_cat_vals[is_train_set]
-    train_responses = sample_responses[is_train_set]
-    test_covariates = rare_cat_vals[~is_train_set]
-    test_responses = sample_responses[~is_train_set]
 
-    # Train and test a lasso model to generate de novo risk scores
+    # Train and test a lasso model multiple times
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
     num_trial = 10
     num_fold = 5  # For cross-validation
@@ -85,21 +78,8 @@ def main():
     r_sqs = []
 
     for _ in range(num_trial):
-        # Make fold IDs for cross-validation
-        family_to_fold_id = allocate_fold_ids(train_family_ids, num_fold)
-        train_fold_ids = np.vectorize(lambda family_id: family_to_fold_id[family_id])(train_sample_groups)
-
-        # Train Lasso model
-        lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
-                               standardize=True, nlambda=20)
-        opt_model_idx = np.argmin(lasso_model['cvm'])
-        opt_coeff = lasso_model['glmnet_fit']['beta'][:, opt_model_idx]
-        coeffs.append(opt_coeff)
-
-        # Prediction using the Lasso model
-        pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
-        mse = np.mean((pred_responses - test_responses) ** 2)
-        r_sq = 1 - mse
+        coeff, r_sq = lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set, num_fold)
+        coeffs.append(coeff)
         r_sqs.append(r_sq)
 
     # Permutation tests
@@ -109,7 +89,7 @@ def main():
 
     for _ in range(num_perm):
         # Label swapping
-        swap_sample_types = swap_label(sample_types, sample_groups)
+        swap_sample_types = swap_label(sample_types, sample_families)
         swap_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(swap_sample_types)
 
         # Filter categories and leave only rare categories (few variants in controls)
@@ -117,22 +97,7 @@ def main():
         is_rare_cat = ctrl_dnv_cnt < ctrl_var_cnt_cutoff
         rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
 
-        # Divide the samples into training and test set
-        train_covariates = rare_cat_vals[is_train_set]
-        train_swap_responses = swap_responses[is_train_set]
-        test_covariates = rare_cat_vals[~is_train_set]
-        test_swap_responses = swap_responses[~is_train_set]
-
-        # Make fold IDs for cross-validation
-        family_to_fold_id = allocate_fold_ids(train_family_ids, num_fold)
-        train_fold_ids = np.vectorize(lambda family_id: family_to_fold_id[family_id])(train_sample_groups)
-
-        # Train and test a lasso model
-        lasso_model = cvglmnet(x=train_covariates, y=train_swap_responses, ptype='deviance', foldid=train_fold_ids,
-                               alpha=1, standardize=True, nlambda=20)
-        pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
-        mse = np.mean((pred_responses - test_swap_responses) ** 2)
-        r_sq = 1 - mse
+        _, r_sq = lasso_regression(rare_cat_vals, swap_responses, sample_families, is_train_set, num_fold)
         perm_r_sqs.append(r_sq)
 
     print(f'[{get_curr_time()}, Progress] Print the results')
@@ -171,14 +136,43 @@ def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> 
     return case_dnv_cnt, ctrl_dnv_cnt
 
 
+def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, sample_groups: np.ndarray,
+                     is_train_set: np.ndarray, num_fold: int) -> (np.ndarray[float], float):
+    """ Lasso regression to generate a de novo risk score """
+    # Divide the input data into a train and a test set
+    train_covariates = sample_covariates[is_train_set]
+    train_responses = sample_responses[is_train_set]
+    train_groups = sample_groups[is_train_set]
+    test_covariates = sample_covariates[~is_train_set]
+    test_responses = sample_responses[~is_train_set]
+
+    # Allocate fold IDs for cross validation
+    group_to_fold_id = allocate_fold_ids(train_groups, num_fold)
+    train_fold_ids = np.vectorize(lambda family_id: group_to_fold_id[family_id])(train_groups)
+
+    # Train Lasso model
+    lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
+                           standardize=True, nlambda=20)
+    opt_model_idx = np.argmin(lasso_model['cvm'])
+    coeff = lasso_model['glmnet_fit']['beta'][:, opt_model_idx]
+
+    # Prediction using the Lasso model
+    pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
+    mse = np.mean((pred_responses - test_responses) ** 2)
+    r_sq = 1 - mse
+
+    return coeff, r_sq
+
+
 def allocate_fold_ids(samples: np.ndarray, num_fold: int) -> dict:
     """ Randomly allocate fold IDs to each sample and
     return a dictionary which key and value are sample and its ID, respectively.
     """
-    sample_size = len(samples)
+    unique_samples = np.unique(samples)
+    sample_size = len(unique_samples)
     sample_to_fold_id = {}
     sizes_per_fold = div_dist_num(sample_size, num_fold)
-    perm_samples = np.random.permutation(samples)
+    perm_samples = np.random.permutation(unique_samples)
     start_idx = 0
 
     for fold_id in range(num_fold):
