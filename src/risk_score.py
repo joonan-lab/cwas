@@ -46,19 +46,22 @@ def main():
         cwas_cat_df = adjust_cat_df(cwas_cat_df, adj_factor_df)
 
     # Arrays and dictionary from the DataFrame (in order to improving performance)
-    cwas_cat_indice = cwas_cat_df.index.values  # Sample IDs
-    cwas_cat_cols = cwas_cat_df.columns.values
     cwas_cat_vals = cwas_cat_df.values
+    sample_ids = cwas_cat_df.index.values
     sample_info_dict = sample_df.to_dict()
+    sample_types = np.vectorize(lambda sample_id: sample_info_dict['PHENOTYPE'][sample_id])(sample_ids)
+    sample_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(sample_types)
+    sample_groups = np.vectorize(lambda sample_id: sample_info_dict['FAMILY'][sample_id])(sample_ids)
 
     # Filter categories and leave only rare categories (few variants in controls)
+    print(f'[{get_curr_time()}, Progress] Filter categories and leave only rare categories')
     ctrl_var_cnt_cutoff = 3
-    case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_df, sample_df)
+    case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
     is_rare_cat = ctrl_dnv_cnt < ctrl_var_cnt_cutoff
-    cwas_cat_cols = cwas_cat_cols[is_rare_cat]
-    cwas_cat_vals = cwas_cat_vals[:, is_rare_cat]
+    rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
 
-    # Divide the cwas categorization result into training and test set
+    # Divide the samples into training and test set
+    print(f'[{get_curr_time()}, Progress] Divide the samples into training and test set')
     # FIXME: This part is for testing reproducibility, so it is not generalized version.
     project_dir = os.path.abspath('..')
     werling_sample_path = os.path.join(project_dir, 'data', 'SuppTable01_Sample_information.xlsx')
@@ -66,41 +69,25 @@ def main():
     werling_sample_ids = werling_sample_df['sampleID'].values
     werling_sample_set = set(werling_sample_ids)
 
-    is_train_set = np.vectorize(lambda sample_id: sample_id in werling_sample_set)(cwas_cat_indice)
-    train_sample_ids = cwas_cat_indice[is_train_set]
-    train_family_ids = np.unique([sample_info_dict['FAMILY'][sample_id] for sample_id in train_sample_ids])
-    train_covariates = cwas_cat_vals[is_train_set]
-    train_responses = np.vectorize(
-        lambda sample_id: 1.0 if sample_info_dict['PHENOTYPE'][sample_id] == 'case' else -1.0)(train_sample_ids)
-    test_sample_ids = cwas_cat_indice[~is_train_set]
-    test_covariates = cwas_cat_vals[~is_train_set]
-    test_responses = np.vectorize(
-        lambda sample_id: 1.0 if sample_info_dict['PHENOTYPE'][sample_id] == 'case' else -1.0)(test_sample_ids)
+    is_train_set = np.vectorize(lambda sample_id: sample_id in werling_sample_set)(sample_ids)
+    train_sample_groups = sample_groups[is_train_set]
+    train_family_ids = np.unique(train_sample_groups)
+    train_covariates = rare_cat_vals[is_train_set]
+    train_responses = sample_responses[is_train_set]
+    test_covariates = rare_cat_vals[~is_train_set]
+    test_responses = sample_responses[~is_train_set]
 
     # Train and test a lasso model to generate de novo risk scores
+    print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
     num_trial = 10
     num_fold = 5  # For cross-validation
-    num_family_per_fold = div_dist_num(len(train_family_ids), num_fold)
     coeffs = []
     r_sqs = []
 
     for _ in range(num_trial):
-        # Randomly allocate fold IDs to each sample for cross validation
-        train_family_ids = np.random.permutation(train_family_ids)
-        family_to_fold_id = {}
-        start_family_idx = 0
-
-        for i in range(num_fold):
-            num_family = num_family_per_fold[i]
-            end_family_idx = start_family_idx + num_family
-
-            for j in range(start_family_idx, end_family_idx):
-                family_to_fold_id[train_family_ids[j]] = i
-
-            start_family_idx = end_family_idx
-
-        train_fold_ids = np.vectorize(lambda sample_id: family_to_fold_id[sample_info_dict['FAMILY'][sample_id]])(
-            train_sample_ids)
+        # Make fold IDs for cross-validation
+        family_to_fold_id = allocate_fold_ids(train_family_ids, num_fold)
+        train_fold_ids = np.vectorize(lambda family_id: family_to_fold_id[family_id])(train_sample_groups)
 
         # Train Lasso model
         lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
@@ -115,21 +102,43 @@ def main():
         r_sq = 1 - mse
         r_sqs.append(r_sq)
 
-    print(np.mean(r_sqs), file=sys.stdout)
+    # Permutation tests
+    print(f'[{get_curr_time()}, Progress] Permutation tests')
+    num_perm = 1000
+    perm_r_sqs = []
 
+    for _ in range(num_perm):
+        # Label swapping
+        swap_sample_types = swap_label(sample_types, sample_groups)
+        swap_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(swap_sample_types)
 
-def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
-    """ Return True if two arrays have the same items regardless of the order, else return False """
-    if len(array1) != len(array2):
-        return False
+        # Filter categories and leave only rare categories (few variants in controls)
+        case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_vals, swap_sample_types)
+        is_rare_cat = ctrl_dnv_cnt < ctrl_var_cnt_cutoff
+        rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
 
-    array1_item_set = set(array1)
+        # Divide the samples into training and test set
+        train_covariates = rare_cat_vals[is_train_set]
+        train_swap_responses = swap_responses[is_train_set]
+        test_covariates = rare_cat_vals[~is_train_set]
+        test_swap_responses = swap_responses[~is_train_set]
 
-    for item in array2:
-        if item not in array1_item_set:
-            return False
+        # Make fold IDs for cross-validation
+        family_to_fold_id = allocate_fold_ids(train_family_ids, num_fold)
+        train_fold_ids = np.vectorize(lambda family_id: family_to_fold_id[family_id])(train_sample_groups)
 
-    return True
+        # Train and test a lasso model
+        lasso_model = cvglmnet(x=train_covariates, y=train_swap_responses, ptype='deviance', foldid=train_fold_ids,
+                               alpha=1, standardize=True, nlambda=20)
+        pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
+        mse = np.mean((pred_responses - test_swap_responses) ** 2)
+        r_sq = 1 - mse
+        perm_r_sqs.append(r_sq)
+
+    print(f'[{get_curr_time()}, Progress] Print the results')
+    print(f'Mean R square\t{np.mean(r_sqs)}')
+    print(f'Mean permutation R square\t{np.mean(perm_r_sqs)}')
+    print(f'STD. permutation R square\t{np.std(perm_r_sqs)}')
 
 
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
@@ -152,19 +161,89 @@ def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.
     return cwas_cat_df
 
 
-def cnt_case_ctrl_dnv(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> (float, float):
+def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> (float, float):
     """ Count the number of the de novo variants for each phenotype, case and control.
     """
-    sample_info_dict = sample_df.to_dict()
-    sample_ids = cwas_cat_df.index.values
-    sample_types = np.asarray([sample_info_dict['PHENOTYPE'][sample_id] for sample_id in sample_ids])
     are_case = sample_types == 'case'
-
-    cat_df_vals = cwas_cat_df.values
-    case_dnv_cnt = cat_df_vals[are_case, :].sum(axis=0)
-    ctrl_dnv_cnt = cat_df_vals[~are_case, :].sum(axis=0)
+    case_dnv_cnt = sample_cat_vals[are_case, :].sum(axis=0)
+    ctrl_dnv_cnt = sample_cat_vals[~are_case, :].sum(axis=0)
 
     return case_dnv_cnt, ctrl_dnv_cnt
+
+
+def allocate_fold_ids(samples: np.ndarray, num_fold: int) -> dict:
+    """ Randomly allocate fold IDs to each sample and
+    return a dictionary which key and value are sample and its ID, respectively.
+    """
+    sample_size = len(samples)
+    sample_to_fold_id = {}
+    sizes_per_fold = div_dist_num(sample_size, num_fold)
+    perm_samples = np.random.permutation(samples)
+    start_idx = 0
+
+    for fold_id in range(num_fold):
+        end_idx = start_idx + sizes_per_fold[fold_id]
+
+        for j in range(start_idx, end_idx):
+            sample_to_fold_id[perm_samples[j]] = fold_id
+
+        start_idx = end_idx
+
+    return sample_to_fold_id
+
+
+def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
+    """ Randomly swap labels (case or control) in each group and return a list of swapped labels.
+
+    :param labels: Array of labels
+    :param group_ids: Array of group IDs corresponding to each label
+    :return: Swapped labels
+    """
+    group_to_hit_cnt = {group_id: 0 for group_id in group_ids}  # Key: A group, Value: No. times the key is referred
+    group_to_idx = {}  # Key: A group, Value: The index of a label firstly matched with the group
+    swap_labels = np.copy(labels)
+
+    # Make an array for random swapping
+    num_group = len(group_to_hit_cnt.keys())
+    do_swaps = np.random.binomial(1, 0.5, size=num_group)
+    group_idx = 0
+
+    for i, label in enumerate(labels):
+        group_id = group_ids[i]
+
+        if group_to_hit_cnt.get(group_id, 0) == 0:
+            group_to_hit_cnt[group_id] = 1
+            group_to_idx[group_id] = i
+        elif group_to_hit_cnt.get(group_id, 0) == 1:
+            group_to_hit_cnt[group_id] += 1
+            prev_idx = group_to_idx[group_id]
+
+            # Swap
+            do_swap = do_swaps[group_idx]
+            if do_swap:
+                swap_labels[i] = labels[prev_idx]
+                swap_labels[prev_idx] = label
+
+            group_idx += 1
+        else:
+            print(f'[ERROR] The group {group_id} has more than 2 labels.', file=sys.stderr)
+            raise AssertionError('One group must have at most two labels.')
+
+    return swap_labels
+
+
+def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
+    """ Return True if two arrays have the same items regardless of the order, else return False """
+    if len(array1) != len(array2):
+        return False
+
+    array1_item_set = set(array1)
+
+    for item in array2:
+        if item not in array1_item_set:
+            return False
+
+    return True
 
 
 def div_dist_num(num: int, num_group: int) -> list:
