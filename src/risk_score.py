@@ -3,6 +3,7 @@
 # TODO: Add explanation
 """
 import argparse
+import multiprocessing as mp
 import os
 import sys
 from datetime import datetime
@@ -11,6 +12,7 @@ import numpy as np
 import pandas as pd
 from glmnet_python.cvglmnet import cvglmnet
 from glmnet_python.cvglmnetPredict import cvglmnetPredict
+from scipy import stats
 
 
 def main():
@@ -55,9 +57,9 @@ def main():
 
     # Filter categories and leave only rare categories (few variants in controls)
     print(f'[{get_curr_time()}, Progress] Filter categories and leave only rare categories')
-    ctrl_var_cnt_cutoff = 3
+    var_cnt_cutoff = 3
     case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
-    is_rare_cat = ctrl_dnv_cnt < ctrl_var_cnt_cutoff
+    is_rare_cat = ctrl_dnv_cnt < var_cnt_cutoff
     rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
 
     # Determine a training set
@@ -75,35 +77,29 @@ def main():
     num_trial = 10
     num_fold = 5  # For cross-validation
     coeffs = []
-    r_sqs = []
+    rsqs = []
 
     for _ in range(num_trial):
-        coeff, r_sq = lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set, num_fold)
+        coeff, rsq = lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set, num_fold)
         coeffs.append(coeff)
-        r_sqs.append(r_sq)
+        rsqs.append(rsq)
 
-    # Permutation tests
+    # Permutation tests to get null distribution of R squares
     print(f'[{get_curr_time()}, Progress] Permutation tests')
     num_perm = 1000
-    perm_r_sqs = []
+    perm_rsqs = get_perm_rsq(num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
+                             num_fold, var_cnt_cutoff)
 
-    for _ in range(num_perm):
-        # Label swapping
-        swap_sample_types = swap_label(sample_types, sample_families)
-        swap_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(swap_sample_types)
-
-        # Filter categories and leave only rare categories (few variants in controls)
-        case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_vals, swap_sample_types)
-        is_rare_cat = ctrl_dnv_cnt < ctrl_var_cnt_cutoff
-        rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
-
-        _, r_sq = lasso_regression(rare_cat_vals, swap_responses, sample_families, is_train_set, num_fold)
-        perm_r_sqs.append(r_sq)
+    # Statistical test (Z test)
+    m_rsq = np.mean(rsqs)
+    m_perm_rsq = np.mean(perm_rsqs)
+    s_perm_rsq = np.std(perm_rsqs)
+    z = (m_rsq - m_perm_rsq) / s_perm_rsq
+    p = stats.norm.sf(abs(z)) * 2  # Two-sided
 
     print(f'[{get_curr_time()}, Progress] Print the results')
-    print(f'Mean R square\t{np.mean(r_sqs)}')
-    print(f'Mean permutation R square\t{np.mean(perm_r_sqs)}')
-    print(f'STD. permutation R square\t{np.std(perm_r_sqs)}')
+    print(f'Mean R square\t{m_rsq * 100}%')
+    print(f'P-value\t{p:.2e}')
 
 
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
@@ -137,7 +133,7 @@ def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> 
 
 
 def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, sample_groups: np.ndarray,
-                     is_train_set: np.ndarray, num_fold: int) -> (np.ndarray[float], float):
+                     is_train_set: np.ndarray, num_fold: int) -> (np.ndarray, float):
     """ Lasso regression to generate a de novo risk score """
     # Divide the input data into a train and a test set
     train_covariates = sample_covariates[is_train_set]
@@ -152,16 +148,39 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
 
     # Train Lasso model
     lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
-                           standardize=True, nlambda=20)
+                           standardize=True, nlambda=20, parallel=mp.cpu_count())
     opt_model_idx = np.argmin(lasso_model['cvm'])
     coeff = lasso_model['glmnet_fit']['beta'][:, opt_model_idx]
 
     # Prediction using the Lasso model
     pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
     mse = np.mean((pred_responses - test_responses) ** 2)
-    r_sq = 1 - mse
+    rsq = 1 - mse
 
-    return coeff, r_sq
+    return coeff, rsq
+
+
+def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, sample_groups: np.ndarray,
+                 is_train_set: np.ndarray, num_fold: int, var_cnt_cutoff: int) -> list:
+    """ Get R squares of the lasso regression after each label swapping trial.
+    The length of the returned list equals to the number of the permutations.
+    """
+    perm_rsqs = []
+
+    for _ in range(num_perm):
+        # Label swapping
+        swap_sample_types = swap_label(sample_types, sample_groups)
+        swap_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(swap_sample_types)
+
+        # Filter categories and leave only rare categories (few variants in controls)
+        case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(sample_cat_vals, swap_sample_types)
+        is_rare_cat = ctrl_dnv_cnt < var_cnt_cutoff
+        rare_cat_vals = sample_cat_vals[:, is_rare_cat]
+
+        _, rsq = lasso_regression(rare_cat_vals, swap_responses, sample_groups, is_train_set, num_fold)
+        perm_rsqs.append(rsq)
+
+    return perm_rsqs
 
 
 def allocate_fold_ids(samples: np.ndarray, num_fold: int) -> dict:
