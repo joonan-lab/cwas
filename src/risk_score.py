@@ -7,6 +7,7 @@ import multiprocessing as mp
 import os
 import sys
 from datetime import datetime
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -24,6 +25,9 @@ def main():
                         help='File listing sample IDs with their families and phenotypes (case or ctrl)')
     parser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
                         help='File that contains adjustment factors for No. DNVs of each sample', default='')
+    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                        help='Number of processes used in permutation tests',
+                        default=1)
     args = parser.parse_args()
 
     # Print the script description
@@ -76,19 +80,46 @@ def main():
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
     num_trial = 10
     num_fold = 5  # For cross-validation
+    num_parallel = min(mp.cpu_count(), num_fold)
     coeffs = []
     rsqs = []
 
     for _ in range(num_trial):
-        coeff, rsq = lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set, num_fold)
+        coeff, rsq = \
+            lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set, num_fold, num_parallel)
         coeffs.append(coeff)
         rsqs.append(rsq)
 
     # Permutation tests to get null distribution of R squares
     print(f'[{get_curr_time()}, Progress] Permutation tests')
     num_perm = 1000
-    perm_rsqs = get_perm_rsq(num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
-                             num_fold, var_cnt_cutoff)
+
+    if args.num_proc == 1:
+        perm_rsqs = get_perm_rsq(num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
+                                 var_cnt_cutoff, num_fold, num_parallel)
+    else:
+        num_perms = div_dist_num(num_perm, args.num_proc)
+        pool = mp.Pool(args.num_proc)
+        proc_outputs = \
+            pool.map(
+                partial(get_perm_rsq,
+                        sample_cat_vals=cwas_cat_vals,
+                        sample_types=sample_types,
+                        sample_groups=sample_families,
+                        is_train_set=is_train_set,
+                        var_cnt_cutoff=var_cnt_cutoff,
+                        num_fold=num_fold,
+                        num_parallel=1
+                        ),
+                num_perms
+            )
+        pool.close()
+        pool.join()
+
+        perm_rsqs = []
+
+        for proc_output in proc_outputs:
+            perm_rsqs += proc_output
 
     # Statistical test (Z test)
     m_rsq = np.mean(rsqs)
@@ -133,7 +164,7 @@ def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> 
 
 
 def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, sample_groups: np.ndarray,
-                     is_train_set: np.ndarray, num_fold: int) -> (np.ndarray, float):
+                     is_train_set: np.ndarray, num_fold: int, num_parallel: int) -> (np.ndarray, float):
     """ Lasso regression to generate a de novo risk score """
     # Divide the input data into a train and a test set
     train_covariates = sample_covariates[is_train_set]
@@ -148,7 +179,7 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
 
     # Train Lasso model
     lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
-                           standardize=True, nlambda=20, parallel=mp.cpu_count())
+                           standardize=True, nlambda=20, parallel=num_parallel)
     opt_model_idx = np.argmin(lasso_model['cvm'])
     coeff = lasso_model['glmnet_fit']['beta'][:, opt_model_idx]
 
@@ -161,7 +192,7 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
 
 
 def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, sample_groups: np.ndarray,
-                 is_train_set: np.ndarray, num_fold: int, var_cnt_cutoff: int) -> list:
+                 is_train_set: np.ndarray, var_cnt_cutoff: int, num_fold: int, num_parallel: int) -> list:
     """ Get R squares of the lasso regression after each label swapping trial.
     The length of the returned list equals to the number of the permutations.
     """
@@ -177,7 +208,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
         is_rare_cat = ctrl_dnv_cnt < var_cnt_cutoff
         rare_cat_vals = sample_cat_vals[:, is_rare_cat]
 
-        _, rsq = lasso_regression(rare_cat_vals, swap_responses, sample_groups, is_train_set, num_fold)
+        _, rsq = lasso_regression(rare_cat_vals, swap_responses, sample_groups, is_train_set, num_fold, num_parallel)
         perm_rsqs.append(rsq)
 
     return perm_rsqs
