@@ -25,6 +25,8 @@ def main():
                         help='File listing sample IDs with their families and phenotypes (case or ctrl)')
     parser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
                         help='File that contains adjustment factors for No. DNVs of each sample', default='')
+    parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
+                        help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
     parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
                         help='Number of processes used in permutation tests',
                         default=1)
@@ -122,15 +124,40 @@ def main():
             perm_rsqs += proc_output
 
     # Statistical test (Z test)
+    print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
     m_rsq = np.mean(rsqs)
     m_perm_rsq = np.mean(perm_rsqs)
     s_perm_rsq = np.std(perm_rsqs)
     z = (m_rsq - m_perm_rsq) / s_perm_rsq
     p = stats.norm.sf(abs(z)) * 2  # Two-sided
 
-    print(f'[{get_curr_time()}, Progress] Print the results')
-    print(f'Mean R square\t{m_rsq * 100}%')
-    print(f'P-value\t{p:.2e}')
+    # Make a result DataFrame
+    print(f'[{get_curr_time()}, Progress] Make a DataFrame for the de novo risk score analysis')
+    m_coeff = np.mean(coeffs, axis=0)
+    is_non_zero_coeff = m_coeff != 0
+    non_zero_cats = cwas_cat_df.columns.values[is_rare_cat][is_non_zero_coeff]
+    cat_case_dnv_cnt = case_dnv_cnt[is_rare_cat][is_non_zero_coeff]
+    cat_ctrl_dnv_cnt = ctrl_dnv_cnt[is_rare_cat][is_non_zero_coeff]
+    m_non_zero_coeff = m_coeff[is_non_zero_coeff]
+
+    result_mat = np.concatenate([
+        cat_case_dnv_cnt[:, np.newaxis],
+        cat_ctrl_dnv_cnt[:, np.newaxis],
+        m_non_zero_coeff[:, np.newaxis]
+    ], axis=1)
+    result_df = \
+        pd.DataFrame(result_mat, index=non_zero_cats, columns=['Case_DNV_Count', 'Ctrl_DNV_Count', 'Lasso_Coeff'])
+    result_df.index.name = 'Category'
+
+    # Write the result
+    print(f'[{get_curr_time()}, Progress] Write the result')
+    with open(args.outfile_path, 'w') as outfile:
+        print(f'#De novo risk score analysis result for all regions', file=outfile)
+        print(f'#Mean R square: {m_rsq * 100:.2f}%', file=outfile)
+        print(f'#P-value: {p:.2e}', file=outfile)
+        result_df.to_csv(outfile, sep='\t')
+
+    print(f'[{get_curr_time()}, Progress] Done')
 
 
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
