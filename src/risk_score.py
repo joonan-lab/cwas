@@ -7,7 +7,6 @@ import multiprocessing as mp
 import os
 import sys
 from datetime import datetime
-from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -26,9 +25,6 @@ def main():
                         help='File that contains adjustment factors for No. DNVs of each sample', default='')
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
-    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                        help='Number of processes used in permutation tests',
-                        default=1)
     args = parser.parse_args()
 
     # Print the script description
@@ -94,33 +90,8 @@ def main():
     # Permutation tests to get null distribution of R squares
     print(f'[{get_curr_time()}, Progress] Permutation tests')
     num_perm = 1000
-
-    if args.num_proc == 1:
-        perm_rsqs = get_perm_rsq(num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
-                                 var_cnt_cutoff, num_fold, num_parallel)
-    else:
-        num_perms = div_dist_num(num_perm, args.num_proc)
-        pool = mp.Pool(args.num_proc)
-        proc_outputs = \
-            pool.map(
-                partial(get_perm_rsq,
-                        sample_cat_vals=cwas_cat_vals,
-                        sample_types=sample_types,
-                        sample_groups=sample_families,
-                        is_train_set=is_train_set,
-                        var_cnt_cutoff=var_cnt_cutoff,
-                        num_fold=num_fold,
-                        num_parallel=1
-                        ),
-                num_perms
-            )
-        pool.close()
-        pool.join()
-
-        perm_rsqs = []
-
-        for proc_output in proc_outputs:
-            perm_rsqs += proc_output
+    perm_rsqs = get_perm_rsq(num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
+                             var_cnt_cutoff, num_fold, num_parallel)
 
     # Statistical test (Z test)
     print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
