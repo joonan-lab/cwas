@@ -11,8 +11,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from glmnet_python.cvglmnet import cvglmnet
-from glmnet_python.cvglmnetPredict import cvglmnetPredict
+from glmnet import ElasticNet
 from scipy import stats
 
 
@@ -86,9 +85,9 @@ def main():
     coeffs = []
     rsqs = []
 
-    for _ in range(num_trial):
+    for seed in range(num_trial):
         coeff, rsq = \
-            lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set, num_fold, num_parallel)
+            lasso_regression(rare_cat_vals, sample_responses, is_train_set, num_fold, num_parallel, seed)
         coeffs.append(coeff)
         rsqs.append(rsq)
 
@@ -190,32 +189,30 @@ def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> 
     return case_dnv_cnt, ctrl_dnv_cnt
 
 
-def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, sample_groups: np.ndarray,
-                     is_train_set: np.ndarray, num_fold: int, num_parallel: int) -> (np.ndarray, float):
+def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, is_train_set: np.ndarray,
+                     num_fold: int, num_parallel: int, random_state: int = None) -> (np.ndarray, float):
     """ Lasso regression to generate a de novo risk score """
     # Divide the input data into a train and a test set
     train_covariates = sample_covariates[is_train_set]
     train_responses = sample_responses[is_train_set]
-    train_groups = sample_groups[is_train_set]
     test_covariates = sample_covariates[~is_train_set]
     test_responses = sample_responses[~is_train_set]
 
-    # Allocate fold IDs for cross validation
-    group_to_fold_id = allocate_fold_ids(train_groups, num_fold)
-    train_fold_ids = np.vectorize(lambda family_id: group_to_fold_id[family_id])(train_groups)
-
     # Train Lasso model
-    lasso_model = cvglmnet(x=train_covariates, y=train_responses, ptype='deviance', foldid=train_fold_ids, alpha=1,
-                           standardize=True, nlambda=20, parallel=num_parallel)
-    opt_model_idx = np.argmin(lasso_model['cvm'])
-    coeff = lasso_model['glmnet_fit']['beta'][:, opt_model_idx]
+    lasso_model = ElasticNet(alpha=1, n_lambda=20, standardize=True, n_splits=num_fold, n_jobs=num_parallel,
+                             scoring='mean_squared_error', random_state=random_state)
+    lasso_model.fit(train_covariates, train_responses)
+    opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
+    coeffs = getattr(lasso_model, 'coef_path_')
+    opt_coeff = coeffs[:, opt_model_idx]
+    opt_lambda = getattr(lasso_model, 'lambda_max_')
 
     # Prediction using the Lasso model
-    pred_responses = cvglmnetPredict(lasso_model, newx=test_covariates, s='lambda_min').flatten()
+    pred_responses = lasso_model.predict(test_covariates, lamb=opt_lambda)
     mse = np.mean((pred_responses - test_responses) ** 2)
     rsq = 1 - mse
 
-    return coeff, rsq
+    return opt_coeff, rsq
 
 
 def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, sample_groups: np.ndarray,
@@ -235,7 +232,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
         is_rare_cat = ctrl_dnv_cnt < var_cnt_cutoff
         rare_cat_vals = sample_cat_vals[:, is_rare_cat]
 
-        _, rsq = lasso_regression(rare_cat_vals, swap_responses, sample_groups, is_train_set, num_fold, num_parallel)
+        _, rsq = lasso_regression(rare_cat_vals, swap_responses, is_train_set, num_fold, num_parallel)
         perm_rsqs.append(rsq)
 
     return perm_rsqs
