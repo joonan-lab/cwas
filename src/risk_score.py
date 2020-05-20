@@ -25,6 +25,15 @@ def main():
                         help='File that contains adjustment factors for No. DNVs of each sample', default='')
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
+    parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
+                        help='Cutoff for No. variants of a control to determine '
+                             'whether a category is a rare category or not', default=3)
+    parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
+                        help='No. regression trials to calculate a mean of R squares', default=10)
+    parser.add_argument('--num_fold', dest='num_fold', required=False, type=int,
+                        help='No. cross-validation folds', default=5)
+    parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
+                        help='Number of label-swapping permutations for permutation tests', default=1000)
     args = parser.parse_args()
 
     # Print the script description
@@ -58,9 +67,8 @@ def main():
 
     # Filter categories and leave only rare categories (few variants in controls)
     print(f'[{get_curr_time()}, Progress] Filter categories and leave only rare categories')
-    var_cnt_cutoff = 3
     case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
-    is_rare_cat = ctrl_dnv_cnt < var_cnt_cutoff
+    is_rare_cat = ctrl_dnv_cnt < args.rare_cat_cutoff
     rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
 
     # Determine a training set
@@ -75,23 +83,20 @@ def main():
 
     # Train and test a lasso model multiple times
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
-    num_trial = 10
-    num_fold = 5  # For cross-validation
-    num_parallel = min(mp.cpu_count(), num_fold)
+    num_parallel = min(mp.cpu_count(), args.num_fold)
     coeffs = []
     rsqs = []
 
-    for seed in range(num_trial):
+    for seed in range(args.num_reg):
         coeff, rsq = \
-            lasso_regression(rare_cat_vals, sample_responses, is_train_set, num_fold, num_parallel, seed)
+            lasso_regression(rare_cat_vals, sample_responses, is_train_set, args.num_fold, num_parallel, seed)
         coeffs.append(coeff)
         rsqs.append(rsq)
 
     # Permutation tests to get null distribution of R squares
     print(f'[{get_curr_time()}, Progress] Permutation tests')
-    num_perm = 1000
-    perm_rsqs = get_perm_rsq(num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
-                             var_cnt_cutoff, num_fold, num_parallel)
+    perm_rsqs = get_perm_rsq(args.num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
+                             args.rare_cat_cutoff, args.num_fold, num_parallel)
 
     # Statistical test (Z test)
     print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
