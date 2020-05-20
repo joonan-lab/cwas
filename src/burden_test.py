@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import binom_test
 
-from .utils import cmp_two_arr, div_dist_num, get_curr_time, swap_label
+from utils import cmp_two_arr, div_dist_num, get_curr_time, swap_label
 
 
 def main():

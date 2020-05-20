@@ -19,8 +19,8 @@ import pyximport
 import yaml
 
 pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
-from .categorization import categorize_variant as _categorize_variant
-from .utils import div_list, get_curr_time
+from categorization import categorize_variant as _categorize_variant
+from utils import div_list, get_curr_time
 
 
 def main():

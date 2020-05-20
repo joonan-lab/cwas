@@ -15,7 +15,7 @@ import pandas as pd
 from glmnet import ElasticNet
 from scipy import stats
 
-from .utils import cmp_two_arr, get_curr_time, swap_label
+from utils import cmp_two_arr, get_curr_time, swap_label
 
 
 def main():
