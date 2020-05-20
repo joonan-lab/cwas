@@ -12,6 +12,7 @@ import os
 
 import numpy as np
 import pandas as pd
+import yaml
 from glmnet import ElasticNet
 from scipy import stats
 
@@ -19,6 +20,11 @@ from utils import cmp_two_arr, get_curr_time, swap_label
 
 
 def main():
+    # Paths to essential configuration files
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    project_dir = os.path.dirname(curr_dir)
+    cat_filt_path = os.path.join(project_dir, 'conf', 'category_filter.yaml')
+
     # Parse the arguments
     parser = create_arg_parser()
     args = parser.parse_args()
@@ -35,6 +41,20 @@ def main():
     # Load and parse the input data
     print(f'[{get_curr_time()}, Progress] Parse the categorization result into DataFrame')
     cwas_cat_df = pd.read_table(args.cat_result_path, index_col='SAMPLE')
+
+    # Filter the columns (categories)
+    if args.cat_type != 'all':
+        print(f'[{get_curr_time()}, Progress] Filter categories and leave \'{args.cat_type}\' categories only')
+        with open(cat_filt_path, 'r') as cat_filt_file:
+            cat_filt_conf = yaml.safe_load(cat_filt_file)
+
+        cat_filt_dict = cat_filt_conf.get(args.cat_type)
+        assert cat_filt_dict is not None
+
+        for annot_group in cat_filt_dict:
+            cat_filt_dict[annot_group] = set(cat_filt_dict[annot_group])
+
+        cwas_cat_df = filter_categories(cwas_cat_df, cat_filt_dict)
 
     # Load and parse the file listing sample IDs
     print(f'[{get_curr_time()}, Progress] Parse the file listing sample IDs')
@@ -141,6 +161,9 @@ def create_arg_parser() -> argparse.ArgumentParser:
                         help='File that contains adjustment factors for No. DNVs of each sample', default='')
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
+    parser.add_argument('--category_type', dest='cat_type', required=False, type=str,
+                        choices=['all', 'non-coding', 'promoter'],
+                        help='Type of the CWAS categories for this analysis (Default: all)', default='all')
     parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
                         help='Rare category cutoff for No. variants of a control (Default: 3)', default=3)
     parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
@@ -155,12 +178,12 @@ def create_arg_parser() -> argparse.ArgumentParser:
 
 
 def print_args(args: argparse.Namespace):
-    print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
     print(f'[Setting] Input CWAS categorization result: {args.cat_result_path}')
     print(f'[Setting] List of sample IDs: {args.sample_file_path}')
     print(f'[Setting] List of adjustment factors for No. DNVs of each sample: '
           f'{args.adj_file_path if args.adj_file_path else "None"}')
     print(f'[Setting] Output path: {args.outfile_path}')
+    print(f'[Setting] Category type: {args.cat_type}')
     print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
     print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
     print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
@@ -175,6 +198,34 @@ def check_args_validity(args: argparse.Namespace):
         f'The input file "{args.adj_file_path}" cannot be found.'
     outfile_dir = os.path.dirname(args.outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+
+
+def filter_categories(cwas_cat_df: pd.DataFrame, cat_filt_dict: dict) -> pd.DataFrame:
+    """ Filter columns (categories) of a DataFrame for the CWAS categorization result
+    and leave specific columns according to the input dictionary
+
+    :param cwas_cat_df: A DataFrame that contains the CWAS categorization result
+    :param cat_filt_dict: A dictionary which key and value are a group name of annotation terms and
+                          the group's annotation terms that must be included in categories, respectively
+    :return: A filtered DataFrame
+    """
+    categories = cwas_cat_df.columns.values
+    var_type_annot_set = cat_filt_dict.get('var_type')
+    gene_list_annot_set = cat_filt_dict.get('gene_list')
+    cons_annot_set = cat_filt_dict.get('cons')
+    effect_annot_set = cat_filt_dict.get('effect')
+    region_annot_set = cat_filt_dict.get('region')
+
+    def is_passed_category(category):
+        var_type, gene_list, cons, effect, region = category.split('_')
+        return (var_type_annot_set is None or var_type in var_type_annot_set) and \
+               (gene_list_annot_set is None or gene_list in gene_list_annot_set) and \
+               (cons_annot_set is None or cons in cons_annot_set) and \
+               (effect_annot_set is None or effect in effect_annot_set) and \
+               (region_annot_set is None or region in region_annot_set)
+
+    is_passed = np.vectorize(is_passed_category)(categories)
+    return cwas_cat_df.loc[:, is_passed]
 
 
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
@@ -234,7 +285,7 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
 
 
 def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, sample_groups: np.ndarray,
-                 is_train_set: np.ndarray, var_cnt_cutoff: int, num_cv_fold: int, num_parallel: int) -> list:
+                 is_train_set: np.ndarray, rare_cat_cutoff: int, num_cv_fold: int, num_parallel: int) -> list:
     """ Get R squares of the lasso regression after each label swapping trial.
     The length of the returned list equals to the number of the permutations.
     """
@@ -247,7 +298,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
 
         # Filter categories and leave only rare categories (few variants in controls)
         case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(sample_cat_vals, swap_sample_types)
-        is_rare_cat = ctrl_dnv_cnt < var_cnt_cutoff
+        is_rare_cat = ctrl_dnv_cnt < rare_cat_cutoff
         rare_cat_vals = sample_cat_vals[:, is_rare_cat]
 
         _, rsq = lasso_regression(rare_cat_vals, swap_responses, is_train_set, num_cv_fold, num_parallel)
