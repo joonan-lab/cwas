@@ -5,13 +5,13 @@
 import argparse
 import multiprocessing as mp
 import os
-import sys
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
 from glmnet import ElasticNet
 from scipy import stats
+
+from .utils import cmp_two_arr, get_curr_time, swap_label
 
 
 def main():
@@ -250,104 +250,6 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
         perm_rsqs.append(rsq)
 
     return perm_rsqs
-
-
-def allocate_fold_ids(samples: np.ndarray, num_cv_fold: int) -> dict:
-    """ Randomly allocate fold IDs to each sample and
-    return a dictionary which key and value are sample and its ID, respectively.
-    """
-    unique_samples = np.unique(samples)
-    sample_size = len(unique_samples)
-    sample_to_fold_id = {}
-    sizes_per_fold = div_dist_num(sample_size, num_cv_fold)
-    perm_samples = np.random.permutation(unique_samples)
-    start_idx = 0
-
-    for fold_id in range(num_cv_fold):
-        end_idx = start_idx + sizes_per_fold[fold_id]
-
-        for j in range(start_idx, end_idx):
-            sample_to_fold_id[perm_samples[j]] = fold_id
-
-        start_idx = end_idx
-
-    return sample_to_fold_id
-
-
-def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
-    """ Randomly swap labels (case or control) in each group and return a list of swapped labels.
-
-    :param labels: Array of labels
-    :param group_ids: Array of group IDs corresponding to each label
-    :return: Swapped labels
-    """
-    group_to_hit_cnt = {group_id: 0 for group_id in group_ids}  # Key: A group, Value: No. times the key is referred
-    group_to_idx = {}  # Key: A group, Value: The index of a label firstly matched with the group
-    swap_labels = np.copy(labels)
-
-    # Make an array for random swapping
-    num_group = len(group_to_hit_cnt.keys())
-    do_swaps = np.random.binomial(1, 0.5, size=num_group)
-    group_idx = 0
-
-    for i, label in enumerate(labels):
-        group_id = group_ids[i]
-
-        if group_to_hit_cnt.get(group_id, 0) == 0:
-            group_to_hit_cnt[group_id] = 1
-            group_to_idx[group_id] = i
-        elif group_to_hit_cnt.get(group_id, 0) == 1:
-            group_to_hit_cnt[group_id] += 1
-            prev_idx = group_to_idx[group_id]
-
-            # Swap
-            do_swap = do_swaps[group_idx]
-            if do_swap:
-                swap_labels[i] = labels[prev_idx]
-                swap_labels[prev_idx] = label
-
-            group_idx += 1
-        else:
-            print(f'[ERROR] The group {group_id} has more than 2 labels.', file=sys.stderr)
-            raise AssertionError('One group must have at most two labels.')
-
-    return swap_labels
-
-
-def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
-    """ Return True if two arrays have the same items regardless of the order, else return False """
-    if len(array1) != len(array2):
-        return False
-
-    array1_item_set = set(array1)
-
-    for item in array2:
-        if item not in array1_item_set:
-            return False
-
-    return True
-
-
-def div_dist_num(num: int, num_group: int) -> list:
-    """ Divide and distribute the number to each group almost equally. """
-    num_per_groups = []
-    num_per_group = num // num_group
-    remain_num = num % num_group
-
-    for _ in range(num_group):
-        if remain_num == 0:
-            num_per_groups.append(num_per_group)
-        else:
-            num_per_groups.append(num_per_group + 1)
-            remain_num -= 1
-
-    return num_per_groups
-
-
-def get_curr_time() -> str:
-    now = datetime.now()
-    curr_time = now.strftime('%H:%M:%S %m/%d/%y')
-    return curr_time
 
 
 if __name__ == '__main__':

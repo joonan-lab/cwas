@@ -9,13 +9,13 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 import argparse
 import multiprocessing as mp
 import os
-import sys
-from datetime import datetime
 from functools import partial
 
 import numpy as np
 import pandas as pd
 from scipy.stats import binom_test
+
+from .utils import cmp_two_arr, div_dist_num, get_curr_time, swap_label
 
 
 def main():
@@ -174,7 +174,7 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> pd.D
     sample_info_dict = sample_df.to_dict()
     sample_ids = cwas_cat_df.index.values
     sample_types = np.vectorize(lambda sample_id: sample_info_dict['PHENOTYPE'][sample_id])(sample_ids)
-    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
+    case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
     dnv_cnt_arr = np.concatenate([case_dnv_cnt[:, np.newaxis], ctrl_dnv_cnt[:, np.newaxis]], axis=1)
 
     # Make a DataFrame for the results of binomial tests
@@ -220,13 +220,13 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
 
     # Calculate relative risks from label-swapping permutations
     if num_proc == 1:
-        perm_rr_list = _cal_perm_rr(num_perm, cwas_cat_vals, sample_types, family_ids)
+        perm_rr_list = cal_perm_rr(num_perm, cwas_cat_vals, sample_types, family_ids)
     else:
         num_perms = div_dist_num(num_perm, num_proc)
         pool = mp.Pool(num_proc)
         proc_outputs = \
             pool.map(
-                partial(_cal_perm_rr,
+                partial(cal_perm_rr,
                         sample_cat_vals=cwas_cat_vals,
                         sample_types=sample_types,
                         family_ids=family_ids
@@ -242,7 +242,7 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
             perm_rr_list += proc_output
 
     perm_rrs = np.concatenate(perm_rr_list, axis=0)
-    case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
+    case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(cwas_cat_vals, sample_types)
     rr = case_dnv_cnt / ctrl_dnv_cnt  # Original relative risks
 
     # Permutation tests
@@ -269,7 +269,7 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
     return burden_df, perm_rr_df
 
 
-def _cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> (float, float):
+def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> (float, float):
     """ Count the number of the de novo variants for each phenotype, case and control.
     """
     are_case = sample_types == 'case'
@@ -279,95 +279,19 @@ def _cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) ->
     return case_dnv_cnt, ctrl_dnv_cnt
 
 
-def _cal_perm_rr(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, family_ids: np.ndarray) -> list:
+def cal_perm_rr(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, family_ids: np.ndarray) -> list:
     """ Calculate relative risks of each category in each permutation trial.
     The length of the returned list equals to the number of the permutations.
     """
     perm_rr_list = []
 
     for _ in range(num_perm):
-        swap_sample_types = _swap_label(sample_types, family_ids)
-        case_dnv_cnt, ctrl_dnv_cnt = _cnt_case_ctrl_dnv(sample_cat_vals, swap_sample_types)
+        swap_sample_types = swap_label(sample_types, family_ids)
+        case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(sample_cat_vals, swap_sample_types)
         perm_rr = case_dnv_cnt / ctrl_dnv_cnt
         perm_rr_list.append(perm_rr[np.newaxis, :])
 
     return perm_rr_list
-
-
-def _swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
-    """ Randomly swap labels (case or control) in each group and return a list of swapped labels.
-
-    :param labels: Array of labels
-    :param group_ids: Array of group IDs corresponding to each label
-    :return: Swapped labels
-    """
-    group_to_hit_cnt = {group_id: 0 for group_id in group_ids}  # Key: A group, Value: No. times the key is referred
-    group_to_idx = {}  # Key: A group, Value: The index of a label firstly matched with the group
-    swap_labels = np.copy(labels)
-
-    # Make an array for random swapping
-    num_group = len(group_to_hit_cnt.keys())
-    do_swaps = np.random.binomial(1, 0.5, size=num_group)
-    group_idx = 0
-
-    for i, label in enumerate(labels):
-        group_id = group_ids[i]
-
-        if group_to_hit_cnt.get(group_id, 0) == 0:
-            group_to_hit_cnt[group_id] = 1
-            group_to_idx[group_id] = i
-        elif group_to_hit_cnt.get(group_id, 0) == 1:
-            group_to_hit_cnt[group_id] += 1
-            prev_idx = group_to_idx[group_id]
-
-            # Swap
-            do_swap = do_swaps[group_idx]
-            if do_swap:
-                swap_labels[i] = labels[prev_idx]
-                swap_labels[prev_idx] = label
-
-            group_idx += 1
-        else:
-            print(f'[ERROR] The group {group_id} has more than 2 labels.', file=sys.stderr)
-            raise AssertionError('One group must have at most two labels.')
-
-    return swap_labels
-
-
-def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
-    """ Return True if two arrays have the same items regardless of the order, else return False """
-    if len(array1) != len(array2):
-        return False
-
-    array1_item_set = set(array1)
-
-    for item in array2:
-        if item not in array1_item_set:
-            return False
-
-    return True
-
-
-def div_dist_num(num: int, num_group: int) -> list:
-    """ Divide and distribute the number to each group almost equally. """
-    num_per_groups = []
-    num_per_group = num // num_group
-    remain_num = num % num_group
-
-    for _ in range(num_group):
-        if remain_num == 0:
-            num_per_groups.append(num_per_group)
-        else:
-            num_per_groups.append(num_per_group + 1)
-            remain_num -= 1
-
-    return num_per_groups
-
-
-def get_curr_time() -> str:
-    now = datetime.now()
-    curr_time = now.strftime('%H:%M:%S %m/%d/%y')
-    return curr_time
 
 
 if __name__ == "__main__":

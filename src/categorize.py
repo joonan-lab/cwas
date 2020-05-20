@@ -11,7 +11,6 @@ import multiprocessing as mp
 import os
 import re
 import sys
-from datetime import datetime
 from functools import partial
 
 import numpy as np
@@ -20,7 +19,8 @@ import pyximport
 import yaml
 
 pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
-from categorization import categorize_variant as _categorize_variant
+from .categorization import categorize_variant as _categorize_variant
+from .utils import div_list, get_curr_time
 
 
 def main():
@@ -155,7 +155,7 @@ def parse_vep_vcf(vep_vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
 
     # Parse the INFO field
     info_strs = vep_vcf_df['INFO'].values
-    info_dicts = list(map(_parse_info_str, info_strs))
+    info_dicts = list(map(parse_info_str, info_strs))
     info_df = pd.DataFrame(info_dicts)
 
     # Parse the CSQ strings (VEP results)
@@ -173,7 +173,7 @@ def parse_vep_vcf(vep_vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
     return variant_df
 
 
-def _parse_info_str(info_str: str) -> dict:
+def parse_info_str(info_str: str) -> dict:
     """ Parse the string in the INFO field of the VCF file from VEP and make a dictionary """
     info_dict = {}
     key_value_pairs = info_str.split(';')
@@ -226,12 +226,12 @@ def categorize_variant(variant_df: pd.DataFrame, category_dict: dict, gene_list_
 
     # Categorize the variants in each sample
     if num_proc == 1:
-        cat_result_dicts = _categorize_each_sample(sample_var_dfs, category_dict, gene_list_dict)
+        cat_result_dicts = categorize_each_sample(sample_var_dfs, category_dict, gene_list_dict)
     else:
         var_df_sub_lists = div_list(sample_var_dfs, num_proc)  # It can raise AssertionError.
         pool = mp.Pool(num_proc)
         proc_outputs = \
-            pool.map(partial(_categorize_each_sample, category_dict=category_dict, gene_list_dict=gene_list_dict),
+            pool.map(partial(categorize_each_sample, category_dict=category_dict, gene_list_dict=gene_list_dict),
                      var_df_sub_lists)
         pool.close()
         pool.join()
@@ -250,7 +250,7 @@ def categorize_variant(variant_df: pd.DataFrame, category_dict: dict, gene_list_
     return cat_result_df
 
 
-def _categorize_each_sample(sample_var_dfs: list, category_dict: dict, gene_list_dict: dict) -> list:
+def categorize_each_sample(sample_var_dfs: list, category_dict: dict, gene_list_dict: dict) -> list:
     """ This is a wrapper function to execute 'cwas_cat' for multiple samples
 
     :param sample_var_dfs: The list of pd.DataFrame objects listing each sample's variants
@@ -265,30 +265,6 @@ def _categorize_each_sample(sample_var_dfs: list, category_dict: dict, gene_list
         cat_result_dicts.append(cat_result_dict)
 
     return cat_result_dicts
-
-
-def div_list(in_list: list, num_sub_list: int) -> list:
-    """ Divide the input list into multiple sub-lists """
-    sub_lists = []
-    sub_len = len(in_list) // num_sub_list
-
-    if sub_len == 0:
-        raise AssertionError(f'The number of sub-lists ("{num_sub_list:,d}") are larger than '
-                             f'the length of the input list ("{len(in_list):,d}").')
-
-    for i in range(num_sub_list - 1):
-        sub_list = in_list[sub_len * i: sub_len * (i + 1)]
-        sub_lists.append(sub_list)
-
-    sub_lists.append(in_list[sub_len * (num_sub_list - 1):])
-
-    return sub_lists
-
-
-def get_curr_time() -> str:
-    now = datetime.now()
-    curr_time = now.strftime('%H:%M:%S %m/%d/%y')
-    return curr_time
 
 
 if __name__ == "__main__":
