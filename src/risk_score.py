@@ -32,6 +32,7 @@ def main():
     print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
     print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
     print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
+    print(f'[Setting] Use multiprocessing for the cross-validation: {args.use_parallel}')
     print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
     assert os.path.isfile(args.cat_result_path), f'The input file "{args.cat_result_path}" cannot be found.'
     assert os.path.isfile(args.sample_file_path), f'The input file "{args.sample_file_path}" cannot be found.'
@@ -87,7 +88,7 @@ def main():
 
     # Train and test a lasso model multiple times
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
-    num_parallel = min(mp.cpu_count(), args.num_cv_fold)
+    num_parallel = min(mp.cpu_count(), args.num_cv_fold) if args.use_parallel else 1
     coeffs = []
     rsqs = []
 
@@ -151,13 +152,15 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
     parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
-                        help='Rare category cutoff for No. variants of a control', default=3)
+                        help='Rare category cutoff for No. variants of a control (Default: 3)', default=3)
     parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
-                        help='No. regression trials to calculate a mean of R squares', default=10)
+                        help='No. regression trials to calculate a mean of R squares (Default: 10)', default=10)
     parser.add_argument('--num_cv_fold', dest='num_cv_fold', required=False, type=int,
-                        help='No. cross-validation folds', default=5)
+                        help='No. cross-validation folds (Default: 5)', default=5)
+    parser.add_argument('--use_parallel', dest='use_parallel', required=False, type=bool,
+                        help='Use multiprocessing for cross-validation (Default: True)', default=True)
     parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
-                        help='No. label-swapping permutations for permutation tests', default=1000)
+                        help='No. label-swapping permutations for permutation tests (Default: 1,000)', default=1000)
     return parser
 
 
