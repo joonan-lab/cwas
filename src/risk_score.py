@@ -20,6 +20,27 @@ def main():
     args = parser.parse_args()
 
     # Print the script description
+    print(__doc__)
+
+    # Print and check the validity of the settings
+    print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
+    print(f'[Setting] Input CWAS categorization result: {args.cat_result_path}')
+    print(f'[Setting] List of sample IDs: {args.sample_file_path}')
+    print(f'[Setting] List of adjustment factors for No. DNVs of each sample: '
+          f'{args.adj_file_path if args.adj_file_path else "None"}')
+    print(f'[Setting] Output path: {args.outfile_path}')
+    print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
+    print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
+    print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
+    print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
+    assert os.path.isfile(args.cat_result_path), f'The input file "{args.cat_result_path}" cannot be found.'
+    assert os.path.isfile(args.sample_file_path), f'The input file "{args.sample_file_path}" cannot be found.'
+    assert args.adj_file_path == '' or os.path.isfile(args.adj_file_path), \
+        f'The input file "{args.adj_file_path}" cannot be found.'
+    outfile_dir = os.path.dirname(args.outfile_path)
+    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+
+    # Print the script description
     # Load and parse the input data
     print(f'[{get_curr_time()}, Progress] Parse the categorization result into DataFrame')
     cwas_cat_df = pd.read_table(args.cat_result_path, index_col='SAMPLE')
@@ -66,20 +87,20 @@ def main():
 
     # Train and test a lasso model multiple times
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
-    num_parallel = min(mp.cpu_count(), args.num_fold)
+    num_parallel = min(mp.cpu_count(), args.num_cv_fold)
     coeffs = []
     rsqs = []
 
     for seed in range(args.num_reg):
         coeff, rsq = \
-            lasso_regression(rare_cat_vals, sample_responses, is_train_set, args.num_fold, num_parallel, seed)
+            lasso_regression(rare_cat_vals, sample_responses, is_train_set, args.num_cv_fold, num_parallel, seed)
         coeffs.append(coeff)
         rsqs.append(rsq)
 
     # Permutation tests to get null distribution of R squares
     print(f'[{get_curr_time()}, Progress] Permutation tests')
     perm_rsqs = get_perm_rsq(args.num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
-                             args.rare_cat_cutoff, args.num_fold, num_parallel)
+                             args.rare_cat_cutoff, args.num_cv_fold, num_parallel)
 
     # Statistical test (Z test)
     print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
@@ -130,14 +151,13 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
     parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
-                        help='Cutoff for No. variants of a control to determine '
-                             'whether a category is a rare category or not', default=3)
+                        help='Rare category cutoff for No. variants of a control', default=3)
     parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
                         help='No. regression trials to calculate a mean of R squares', default=10)
-    parser.add_argument('--num_fold', dest='num_fold', required=False, type=int,
+    parser.add_argument('--num_cv_fold', dest='num_cv_fold', required=False, type=int,
                         help='No. cross-validation folds', default=5)
     parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
-                        help='Number of label-swapping permutations for permutation tests', default=1000)
+                        help='No. label-swapping permutations for permutation tests', default=1000)
     return parser
 
 
@@ -172,7 +192,7 @@ def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> 
 
 
 def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, is_train_set: np.ndarray,
-                     num_fold: int, num_parallel: int, random_state: int = None) -> (np.ndarray, float):
+                     num_cv_fold: int, num_parallel: int, random_state: int = None) -> (np.ndarray, float):
     """ Lasso regression to generate a de novo risk score """
     # Divide the input data into a train and a test set
     train_covariates = sample_covariates[is_train_set]
@@ -181,7 +201,7 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
     test_responses = sample_responses[~is_train_set]
 
     # Train Lasso model
-    lasso_model = ElasticNet(alpha=1, n_lambda=20, standardize=True, n_splits=num_fold, n_jobs=num_parallel,
+    lasso_model = ElasticNet(alpha=1, n_lambda=20, standardize=True, n_splits=num_cv_fold, n_jobs=num_parallel,
                              scoring='mean_squared_error', random_state=random_state)
     lasso_model.fit(train_covariates, train_responses)
     opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
@@ -198,7 +218,7 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
 
 
 def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, sample_groups: np.ndarray,
-                 is_train_set: np.ndarray, var_cnt_cutoff: int, num_fold: int, num_parallel: int) -> list:
+                 is_train_set: np.ndarray, var_cnt_cutoff: int, num_cv_fold: int, num_parallel: int) -> list:
     """ Get R squares of the lasso regression after each label swapping trial.
     The length of the returned list equals to the number of the permutations.
     """
@@ -214,24 +234,24 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
         is_rare_cat = ctrl_dnv_cnt < var_cnt_cutoff
         rare_cat_vals = sample_cat_vals[:, is_rare_cat]
 
-        _, rsq = lasso_regression(rare_cat_vals, swap_responses, is_train_set, num_fold, num_parallel)
+        _, rsq = lasso_regression(rare_cat_vals, swap_responses, is_train_set, num_cv_fold, num_parallel)
         perm_rsqs.append(rsq)
 
     return perm_rsqs
 
 
-def allocate_fold_ids(samples: np.ndarray, num_fold: int) -> dict:
+def allocate_fold_ids(samples: np.ndarray, num_cv_fold: int) -> dict:
     """ Randomly allocate fold IDs to each sample and
     return a dictionary which key and value are sample and its ID, respectively.
     """
     unique_samples = np.unique(samples)
     sample_size = len(unique_samples)
     sample_to_fold_id = {}
-    sizes_per_fold = div_dist_num(sample_size, num_fold)
+    sizes_per_fold = div_dist_num(sample_size, num_cv_fold)
     perm_samples = np.random.permutation(unique_samples)
     start_idx = 0
 
-    for fold_id in range(num_fold):
+    for fold_id in range(num_cv_fold):
         end_idx = start_idx + sizes_per_fold[fold_id]
 
         for j in range(start_idx, end_idx):
