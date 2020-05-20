@@ -23,23 +23,9 @@ def main():
     print(__doc__)
 
     # Print and check the validity of the settings
-    print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
-    print(f'[Setting] Input CWAS categorization result: {args.cat_result_path}')
-    print(f'[Setting] List of sample IDs: {args.sample_file_path}')
-    print(f'[Setting] List of adjustment factors for No. DNVs of each sample: '
-          f'{args.adj_file_path if args.adj_file_path else "None"}')
-    print(f'[Setting] Output path: {args.outfile_path}')
-    print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
-    print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
-    print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
-    print(f'[Setting] Use multiprocessing for the cross-validation: {args.use_parallel}')
-    print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
-    assert os.path.isfile(args.cat_result_path), f'The input file "{args.cat_result_path}" cannot be found.'
-    assert os.path.isfile(args.sample_file_path), f'The input file "{args.sample_file_path}" cannot be found.'
-    assert args.adj_file_path == '' or os.path.isfile(args.adj_file_path), \
-        f'The input file "{args.adj_file_path}" cannot be found.'
-    outfile_dir = os.path.dirname(args.outfile_path)
-    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    print_args(args)
+    check_args_validity(args)
+    print()
 
     # Print the script description
     # Load and parse the input data
@@ -162,6 +148,29 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
                         help='No. label-swapping permutations for permutation tests (Default: 1,000)', default=1000)
     return parser
+
+
+def print_args(args: argparse.Namespace):
+    print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
+    print(f'[Setting] Input CWAS categorization result: {args.cat_result_path}')
+    print(f'[Setting] List of sample IDs: {args.sample_file_path}')
+    print(f'[Setting] List of adjustment factors for No. DNVs of each sample: '
+          f'{args.adj_file_path if args.adj_file_path else "None"}')
+    print(f'[Setting] Output path: {args.outfile_path}')
+    print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
+    print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
+    print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
+    print(f'[Setting] Use multiprocessing for the cross-validation: {args.use_parallel}')
+    print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
+
+
+def check_args_validity(args: argparse.Namespace):
+    assert os.path.isfile(args.cat_result_path), f'The input file "{args.cat_result_path}" cannot be found.'
+    assert os.path.isfile(args.sample_file_path), f'The input file "{args.sample_file_path}" cannot be found.'
+    assert args.adj_file_path == '' or os.path.isfile(args.adj_file_path), \
+        f'The input file "{args.adj_file_path}" cannot be found.'
+    outfile_dir = os.path.dirname(args.outfile_path)
+    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
 
 
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:

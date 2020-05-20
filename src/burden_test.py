@@ -27,29 +27,8 @@ def main():
     print(__doc__)
 
     # Print and check the validity of the settings
-    print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
-    print(f'[Setting] The input CWAS categorization result: {args.cat_result_path}')
-    print(f'[Setting] The list of sample IDs: {args.sample_file_path}')
-    print(f'[Setting] The list of adjustment factors for No. DNVs of each sample: '
-          f'{args.adj_file_path if args.adj_file_path else "None"}')
-    print(f'[Setting] The output path: {args.outfile_path}')
-    assert os.path.isfile(args.cat_result_path), f'The input file "{args.cat_result_path}" cannot be found.'
-    assert os.path.isfile(args.sample_file_path), f'The input file "{args.sample_file_path}" cannot be found.'
-    assert args.adj_file_path == '' or os.path.isfile(args.adj_file_path), \
-        f'The input file "{args.adj_file_path}" cannot be found.'
-    outfile_dir = os.path.dirname(args.outfile_path)
-    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
-
-    if args.test_type == 'perm':
-        print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
-        print(f'[Setting] No. processes for the tests: {args.num_proc:,d}')
-        print(f'[Setting] The permutation RR output path: {args.perm_rr_path if args.perm_rr_path else "None"}')
-        assert 1 <= args.num_proc <= mp.cpu_count(), \
-            f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
-        assert args.num_perm >= args.num_proc, f'No. processes must be equal or less than No. permutations.'
-        perm_rr_dir = os.path.dirname(args.perm_rr_path)
-        assert perm_rr_dir == '' or os.path.isdir(perm_rr_dir), \
-            f'The outfile directory for RRs from permutations "{perm_rr_dir}" cannot be found.'
+    print_args(args)
+    check_args_validity(args)
     print()
 
     # Load and parse the input data
@@ -152,6 +131,37 @@ def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.
     return cwas_cat_df
 
 
+def print_args(args: argparse.Namespace):
+    print(f'[Setting] Types of burden tests: {"Binomial test" if args.test_type == "binom" else "Permutation test"}')
+    print(f'[Setting] Input CWAS categorization result: {args.cat_result_path}')
+    print(f'[Setting] List of sample IDs: {args.sample_file_path}')
+    print(f'[Setting] List of adjustment factors for No. DNVs of each sample: '
+          f'{args.adj_file_path if args.adj_file_path else "None"}')
+    print(f'[Setting] Output path: {args.outfile_path}')
+
+    if args.test_type == 'perm':
+        print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
+        print(f'[Setting] No. processes for the tests: {args.num_proc:,d}')
+        print(f'[Setting] Permutation RR output path: {args.perm_rr_path if args.perm_rr_path else "None"}')
+
+
+def check_args_validity(args: argparse.Namespace):
+    assert os.path.isfile(args.cat_result_path), f'The input file "{args.cat_result_path}" cannot be found.'
+    assert os.path.isfile(args.sample_file_path), f'The input file "{args.sample_file_path}" cannot be found.'
+    assert args.adj_file_path == '' or os.path.isfile(args.adj_file_path), \
+        f'The input file "{args.adj_file_path}" cannot be found.'
+    outfile_dir = os.path.dirname(args.outfile_path)
+    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+
+    if args.test_type == 'perm':
+        assert 1 <= args.num_proc <= mp.cpu_count(), \
+            f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
+        assert args.num_perm >= args.num_proc, f'No. processes must be equal or less than No. permutations.'
+        perm_rr_dir = os.path.dirname(args.perm_rr_path)
+        assert perm_rr_dir == '' or os.path.isdir(perm_rr_dir), \
+            f'The outfile directory for RRs from permutations "{perm_rr_dir}" cannot be found.'
+
+
 def run_burden_binom(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> pd.DataFrame:
     """ Function for burden tests via binomial tests
 
@@ -215,11 +225,14 @@ def run_burden_perm(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame, num_perm
         num_perms = div_dist_num(num_perm, num_proc)
         pool = mp.Pool(num_proc)
         proc_outputs = \
-            pool.map(partial(_cal_perm_rr,
-                             sample_cat_vals=cwas_cat_vals,
-                             sample_types=sample_types,
-                             family_ids=family_ids),
-                     num_perms)
+            pool.map(
+                partial(_cal_perm_rr,
+                        sample_cat_vals=cwas_cat_vals,
+                        sample_types=sample_types,
+                        family_ids=family_ids
+                        ),
+                num_perms
+            )
         pool.close()
         pool.join()
 
