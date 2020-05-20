@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 """
-# TODO: Add explanation
+Script for an analysis of de novo risk scores using the number of variants for each category
+Lasso regression is used for category selection.
+
+For more detailed information, please refer to An et al., 2018 (PMID 30545852).
+
 """
 import argparse
 import multiprocessing as mp
