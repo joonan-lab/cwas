@@ -16,24 +16,7 @@ from scipy import stats
 
 def main():
     # Parse the arguments
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
-                        help='Path of a result of the CWAS categorization')
-    parser.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
-                        help='File listing sample IDs with their families and phenotypes (case or ctrl)')
-    parser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
-                        help='File that contains adjustment factors for No. DNVs of each sample', default='')
-    parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
-                        help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
-    parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
-                        help='Cutoff for No. variants of a control to determine '
-                             'whether a category is a rare category or not', default=3)
-    parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
-                        help='No. regression trials to calculate a mean of R squares', default=10)
-    parser.add_argument('--num_fold', dest='num_fold', required=False, type=int,
-                        help='No. cross-validation folds', default=5)
-    parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
-                        help='Number of label-swapping permutations for permutation tests', default=1000)
+    parser = create_arg_parser()
     args = parser.parse_args()
 
     # Print the script description
@@ -133,6 +116,29 @@ def main():
         result_df.to_csv(outfile, sep='\t')
 
     print(f'[{get_curr_time()}, Progress] Done')
+
+
+def create_arg_parser() -> argparse.ArgumentParser:
+    """ Create an argument parser for this script and return it """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-i', '--infile', dest='cat_result_path', required=True, type=str,
+                        help='Path of a result of the CWAS categorization')
+    parser.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                        help='File listing sample IDs with their families and phenotypes (case or ctrl)')
+    parser.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
+                        help='File that contains adjustment factors for No. DNVs of each sample', default='')
+    parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
+                        help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
+    parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
+                        help='Cutoff for No. variants of a control to determine '
+                             'whether a category is a rare category or not', default=3)
+    parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
+                        help='No. regression trials to calculate a mean of R squares', default=10)
+    parser.add_argument('--num_fold', dest='num_fold', required=False, type=int,
+                        help='No. cross-validation folds', default=5)
+    parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
+                        help='Number of label-swapping permutations for permutation tests', default=1000)
+    return parser
 
 
 def adjust_cat_df(cwas_cat_df: pd.DataFrame, adj_factor_df: pd.DataFrame) -> pd.DataFrame:
