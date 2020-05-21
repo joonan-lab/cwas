@@ -146,7 +146,7 @@ def main():
     # Write the result
     print(f'[{get_curr_time()}, Progress] Write the result')
     with open(args.outfile_path, 'w') as outfile:
-        print(f'#De novo risk score analysis result for all regions', file=outfile)
+        print(f'#De novo risk score analysis result for {args.cat_type} regions', file=outfile)
         print(f'#Mean R square: {m_rsq * 100:.2f}%', file=outfile)
         print(f'#P-value: {p:.2e}', file=outfile)
         result_df.to_csv(outfile, sep='\t')
