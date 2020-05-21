@@ -130,7 +130,7 @@ def main():
     cat_ctrl_dnv_cnt = ctrl_dnv_cnt[is_rare_cat][is_non_zero_coeff]
     m_non_zero_coeff = m_coeff[is_non_zero_coeff]
 
-    order = m_non_zero_coeff.argsort()[::-1] # Sort by lasso coefficients in descending order
+    order = m_non_zero_coeff.argsort()[::-1]  # Sort by lasso coefficients in descending order
     result_mat = np.concatenate([
         cat_case_dnv_cnt[:, np.newaxis],
         cat_ctrl_dnv_cnt[:, np.newaxis],
@@ -174,8 +174,8 @@ def create_arg_parser() -> argparse.ArgumentParser:
                         help='No. regression trials to calculate a mean of R squares (Default: 10)', default=10)
     parser.add_argument('--num_cv_fold', dest='num_cv_fold', required=False, type=int,
                         help='No. cross-validation folds (Default: 5)', default=5)
-    parser.add_argument('--use_parallel', dest='use_parallel', required=False, type=bool,
-                        help='Use multiprocessing for cross-validation (Default: True)', default=True)
+    parser.add_argument('--use_parallel', dest='use_parallel', required=False, type=int, choices={0, 1},
+                        help='Use multiprocessing for cross-validation (Default: 1 (True))', default=1)
     parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
                         help='No. label-swapping permutations for permutation tests (Default: 1,000)', default=1000)
     return parser
@@ -191,7 +191,7 @@ def print_args(args: argparse.Namespace):
     print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
     print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
     print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
-    print(f'[Setting] Use multiprocessing for the cross-validation: {args.use_parallel}')
+    print(f'[Setting] Use multiprocessing for the cross-validation: {bool(args.use_parallel)}')
     print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
 
 
