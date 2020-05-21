@@ -117,7 +117,7 @@ def main():
     print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
     m_rsq = np.mean(rsqs)
     m_perm_rsq = np.mean(perm_rsqs)
-    s_perm_rsq = np.std(perm_rsqs)
+    s_perm_rsq = np.std(perm_rsqs, ddof=1)
     z = (m_rsq - m_perm_rsq) / s_perm_rsq
     p = stats.norm.sf(abs(z)) * 2  # Two-sided
 
