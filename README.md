@@ -3,19 +3,6 @@
 *Note: This is a modified version of the original CWAS repository.*
 *The original CWAS repository: [sanderslab/cwas](https://github.com/sanderslab/cwas)*
 
-This README contains data requirements and run commands for the category-based burden test in the An et al. (2018). The scripts and materials are distributed in Amazon Machine Images and you can deploy the workflow using Amazon Web Services (AWS). The AMI ID is `ami-0e1757919181cfb66`, name 'An 2018 to share', and has 180 Gib size. For the instance setting, we recommend large AWS instance series like `m4.x2large` or `m4.x4large`.
-
-The AMI includes:
-
-- List of de novo variants from An et al. (2018). 
-- Script for annotation
-- Annotation files
-- List of redundant categories to be trimmed
-- List of gene sets 
-- List of large category for burdenshift analysis
-- Adjustment factor for burden test 
-
-
 ## Data requirements
 Following data must be prepared for CWAS. Here are details.
 
@@ -27,7 +14,7 @@ chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1;
 chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
 ```
 - The input VCF data must follow the [specification of VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf).
-- The *INFO* field must contain the sample ID of each variant with this format `SAMPLE={sample_id}`. 
+- The *INFO* field must contain a sample ID of each variant with this format `SAMPLE={sample_id}`. 
 
 ### 2. List of samples
 | SAMPLE | FAMILY | PHENOTYPE |
@@ -42,6 +29,7 @@ chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;B
     - 3 essential columns: *SAMPLE*, *FAMILY*, and *PHENOTYPE*
     - A value in the *PHENOTYPE* must be *case* or *ctrl*.
 - The values in the *SAMPLE* must be matched with the sample IDs of variants in the input VCF file.
+- *Note*: Currently, There is an assumption that the samples are from quadruple families.
 
 ### 3. List of adjustment factors (Optional)
 | SAMPLE | AdjustFactor |
@@ -165,7 +153,60 @@ Each category from the step 2 will be subject to burden tests using binomial tes
 # Note: '[]' means they are optional arguments.
 ```
 
-## Step 4. Run burdenshift
+## Step 4. De novo risk score analysis 
+This step do a lasso regression to determine which categories are possible deterministic factors for the phenotypes. Each category from the step 2 will be subject to this analysis.
+
+##### Script
+`risk_score.py`
+
+##### Requirement
+A python package *glmnet* ([civisanalytics/python-glmnet](https://github.com/civisanalytics/python-glmnet)) must be installed for a lasso regression. If you are using *conda*, use the following command.
+
+`conda install -c conda-forge glmnet` 
+
+##### Required arguments:
+
+- -i, --infile = Path to a result of the categorization, which is an output `categorize.py` (**Step 2**).
+- -s, --sample_file = Path to a file listing sample IDs, which format is described in **Data requirments** above.
+
+##### Optional arguments:
+
+- -a, --adj_file = Path to a file specifying adjustment factors the the number of variants of each individual, which format is described in **Data requirments** above. Default is *'' (empty string)*, which will bypass this adjustment step.
+- -o, --outfile = Path to a result of the risk score analysis. Default is *cwas_denovo_risk_score_result.txt*.
+- --category_type = Type of the CWAS categories for this analysis. Current possible values are *{all, non-coding, promoter}*. Default is *all*.
+- --rare_category_cutoff = Rare category cutoff for the number of variants in controls. Default is 3.
+- --num_regression = The number of regression trials. Default is *10*.
+- --num_cv_fold = The number of cross-validation folds. Default is *5*.
+- --use_parallel = Boolean value to determine whether or not to use multiprocessing for cross-validation. Possible values are *{0, 1}*. Default is *1*.
+- --num_perm = The number of label-swapping permutations. Default is *1,000*
+
+All the default values are consistent with *An et al., Science, 2018*.
+
+
+```bash
+# Help
+./risk_score.py -h
+
+# Usage
+./risk_score.py \
+-i CAT_RESULT_PATH \
+-s SAMPLE_FILE_PATH \ 
+[-a ADJ_FILE_PATH] \
+[-o OUTFILE_PATH] \
+[--category_type {all,non-coding,promoter}] \
+[--rare_category_cutoff RARE_CAT_CUTOFF] \
+[--num_regression NUM_REG] \
+[--num_cv_fold NUM_CV_FOLD] \
+[--use_parallel {0,1}] \
+[--num_perm NUM_PERM]
+
+# Note: '[]' means they are optional arguments.
+```
+
+**The steps below are not implemented yet.**
+***
+
+## Step 5. Run burdenshift
 
 This script will generate global burdenshift cross a large category (e.g. promoters, missenses). This is based on permutation files generated from the step 3. 
 
@@ -182,7 +223,7 @@ list_catSetMembership.txt \ # Matrix for a large category membership
 cwas  # Tag for output
 ```
 
-## Step 5. Risk score analysis and Annotation clustering 
+## Step 6. Annotation clustering 
 
 The scripts for risk score analysis and annotation clustering is not located in this repository. Please refer to https://github.com/lingxuez/WGS-Analysis
 
