@@ -130,11 +130,15 @@ def main():
     cat_ctrl_dnv_cnt = ctrl_dnv_cnt[is_rare_cat][is_non_zero_coeff]
     m_non_zero_coeff = m_coeff[is_non_zero_coeff]
 
+    order = m_non_zero_coeff.argsort()[::-1] # Sort by lasso coefficients in descending order
     result_mat = np.concatenate([
         cat_case_dnv_cnt[:, np.newaxis],
         cat_ctrl_dnv_cnt[:, np.newaxis],
         m_non_zero_coeff[:, np.newaxis]
     ], axis=1)
+    result_mat = result_mat[order]
+    non_zero_cats = non_zero_cats[order]
+
     result_df = \
         pd.DataFrame(result_mat, index=non_zero_cats, columns=['Case_DNV_Count', 'Ctrl_DNV_Count', 'Lasso_Coeff'])
     result_df.index.name = 'Category'
