@@ -123,24 +123,25 @@ def main():
 
     # Make a result DataFrame
     print(f'[{get_curr_time()}, Progress] Make a DataFrame for the de novo risk score analysis')
-    m_coeff = np.mean(coeffs, axis=0)
-    is_non_zero_coeff = m_coeff != 0
-    non_zero_cats = cwas_cat_df.columns.values[is_rare_cat][is_non_zero_coeff]
-    cat_case_dnv_cnt = case_dnv_cnt[is_rare_cat][is_non_zero_coeff]
-    cat_ctrl_dnv_cnt = ctrl_dnv_cnt[is_rare_cat][is_non_zero_coeff]
-    m_non_zero_coeff = m_coeff[is_non_zero_coeff]
+    num_select = np.sum(np.vectorize(lambda coeff: coeff != 0)(coeffs), axis=0)
+    m_coeff = np.sum(coeffs, axis=0) / num_select
+    is_select_coeff = num_select >= int(args.num_reg * 0.8)
+    select_cats = cwas_cat_df.columns.values[is_rare_cat][is_select_coeff]
+    cat_case_dnv_cnt = case_dnv_cnt[is_rare_cat][is_select_coeff]
+    cat_ctrl_dnv_cnt = ctrl_dnv_cnt[is_rare_cat][is_select_coeff]
+    select_m_coeff = m_coeff[is_select_coeff]
 
-    order = m_non_zero_coeff.argsort()[::-1]  # Sort by lasso coefficients in descending order
+    order = select_m_coeff.argsort()[::-1]  # Sort by lasso coefficients in descending order
     result_mat = np.concatenate([
         cat_case_dnv_cnt[:, np.newaxis],
         cat_ctrl_dnv_cnt[:, np.newaxis],
-        m_non_zero_coeff[:, np.newaxis]
+        select_m_coeff[:, np.newaxis]
     ], axis=1)
     result_mat = result_mat[order]
-    non_zero_cats = non_zero_cats[order]
+    select_cats = select_cats[order]
 
     result_df = \
-        pd.DataFrame(result_mat, index=non_zero_cats, columns=['Case_DNV_Count', 'Ctrl_DNV_Count', 'Lasso_Coeff'])
+        pd.DataFrame(result_mat, index=select_cats, columns=['Case_DNV_Count', 'Ctrl_DNV_Count', 'Lasso_Coeff'])
     result_df.index.name = 'Category'
 
     # Write the result
@@ -272,7 +273,7 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
     test_responses = sample_responses[~is_train_set]
 
     # Train Lasso model
-    lasso_model = ElasticNet(alpha=1, n_lambda=20, standardize=True, n_splits=num_cv_fold, n_jobs=num_parallel,
+    lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=num_cv_fold, n_jobs=num_parallel,
                              scoring='mean_squared_error', random_state=random_state)
     lasso_model.fit(train_covariates, train_responses)
     opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
