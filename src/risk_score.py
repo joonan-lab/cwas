@@ -23,7 +23,7 @@ def main():
     # Paths to essential configuration files
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
-    cat_filt_path = os.path.join(project_dir, 'conf', 'category_filter.yaml')
+    cat_filt_path = os.path.join(project_dir, 'conf', 'category_group.yaml')
 
     # Parse the arguments
     parser = create_arg_parser()
@@ -43,12 +43,12 @@ def main():
     cwas_cat_df = pd.read_table(args.cat_result_path, index_col='SAMPLE')
 
     # Filter the columns (categories)
-    if args.cat_type != 'all':
-        print(f'[{get_curr_time()}, Progress] Filter categories and leave \'{args.cat_type}\' categories only')
+    if args.cat_group != 'all':
+        print(f'[{get_curr_time()}, Progress] Filter categories and leave \'{args.cat_group}\' categories only')
         with open(cat_filt_path, 'r') as cat_filt_file:
             cat_filt_conf = yaml.safe_load(cat_filt_file)
 
-        cat_filt_dict = cat_filt_conf.get(args.cat_type)
+        cat_filt_dict = cat_filt_conf.get(args.cat_group)
         assert cat_filt_dict is not None
 
         for annot_group in cat_filt_dict:
@@ -146,7 +146,7 @@ def main():
     # Write the result
     print(f'[{get_curr_time()}, Progress] Write the result')
     with open(args.outfile_path, 'w') as outfile:
-        print(f'#De novo risk score analysis result for {args.cat_type} regions', file=outfile)
+        print(f'#De novo risk score analysis result for {args.cat_group} regions', file=outfile)
         print(f'#Mean R square: {m_rsq * 100:.2f}%', file=outfile)
         print(f'#P-value: {p:.2e}', file=outfile)
         result_df.to_csv(outfile, sep='\t')
@@ -165,9 +165,9 @@ def create_arg_parser() -> argparse.ArgumentParser:
                         help='File that contains adjustment factors for No. DNVs of each sample', default='')
     parser.add_argument('-o', '--outfile', dest='outfile_path', required=False, type=str,
                         help='Path of results of burden tests', default='cwas_denovo_risk_score_result.txt')
-    parser.add_argument('--category_type', dest='cat_type', required=False, type=str,
-                        choices=['all', 'non-coding', 'promoter'],
-                        help='Type of the CWAS categories for this analysis (Default: all)', default='all')
+    parser.add_argument('--category_group', dest='cat_group', required=False, type=str,
+                        choices=['all', 'coding', 'coding-no-ptv', 'noncoding', 'promoter', 'noncoding-wo-promoter'],
+                        help='Group of CWAS categories for this analysis (Default: all)', default='all')
     parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
                         help='Rare category cutoff for No. variants of a control (Default: 3)', default=3)
     parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
@@ -187,7 +187,7 @@ def print_args(args: argparse.Namespace):
     print(f'[Setting] List of adjustment factors for No. DNVs of each sample: '
           f'{args.adj_file_path if args.adj_file_path else "None"}')
     print(f'[Setting] Output path: {args.outfile_path}')
-    print(f'[Setting] Category type: {args.cat_type}')
+    print(f'[Setting] Category type: {args.cat_group}')
     print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
     print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
     print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
