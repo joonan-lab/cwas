@@ -173,7 +173,7 @@ A python package *glmnet* ([civisanalytics/python-glmnet](https://github.com/civ
 
 - -a, --adj_file = Path to a file specifying adjustment factors the the number of variants of each individual, which format is described in **Data requirments** above. Default is *'' (empty string)*, which will bypass this adjustment step.
 - -o, --outfile = Path to a result of the risk score analysis. Default is *cwas_denovo_risk_score_result.txt*.
-- --category_type = Type of the CWAS categories for this analysis. Current possible values are *{all, non-coding, promoter}*. Default is *all*.
+- --category_group = Group of the CWAS categories for this analysis. Current possible values are *{all, coding, coding-no-ptv, noncoding, promoter, noncoding-wo-promoter}*. Default is *all*.
 - --rare_category_cutoff = Rare category cutoff for the number of variants in controls. Default is 3.
 - --num_regression = The number of regression trials. Default is *10*.
 - --num_cv_fold = The number of cross-validation folds. Default is *5*.
@@ -193,7 +193,7 @@ All the default values are consistent with *An et al., Science, 2018*.
 -s SAMPLE_FILE_PATH \ 
 [-a ADJ_FILE_PATH] \
 [-o OUTFILE_PATH] \
-[--category_type {all,non-coding,promoter}] \
+[--category_group {all,coding,coding-no-ptv,noncoding,promoter,noncoding-wo-promoter}] \
 [--rare_category_cutoff RARE_CAT_CUTOFF] \
 [--num_regression NUM_REG] \
 [--num_cv_fold NUM_CV_FOLD] \
