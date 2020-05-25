@@ -296,7 +296,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
     """
     perm_rsqs = []
 
-    for _ in range(num_perm):
+    for seed in range(num_perm):
         # Label swapping
         swap_sample_types = swap_label(sample_types, sample_groups)
         swap_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(swap_sample_types)
@@ -306,7 +306,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
         is_rare_cat = ctrl_dnv_cnt < rare_cat_cutoff
         rare_cat_vals = sample_cat_vals[:, is_rare_cat]
 
-        _, rsq = lasso_regression(rare_cat_vals, swap_responses, is_train_set, num_cv_fold, num_parallel)
+        _, rsq = lasso_regression(rare_cat_vals, swap_responses, is_train_set, num_cv_fold, num_parallel, seed)
         perm_rsqs.append(rsq)
 
     return perm_rsqs
