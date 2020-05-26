@@ -49,7 +49,7 @@ def main():
             cat_filt_conf = yaml.safe_load(cat_filt_file)
 
         cat_filt_dict = cat_filt_conf.get(args.cat_group)
-        assert cat_filt_dict is not None
+        assert cat_filt_dict is not None, f'{args.cat_group} is not an available category group.'
 
         for annot_group in cat_filt_dict:
             cat_filt_dict[annot_group] = set(cat_filt_dict[annot_group])
@@ -88,13 +88,8 @@ def main():
 
     # Determine a training set
     print(f'[{get_curr_time()}, Progress] Divide the samples into training and test set')
-    # FIXME: This part is for testing reproducibility, so it is not generalized version.
-    project_dir = os.path.abspath('..')
-    werling_sample_path = os.path.join(project_dir, 'data', 'SuppTable01_Sample_information.xlsx')
-    werling_sample_df = pd.read_excel(werling_sample_path, sheet_name='qcMetricsAndCounts_transform.tx')
-    werling_sample_ids = werling_sample_df['sampleID'].values
-    werling_sample_set = set(werling_sample_ids)
-    is_train_set = np.vectorize(lambda sample_id: sample_id in werling_sample_set)(sample_ids)
+    random_seed = 0
+    is_train_set = determine_train_set(sample_ids, sample_families, args.train_set_f, random_seed)
 
     # Train and test a lasso model multiple times
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
@@ -108,22 +103,26 @@ def main():
         coeffs.append(coeff)
         rsqs.append(rsq)
 
-    # Permutation tests to get null distribution of R squares
-    print(f'[{get_curr_time()}, Progress] Permutation tests')
-    perm_rsqs = get_perm_rsq(args.num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
-                             args.rare_cat_cutoff, args.num_cv_fold, num_parallel)
-
-    # Statistical test (Z test)
-    print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
     m_rsq = np.mean(rsqs)
-    m_perm_rsq = np.mean(perm_rsqs)
-    s_perm_rsq = np.std(perm_rsqs, ddof=1)
-    z = (m_rsq - m_perm_rsq) / s_perm_rsq
-    p = stats.norm.sf(abs(z)) * 2  # Two-sided
+
+    if args.do_test:
+        # Permutation tests to get null distribution of R squares
+        print(f'[{get_curr_time()}, Progress] Permutation tests')
+        perm_rsqs = get_perm_rsq(args.num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
+                                 args.rare_cat_cutoff, args.num_cv_fold, num_parallel)
+
+        # Statistical test (Z test)
+        print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
+        m_perm_rsq = np.mean(perm_rsqs)
+        s_perm_rsq = np.std(perm_rsqs, ddof=1)
+        z = (m_rsq - m_perm_rsq) / s_perm_rsq
+        p = stats.norm.sf(abs(z)) * 2  # Two-sided
+    else:
+        p = None
 
     # Make a result DataFrame
     print(f'[{get_curr_time()}, Progress] Make a DataFrame for the de novo risk score analysis')
-    num_select = np.sum(np.vectorize(lambda coeff: coeff != 0)(coeffs), axis=0)
+    num_select = np.sum(np.vectorize(lambda w: w != 0)(coeffs), axis=0)
     m_coeff = np.sum(coeffs, axis=0) / num_select
     is_select_coeff = num_select >= int(args.num_reg * 0.8)
     select_cats = cwas_cat_df.columns.values[is_rare_cat][is_select_coeff]
@@ -149,7 +148,8 @@ def main():
     with open(args.outfile_path, 'w') as outfile:
         print(f'#De novo risk score analysis result for {args.cat_group} regions', file=outfile)
         print(f'#Mean R square: {m_rsq * 100:.2f}%', file=outfile)
-        print(f'#P-value: {p:.2e}', file=outfile)
+        if args.do_test:
+            print(f'#P-value: {p:.2e}', file=outfile)
         result_df.to_csv(outfile, sep='\t')
 
     print(f'[{get_curr_time()}, Progress] Done')
@@ -171,12 +171,16 @@ def create_arg_parser() -> argparse.ArgumentParser:
                         help='Group of CWAS categories for this analysis (Default: all)', default='all')
     parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
                         help='Rare category cutoff for No. variants of a control (Default: 3)', default=3)
+    parser.add_argument('--train_set_fraction', dest='train_set_f', required=False, type=float,
+                        help='Fraction of the training set (Default: 0.7)', default=0.7)
     parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
                         help='No. regression trials to calculate a mean of R squares (Default: 10)', default=10)
     parser.add_argument('--num_cv_fold', dest='num_cv_fold', required=False, type=int,
                         help='No. cross-validation folds (Default: 5)', default=5)
     parser.add_argument('--use_parallel', dest='use_parallel', required=False, type=int, choices={0, 1},
                         help='Use multiprocessing for cross-validation (Default: 1 (True))', default=1)
+    parser.add_argument('--do_test', dest='do_test', required=False, type=int, choices={0, 1},
+                        help='Do permutation tests to get a p-value for the R square (Default: 0 (False))', default=0)
     parser.add_argument('--num_perm', dest='num_perm', required=False, type=int,
                         help='No. label-swapping permutations for permutation tests (Default: 1,000)', default=1000)
     return parser
@@ -188,12 +192,17 @@ def print_args(args: argparse.Namespace):
     print(f'[Setting] List of adjustment factors for No. DNVs of each sample: '
           f'{args.adj_file_path if args.adj_file_path else "None"}')
     print(f'[Setting] Output path: {args.outfile_path}')
-    print(f'[Setting] Category type: {args.cat_group}')
+    print(f'[Setting] Category group: {args.cat_group}')
     print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
+    print(f'[Setting] Fraction of the training set: {args.train_set_f}')
     print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
     print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
     print(f'[Setting] Use multiprocessing for the cross-validation: {bool(args.use_parallel)}')
-    print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
+    if args.do_test:
+        print(f'[Setting] Do the significance test (permutaion test)')
+        print(f'[Setting] No. label-swapping permutations: {args.num_perm:,d}')
+    else:
+        print(f'[Setting] Skip the significance test')
 
 
 def check_args_validity(args: argparse.Namespace):
@@ -203,6 +212,7 @@ def check_args_validity(args: argparse.Namespace):
         f'The input file "{args.adj_file_path}" cannot be found.'
     outfile_dir = os.path.dirname(args.outfile_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    assert 0 < args.train_set_f < 1, f'The fraction of the training set must be in a range (0, 1).'
 
 
 def filter_categories(cwas_cat_df: pd.DataFrame, cat_filt_dict: dict) -> pd.DataFrame:
@@ -261,6 +271,23 @@ def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> 
     ctrl_dnv_cnt = sample_cat_vals[~are_case, :].sum(axis=0)
 
     return case_dnv_cnt, ctrl_dnv_cnt
+
+
+def determine_train_set(samples, sample_groups, frac, random_seed):
+    """ Randomly determine a train set from the samples
+    """
+    uniq_groups = np.unique(sample_groups)
+    n_train_group = int(np.rint(len(uniq_groups) * frac))
+    np.random.seed(random_seed)
+    train_group_set = set(np.random.choice(uniq_groups, size=n_train_group, replace=False))
+    is_train_set = np.full(len(samples), False)
+
+    for i in range(len(samples)):
+        sample_group = sample_groups[i]
+        if sample_group in train_group_set:
+            is_train_set[i] = True
+
+    return is_train_set
 
 
 def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, is_train_set: np.ndarray,
