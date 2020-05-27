@@ -106,17 +106,17 @@ def main():
     m_rsq = np.mean(rsqs)
 
     if args.do_test:
-        # Permutation tests to get null distribution of R squares
-        print(f'[{get_curr_time()}, Progress] Permutation tests')
+        # Generate R squares from permutations
+        print(f'[{get_curr_time()}, Progress] Generate R squares from permutations')
         perm_rsqs = get_perm_rsq(args.num_perm, cwas_cat_vals, sample_types, sample_families, is_train_set,
                                  args.rare_cat_cutoff, args.num_cv_fold, num_parallel)
 
-        # Statistical test (Z test)
-        print(f'[{get_curr_time()}, Progress] Statistical test (Z-test)')
+        # Estimate a null distribution of R squares and do permutation tests
+        print(f'[{get_curr_time()}, Progress] Permutation tests')
         m_perm_rsq = np.mean(perm_rsqs)
         s_perm_rsq = np.std(perm_rsqs, ddof=1)
         z = (m_rsq - m_perm_rsq) / s_perm_rsq
-        p = stats.norm.sf(abs(z)) * 2  # Two-sided
+        p = stats.norm.sf(abs(z))
     else:
         p = None
 
