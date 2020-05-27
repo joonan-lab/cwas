@@ -172,7 +172,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
                         help='Rare category cutoff for No. variants of a control (Default: 3)', default=3)
     parser.add_argument('--train_set_fraction', dest='train_set_f', required=False, type=float,
-                        help='Fraction of the training set (Default: 0.7)', default=0.7)
+                        help='Fraction of the training set (Default: 0.3)', default=0.3)
     parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
                         help='No. regression trials to calculate a mean of R squares (Default: 10)', default=10)
     parser.add_argument('--num_cv_fold', dest='num_cv_fold', required=False, type=int,
