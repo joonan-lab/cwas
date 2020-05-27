@@ -310,8 +310,8 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
 
     # Prediction using the Lasso model
     pred_responses = lasso_model.predict(test_covariates, lamb=opt_lambda)
-    mse = np.mean((pred_responses - test_responses) ** 2)
-    rsq = 1 - mse
+    mean_response = np.mean(test_responses)
+    rsq = 1 - np.sum((test_responses - pred_responses) ** 2) / np.sum((test_responses - mean_response) ** 2)
 
     return opt_coeff, rsq
 
