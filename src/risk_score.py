@@ -16,7 +16,7 @@ import yaml
 from glmnet import ElasticNet
 from scipy import stats
 
-from utils import cmp_two_arr, get_curr_time, swap_label
+from utils import cmp_two_arr, get_curr_time, swap_label, div_dist_num
 
 
 def main():
@@ -99,7 +99,8 @@ def main():
 
     for seed in range(args.num_reg):
         coeff, rsq = \
-            lasso_regression(rare_cat_vals, sample_responses, is_train_set, args.num_cv_fold, num_parallel, seed)
+            lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set,
+                             args.num_cv_fold, num_parallel, seed)
         coeffs.append(coeff)
         rsqs.append(rsq)
 
@@ -290,8 +291,9 @@ def determine_train_set(samples, sample_groups, frac, random_seed):
     return is_train_set
 
 
-def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, is_train_set: np.ndarray,
-                     num_cv_fold: int, num_parallel: int, random_state: int = None) -> (np.ndarray, float):
+def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray, sample_families: np.ndarray,
+                     is_train_set: np.ndarray, num_cv_fold: int, num_parallel: int, random_state: int = None) \
+        -> (np.ndarray, float):
     """ Lasso regression to generate a de novo risk score """
     # Divide the input data into a train and a test set
     train_covariates = sample_covariates[is_train_set]
@@ -299,10 +301,14 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
     test_covariates = sample_covariates[~is_train_set]
     test_responses = sample_responses[~is_train_set]
 
+    # Allocate fold IDs for cross-validation
+    family_to_fold_id = make_equal_groups(np.unique(sample_families), num_cv_fold)
+    train_fold_ids = np.vectorize(lambda family_id: family_to_fold_id[family_id])(sample_families)
+
     # Train Lasso model
     lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=num_cv_fold, n_jobs=num_parallel,
                              scoring='mean_squared_error', random_state=random_state)
-    lasso_model.fit(train_covariates, train_responses)
+    lasso_model.fit(train_covariates, train_responses, train_fold_ids)
     opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
     coeffs = getattr(lasso_model, 'coef_path_')
     opt_coeff = coeffs[:, opt_model_idx]
@@ -316,7 +322,28 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
     return opt_coeff, rsq
 
 
-def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, sample_groups: np.ndarray,
+def make_equal_groups(items: np.ndarray, n_group: int) -> dict:
+    """ Randomly allocate group IDs to each sample and make groups with equal or similar sizes.
+    This function returns a dictionary which key and value are an item and its group ID, respectively.
+    """
+    item_size = len(items)
+    item_to_group_id = {}
+    sizes_per_group = div_dist_num(item_size, n_group)
+    perm_items = np.random.permutation(items)
+    start_idx = 0
+
+    for group_id in range(n_group):
+        end_idx = start_idx + sizes_per_group[group_id]
+
+        for j in range(start_idx, end_idx):
+            item_to_group_id[perm_items[j]] = group_id
+
+        start_idx = end_idx
+
+    return item_to_group_id
+
+
+def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.ndarray, sample_families: np.ndarray,
                  is_train_set: np.ndarray, rare_cat_cutoff: int, num_cv_fold: int, num_parallel: int) -> list:
     """ Get R squares of the lasso regression after each label swapping trial.
     The length of the returned list equals to the number of the permutations.
@@ -325,7 +352,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
 
     for seed in range(num_perm):
         # Label swapping
-        swap_sample_types = swap_label(sample_types, sample_groups)
+        swap_sample_types = swap_label(sample_types, sample_families)
         swap_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(swap_sample_types)
 
         # Filter categories and leave only rare categories (few variants in controls)
@@ -333,7 +360,8 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
         is_rare_cat = ctrl_dnv_cnt < rare_cat_cutoff
         rare_cat_vals = sample_cat_vals[:, is_rare_cat]
 
-        _, rsq = lasso_regression(rare_cat_vals, swap_responses, is_train_set, num_cv_fold, num_parallel, seed)
+        _, rsq = lasso_regression(rare_cat_vals, swap_responses, sample_families, is_train_set,
+                                  num_cv_fold, num_parallel, seed)
         perm_rsqs.append(rsq)
 
     return perm_rsqs
