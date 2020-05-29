@@ -179,7 +179,6 @@ python setup.py install
 - -o, --outfile = Path to a result of the risk score analysis. Default is *cwas_denovo_risk_score_result.txt*.
 - --category_group = Group of the CWAS categories for this analysis. Current possible values are *{all, coding, coding-no-ptv, noncoding, promoter, noncoding-wo-promoter}*. Default is *all*.
 - --rare_category_cutoff = Rare category cutoff for the number of variants in controls. Default is 3.
-- --train_set_fraction = Fraction of the training set. Default is *0.3*.
 - --num_regression = The number of regression trials. Default is *10*.
 - --num_cv_fold = The number of cross-validation folds. Default is *5*.
 - --use_parallel = Boolean value to determine whether or not to use multiprocessing for cross-validation. Possible values are *{0, 1}*. Default is *1*.
@@ -201,7 +200,6 @@ All the default values are consistent with *An et al., Science, 2018*.
 [-o OUTFILE_PATH] \
 [--category_group {all,coding,coding-no-ptv,noncoding,promoter,noncoding-wo-promoter}] \
 [--rare_category_cutoff RARE_CAT_CUTOFF] \
-[--train_set_fraction TRAIN_SET_F] \
 [--num_regression NUM_REG] \
 [--num_cv_fold NUM_CV_FOLD] \
 [--use_parallel {0,1}] \

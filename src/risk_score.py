@@ -87,8 +87,14 @@ def main():
     rare_cat_vals = cwas_cat_vals[:, is_rare_cat]
 
     # Determine a training set
+    # Warning: This part is for testing reproducibility. It is not a generalized version.
     print(f'[{get_curr_time()}, Progress] Divide the samples into training and test set')
-    is_train_set = determine_train_set(sample_ids, sample_families, args.train_set_f)
+    project_dir = os.path.abspath('..')
+    werling_sample_path = os.path.join(project_dir, 'data', 'SuppTable01_Sample_information.xlsx')
+    werling_sample_df = pd.read_excel(werling_sample_path, sheet_name='qcMetricsAndCounts_transform.tx')
+    werling_sample_ids = werling_sample_df['sampleID'].values
+    werling_sample_set = set(werling_sample_ids)
+    is_train_set = np.vectorize(lambda sample_id: sample_id in werling_sample_set)(sample_ids)
 
     # Train and test a lasso model multiple times
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
@@ -171,8 +177,6 @@ def create_arg_parser() -> argparse.ArgumentParser:
                         help='Group of CWAS categories for this analysis (Default: all)', default='all')
     parser.add_argument('--rare_category_cutoff', dest='rare_cat_cutoff', required=False, type=int,
                         help='Rare category cutoff for No. variants of a control (Default: 3)', default=3)
-    parser.add_argument('--train_set_fraction', dest='train_set_f', required=False, type=float,
-                        help='Fraction of the training set (Default: 0.3)', default=0.3)
     parser.add_argument('--num_regression', dest='num_reg', required=False, type=int,
                         help='No. regression trials to calculate a mean of R squares (Default: 10)', default=10)
     parser.add_argument('--num_cv_fold', dest='num_cv_fold', required=False, type=int,
@@ -194,7 +198,7 @@ def print_args(args: argparse.Namespace):
     print(f'[Setting] Output path: {args.outfile_path}')
     print(f'[Setting] Category group: {args.cat_group}')
     print(f'[Setting] Rare category cutoff for No. variants of a control: {args.rare_cat_cutoff:,d}')
-    print(f'[Setting] Fraction of the training set: {args.train_set_f}')
+    print(f'[Setting] Use the samples in werling et al., 2018 as a training set')
     print(f'[Setting] No. lasso regression trials: {args.num_reg:,d}')
     print(f'[Setting] No. cross-validation folds: {args.num_cv_fold:,d}')
     print(f'[Setting] Use multiprocessing for the cross-validation: {bool(args.use_parallel)}')
