@@ -88,8 +88,7 @@ def main():
 
     # Determine a training set
     print(f'[{get_curr_time()}, Progress] Divide the samples into training and test set')
-    random_seed = 0
-    is_train_set = determine_train_set(sample_ids, sample_families, args.train_set_f, random_seed)
+    is_train_set = determine_train_set(sample_ids, sample_families, args.train_set_f)
 
     # Train and test a lasso model multiple times
     print(f'[{get_curr_time()}, Progress] Train and test a lasso model to generate de novo risk scores')
@@ -97,10 +96,10 @@ def main():
     coeffs = []
     rsqs = []
 
-    for seed in range(args.num_reg):
+    for _ in range(args.num_reg):
         coeff, rsq = \
             lasso_regression(rare_cat_vals, sample_responses, sample_families, is_train_set,
-                             args.num_cv_fold, num_parallel, seed)
+                             args.num_cv_fold, num_parallel)
         coeffs.append(coeff)
         rsqs.append(rsq)
 
@@ -149,7 +148,7 @@ def main():
     with open(args.outfile_path, 'w') as outfile:
         print(f'#De novo risk score analysis result for {args.cat_group} regions', file=outfile)
         print(f'#Mean R square: {m_rsq * 100:.2f}%', file=outfile)
-        if args.do_test:
+        if p is not None:
             print(f'#P-value: {p:.2e}', file=outfile)
         result_df.to_csv(outfile, sep='\t')
 
@@ -274,12 +273,15 @@ def cnt_case_ctrl_dnv(sample_cat_vals: np.ndarray, sample_types: np.ndarray) -> 
     return case_dnv_cnt, ctrl_dnv_cnt
 
 
-def determine_train_set(samples, sample_groups, frac, random_seed):
+def determine_train_set(samples, sample_groups, frac, random_seed=None):
     """ Randomly determine a train set from the samples
     """
     uniq_groups = np.unique(sample_groups)
     n_train_group = int(np.rint(len(uniq_groups) * frac))
-    np.random.seed(random_seed)
+
+    if random_seed is not None:
+        np.random.seed(random_seed)
+
     train_group_set = set(np.random.choice(uniq_groups, size=n_train_group, replace=False))
     is_train_set = np.full(len(samples), False)
 
@@ -350,7 +352,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
     """
     perm_rsqs = []
 
-    for seed in range(num_perm):
+    for _ in range(num_perm):
         # Label swapping
         swap_sample_types = swap_label(sample_types, sample_families)
         swap_responses = np.vectorize(lambda sample_type: 1.0 if sample_type == 'case' else -1.0)(swap_sample_types)
@@ -361,7 +363,7 @@ def get_perm_rsq(num_perm: int, sample_cat_vals: np.ndarray, sample_types: np.nd
         rare_cat_vals = sample_cat_vals[:, is_rare_cat]
 
         _, rsq = lasso_regression(rare_cat_vals, swap_responses, sample_families, is_train_set,
-                                  num_cv_fold, num_parallel, seed)
+                                  num_cv_fold, num_parallel)
         perm_rsqs.append(rsq)
 
     return perm_rsqs
