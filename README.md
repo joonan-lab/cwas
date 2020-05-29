@@ -160,9 +160,13 @@ This step do a lasso regression to determine which categories are possible deter
 `risk_score.py`
 
 ##### Requirement
-A python package *glmnet* ([civisanalytics/python-glmnet](https://github.com/civisanalytics/python-glmnet)) must be installed for a lasso regression. If you are using *conda*, use the following command.
+A python package *glmnet* ([mwjjeong/python-glmnet](https://github.com/mwjjeong/python-glmnet); Modified version of [civisanalytics/python-glmnet](https://github.com/civisanalytics/python-glmnet)) must be installed for a lasso regression. Use the following commands to install.
 
-`conda install -c conda-forge glmnet` 
+```bash
+git clone https://github.com/mwjjeong/python-glmnet.git
+cd python-glmnet
+python setup.py install
+``` 
 
 ##### Required arguments:
 
@@ -175,10 +179,12 @@ A python package *glmnet* ([civisanalytics/python-glmnet](https://github.com/civ
 - -o, --outfile = Path to a result of the risk score analysis. Default is *cwas_denovo_risk_score_result.txt*.
 - --category_group = Group of the CWAS categories for this analysis. Current possible values are *{all, coding, coding-no-ptv, noncoding, promoter, noncoding-wo-promoter}*. Default is *all*.
 - --rare_category_cutoff = Rare category cutoff for the number of variants in controls. Default is 3.
+- --train_set_fraction = Fraction of the training set. Default is *0.3*.
 - --num_regression = The number of regression trials. Default is *10*.
 - --num_cv_fold = The number of cross-validation folds. Default is *5*.
 - --use_parallel = Boolean value to determine whether or not to use multiprocessing for cross-validation. Possible values are *{0, 1}*. Default is *1*.
-- --num_perm = The number of label-swapping permutations. Default is *1,000*
+- --do_test = Boolean value to determine whether or not to do permutation tests to get a p-value for the R square. Possible values are *{0, 1}*. Default is *0*.
+- --num_perm = The number of label-swapping permutations. Default is *1,000*.
 
 All the default values are consistent with *An et al., Science, 2018*.
 
@@ -195,9 +201,11 @@ All the default values are consistent with *An et al., Science, 2018*.
 [-o OUTFILE_PATH] \
 [--category_group {all,coding,coding-no-ptv,noncoding,promoter,noncoding-wo-promoter}] \
 [--rare_category_cutoff RARE_CAT_CUTOFF] \
+[--train_set_fraction TRAIN_SET_F] \
 [--num_regression NUM_REG] \
 [--num_cv_fold NUM_CV_FOLD] \
 [--use_parallel {0,1}] \
+[--do_test {0,1}] \
 [--num_perm NUM_PERM]
 
 # Note: '[]' means they are optional arguments.
