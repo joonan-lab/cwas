@@ -124,7 +124,7 @@ def main():
     print(f'[{get_curr_time()}, Progress] Make a DataFrame for the de novo risk score analysis')
     num_select = np.sum(np.vectorize(lambda w: w != 0)(coeffs), axis=0)
     m_coeff = np.sum(coeffs, axis=0) / num_select
-    is_select_coeff = num_select >= int(args.num_reg * 0.8)
+    is_select_coeff = num_select > int(args.num_reg * 0.5)
     select_cats = cwas_cat_df.columns.values[is_rare_cat][is_select_coeff]
     cat_case_dnv_cnt = case_dnv_cnt[is_rare_cat][is_select_coeff]
     cat_ctrl_dnv_cnt = ctrl_dnv_cnt[is_rare_cat][is_select_coeff]
