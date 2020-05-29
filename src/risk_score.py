@@ -300,12 +300,13 @@ def lasso_regression(sample_covariates: np.ndarray, sample_responses: np.ndarray
     # Divide the input data into a train and a test set
     train_covariates = sample_covariates[is_train_set]
     train_responses = sample_responses[is_train_set]
+    train_families = sample_families[is_train_set]
     test_covariates = sample_covariates[~is_train_set]
     test_responses = sample_responses[~is_train_set]
 
     # Allocate fold IDs for cross-validation
     family_to_fold_id = make_equal_groups(np.unique(sample_families), num_cv_fold)
-    train_fold_ids = np.vectorize(lambda family_id: family_to_fold_id[family_id])(sample_families)
+    train_fold_ids = np.vectorize(lambda family_id: family_to_fold_id[family_id])(train_families)
 
     # Train Lasso model
     lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=num_cv_fold, n_jobs=num_parallel,
