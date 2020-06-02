@@ -9,6 +9,8 @@ import os
 
 import yaml
 
+from utils import get_curr_time
+
 
 def main():
     # Paths to essential configuration files
@@ -34,6 +36,7 @@ def main():
 
     # Split the input file for each single chromosome
     if args.split_vcf:
+        print(f'[{get_curr_time()}, Progress] Split the input VCFs')
         chr_vcf_file_paths = split_vcf_by_chrom(args.in_vcf_path)
         chr_vep_vcf_paths = []
         cmds = []
@@ -46,12 +49,14 @@ def main():
             cmds.append(cmd)
 
         # Run VEP in parallel
+        print(f'[{get_curr_time()}, Progress] Run VEP')
         pool = mp.Pool(args.num_proc)
         pool.map(os.system, cmds)
         pool.close()
         pool.join()
 
         # Concatenate the VEP outputs into one
+        print(f'[{get_curr_time()}, Progress] Concatenate the split VCFs')
         concat_vcf_files(args.out_vcf_path, chr_vep_vcf_paths)
 
         # Delete the split VCF files
@@ -61,8 +66,11 @@ def main():
         for chr_vep_vcf_path in chr_vep_vcf_paths:
             os.remove(chr_vep_vcf_path)
     else:
+        print(f'[{get_curr_time()}, Progress] Run VEP')
         cmd = make_vep_cmd(args.in_vcf_path, args.out_vcf_path, custom_file_path_dict)
         os.system(cmd)
+
+    print(f'[{get_curr_time()}, Progress] Done')
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
