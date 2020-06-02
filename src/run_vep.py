@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script for genomic and functional annotations using VEP.
+Script for genomic and functional annotations using Variant Effect Predictor (VEP).
 """
 
 import argparse
@@ -16,10 +16,14 @@ def main():
     project_dir = os.path.dirname(curr_dir)
     vep_custom_data_dir = os.path.join(project_dir, 'data', 'vep')
     vep_custom_conf_path = os.path.join(project_dir, 'conf', 'vep_custom_annotations.yaml')
+    custom_file_path_dict = {}
 
     # Parse the configuration file
     with open(vep_custom_conf_path) as vep_custom_conf:
         custom_filename_dict = yaml.safe_load(vep_custom_conf)
+
+        for custom_annot in custom_filename_dict:
+            custom_file_path_dict[custom_annot] = os.path.join(vep_custom_data_dir, custom_filename_dict[custom_annot])
 
     # Parse arguments
     parser = create_arg_parser()
@@ -30,88 +34,35 @@ def main():
 
     # Split the input file for each single chromosome
     if args.split_vcf:
-        vcf_file_paths = split_vcf_by_chrom(args.in_vcf_path)
-    else:
-        vcf_file_paths = [args.in_vcf_path]
+        chr_vcf_file_paths = split_vcf_by_chrom(args.in_vcf_path)
+        chr_vep_vcf_paths = []
+        cmds = []
 
-    # Make commands for VEP
-    cmds = []
-    vep_vcf_paths = []
+        # Make commands for VEP
+        for chr_vcf_file_path in chr_vcf_file_paths:
+            chr_vep_vcf_path = chr_vcf_file_path.replace('.vcf', '.vep.vcf')
+            chr_vep_vcf_paths.append(chr_vep_vcf_path)
+            cmd = make_vep_cmd(chr_vcf_file_path, chr_vep_vcf_path, custom_file_path_dict)
+            cmds.append(cmd)
 
-    for vcf_file_path in vcf_file_paths:
-        vep_vcf_path = vcf_file_path.replace('.vcf', '.vep.vcf')
-        vep_vcf_paths.append(vep_vcf_path)
-
-        # Basic information
-        cmd_args = [
-            'vep',
-            '--assembly', 'GRCh38',
-            '--cache',
-            '--force_overwrite',
-            '--format', 'vcf',
-            '-i', vcf_file_path,
-            '-o', vep_vcf_path,
-            '--vcf',
-            '--no_stats',
-            '--polyphen p',
-        ]
-
-        # Only the most severe consequence per gene.
-        cmd_args += [
-            '--per_gene',
-            '--pick',
-            '--pick_order', 'canonical,appris,tsl,biotype,ccds,rank,length',
-        ]
-
-        # Add options for nearest and distance
-        cmd_args += [
-            '--distance', '2000',
-            '--nearest', 'symbol',
-            '--symbol',
-        ]
-
-        # Add custom annotations
-        for custom_annot in custom_filename_dict:
-            custom_filename = custom_filename_dict[custom_annot]
-            custom_file_path = os.path.join(vep_custom_data_dir, custom_filename)
-
-            if custom_file_path.endswith('vcf') or custom_file_path.endswith('vcf.gz'):
-                cmd_args += [
-                    '--custom',
-                    ','.join([custom_file_path, custom_annot, 'vcf', 'exact', '0', 'AF']),
-                ]
-            elif custom_file_path.endswith('bw') or custom_file_path.endswith('bw.gz'):
-                cmd_args += [
-                    '--custom',
-                    ','.join([custom_file_path, custom_annot, 'bigwig', 'overlap', '0']),
-                ]
-            else:  # BED files (.bed or .bed.gz)
-                cmd_args += [
-                    '--custom',
-                    ','.join([custom_file_path, custom_annot, 'bed', 'overlap', '0']),
-                ]
-
-        cmd = ' '.join(cmd_args)
-        cmds.append(cmd)
-
-    if args.split_vcf:
         # Run VEP in parallel
         pool = mp.Pool(args.num_proc)
         pool.map(os.system, cmds)
         pool.close()
         pool.join()
 
-        # Collates the VEP outputs into one
-        concat_vcf_files(args.out_vcf_path, vep_vcf_paths)
+        # Concatenate the VEP outputs into one
+        concat_vcf_files(args.out_vcf_path, chr_vep_vcf_paths)
 
-        # Delete the temporary files
-        for vcf_file_path in vcf_file_paths:
-            os.remove(vcf_file_path)
+        # Delete the split VCF files
+        for chr_vcf_file_path in chr_vcf_file_paths:
+            os.remove(chr_vcf_file_path)
 
-        for vep_vcf_path in vep_vcf_paths:
-            os.remove(vep_vcf_path)
+        for chr_vep_vcf_path in chr_vep_vcf_paths:
+            os.remove(chr_vep_vcf_path)
     else:
-        os.system(cmds[0])
+        cmd = make_vep_cmd(args.in_vcf_path, args.out_vcf_path, custom_file_path_dict)
+        os.system(cmd)
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
@@ -121,9 +72,11 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument('-o', '--outfile', dest='out_vcf_path', required=False, type=str,
                         help='Path of the VCF output', default='vep_output.vcf')
     parser.add_argument('-s', '--split', dest='split_vcf', required=False, type=int, choices={0, 1},
-                        help='Split the input VCF by chromosome and run VEP for each split VCF', default=1)
+                        help='Split the input VCF by chromosome and run VEP for each split VCF (Default: 0)',
+                        default=0)
     parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                        help='Number of processes for this script (only necessary for split VCF files)', default=1)
+                        help='Number of processes for this script (only necessary for split VCF files) (Default: 1)',
+                        default=1)
 
     return parser
 
@@ -175,6 +128,61 @@ def split_vcf_by_chrom(vcf_file_path: str) -> list:
         chr_vcf_file.close()
 
     return vcf_file_paths
+
+
+def make_vep_cmd(in_vcf_path: str, out_vcf_path: str, custom_file_path_dict: dict) -> str:
+    """ Make a command to execute VEP and return it.
+    """
+    # Basic information
+    cmd_args = [
+        'vep',
+        '--assembly', 'GRCh38',
+        '--cache',
+        '--force_overwrite',
+        '--format', 'vcf',
+        '-i', in_vcf_path,
+        '-o', out_vcf_path,
+        '--vcf',
+        '--no_stats',
+        '--polyphen p',
+    ]
+
+    # Only the most severe consequence per gene.
+    cmd_args += [
+        '--per_gene',
+        '--pick',
+        '--pick_order', 'canonical,appris,tsl,biotype,ccds,rank,length',
+    ]
+
+    # Add options for nearest and distance
+    cmd_args += [
+        '--distance', '2000',
+        '--nearest', 'symbol',
+        '--symbol',
+    ]
+
+    # Add custom annotations
+    for custom_annot in custom_file_path_dict:
+        custom_file_path = custom_file_path_dict[custom_annot]
+
+        if custom_file_path.endswith('vcf') or custom_file_path.endswith('vcf.gz'):
+            cmd_args += [
+                '--custom',
+                ','.join([custom_file_path, custom_annot, 'vcf', 'exact', '0', 'AF']),
+            ]
+        elif custom_file_path.endswith('bw') or custom_file_path.endswith('bw.gz'):
+            cmd_args += [
+                '--custom',
+                ','.join([custom_file_path, custom_annot, 'bigwig', 'overlap', '0']),
+            ]
+        else:  # BED files (.bed or .bed.gz)
+            cmd_args += [
+                '--custom',
+                ','.join([custom_file_path, custom_annot, 'bed', 'overlap', '0']),
+            ]
+
+    cmd = ' '.join(cmd_args)
+    return cmd
 
 
 def concat_vcf_files(out_vcf_path: str, vcf_file_paths: list):
