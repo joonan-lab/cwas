@@ -55,14 +55,27 @@ Using Variant Effect Predictor (VEP; https://www.ensembl.org/vep), de novo varia
 
 ##### Required arguments:
 
-- -i, --infile = Path to file listing variants (VCF format), which format is described in **Data requirments** above.
-- -t, --number_threads = Number of threads to use
+- -i, --in_vcf_path = Path to file listing variants (VCF format), which format is described in **Data requirments** above.
+
+
+##### Optional arguments:
+
+- -o, --out_vcf_path = Path to the VEP result (VCF format). Default path is *vep_output.vcf*.
+- -s, --split_vcf = If 1, split the input VCF by chromosome, run VEP for each split VCF, and concatenate them. Default is *0*.
+- -p, --num_proc = Number of processes for this script (only necessary for the split VCF files). Default is *1*.
 
 ```bash
-# Example
-python run_vep.py \
--i table.hq_dnvs.txt \
--t 2
+# Help
+./run_vep.py -h
+
+# Usage
+./run_vep.py \
+-i IN_VCF_PATH \
+[-o OUT_VCF_PATH]  \
+[-s {0, 1}] \
+[-p NUM_PROC] \
+
+# Note: '[]' means they are optional arguments. '{}' contains possible values for the argument. 
 ```
 
 ### Step 2. Variant categorization
@@ -90,7 +103,7 @@ Cython (http://cython.org/). Please note that this script will use Cython. So yo
 ./categorize -h
 
 # Usage
-./categorization.py \
+./categorize.py \
 -i IN_VCF_PATH \
 [-o OUTFILE_PATH]  \
 [-p NUM_PROC] \
