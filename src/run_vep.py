@@ -1,212 +1,156 @@
 #!/usr/bin/env python
-__version__ = 0.3
-__author__ = 'Joon An'
-__date__ = 'October 5th, 2018'
-
-description = '''
-			Script for genomic and functional annotations using VEP.
-			'''
+"""
+Script for genomic and functional annotations using VEP.
+"""
 
 import argparse
-import glob
+import multiprocessing as mp
 import os
-import sys
-from os.path import expanduser
+
+import yaml
 
 
-def main(infile, number_threads):
-    ## Set the run
-    if '/home/ec2-user' in expanduser("~"):
-        vep_path = '/home/ec2-user/ensembl-vep/vep'
-        custom_path = '/home/ec2-user/custom/'
-    else:
-        print(expanduser("~"))
-        sys.exit(0)
+def main():
+    # Paths to essential configuration files
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    project_dir = os.path.dirname(curr_dir)
+    vep_custom_data_dir = os.path.join(project_dir, 'data', 'vep')
+    vep_custom_conf_path = os.path.join(project_dir, 'conf', 'vep_custom_annotations.yaml')
 
-    ## Split input file for a single chromosome
-    chroms = ['chr' + str(n) for n in range(1, 23)]
+    # Parse the configuration file
+    with open(vep_custom_conf_path) as vep_custom_conf:
+        custom_filename_dict = yaml.safe_load(vep_custom_conf)
 
-    for chrom in chroms:
-        tmp = '.'.join(['tmp', chrom, 'vcf'])
-        o = open(tmp, 'w')
-        header = '\t'.join(['#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO'])
-        o.write(header + '\n')
-        with open(infile) as fh:
-            for l in fh:
-                l_chrom = l.split('\t')[0]
-                if 'chr' not in l_chrom:
-                    l_chrom = 'chr' + l_chrom
-                else:
-                    pass
+    # Create and parse arguments
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str, help='Input VCF file')
+    parser.add_argument('-o', '--outfile', dest='out_vcf_path', required=False, type=str,
+                        help='Path of the VCF output', default='vep_output.vcf')
+    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                        help='Number of processes for this script', default=1)
+    args = parser.parse_args()
 
-                ## Check if the chromosome matching write to tmp file
-                if l_chrom == chrom:
-                    o.write(l)
-                else:
-                    pass
-        o.close()
+    # Check the validity of the arguments
+    assert os.path.isfile(args.in_vcf_path), f'The input VCF file "{args.in_vcf_path}" cannot be found.'
+    outfile_dir = os.path.dirname(args.out_vcf_path)
+    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    assert 1 <= args.num_proc <= mp.cpu_count(), \
+        f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
 
-    ## Get a command for run
+    # Print the settings (arguments)
+    print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
+    print(f'[Setting] The output path: {args.out_vcf_path}')
+    print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
+    print()
+
+    # Split the input file for a single chromosome
+    chrom_to_file = {}
+    vcf_file_paths = []
+
+    with open(args.in_vcf_path) as in_vcf_file:
+        header = in_vcf_file.readline()
+
+        for line in in_vcf_file:
+            chrom = line.split('\t')[0]
+            chr_vcf_file = chrom_to_file.get(chrom)
+
+            if chr_vcf_file is None:
+                chr_vcf_file_path = args.in_vcf_path.replace('.vcf', f'.tmp.{chrom}.vcf')
+                vcf_file_paths.append(chr_vcf_file_path)
+                chr_vcf_file = open(chr_vcf_file_path, 'w')
+                chr_vcf_file.write(header)
+                chrom_to_file[chrom] = chr_vcf_file
+
+            chr_vcf_file.write(line)
+
+    for chr_vcf_file in chrom_to_file.values():
+        chr_vcf_file.close()
+
+    # Make commands for VEP
     cmds = []
-    for chrom in chroms:
-        tmp = '.'.join(['tmp', chrom, 'vcf'])
-        outfile = 'output.vep.' + chrom + '.vcf'
+    vep_out_file_paths = []
 
-        ## Add basic information
-        cmd = [vep_path,
-               '--assembly GRCh38 --offline',
-               '--fork 2',
-               '--force_overwrite',
-               '--buffer_size 5000000000',
-               '-i', tmp,
-               '-o', outfile,
-               '--vcf',
-               '--no_stats',
-               '--polyphen p',
-               '--ccds',
-               # '--hgvs', # it adds 50% run time as it checks the fasta file
-               '--numbers',
-               # '--domains',
-               # '--regulatory',
-               '--canonical',
-               '--protein',
-               '--biotype',
-               '--uniprot',
-               '--tsl',
-               '--appris'
-               # '--gene_phenotype',
-               # '--af',
-               # '--pubmed',
-               # '--variant_class'
-               # '--everything'
-               ]
+    for vcf_file_path in vcf_file_paths:
+        out_file_path = vcf_file_path.replace('.vcf', '.vep.vcf')
+        vep_out_file_paths.append(out_file_path)
 
-        ## Output only the most severe consequence per gene.
-        cmd = cmd + ['--per_gene',
-                     '--pick --pick_order canonical,appris,tsl,biotype,ccds,rank,length']
-
-        ## Add options for nearest and distance
-        cmd = cmd + ['--distance 2000',
-                     '--nearest symbol',
-                     '--symbol']
-
-        ## Add custom annotations
-        cmd = cmd + [
-            ','.join(['-custom ' + custom_path + 'gnomad.genomes.r2.0.1.sites.GRCh38.noVEP.vcf.gz', 'gnomADg',
-                      'vcf,exact,0,AF']),
-
-            ','.join(
-                ['-custom ' + custom_path + 'phastCons46way.vertebrate.hg19ToHg38.bw', 'phastCons46wayVt', 'bigwig',
-                 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'phyloP46way.vertebrate.hg19ToHg38.bw', 'phyloP46wayVt', 'bigwig',
-                      'overlap', '0']),
-
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E1.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E1_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E2.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E2_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E3.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E3_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E4.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E4_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E5.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E5_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E6.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E6_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E7.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E7_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E8.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E8_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'ChmmState15.E9.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E9_Brain',
-                      'bed', 'overlap', '0']),
-            ','.join(
-                ['-custom ' + custom_path + 'ChmmState15.E10.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E10_Brain',
-                 'bed', 'overlap', '0']),
-            ','.join(
-                ['-custom ' + custom_path + 'ChmmState15.E11.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E11_Brain',
-                 'bed', 'overlap', '0']),
-            ','.join(
-                ['-custom ' + custom_path + 'ChmmState15.E12.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E12_Brain',
-                 'bed', 'overlap', '0']),
-            ','.join(
-                ['-custom ' + custom_path + 'ChmmState15.E13.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E13_Brain',
-                 'bed', 'overlap', '0']),
-            ','.join(
-                ['-custom ' + custom_path + 'ChmmState15.E14.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E14_Brain',
-                 'bed', 'overlap', '0']),
-            ','.join(
-                ['-custom ' + custom_path + 'ChmmState15.E15.Brain.hg19to38.sorted.bed.gz', 'ChmmState15_E15_Brain',
-                 'bed', 'overlap', '0']),
-
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.DNaseFDR001.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_DNaseFDR001_Brain', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.H3K27ac.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_H3K27ac_Brain', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.H3K27me3.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_H3K27me3_Brain', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.H3K36me3.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_H3K36me3_Brain', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.H3K4me1.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_H3K4me1_Brain', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.H3K4me3.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_H3K4me3_Brain', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.H3K9ac.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_H3K9ac_Brain', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'EpigenomeByGroup4.H3K9me3.Brain.hg19to38.sorted.bed.gz',
-                      'EpigenomeByGroup4_H3K9me3_Brain', 'bed', 'overlap', '0']),
-
-            ','.join(['-custom ' + custom_path + 'H3K27ac.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz',
-                      'H3K27ac_160407_multiInt_filtBy2_merge_3col', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'atac.norep.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz',
-                      'atac_norep_160407_multiInt_filtBy2_merge_3col', 'bed', 'overlap', '0']),
-
-            ','.join(['-custom ' + custom_path + 'bamo_EncodeDNaseClustersUCSC.hg19to38.sorted.bed.gz',
-                      'EncodeDNaseClustersUCSC', 'bed', 'overlap', '0']),
-            ','.join(['-custom ' + custom_path + 'bamo_EncodeTfbsClusterV2UCSC.hg19to38.sorted.bed.gz',
-                      'EncodeTfbsClusterV2UCSC', 'bed', 'overlap', '0']),
-            ','.join(
-                ['-custom ' + custom_path + 'bamo_vistaEnhancerUCSC.hg19to38.sorted.bed.gz', 'vistaEnhancerUCSC', 'bed',
-                 'overlap', '0']),
-
-            ','.join(
-                ['-custom ' + custom_path + 'fantom5.enhancer.robust.hg19to38.sorted.bed.gz', 'fantom5_enhancer_robust',
-                 'bed', 'overlap', '0']),
-
-            ','.join(['-custom ' + custom_path + 'hg19_HARs_Doan2016.hg19to38.sorted.bed.gz', 'HARs_Doan2016', 'bed',
-                      'overlap', '0'])
+        # Basic information
+        cmd_args = [
+            'vep',
+            '--assembly', 'GRCh38',
+            '--cache',
+            '--force_overwrite',
+            '--format', 'vcf',
+            '-i', vcf_file_path,
+            '-o', out_file_path,
+            '--vcf',
+            '--no_stats',
+            '--polyphen p',
         ]
-        cmd = ' '.join(cmd)
+
+        # Only the most severe consequence per gene.
+        cmd_args += [
+            '--per_gene',
+            '--pick',
+            '--pick_order', 'canonical,appris,tsl,biotype,ccds,rank,length',
+        ]
+
+        # Add options for nearest and distance
+        cmd_args += [
+            '--distance', '2000',
+            '--nearest', 'symbol',
+            '--symbol',
+        ]
+
+        # Add custom annotations
+        for custom_annot in custom_filename_dict:
+            custom_filename = custom_filename_dict[custom_annot]
+            custom_file_path = os.path.join(vep_custom_data_dir, custom_filename)
+
+            if custom_file_path.endswith('vcf') or custom_file_path.endswith('vcf.gz'):
+                cmd_args += [
+                    '--custom',
+                    ','.join([custom_file_path, custom_annot, 'vcf', 'exact', '0', 'AF']),
+                ]
+            elif custom_file_path.endswith('bw') or custom_file_path.endswith('bw.gz'):
+                cmd_args += [
+                    '--custom',
+                    ','.join([custom_file_path, custom_annot, 'bigwig', 'overlap', '0']),
+                ]
+            else:  # BED files (.bed or .bed.gz)
+                cmd_args += [
+                    '--custom',
+                    ','.join([custom_file_path, custom_annot, 'bed', 'overlap', '0']),
+                ]
+
+        cmd = ' '.join(cmd_args)
         cmds.append(cmd)
 
-    ## Run VEP in parallel
-    import multiprocessing as mp
-    pool = mp.Pool(number_threads)
+    # Run VEP in parallel
+    pool = mp.Pool(args.num_proc)
     pool.map(os.system, cmds)
     pool.close()
     pool.join()
 
-    ## Collates outputs into one
+    # Collates the VEP outputs into one
+    with open(args.out_vcf_path, 'w') as outfile:
+        for i, vep_out_file_path in enumerate(vep_out_file_paths):
+            with open(vep_out_file_path) as vep_outfile:
+                if i == 0:  # Write all lines from the file
+                    for line in vep_outfile:
+                        outfile.write(line)
+                else:  # Write all lines except headers
+                    for line in vep_outfile:
+                        if not line.startswith('#'):
+                            outfile.write(line)
 
-    outfile = infile.replace('txt', 'vep_gene.txt')
-    o = open(outfile, 'w')
-    fs = sorted(glob.glob('output*vcf'))
-    for f in fs:
-        with open(f) as fh:
-            if fs.index(f) == 0:
-                for l in fh:
-                    o.write(l)
-            else:
-                for l in fh:
-                    if l[0] == '#':
-                        pass
-                    else:
-                        o.write(l)
-    o.close()
+    # Delete the temporary files
+    for vcf_file_path in vcf_file_paths:
+        os.remove(vcf_file_path)
+
+    for vep_out_file_path in vep_out_file_paths:
+        os.remove(vep_out_file_path)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='')
-    parser.add_argument('-i', '--infile', required=True, type=str, help='Input File')
-    parser.add_argument('-t', '--number_threads', required=False, type=int, help='Number of threads', default=1)
-    args = parser.parse_args()
-    main(args.infile, args.number_threads)
+    main()
