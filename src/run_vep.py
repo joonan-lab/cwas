@@ -29,7 +29,10 @@ def main():
     print()
 
     # Split the input file for each single chromosome
-    vcf_file_paths = split_vcf_by_chrom(args.in_vcf_path)
+    if args.split_vcf:
+        vcf_file_paths = split_vcf_by_chrom(args.in_vcf_path)
+    else:
+        vcf_file_paths = [args.in_vcf_path]
 
     # Make commands for VEP
     cmds = []
@@ -91,21 +94,24 @@ def main():
         cmd = ' '.join(cmd_args)
         cmds.append(cmd)
 
-    # Run VEP in parallel
-    pool = mp.Pool(args.num_proc)
-    pool.map(os.system, cmds)
-    pool.close()
-    pool.join()
+    if args.split_vcf:
+        # Run VEP in parallel
+        pool = mp.Pool(args.num_proc)
+        pool.map(os.system, cmds)
+        pool.close()
+        pool.join()
 
-    # Collates the VEP outputs into one
-    concat_vcf_files(args.out_vcf_path, vep_vcf_paths)
+        # Collates the VEP outputs into one
+        concat_vcf_files(args.out_vcf_path, vep_vcf_paths)
 
-    # Delete the temporary files
-    for vcf_file_path in vcf_file_paths:
-        os.remove(vcf_file_path)
+        # Delete the temporary files
+        for vcf_file_path in vcf_file_paths:
+            os.remove(vcf_file_path)
 
-    for vep_out_file_path in vep_vcf_paths:
-        os.remove(vep_out_file_path)
+        for vep_vcf_path in vep_vcf_paths:
+            os.remove(vep_vcf_path)
+    else:
+        os.system(cmds[0])
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
@@ -114,16 +120,21 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str, help='Input VCF file')
     parser.add_argument('-o', '--outfile', dest='out_vcf_path', required=False, type=str,
                         help='Path of the VCF output', default='vep_output.vcf')
+    parser.add_argument('-s', '--split', dest='split_vcf', required=False, type=int, choices={0, 1},
+                        help='Split the input VCF by chromosome and run VEP for each split VCF', default=1)
     parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                        help='Number of processes for this script', default=1)
+                        help='Number of processes for this script (only necessary for split VCF files)', default=1)
 
     return parser
 
 
 def print_args(args: argparse.Namespace):
-    print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
+    print(f'[Setting] The input VCF file: {args.in_vcf_path}')
     print(f'[Setting] The output path: {args.out_vcf_path}')
-    print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
+
+    if args.split_vcf:
+        print(f'[Setting] Split the input VCF file by chromosome and run vep for each split VCF')
+        print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
 
 
 def check_args_validity(args: argparse.Namespace):
