@@ -21,58 +21,23 @@ def main():
     with open(vep_custom_conf_path) as vep_custom_conf:
         custom_filename_dict = yaml.safe_load(vep_custom_conf)
 
-    # Create and parse arguments
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str, help='Input VCF file')
-    parser.add_argument('-o', '--outfile', dest='out_vcf_path', required=False, type=str,
-                        help='Path of the VCF output', default='vep_output.vcf')
-    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                        help='Number of processes for this script', default=1)
+    # Parse arguments
+    parser = create_arg_parser()
     args = parser.parse_args()
-
-    # Check the validity of the arguments
-    assert os.path.isfile(args.in_vcf_path), f'The input VCF file "{args.in_vcf_path}" cannot be found.'
-    outfile_dir = os.path.dirname(args.out_vcf_path)
-    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
-    assert 1 <= args.num_proc <= mp.cpu_count(), \
-        f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
-
-    # Print the settings (arguments)
-    print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
-    print(f'[Setting] The output path: {args.out_vcf_path}')
-    print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
+    print_args(args)
+    check_args_validity(args)
     print()
 
-    # Split the input file for a single chromosome
-    chrom_to_file = {}
-    vcf_file_paths = []
-
-    with open(args.in_vcf_path) as in_vcf_file:
-        header = in_vcf_file.readline()
-
-        for line in in_vcf_file:
-            chrom = line.split('\t')[0]
-            chr_vcf_file = chrom_to_file.get(chrom)
-
-            if chr_vcf_file is None:
-                chr_vcf_file_path = args.in_vcf_path.replace('.vcf', f'.tmp.{chrom}.vcf')
-                vcf_file_paths.append(chr_vcf_file_path)
-                chr_vcf_file = open(chr_vcf_file_path, 'w')
-                chr_vcf_file.write(header)
-                chrom_to_file[chrom] = chr_vcf_file
-
-            chr_vcf_file.write(line)
-
-    for chr_vcf_file in chrom_to_file.values():
-        chr_vcf_file.close()
+    # Split the input file for each single chromosome
+    vcf_file_paths = split_vcf_by_chrom(args.in_vcf_path)
 
     # Make commands for VEP
     cmds = []
-    vep_out_file_paths = []
+    vep_vcf_paths = []
 
     for vcf_file_path in vcf_file_paths:
-        out_file_path = vcf_file_path.replace('.vcf', '.vep.vcf')
-        vep_out_file_paths.append(out_file_path)
+        vep_vcf_path = vcf_file_path.replace('.vcf', '.vep.vcf')
+        vep_vcf_paths.append(vep_vcf_path)
 
         # Basic information
         cmd_args = [
@@ -82,7 +47,7 @@ def main():
             '--force_overwrite',
             '--format', 'vcf',
             '-i', vcf_file_path,
-            '-o', out_file_path,
+            '-o', vep_vcf_path,
             '--vcf',
             '--no_stats',
             '--polyphen p',
@@ -133,23 +98,90 @@ def main():
     pool.join()
 
     # Collates the VEP outputs into one
-    with open(args.out_vcf_path, 'w') as outfile:
-        for i, vep_out_file_path in enumerate(vep_out_file_paths):
-            with open(vep_out_file_path) as vep_outfile:
-                if i == 0:  # Write all lines from the file
-                    for line in vep_outfile:
-                        outfile.write(line)
-                else:  # Write all lines except headers
-                    for line in vep_outfile:
-                        if not line.startswith('#'):
-                            outfile.write(line)
+    concat_vcf_files(args.out_vcf_path, vep_vcf_paths)
 
     # Delete the temporary files
     for vcf_file_path in vcf_file_paths:
         os.remove(vcf_file_path)
 
-    for vep_out_file_path in vep_out_file_paths:
+    for vep_out_file_path in vep_vcf_paths:
         os.remove(vep_out_file_path)
+
+
+def create_arg_parser() -> argparse.ArgumentParser:
+    """ Create an argument parser for this script and return it """
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str, help='Input VCF file')
+    parser.add_argument('-o', '--outfile', dest='out_vcf_path', required=False, type=str,
+                        help='Path of the VCF output', default='vep_output.vcf')
+    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                        help='Number of processes for this script', default=1)
+
+    return parser
+
+
+def print_args(args: argparse.Namespace):
+    print(f'[Setting] The input VCF file: {args.in_vcf_path}')  # VCF from VEP
+    print(f'[Setting] The output path: {args.out_vcf_path}')
+    print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
+
+
+def check_args_validity(args: argparse.Namespace):
+    assert os.path.isfile(args.in_vcf_path), f'The input VCF file "{args.in_vcf_path}" cannot be found.'
+    outfile_dir = os.path.dirname(args.out_vcf_path)
+    assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    assert 1 <= args.num_proc <= mp.cpu_count(), \
+        f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
+
+
+def split_vcf_by_chrom(vcf_file_path: str) -> list:
+    """ Split the input VCF file by each chromosome and return a list of split VCF file paths
+    Each split file has a filename that ends with .{chromosome ID}.vcf.
+
+    :param vcf_file_path: Input VCF file path
+    :return: List of file paths of split VCFs
+    """
+    chrom_to_file = {}
+    vcf_file_paths = []
+
+    with open(vcf_file_path) as in_vcf_file:
+        header = in_vcf_file.readline()
+
+        for line in in_vcf_file:
+            chrom = line.split('\t')[0]
+            chr_vcf_file = chrom_to_file.get(chrom)
+
+            if chr_vcf_file is None:
+                chr_vcf_file_path = vcf_file_path.replace('.vcf', f'.{chrom}.vcf')
+                vcf_file_paths.append(chr_vcf_file_path)
+                chr_vcf_file = open(chr_vcf_file_path, 'w')
+                chr_vcf_file.write(header)
+                chrom_to_file[chrom] = chr_vcf_file
+
+            chr_vcf_file.write(line)
+
+    for chr_vcf_file in chrom_to_file.values():
+        chr_vcf_file.close()
+
+    return vcf_file_paths
+
+
+def concat_vcf_files(out_vcf_path: str, vcf_file_paths: list):
+    """ Concatenate the input VCF files into one VCF file
+
+    :param out_vcf_path: Path of out VCF file
+    :param vcf_file_paths: Paths of input VCF files
+    """
+    with open(out_vcf_path, 'w') as outfile:
+        for i, vcf_file_path in enumerate(vcf_file_paths):
+            with open(vcf_file_path) as vcf_file:
+                if i == 0:  # Write all lines from the file
+                    for line in vcf_file:
+                        outfile.write(line)
+                else:  # Write all lines except headers
+                    for line in vcf_file:
+                        if not line.startswith('#'):
+                            outfile.write(line)
 
 
 if __name__ == "__main__":
