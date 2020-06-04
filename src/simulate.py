@@ -7,11 +7,13 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
 """
 import argparse
+import gzip
 import os
 
 import yaml
 
 from utils import get_curr_time
+from collections import defaultdict
 
 
 def main():
@@ -59,6 +61,7 @@ def main():
         lcr_path = os.path.join(project_dir, filepath_dict['lcr'])
         sort_gap_path = os.path.join(project_dir, filepath_dict['sort_gap'])
         mask_region_path = os.path.join(project_dir, filepath_dict['mask_region'])
+        chrom_size_path = os.path.join(project_dir, filepath_dict['chrom_size'])
 
         if not os.path.isfile(sort_gap_path):
             cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
@@ -70,8 +73,7 @@ def main():
             print(f'[{get_curr_time()}, Progress] Merge the gap and LCR regions')
             os.system(cmd)
 
-        print(f'[{get_curr_time()}, Progress] Mask the fasta files')
-        chroms = [f'chr{n}' for n in range(1, 23)] + ['chrX', 'chrY']
+        chroms = [f'chr{n}' for n in range(1, 23)]
         for chrom in chroms:
             in_fa_gz_path = os.path.join(project_dir, filepath_dict[chrom])
             out_fa_gz_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
@@ -79,12 +81,43 @@ def main():
             out_fa_path = out_fa_gz_path.replace('.gz', '')
 
             if not os.path.isfile(out_fa_gz_path):
-                print(f'[{get_curr_time()}, Progress] Mask {chrom} and index the output')
+                print(f'[{get_curr_time()}, Progress] Mask the {chrom} fasta file and index the output')
                 cmd = f'gunzip {in_fa_gz_path};'
                 cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
                 cmd += f'samtools faidx {out_fa_path};'
                 cmd += f'gzip {in_fa_path} {out_fa_path};'
                 os.system(cmd)
+
+        if not os.path.isfile(chrom_size_path):
+            print(f'[{get_curr_time()}, Progress] Calculate mapped, AT/GC, and effective sizes of each chromosome')
+
+            with open(chrom_size_path, 'w') as outfile:
+                print('Chrom', 'Size', 'Mapped', 'AT', 'GC', 'Effective', sep='\t', file=outfile)
+
+                for chrom in chroms:
+                    print(f'[{get_curr_time()}, Progress] {chrom}')
+                    mask_fa_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
+                    fa_idx_path = mask_fa_path.replace('.gz', '.fai')
+
+                    with open(fa_idx_path) as fa_idx_file:
+                        line = fa_idx_file.read()
+                        fields = line.split('\t')
+                        chrom_size = int(fields[1])
+                        base_start_idx = int(fields[2])
+
+                    with gzip.open(mask_fa_path, 'rt') as mask_fa_file:
+                        base_cnt_dict = defaultdict(int)
+                        mask_fa_file.seek(base_start_idx)
+                        seq = mask_fa_file.read()
+
+                        for base in seq:
+                            base_cnt_dict[base.upper()] += 1
+
+                    map_size = chrom_size - base_cnt_dict['N']
+                    at_size = base_cnt_dict['A'] + base_cnt_dict['T']
+                    gc_size = base_cnt_dict['G'] + base_cnt_dict['C']
+                    effect_size = (at_size / 1.75) + gc_size
+                    print(chrom, chrom_size, map_size, at_size, gc_size, effect_size, sep='\t', file=outfile)
 
         print(f'[{get_curr_time()}, Progress] Done')
 
