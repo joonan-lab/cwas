@@ -27,8 +27,7 @@ def main():
     parser = create_arg_parser()
     args = parser.parse_args()
 
-    if args.mode == 'download':
-        # Download essential data
+    if args.mode == 'download':  # Download essential data
         with open(filepath_conf_path) as filepath_conf_file:
             filepath_conf = yaml.safe_load(filepath_conf_file)
             filepath_dict = filepath_conf['simulate']
@@ -49,6 +48,48 @@ def main():
                 cmd = f'wget -O {data_dest_path} {fileurl_dict[data_key]}'
                 print(f'[CMD] {cmd}')
                 os.system(cmd)
+
+    elif args.mode == 'prepare':  # Process the downloaded data
+        with open(filepath_conf_path) as filepath_conf_file:
+            filepath_conf = yaml.safe_load(filepath_conf_file)
+            filepath_dict = filepath_conf['simulate']
+
+        # path settings
+        gap_path = os.path.join(project_dir, filepath_dict['gap'])
+        lcr_path = os.path.join(project_dir, filepath_dict['lcr'])
+        sort_gap_path = os.path.join(project_dir, filepath_dict['sort_gap'])
+        mask_region_path = os.path.join(project_dir, filepath_dict['mask_region'])
+
+        if not os.path.isfile(sort_gap_path):
+            cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
+            print(f'[{get_curr_time()}, Progress] Sort the gap regions')
+            os.system(cmd)
+
+        if not os.path.isfile(mask_region_path):
+            cmd = f'zcat {sort_gap_path} {lcr_path} | sortBed -i stdin | gzip > {mask_region_path}'
+            print(f'[{get_curr_time()}, Progress] Merge the gap and LCR regions')
+            os.system(cmd)
+
+        print(f'[{get_curr_time()}, Progress] Mask the fasta files')
+        chroms = [f'chr{n}' for n in range(1, 23)] + ['chrX', 'chrY']
+        for chrom in chroms:
+            in_fa_gz_path = os.path.join(project_dir, filepath_dict[chrom])
+            out_fa_gz_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
+            in_fa_path = in_fa_gz_path.replace('.gz', '')
+            out_fa_path = out_fa_gz_path.replace('.gz', '')
+
+            if not os.path.isfile(out_fa_gz_path):
+                print(f'[{get_curr_time()}, Progress] Mask {chrom} and index the output')
+                cmd = f'gunzip {in_fa_gz_path};'
+                cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
+                cmd += f'samtools faidx {out_fa_path};'
+                cmd += f'gzip {in_fa_path} {out_fa_path};'
+                os.system(cmd)
+
+        print(f'[{get_curr_time()}, Progress] Done')
+
+    else:
+        pass
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
