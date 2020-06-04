@@ -10,7 +10,7 @@ simulate:
   gap: data/simulate/gap.txt.gz  # Gap regions
   sort_gap: data/simulate/sort_gap.txt.gz
   mask_region: data/simulate/mask_region.bed.gz
-  chrom_len: data/simulate/chrom_len_hg38.txt
+  chrom_size: data/simulate/chrom_size_hg38.txt
   chr1: data/simulate/chrom/chr1.fa.gz
   chr2: data/simulate/chrom/chr2.fa.gz
   chr3: data/simulate/chrom/chr3.fa.gz
