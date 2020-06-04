@@ -5,9 +5,11 @@
 
 # For simulating mutations (simulate.py)
 simulate:
-  data_dir: data/simulate
+  data_dir: data/simulate/chrom
   lcr: data/simulate/LCR-hs38.bed.gz  # Low-complexity regions
   gap: data/simulate/gap.txt.gz  # Gap regions
+  sort_gap: data/simulate/sort_gap.txt.gz
+  mask_region: data/simulate/mask_region.bed.gz
   chrom_len: data/simulate/chrom_len_hg38.txt
   chr1: data/simulate/chrom/chr1.fa.gz
   chr2: data/simulate/chrom/chr2.fa.gz
