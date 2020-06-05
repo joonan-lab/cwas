@@ -121,6 +121,9 @@ def main():
 
         print(f'[{get_curr_time()}, Progress] Done')
 
+    elif args.mode == 'mutation':  # Generate random mutations
+        pass
+
     else:
         pass
 
@@ -144,6 +147,8 @@ def create_arg_parser() -> argparse.ArgumentParser:
                                        help='Generate random mutations (arg "mutation -h" for usage')
     parser_mut.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
                             help='Input VCF file which is referred to generate random mutations')
+    parser_mut.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                            help='File listing sample IDs with their families and sample_types (case or ctrl)')
     parser_mut.add_argument('-o', '--out_dir', dest='out_dir', required=True, type=str,
                             help='Directory of outputs that lists random mutations. '
                                  'The number of outputs will be the same with the number of simulations.')
