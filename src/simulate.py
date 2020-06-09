@@ -146,7 +146,7 @@ def main():
         variant_labels = np.vectorize(label_variant)(refs, alts)
         sample_to_fam = sample_df.to_dict()['FAMILY']
         chrom_eff_sizes = chrom_size_df['Effective'].values
-        chrom_eff_sizes /= np.sum(chrom_eff_sizes)  # Normalization
+        chrom_probs = chrom_eff_sizes / np.sum(chrom_eff_sizes)  # Normalization
         chrom_sizes = chrom_size_df['Size'].values
         chroms = chrom_size_df['Chrom'].values
 
@@ -172,20 +172,12 @@ def main():
             fasta_file_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
             fasta_file_dict[chrom] = FastaFile(fasta_file_path)
 
-        # Generate random mutation
-        rand_variants = []
-
-        for fam in fam_to_label_cnt:
-            label_cnt_arr = fam_to_label_cnt[fam]
-            sample_ids = list(fam_to_sample_set[fam])
-
-            for label, label_cnt in enumerate(label_cnt_arr):
-                for i in range(label_cnt):
-                    rand_variant = make_random_mutation(label, sample_ids, fasta_file_dict, chrom_eff_sizes,
-                                                        chrom_sizes)
-                    rand_variants.append(rand_variant)
-
-        rand_variants.sort(key=lambda x: (x.get('chrom'), x.get('pos')))
+        # Make files listing random mutations
+        for n in range(args.num_sim):
+            output_filename = f'{args.out_tag}.{n + 1:05d}.vcf'
+            output_path = os.path.join(args.out_dir, output_filename)
+            make_rand_mut_file(output_path, fam_to_label_cnt, fam_to_sample_set, fasta_file_dict,
+                               chrom_probs, chrom_sizes)
 
         # Close the FASTA files
         for chrom in fasta_file_dict:
@@ -292,6 +284,24 @@ def label_variant(ref: str, alt: str) -> int:
         return 2  # Indel1
     else:  # len(ref) % 3 == 0 or len(alt) % 3 == 0:
         return 3  # Indel2
+
+
+def make_rand_mut_file(output_path: str, fam_to_label_cnt: dict, fam_to_sample_set: dict, fasta_file_dict: dict,
+                       chrom_probs: list, chrom_sizes: list):
+    """ Make a VCF file listing random mutations """
+    rand_variants = []
+
+    for fam in fam_to_label_cnt:
+        label_cnt_arr = fam_to_label_cnt[fam]
+        sample_ids = list(fam_to_sample_set[fam])
+
+        for label, label_cnt in enumerate(label_cnt_arr):
+            for i in range(label_cnt):
+                rand_variant = make_random_mutation(label, sample_ids, fasta_file_dict, chrom_probs, chrom_sizes)
+                rand_variants.append(rand_variant)
+
+    rand_variants.sort(key=lambda x: (x.get('chrom'), x.get('pos')))
+    write_variant_list(output_path, rand_variants)
 
 
 def make_random_mutation(label: int, sample_ids: list, fasta_file_dict: dict,
