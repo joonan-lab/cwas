@@ -76,16 +76,14 @@ def main():
         chroms = [f'chr{n}' for n in range(1, 23)]
         for chrom in chroms:
             in_fa_gz_path = os.path.join(project_dir, filepath_dict[chrom])
-            out_fa_gz_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
             in_fa_path = in_fa_gz_path.replace('.gz', '')
-            out_fa_path = out_fa_gz_path.replace('.gz', '')
+            out_fa_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
 
-            if not os.path.isfile(out_fa_gz_path):
+            if not os.path.isfile(out_fa_path):
                 print(f'[{get_curr_time()}, Progress] Mask the {chrom} fasta file and index the output')
                 cmd = f'gunzip {in_fa_gz_path};'
                 cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
                 cmd += f'samtools faidx {out_fa_path};'
-                cmd += f'gzip {in_fa_path} {out_fa_path};'
                 os.system(cmd)
 
         if not os.path.isfile(chrom_size_path):

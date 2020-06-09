@@ -35,30 +35,30 @@ simulate:
   chr22: data/simulate/chrom/chr22.fa.gz
   chrX: data/simulate/chrom/chrX.fa.gz
   chrY: data/simulate/chrom/chrY.fa.gz
-  chr1_masked: data/simulate/chrom/chr1_masked.fa.gz
-  chr2_masked: data/simulate/chrom/chr2_masked.fa.gz
-  chr3_masked: data/simulate/chrom/chr3_masked.fa.gz
-  chr4_masked: data/simulate/chrom/chr4_masked.fa.gz
-  chr5_masked: data/simulate/chrom/chr5_masked.fa.gz
-  chr6_masked: data/simulate/chrom/chr6_masked.fa.gz
-  chr7_masked: data/simulate/chrom/chr7_masked.fa.gz
-  chr8_masked: data/simulate/chrom/chr8_masked.fa.gz
-  chr9_masked: data/simulate/chrom/chr9_masked.fa.gz
-  chr10_masked: data/simulate/chrom/chr10_masked.fa.gz
-  chr11_masked: data/simulate/chrom/chr11_masked.fa.gz
-  chr12_masked: data/simulate/chrom/chr12_masked.fa.gz
-  chr13_masked: data/simulate/chrom/chr13_masked.fa.gz
-  chr14_masked: data/simulate/chrom/chr14_masked.fa.gz
-  chr15_masked: data/simulate/chrom/chr15_masked.fa.gz
-  chr16_masked: data/simulate/chrom/chr16_masked.fa.gz
-  chr17_masked: data/simulate/chrom/chr17_masked.fa.gz
-  chr18_masked: data/simulate/chrom/chr18_masked.fa.gz
-  chr19_masked: data/simulate/chrom/chr19_masked.fa.gz
-  chr20_masked: data/simulate/chrom/chr20_masked.fa.gz
-  chr21_masked: data/simulate/chrom/chr21_masked.fa.gz
-  chr22_masked: data/simulate/chrom/chr22_masked.fa.gz
-  chrX_masked: data/simulate/chrom/chrX_masked.fa.gz
-  chrY_masked: data/simulate/chrom/chrY_masked.fa.gz
+  chr1_masked: data/simulate/chrom/chr1_masked.fa
+  chr2_masked: data/simulate/chrom/chr2_masked.fa
+  chr3_masked: data/simulate/chrom/chr3_masked.fa
+  chr4_masked: data/simulate/chrom/chr4_masked.fa
+  chr5_masked: data/simulate/chrom/chr5_masked.fa
+  chr6_masked: data/simulate/chrom/chr6_masked.fa
+  chr7_masked: data/simulate/chrom/chr7_masked.fa
+  chr8_masked: data/simulate/chrom/chr8_masked.fa
+  chr9_masked: data/simulate/chrom/chr9_masked.fa
+  chr10_masked: data/simulate/chrom/chr10_masked.fa
+  chr11_masked: data/simulate/chrom/chr11_masked.fa
+  chr12_masked: data/simulate/chrom/chr12_masked.fa
+  chr13_masked: data/simulate/chrom/chr13_masked.fa
+  chr14_masked: data/simulate/chrom/chr14_masked.fa
+  chr15_masked: data/simulate/chrom/chr15_masked.fa
+  chr16_masked: data/simulate/chrom/chr16_masked.fa
+  chr17_masked: data/simulate/chrom/chr17_masked.fa
+  chr18_masked: data/simulate/chrom/chr18_masked.fa
+  chr19_masked: data/simulate/chrom/chr19_masked.fa
+  chr20_masked: data/simulate/chrom/chr20_masked.fa
+  chr21_masked: data/simulate/chrom/chr21_masked.fa
+  chr22_masked: data/simulate/chrom/chr22_masked.fa
+  chrX_masked: data/simulate/chrom/chrX_masked.fa
+  chrY_masked: data/simulate/chrom/chrY_masked.fa
 
 # For running VEP (Variant Effector Predictor)
 vep:
