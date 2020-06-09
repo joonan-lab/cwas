@@ -9,11 +9,14 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 import argparse
 import gzip
 import os
+from collections import defaultdict
 
+import numpy as np
+import pandas as pd
 import yaml
 
 from utils import get_curr_time
-from collections import defaultdict
+from fastafile import FastaFile
 
 
 def main():
@@ -120,10 +123,73 @@ def main():
         print(f'[{get_curr_time()}, Progress] Done')
 
     elif args.mode == 'mutation':  # Generate random mutations
-        pass
+        # Load the input data
+        variant_df = parse_vcf(args.in_vcf_path)
+        sample_df = pd.read_table(args.sample_file_path, index_col='SAMPLE')
 
-    else:
-        pass
+        # Load data from the preparation step
+        with open(filepath_conf_path) as filepath_conf_file:
+            filepath_conf = yaml.safe_load(filepath_conf_file)
+            filepath_dict = filepath_conf['simulate']
+
+        chrom_size_path = os.path.join(project_dir, filepath_dict['chrom_size'])
+
+        if not os.path.isfile(chrom_size_path):
+            raise FileNotFoundError(f'"{chrom_size_path}" does not exist. Run the "prepare" step first.')
+
+        chrom_size_df = pd.read_table(chrom_size_path)
+
+        # Extract values from the DataFrames
+        samples = variant_df['SAMPLE'].values
+        refs = variant_df['REF'].values
+        alts = variant_df['ALT'].values
+        variant_labels = np.vectorize(label_variant)(refs, alts)
+        sample_to_fam = sample_df.to_dict()['FAMILY']
+        chrom_eff_sizes = chrom_size_df['Effective'].values
+        chrom_eff_sizes /= np.sum(chrom_eff_sizes)  # Normalization
+        chrom_sizes = chrom_size_df['Size'].values
+        chroms = chrom_size_df['Chrom'].values
+
+        # Make dictionaries to generate random mutation
+        fam_to_label_cnt = {}  # Key: Family ID, Value: Array of label counts (Each index corresponds to each label.)
+        fam_to_sample_set = {}  # Key: Family ID, Value: Set of sample IDs available in the input VCF file
+
+        for sample, variant_label in zip(samples, variant_labels):
+            family = sample_to_fam[sample]
+            label_cnt_arr = fam_to_label_cnt.get(family, np.zeros(4, dtype=int))
+            label_cnt_arr[variant_label] += 1
+            fam_to_label_cnt[family] = label_cnt_arr
+
+            sample_set = fam_to_sample_set.get(family, set())
+            sample_set.add(sample)
+            fam_to_sample_set[family] = sample_set
+
+        # Open FASTA files masked in the previous preparation step.
+        unq_chroms = np.unique(chroms)
+        fasta_file_dict = {}
+
+        for chrom in unq_chroms:
+            fasta_file_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
+            fasta_file_dict[chrom] = FastaFile(fasta_file_path)
+
+        # Generate random mutation
+        rand_variants = []
+
+        for fam in fam_to_label_cnt:
+            label_cnt_arr = fam_to_label_cnt[fam]
+            sample_ids = list(fam_to_sample_set[fam])
+
+            for label, label_cnt in enumerate(label_cnt_arr):
+                for i in range(label_cnt):
+                    rand_variant = make_random_mutation(label, sample_ids, fasta_file_dict, chrom_eff_sizes,
+                                                        chrom_sizes)
+                    rand_variants.append(rand_variant)
+
+        rand_variants.sort(key=lambda x: (x.get('chrom'), x.get('pos')))
+
+        # Close the FASTA files
+        for chrom in fasta_file_dict:
+            fasta_file_dict[chrom].close()
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
@@ -147,13 +213,179 @@ def create_arg_parser() -> argparse.ArgumentParser:
                             help='Input VCF file which is referred to generate random mutations')
     parser_mut.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
                             help='File listing sample IDs with their families and sample_types (case or ctrl)')
-    parser_mut.add_argument('-o', '--out_dir', dest='out_dir', required=True, type=str,
+    parser_mut.add_argument('-o', '--out_dir', dest='out_dir', required=False, type=str,
                             help='Directory of outputs that lists random mutations. '
-                                 'The number of outputs will be the same with the number of simulations.')
+                                 'The number of outputs will be the same with the number of simulations. '
+                                 '(Default: ./random-mutation)', default='random-mutation')
+    parser_mut.add_argument('-t', '--out_tag', dest='out_tag', required=False, type=str,
+                            help='Prefix of output files. Each output file name will start with this tag. '
+                                 '(Default: rand_mut', default='rand_mut')
     parser_mut.add_argument('-n', '--num_sim', dest='num_sim', required=False, type=int,
                             help='Number of simulations to generate random mutations (Default: 1)', default=1)
+    parser_mut.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                            help='Number of processes for this script (only necessary for split VCF files) '
+                                 '(Default: 1)', default=1)
 
     return parser
+
+
+def parse_vcf(vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
+    """ Parse the VCF file and make a pandas.DataFrame object listing the annotated variants.
+
+    :param vcf_path: The path of the VCF file
+    :param rdd_colnames: The list of column names redundant for CWAS
+                         (Warning: Unavailable column names will be ignored.)
+    :return: The DataFrame object listing annotated variants
+    """
+    variant_df_rows = []
+    variant_df_colnames = []
+
+    # Parse the VCF file
+    with open(vcf_path, 'r') as vcf_file:
+        for line in vcf_file:
+            if line.startswith('#'):  # The comments
+                if line.startswith('#CHROM'):  # The header
+                    variant_df_colnames = line[1:].rstrip('\n').split('\t')
+            else:
+                variant_df_row = line.rstrip('\n').split('\t')
+                variant_df_rows.append(variant_df_row)
+
+    vcf_df = pd.DataFrame(variant_df_rows, columns=variant_df_colnames)
+
+    # Parse the INFO field
+    info_strs = vcf_df['INFO'].values
+    info_dicts = list(map(parse_info_str, info_strs))
+    info_df = pd.DataFrame(info_dicts)
+
+    # Concatenate those DataFrames
+    variant_df = pd.concat([vcf_df.drop(columns='INFO'), info_df], axis='columns')
+
+    # Trim the columns redundant for CWAS
+    if rdd_colnames is not None:
+        variant_df.drop(columns=rdd_colnames, inplace=True, errors='ignore')
+
+    return variant_df
+
+
+def parse_info_str(info_str: str) -> dict:
+    """ Parse the string in the INFO field of the VCF file and make a dictionary """
+    info_dict = {}
+    key_value_pairs = info_str.split(';')
+
+    for key_value_pair in key_value_pairs:
+        key, value = key_value_pair.split('=', 1)
+        info_dict[key] = value
+
+    return info_dict
+
+
+def label_variant(ref: str, alt: str) -> int:
+    """ Return an integer according to the type of the input small variant
+    """
+    assert len(ref) == 1 or len(alt) == 1, 'This function current support only small variants such as SNV and INDEL.'
+
+    if len(ref) == 1 and len(alt) == 1:
+        return 0  # SNV
+    elif len(ref) % 3 == 1 or len(alt) % 3 == 1:
+        return 1  # Indel0
+    elif len(ref) % 3 == 2 or len(alt) % 3 == 2:
+        return 2  # Indel1
+    else:  # len(ref) % 3 == 0 or len(alt) % 3 == 0:
+        return 3  # Indel2
+
+
+def make_random_mutation(label: int, sample_ids: list, fasta_file_dict: dict,
+                         chrom_probs: np.ndarray[float], chrom_sizes: np.ndarray[int]) -> dict:
+    """ Generate and return a random mutation in the VCF format """
+    sample_id = np.random.choice(sample_ids)
+    ref = None
+    alt = None
+
+    while True:
+        chrom_idx = np.random.choice(range(len(chrom_probs)), p=chrom_probs)
+        chrom_size = chrom_sizes[chrom_idx]
+        chrom = f'chr{chrom_idx + 1}'
+        fasta_file = fasta_file_dict[chrom]
+
+        pos = np.random.randint(chrom_size)
+        base = fasta_file.get_base(chrom, pos).upper()
+
+        if base == 'N':
+            continue
+
+        ref, alt = pick_mutation()
+
+        if base != ref:
+            continue
+
+        break
+
+    alt += 'A' * label
+
+    variant = {
+        'chrom': chrom,
+        'pos': pos + 1,  # 0-based -> 1-based
+        'id': f'{chrom}:{pos + 1}:{ref}:{alt}',
+        'ref': ref,
+        'alt': alt,
+        'qual': '.',
+        'filter': '.',
+        'info': f'SAMPLE={sample_id}'
+    }
+    return variant
+
+
+def pick_mutation() -> (str, str):
+    """ Get a mutation from the mutation distribution model (Lynch 2010). """
+    x = np.random.uniform(0, 1)
+
+    if x <= 0.211062887:
+        ref = 'C'
+        alt = 'T'
+    elif x <= 0.422125774:
+        ref = 'G'
+        alt = 'A'
+    elif x <= 0.551200326:
+        ref = 'A'
+        alt = 'G'
+    elif x <= 0.680274877:
+        ref = 'T'
+        alt = 'C'
+    elif x <= 0.728393387:
+        ref = 'G'
+        alt = 'T'
+    elif x <= 0.776511898:
+        ref = 'C'
+        alt = 'A'
+    elif x <= 0.821985623:
+        ref = 'G'
+        alt = 'C'
+    elif x <= 0.867459349:
+        ref = 'C'
+        alt = 'G'
+    elif x <= 0.900590744:
+        ref = 'T'
+        alt = 'A'
+    elif x <= 0.933722139:
+        ref = 'A'
+        alt = 'T'
+    elif x <= 0.96686107:
+        ref = 'A'
+        alt = 'C'
+    else:
+        ref = 'T'
+        alt = 'G'
+
+    return ref, alt
+
+
+def write_variant_list(out_vcf_path, variants):
+    with open(out_vcf_path, 'w') as outfile:
+        print('#CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', sep='\t', file=outfile)
+
+        for variant in variants:
+            print(variant['chrom'], variant['pos'], variant['id'], variant['ref'], variant['alt'],
+                  variant['qual'], variant['filter'], variant['info'], sep='\t', file=outfile)
 
 
 if __name__ == '__main__':
