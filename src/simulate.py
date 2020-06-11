@@ -125,6 +125,7 @@ def main():
         print(f'[{get_curr_time()}, Progress] Done')
 
     elif args.mode == 'mutation':  # Generate random mutations
+        check_args_validity(args)
         print(f'[{get_curr_time()}, Progress] Load and parse the data to generate random mutations')
         # Load the input data
         variant_df = parse_vcf(args.in_vcf_path)
@@ -242,6 +243,18 @@ def create_arg_parser() -> argparse.ArgumentParser:
                                  '(Default: 1)', default=1)
 
     return parser
+
+
+def check_args_validity(args: argparse.Namespace):
+    if not os.path.isfile(args.in_vcf_path):
+        raise FileNotFoundError(f'The input file "{args.in_vcf_path}" cannot be found.')
+    if not os.path.isfile(args.sample_file_path):
+        raise FileNotFoundError(f'The input file "{args.sample_file_path}" cannot be found.')
+    if args.num_sim < 1:
+        raise ValueError(f'--num_sim got an invalid value ({args.num_sim}). The value must be more than 0.')
+    if not args.num_proc < 1 and not args.num_proc > mp.cpu_count():
+        raise ValueError(f'--num_proc got an invalid value ({args.num_proc}). '
+                         f'It must be in the range [1, {mp.cpu_count()}].')
 
 
 def parse_vcf(vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
