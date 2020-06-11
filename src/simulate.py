@@ -8,14 +8,16 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 """
 import argparse
 import gzip
+import multiprocessing as mp
 import os
 from collections import defaultdict
+from functools import partial
 
 import numpy as np
 import pandas as pd
 import yaml
 
-from utils import get_curr_time
+from utils import get_curr_time, div_list
 from fastafile import FastaFile
 
 
@@ -164,24 +166,41 @@ def main():
             sample_set.add(sample)
             fam_to_sample_set[family] = sample_set
 
-        # Open FASTA files masked in the previous preparation step.
+        # Make a dictionary for FASTA file paths masked in the previous preparation step.
         unq_chroms = np.unique(chroms)
-        fasta_file_dict = {}
+        fasta_path_dict = {}
 
         for chrom in unq_chroms:
             fasta_file_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
-            fasta_file_dict[chrom] = FastaFile(fasta_file_path)
+            fasta_path_dict[chrom] = fasta_file_path
 
         # Make files listing random mutations
+        os.makedirs(args.out_dir, exist_ok=True)
+        output_paths = []
+
         for n in range(args.num_sim):
             output_filename = f'{args.out_tag}.{n + 1:05d}.vcf'
             output_path = os.path.join(args.out_dir, output_filename)
-            make_rand_mut_file(output_path, fam_to_label_cnt, fam_to_sample_set, fasta_file_dict,
-                               chrom_probs, chrom_sizes)
+            output_paths.append(output_path)
 
-        # Close the FASTA files
-        for chrom in fasta_file_dict:
-            fasta_file_dict[chrom].close()
+        if args.num_proc == 1:
+            make_rand_mut_files(output_paths, fam_to_label_cnt, fam_to_sample_set, fasta_path_dict,
+                                chrom_probs, chrom_sizes)
+        else:
+            output_paths_subs = div_list(output_paths, args.num_proc)
+            pool = mp.Pool(args.num_proc)
+            pool.map(
+                partial(make_rand_mut_files,
+                        fam_to_label_cnt=fam_to_label_cnt,
+                        fam_to_sample_set=fam_to_sample_set,
+                        fasta_path_dict=fasta_path_dict,
+                        chrom_probs=chrom_probs,
+                        chrom_sizes=chrom_sizes,
+                        ),
+                output_paths_subs
+            )
+            pool.close()
+            pool.join()
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
@@ -211,7 +230,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
                                  '(Default: ./random-mutation)', default='random-mutation')
     parser_mut.add_argument('-t', '--out_tag', dest='out_tag', required=False, type=str,
                             help='Prefix of output files. Each output file name will start with this tag. '
-                                 '(Default: rand_mut', default='rand_mut')
+                                 '(Default: rand_mut)', default='rand_mut')
     parser_mut.add_argument('-n', '--num_sim', dest='num_sim', required=False, type=int,
                             help='Number of simulations to generate random mutations (Default: 1)', default=1)
     parser_mut.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
@@ -286,8 +305,24 @@ def label_variant(ref: str, alt: str) -> int:
         return 3  # Indel2
 
 
+def make_rand_mut_files(output_paths: list, fam_to_label_cnt: dict, fam_to_sample_set: dict, fasta_path_dict: dict,
+                        chrom_probs: np.ndarray, chrom_sizes: np.ndarray):
+    """ Make VCF files listing random mutations
+    This is a wrapper for the 'make_rand_mut_file' function to support multiprocessing.
+    """
+    # Open the FASTA files
+    fasta_file_dict = {chrom: FastaFile(fasta_path_dict[chrom]) for chrom in fasta_path_dict}
+
+    for output_path in output_paths:
+        make_rand_mut_file(output_path, fam_to_label_cnt, fam_to_sample_set, fasta_file_dict, chrom_probs, chrom_sizes)
+
+    # Close the FASTA files
+    for chrom in fasta_file_dict:
+        fasta_file_dict[chrom].close()
+
+
 def make_rand_mut_file(output_path: str, fam_to_label_cnt: dict, fam_to_sample_set: dict, fasta_file_dict: dict,
-                       chrom_probs: list, chrom_sizes: list):
+                       chrom_probs: np.ndarray, chrom_sizes: np.ndarray):
     """ Make a VCF file listing random mutations """
     rand_variants = []
 
@@ -305,7 +340,7 @@ def make_rand_mut_file(output_path: str, fam_to_label_cnt: dict, fam_to_sample_s
 
 
 def make_random_mutation(label: int, sample_ids: list, fasta_file_dict: dict,
-                         chrom_probs: np.ndarray[float], chrom_sizes: np.ndarray[int]) -> dict:
+                         chrom_probs: np.ndarray, chrom_sizes: np.ndarray) -> dict:
     """ Generate and return a random mutation in the VCF format """
     sample_id = np.random.choice(sample_ids)
     ref = None
