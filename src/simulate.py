@@ -17,8 +17,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from utils import get_curr_time, div_list
 from fastafile import FastaFile
+from utils import get_curr_time, div_list
 
 
 def main():
@@ -125,6 +125,7 @@ def main():
         print(f'[{get_curr_time()}, Progress] Done')
 
     elif args.mode == 'mutation':  # Generate random mutations
+        print(f'[{get_curr_time()}, Progress] Load and parse the data to generate random mutations')
         # Load the input data
         variant_df = parse_vcf(args.in_vcf_path)
         sample_df = pd.read_table(args.sample_file_path, index_col='SAMPLE')
@@ -175,6 +176,7 @@ def main():
             fasta_path_dict[chrom] = fasta_file_path
 
         # Make files listing random mutations
+        print(f'[{get_curr_time()}, Progress] Make files listing generated random mutations')
         os.makedirs(args.out_dir, exist_ok=True)
         output_paths = []
 
@@ -201,6 +203,8 @@ def main():
             )
             pool.close()
             pool.join()
+
+        print(f'[{get_curr_time()}, Progress] Done')
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
