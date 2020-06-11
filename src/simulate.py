@@ -52,6 +52,7 @@ def main():
 
     elif args.mode == 'mutation':  # Generate random mutations
         print(f'[{get_curr_time()}, Progress] Get random mutations by simulating generation of mutations')
+        print_args(args)
         check_args_validity(args)
         simulate_mutation(filepath_dict, args)
         print(f'[{get_curr_time()}, Progress] Done')
@@ -92,6 +93,15 @@ def create_arg_parser() -> argparse.ArgumentParser:
                                  '(Default: 1)', default=1)
 
     return parser
+
+
+def print_args(args: argparse.Namespace):
+    print(f'[Setting] Input VCF path: {args.in_vcf_path}')
+    print(f'[Setting] Input sample list: {args.sample_file_path}')
+    print(f'[Setting] Output directory: {args.out_dir}')
+    print(f'[Setting] Output tag (prefix of output files): {args.out_tag}')
+    print(f'[Setting] Number of simulations: {args.num_sim}')
+    print(f'[Setting] Number of processes for multiprocessing: {args.num_proc}')
 
 
 def check_args_validity(args: argparse.Namespace):
