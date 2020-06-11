@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script for simulating the generation of random mutations.
+Script for simulating the generation of mutations and make files listing random mutations.
 The random mutations will be used to get simulated p-values.
 
 For more detailed information, please refer to An et al., 2018 (PMID 30545852).
@@ -25,186 +25,35 @@ def main():
     # Paths for this script
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
-    tmp_dir = os.path.join(project_dir, 'tmp')
     filepath_conf_path = os.path.join(project_dir, 'conf', 'filepaths.yaml')
     fileurl_conf_path = os.path.join(project_dir, 'conf', 'fileurls.yaml')
-    os.makedirs(tmp_dir, exist_ok=True)
+
+    # Parse the configuration files
+    with open(filepath_conf_path) as filepath_conf_file:
+        filepath_conf = yaml.safe_load(filepath_conf_file)['simulate']
+        filepath_dict = {path_key: os.path.join(project_dir, filepath_conf[path_key]) for path_key in filepath_conf}
+
+    with open(fileurl_conf_path) as fileurl_conf_file:
+        fileurl_dict = yaml.safe_load(fileurl_conf_file)['simulation']
 
     # Parse arguments
     parser = create_arg_parser()
     args = parser.parse_args()
 
-    if args.mode == 'download':  # Download essential data
-        with open(filepath_conf_path) as filepath_conf_file:
-            filepath_conf = yaml.safe_load(filepath_conf_file)
-            filepath_dict = filepath_conf['simulate']
-
-        with open(fileurl_conf_path) as fileurl_conf_file:
-            fileurl_conf = yaml.safe_load(fileurl_conf_file)
-            fileurl_dict = fileurl_conf['simulate']
-
-        data_dir = os.path.join(project_dir, filepath_dict['data_dir'])
-        os.makedirs(data_dir, exist_ok=True)
-
-        for data_key in fileurl_dict:
-            data_dest_path = os.path.join(project_dir, filepath_dict[data_key])
-
-            if os.path.isfile(data_dest_path):
-                print(f'[INFO] "{data_dest_path}" already exists.')
-            else:
-                cmd = f'wget -O {data_dest_path} {fileurl_dict[data_key]}'
-                print(f'[CMD] {cmd}')
-                os.system(cmd)
+    if args.mode == 'download':
+        print(f'[{get_curr_time()}, Progress] Download essential data')
+        download_data(filepath_dict, fileurl_dict)
+        print(f'[{get_curr_time()}, Progress] Done')
 
     elif args.mode == 'prepare':  # Process the downloaded data
-        with open(filepath_conf_path) as filepath_conf_file:
-            filepath_conf = yaml.safe_load(filepath_conf_file)
-            filepath_dict = filepath_conf['simulate']
-
-        # path settings
-        gap_path = os.path.join(project_dir, filepath_dict['gap'])
-        lcr_path = os.path.join(project_dir, filepath_dict['lcr'])
-        sort_gap_path = os.path.join(project_dir, filepath_dict['sort_gap'])
-        mask_region_path = os.path.join(project_dir, filepath_dict['mask_region'])
-        chrom_size_path = os.path.join(project_dir, filepath_dict['chrom_size'])
-
-        if not os.path.isfile(sort_gap_path):
-            cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
-            print(f'[{get_curr_time()}, Progress] Sort the gap regions')
-            os.system(cmd)
-
-        if not os.path.isfile(mask_region_path):
-            cmd = f'zcat {sort_gap_path} {lcr_path} | sortBed -i stdin | gzip > {mask_region_path}'
-            print(f'[{get_curr_time()}, Progress] Merge the gap and LCR regions')
-            os.system(cmd)
-
-        chroms = [f'chr{n}' for n in range(1, 23)]
-        for chrom in chroms:
-            in_fa_gz_path = os.path.join(project_dir, filepath_dict[chrom])
-            in_fa_path = in_fa_gz_path.replace('.gz', '')
-            out_fa_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
-
-            if not os.path.isfile(out_fa_path):
-                print(f'[{get_curr_time()}, Progress] Mask the {chrom} fasta file and index the output')
-                cmd = f'gunzip {in_fa_gz_path};'
-                cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
-                cmd += f'samtools faidx {out_fa_path};'
-                os.system(cmd)
-
-        if not os.path.isfile(chrom_size_path):
-            print(f'[{get_curr_time()}, Progress] Calculate mapped, AT/GC, and effective sizes of each chromosome')
-
-            with open(chrom_size_path, 'w') as outfile:
-                print('Chrom', 'Size', 'Mapped', 'AT', 'GC', 'Effective', sep='\t', file=outfile)
-
-                for chrom in chroms:
-                    print(f'[{get_curr_time()}, Progress] {chrom}')
-                    mask_fa_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
-                    fa_idx_path = mask_fa_path.replace('.gz', '.fai')
-
-                    with open(fa_idx_path) as fa_idx_file:
-                        line = fa_idx_file.read()
-                        fields = line.split('\t')
-                        chrom_size = int(fields[1])
-                        base_start_idx = int(fields[2])
-
-                    with gzip.open(mask_fa_path, 'rt') as mask_fa_file:
-                        base_cnt_dict = defaultdict(int)
-                        mask_fa_file.seek(base_start_idx)
-                        seq = mask_fa_file.read()
-
-                        for base in seq:
-                            base_cnt_dict[base.upper()] += 1
-
-                    map_size = chrom_size - base_cnt_dict['N']
-                    at_size = base_cnt_dict['A'] + base_cnt_dict['T']
-                    gc_size = base_cnt_dict['G'] + base_cnt_dict['C']
-                    effect_size = (at_size / 1.75) + gc_size
-                    print(chrom, chrom_size, map_size, at_size, gc_size, effect_size, sep='\t', file=outfile)
-
+        print(f'[{get_curr_time()}, Progress] Prepare data in order to generate random mutations')
+        prepare_data(filepath_dict)
         print(f'[{get_curr_time()}, Progress] Done')
 
     elif args.mode == 'mutation':  # Generate random mutations
+        print(f'[{get_curr_time()}, Progress] Get random mutations by simulating generation of mutations')
         check_args_validity(args)
-        print(f'[{get_curr_time()}, Progress] Load and parse the data to generate random mutations')
-        # Load the input data
-        variant_df = parse_vcf(args.in_vcf_path)
-        sample_df = pd.read_table(args.sample_file_path, index_col='SAMPLE')
-
-        # Load data from the preparation step
-        with open(filepath_conf_path) as filepath_conf_file:
-            filepath_conf = yaml.safe_load(filepath_conf_file)
-            filepath_dict = filepath_conf['simulate']
-
-        chrom_size_path = os.path.join(project_dir, filepath_dict['chrom_size'])
-
-        if not os.path.isfile(chrom_size_path):
-            raise FileNotFoundError(f'"{chrom_size_path}" does not exist. Run the "prepare" step first.')
-
-        chrom_size_df = pd.read_table(chrom_size_path)
-
-        # Extract values from the DataFrames
-        samples = variant_df['SAMPLE'].values
-        refs = variant_df['REF'].values
-        alts = variant_df['ALT'].values
-        variant_labels = np.vectorize(label_variant)(refs, alts)
-        sample_to_fam = sample_df.to_dict()['FAMILY']
-        chrom_eff_sizes = chrom_size_df['Effective'].values
-        chrom_probs = chrom_eff_sizes / np.sum(chrom_eff_sizes)  # Normalization
-        chrom_sizes = chrom_size_df['Size'].values
-        chroms = chrom_size_df['Chrom'].values
-
-        # Make dictionaries to generate random mutation
-        fam_to_label_cnt = {}  # Key: Family ID, Value: Array of label counts (Each index corresponds to each label.)
-        fam_to_sample_set = {}  # Key: Family ID, Value: Set of sample IDs available in the input VCF file
-
-        for sample, variant_label in zip(samples, variant_labels):
-            family = sample_to_fam[sample]
-            label_cnt_arr = fam_to_label_cnt.get(family, np.zeros(4, dtype=int))
-            label_cnt_arr[variant_label] += 1
-            fam_to_label_cnt[family] = label_cnt_arr
-
-            sample_set = fam_to_sample_set.get(family, set())
-            sample_set.add(sample)
-            fam_to_sample_set[family] = sample_set
-
-        # Make a dictionary for FASTA file paths masked in the previous preparation step.
-        unq_chroms = np.unique(chroms)
-        fasta_path_dict = {}
-
-        for chrom in unq_chroms:
-            fasta_file_path = os.path.join(project_dir, filepath_dict[f'{chrom}_masked'])
-            fasta_path_dict[chrom] = fasta_file_path
-
-        # Make files listing random mutations
-        print(f'[{get_curr_time()}, Progress] Make files listing generated random mutations')
-        os.makedirs(args.out_dir, exist_ok=True)
-        output_paths = []
-
-        for n in range(args.num_sim):
-            output_filename = f'{args.out_tag}.{n + 1:05d}.vcf'
-            output_path = os.path.join(args.out_dir, output_filename)
-            output_paths.append(output_path)
-
-        if args.num_proc == 1:
-            make_rand_mut_files(output_paths, fam_to_label_cnt, fam_to_sample_set, fasta_path_dict,
-                                chrom_probs, chrom_sizes)
-        else:
-            output_paths_subs = div_list(output_paths, args.num_proc)
-            pool = mp.Pool(args.num_proc)
-            pool.map(
-                partial(make_rand_mut_files,
-                        fam_to_label_cnt=fam_to_label_cnt,
-                        fam_to_sample_set=fam_to_sample_set,
-                        fasta_path_dict=fasta_path_dict,
-                        chrom_probs=chrom_probs,
-                        chrom_sizes=chrom_sizes,
-                        ),
-                output_paths_subs
-            )
-            pool.close()
-            pool.join()
-
+        simulate_mutation(filepath_dict, args)
         print(f'[{get_curr_time()}, Progress] Done')
 
 
@@ -255,6 +104,183 @@ def check_args_validity(args: argparse.Namespace):
     if not args.num_proc < 1 and not args.num_proc > mp.cpu_count():
         raise ValueError(f'--num_proc got an invalid value ({args.num_proc}). '
                          f'It must be in the range [1, {mp.cpu_count()}].')
+
+
+def download_data(filepath_dict: dict, fileurl_dict: dict):
+    """ Download essential data for this script using wget commands"""
+
+    data_dir = filepath_dict['data_dir']
+    os.makedirs(data_dir, exist_ok=True)
+
+    for data_key in fileurl_dict:
+        data_dest_path = filepath_dict[data_key]
+
+        if os.path.isfile(data_dest_path):
+            print(f'[INFO] "{data_dest_path}" already exists.')
+        else:
+            cmd = f'wget -O {data_dest_path} {fileurl_dict[data_key]}'
+            print(f'[CMD] {cmd}')
+            os.system(cmd)
+
+
+def prepare_data(filepath_dict: dict):
+    make_mask_region_bed(filepath_dict)
+    mask_fasta(filepath_dict)
+    make_chrom_size_txt(filepath_dict)
+
+
+def make_mask_region_bed(filepath_dict: dict):
+    """ Make a bed file listing masked regions by merging gap and LCR regions """
+    gap_path = filepath_dict['gap']
+    lcr_path = filepath_dict['lcr']
+    sort_gap_path = filepath_dict['sort_gap']
+    mask_region_path = filepath_dict['mask_region']
+
+    if not os.path.isfile(sort_gap_path):
+        cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
+        print(f'[{get_curr_time()}, Progress] Sort the gap regions')
+        os.system(cmd)
+
+    if not os.path.isfile(mask_region_path):
+        cmd = f'zcat {sort_gap_path} {lcr_path} | sortBed -i stdin | gzip > {mask_region_path}'
+        print(f'[{get_curr_time()}, Progress] Merge the gap and LCR regions')
+        os.system(cmd)
+
+
+def mask_fasta(filepath_dict: dict):
+    """ Mask regions on the genome files (FASTA files) and save results as new FASTA files """
+    mask_region_path = filepath_dict['mask_region']
+    chroms = [f'chr{n}' for n in range(1, 23)]
+
+    for chrom in chroms:
+        in_fa_gz_path = filepath_dict[chrom]
+        in_fa_path = in_fa_gz_path.replace('.gz', '')
+        out_fa_path = filepath_dict[f'{chrom}_masked']
+
+        if not os.path.isfile(out_fa_path):
+            print(f'[{get_curr_time()}, Progress] Mask the {chrom} fasta file and index the output')
+            cmd = f'gunzip {in_fa_gz_path};'
+            cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
+            cmd += f'samtools faidx {out_fa_path};'
+            os.system(cmd)
+
+
+def make_chrom_size_txt(filepath_dict: dict):
+    """ Make a txt file listing total size, mapped, AT/GC, and effective sizes of each chromosome """
+    chrom_size_path = filepath_dict['chrom_size']
+    chroms = [f'chr{n}' for n in range(1, 23)]
+
+    if not os.path.isfile(chrom_size_path):
+        print(f'[{get_curr_time()}, Progress] Make a file listing total, mapped, AT/GC, and effective sizes '
+              f'of each chromosome')
+
+        with open(chrom_size_path, 'w') as outfile:
+            print('Chrom', 'Size', 'Mapped', 'AT', 'GC', 'Effective', sep='\t', file=outfile)
+
+            for chrom in chroms:
+                print(f'[{get_curr_time()}, Progress] {chrom}')
+                mask_fa_path = filepath_dict[f'{chrom}_masked']
+                fa_idx_path = mask_fa_path.replace('.gz', '.fai')
+
+                with open(fa_idx_path) as fa_idx_file:
+                    line = fa_idx_file.read()
+                    fields = line.split('\t')
+                    chrom_size = int(fields[1])
+                    base_start_idx = int(fields[2])
+
+                with gzip.open(mask_fa_path, 'rt') as mask_fa_file:
+                    base_cnt_dict = defaultdict(int)
+                    mask_fa_file.seek(base_start_idx)
+                    seq = mask_fa_file.read()
+
+                    for base in seq:
+                        base_cnt_dict[base.upper()] += 1
+
+                map_size = chrom_size - base_cnt_dict['N']
+                at_size = base_cnt_dict['A'] + base_cnt_dict['T']
+                gc_size = base_cnt_dict['G'] + base_cnt_dict['C']
+                effect_size = (at_size / 1.75) + gc_size
+                print(chrom, chrom_size, map_size, at_size, gc_size, effect_size, sep='\t', file=outfile)
+
+
+def simulate_mutation(filepath_dict: dict, args: argparse.Namespace):
+    """ Simulate generation of mutations and make files listing random mutations """
+    print(f'[{get_curr_time()}, Progress] Load and parse the data to generate random mutations')
+    # Load the input data
+    variant_df = parse_vcf(args.in_vcf_path)
+    sample_df = pd.read_table(args.sample_file_path, index_col='SAMPLE')
+
+    # Load data from the preparation step
+    chrom_size_path = filepath_dict['chrom_size']
+
+    if not os.path.isfile(chrom_size_path):
+        raise FileNotFoundError(f'"{chrom_size_path}" does not exist. Run the "prepare" step first.')
+
+    chrom_size_df = pd.read_table(chrom_size_path)
+
+    # Extract values from the DataFrames
+    samples = variant_df['SAMPLE'].values
+    refs = variant_df['REF'].values
+    alts = variant_df['ALT'].values
+    variant_labels = np.vectorize(label_variant)(refs, alts)
+    sample_to_fam = sample_df.to_dict()['FAMILY']
+    chrom_eff_sizes = chrom_size_df['Effective'].values
+    chrom_probs = chrom_eff_sizes / np.sum(chrom_eff_sizes)  # Normalization
+    chrom_sizes = chrom_size_df['Size'].values
+    chroms = chrom_size_df['Chrom'].values
+
+    # Make dictionaries to generate random mutation
+    fam_to_label_cnt = {}  # Key: Family ID, Value: Array of label counts (Each index corresponds to each label.)
+    fam_to_sample_set = {}  # Key: Family ID, Value: Set of sample IDs available in the input VCF file
+
+    for sample, variant_label in zip(samples, variant_labels):
+        family = sample_to_fam[sample]
+        label_cnt_arr = fam_to_label_cnt.get(family, np.zeros(4, dtype=int))
+        label_cnt_arr[variant_label] += 1
+        fam_to_label_cnt[family] = label_cnt_arr
+
+        sample_set = fam_to_sample_set.get(family, set())
+        sample_set.add(sample)
+        fam_to_sample_set[family] = sample_set
+
+    # Make a dictionary for FASTA file paths masked in the previous preparation step.
+    unq_chroms = np.unique(chroms)
+    fasta_path_dict = {}
+
+    for chrom in unq_chroms:
+        fasta_file_path = filepath_dict[f'{chrom}_masked']
+        fasta_path_dict[chrom] = fasta_file_path
+
+    # Make files listing random mutations
+    print(f'[{get_curr_time()}, Progress] Make files listing generated random mutations')
+    os.makedirs(args.out_dir, exist_ok=True)
+    output_paths = []
+
+    for n in range(args.num_sim):
+        output_filename = f'{args.out_tag}.{n + 1:05d}.vcf'
+        output_path = os.path.join(args.out_dir, output_filename)
+        output_paths.append(output_path)
+
+    if args.num_proc == 1:
+        make_rand_mut_files(output_paths, fam_to_label_cnt, fam_to_sample_set, fasta_path_dict,
+                            chrom_probs, chrom_sizes)
+    else:
+        output_paths_subs = div_list(output_paths, args.num_proc)
+        pool = mp.Pool(args.num_proc)
+        pool.map(
+            partial(make_rand_mut_files,
+                    fam_to_label_cnt=fam_to_label_cnt,
+                    fam_to_sample_set=fam_to_sample_set,
+                    fasta_path_dict=fasta_path_dict,
+                    chrom_probs=chrom_probs,
+                    chrom_sizes=chrom_sizes,
+                    ),
+            output_paths_subs
+        )
+        pool.close()
+        pool.join()
+
+    print(f'[{get_curr_time()}, Progress] Done')
 
 
 def parse_vcf(vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
