@@ -24,8 +24,10 @@ def main():
     with open(vep_custom_conf_path) as vep_custom_conf:
         custom_filename_dict = yaml.safe_load(vep_custom_conf)
 
-        for custom_annot in custom_filename_dict:
-            custom_file_path_dict[custom_annot] = os.path.join(vep_custom_data_dir, custom_filename_dict[custom_annot])
+        if custom_filename_dict is not None:
+            for custom_annot in custom_filename_dict:
+                custom_file_path_dict[custom_annot] = \
+                    os.path.join(vep_custom_data_dir, custom_filename_dict[custom_annot])
 
     # Parse arguments
     parser = create_arg_parser()
