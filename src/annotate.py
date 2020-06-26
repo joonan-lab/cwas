@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Script for genomic and functional annotations using Variant Effect Predictor (VEP).
+Script for genomic and functional annotations using Variant Effect Predictor (VEP) and custom BED tracks
 """
 
 import argparse
