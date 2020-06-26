@@ -60,41 +60,41 @@ simulate:
   chrX_masked: data/simulate/chrom/chrX_masked.fa
   chrY_masked: data/simulate/chrom/chrY_masked.fa
 
-# For running VEP (Variant Effector Predictor)
-vep:
-  data_dir: data/vep
-  gnomADg: data/vep/gnomad.genomes.r2.0.1.sites.GRCh38.noVEP.vcf.gz
-  phastCons46wayVt: data/vep/phastCons46way.vertebrate.hg19ToHg38.bw
-  phyloP46wayVt: data/vep/phyloP46way.vertebrate.hg19ToHg38.bw
-  ChmmState15_E1_Brain: data/vep/ChmmState15.E1.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E2_Brain: data/vep/ChmmState15.E2.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E3_Brain: data/vep/ChmmState15.E3.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E4_Brain: data/vep/ChmmState15.E4.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E5_Brain: data/vep/ChmmState15.E5.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E6_Brain: data/vep/ChmmState15.E6.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E7_Brain: data/vep/ChmmState15.E7.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E8_Brain: data/vep/ChmmState15.E8.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E9_Brain: data/vep/ChmmState15.E9.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E10_Brain: data/vep/ChmmState15.E10.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E11_Brain: data/vep/ChmmState15.E11.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E12_Brain: data/vep/ChmmState15.E12.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E13_Brain: data/vep/ChmmState15.E13.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E14_Brain: data/vep/ChmmState15.E14.Brain.hg19to38.sorted.bed.gz
-  ChmmState15_E15_Brain: data/vep/ChmmState15.E15.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_DNaseFDR001_Brain: data/vep/EpigenomeByGroup4.DNaseFDR001.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_H3K27ac_Brain: data/vep/EpigenomeByGroup4.H3K27ac.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_H3K27me3_Brain: data/vep/EpigenomeByGroup4.H3K27me3.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_H3K36me3_Brain: data/vep/EpigenomeByGroup4.H3K36me3.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_H3K4me1_Brain: data/vep/EpigenomeByGroup4.H3K4me1.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_H3K4me3_Brain: data/vep/EpigenomeByGroup4.H3K4me3.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_H3K9ac_Brain: data/vep/EpigenomeByGroup4.H3K9ac.Brain.hg19to38.sorted.bed.gz
-  EpigenomeByGroup4_H3K9me3_Brain: data/vep/EpigenomeByGroup4.H3K9me3.Brain.hg19to38.sorted.bed.gz
-  H3K27ac_160407_multiInt_filtBy2_merge_3col: data/vep/H3K27ac.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz
-  atac_norep_160407_multiInt_filtBy2_merge_3col: data/vep/atac.norep.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz
-  HARs_Doan2016: data/vep/hg19_HARs_Doan2016.hg19to38.sorted.bed.gz
-  fantom5_enhancer_robust: data/vep/fantom5.enhancer.robust.hg19to38.sorted.bed.gz
-  EncodeDNaseClustersUCSC: data/vep/bamo_EncodeDNaseClustersUCSC.hg19to38.sorted.bed.gz
-  EncodeTfbsClusterV2UCSC: data/vep/bamo_EncodeTfbsClusterV2UCSC.hg19to38.sorted.bed.gz
-  vistaEnhancerUCSC: data/vep/bamo_vistaEnhancerUCSC.hg19to38.sorted.bed.gz
-  Yale_H3K27ac_CBC: data/vep/PEC_ASD_Yale-UCSF_CBC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.bed.gz
-  Yale_H3K27ac_DFC: data/vep/PEC_ASD_Yale-UCSF_DFC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.bed.gz
+# For annotating variants
+annotate:
+  data_dir: data/annotate
+  gnomADg: data/annotate/gnomad.genomes.r2.0.1.sites.GRCh38.noVEP.vcf.gz
+  phastCons46wayVt: data/annotate/phastCons46way.vertebrate.hg19ToHg38.bw
+  phyloP46wayVt: data/annotate/phyloP46way.vertebrate.hg19ToHg38.bw
+  ChmmState15_E1_Brain: data/annotate/ChmmState15.E1.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E2_Brain: data/annotate/ChmmState15.E2.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E3_Brain: data/annotate/ChmmState15.E3.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E4_Brain: data/annotate/ChmmState15.E4.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E5_Brain: data/annotate/ChmmState15.E5.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E6_Brain: data/annotate/ChmmState15.E6.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E7_Brain: data/annotate/ChmmState15.E7.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E8_Brain: data/annotate/ChmmState15.E8.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E9_Brain: data/annotate/ChmmState15.E9.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E10_Brain: data/annotate/ChmmState15.E10.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E11_Brain: data/annotate/ChmmState15.E11.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E12_Brain: data/annotate/ChmmState15.E12.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E13_Brain: data/annotate/ChmmState15.E13.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E14_Brain: data/annotate/ChmmState15.E14.Brain.hg19to38.sorted.bed.gz
+  ChmmState15_E15_Brain: data/annotate/ChmmState15.E15.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_DNaseFDR001_Brain: data/annotate/EpigenomeByGroup4.DNaseFDR001.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_H3K27ac_Brain: data/annotate/EpigenomeByGroup4.H3K27ac.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_H3K27me3_Brain: data/annotate/EpigenomeByGroup4.H3K27me3.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_H3K36me3_Brain: data/annotate/EpigenomeByGroup4.H3K36me3.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_H3K4me1_Brain: data/annotate/EpigenomeByGroup4.H3K4me1.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_H3K4me3_Brain: data/annotate/EpigenomeByGroup4.H3K4me3.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_H3K9ac_Brain: data/annotate/EpigenomeByGroup4.H3K9ac.Brain.hg19to38.sorted.bed.gz
+  EpigenomeByGroup4_H3K9me3_Brain: data/annotate/EpigenomeByGroup4.H3K9me3.Brain.hg19to38.sorted.bed.gz
+  H3K27ac_160407_multiInt_filtBy2_merge_3col: data/annotate/H3K27ac.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz
+  atac_norep_160407_multiInt_filtBy2_merge_3col: data/annotate/atac.norep.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz
+  HARs_Doan2016: data/annotate/hg19_HARs_Doan2016.hg19to38.sorted.bed.gz
+  fantom5_enhancer_robust: data/annotate/fantom5.enhancer.robust.hg19to38.sorted.bed.gz
+  EncodeDNaseClustersUCSC: data/annotate/bamo_EncodeDNaseClustersUCSC.hg19to38.sorted.bed.gz
+  EncodeTfbsClusterV2UCSC: data/annotate/bamo_EncodeTfbsClusterV2UCSC.hg19to38.sorted.bed.gz
+  vistaEnhancerUCSC: data/annotate/bamo_vistaEnhancerUCSC.hg19to38.sorted.bed.gz
+  Yale_H3K27ac_CBC: data/annotate/PEC_ASD_Yale-UCSF_CBC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.bed.gz
+  Yale_H3K27ac_DFC: data/annotate/PEC_ASD_Yale-UCSF_DFC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.bed.gz

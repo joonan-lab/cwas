@@ -16,18 +16,15 @@ def main():
     # Paths to essential configuration files
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
-    vep_custom_data_dir = os.path.join(project_dir, 'data', 'vep')
-    vep_custom_conf_path = os.path.join(project_dir, 'conf', 'vep_custom_annotations.yaml')
-    custom_file_path_dict = {}
+    filepath_conf_path = os.path.join(project_dir, 'conf', 'filepaths.yaml')
+    annot_path_dict = {}
 
     # Parse the configuration file
-    with open(vep_custom_conf_path) as vep_custom_conf:
-        custom_filename_dict = yaml.safe_load(vep_custom_conf)
+    with open(filepath_conf_path) as filepath_conf:
+        filepath_dict = yaml.safe_load(filepath_conf)['annotate']
 
-        if custom_filename_dict is not None:
-            for custom_annot in custom_filename_dict:
-                custom_file_path_dict[custom_annot] = \
-                    os.path.join(vep_custom_data_dir, custom_filename_dict[custom_annot])
+        for annot_key in filepath_dict:
+            annot_path_dict[annot_key] = os.path.join(project_dir, filepath_dict[annot_key])
 
     # Parse arguments
     parser = create_arg_parser()
@@ -47,7 +44,7 @@ def main():
         for chr_vcf_file_path in chr_vcf_file_paths:
             chr_vep_vcf_path = chr_vcf_file_path.replace('.vcf', '.vep.vcf')
             chr_vep_vcf_paths.append(chr_vep_vcf_path)
-            cmd = make_vep_cmd(chr_vcf_file_path, chr_vep_vcf_path, custom_file_path_dict)
+            cmd = make_vep_cmd(chr_vcf_file_path, chr_vep_vcf_path, annot_path_dict)
             cmds.append(cmd)
 
         # Run VEP in parallel
@@ -69,7 +66,7 @@ def main():
             os.remove(chr_vep_vcf_path)
     else:
         print(f'[{get_curr_time()}, Progress] Run VEP')
-        cmd = make_vep_cmd(args.in_vcf_path, args.out_vcf_path, custom_file_path_dict)
+        cmd = make_vep_cmd(args.in_vcf_path, args.out_vcf_path, annot_path_dict)
         os.system(cmd)
 
     print(f'[{get_curr_time()}, Progress] Done')
@@ -185,7 +182,7 @@ def make_vep_cmd(in_vcf_path: str, out_vcf_path: str, custom_file_path_dict: dic
                 '--custom',
                 ','.join([custom_file_path, custom_annot, 'bigwig', 'overlap', '0']),
             ]
-        else:  # BED files (.bed or .bed.gz)
+        elif custom_file_path.endswith('bed') or custom_file_path.endswith('bed.gz'):
             cmd_args += [
                 '--custom',
                 ','.join([custom_file_path, custom_annot, 'bed', 'overlap', '0']),
