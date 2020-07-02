@@ -16,7 +16,7 @@ def main():
     # Paths to essential configuration files
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
-    filepath_conf_path = os.path.join(project_dir, 'conf', 'filepaths.yaml')
+    filepath_conf_path = os.path.join(project_dir, 'conf', 'download_filepaths.yaml')
     annot_path_dict = {}
 
     # Parse the configuration file

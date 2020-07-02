@@ -25,7 +25,7 @@ def main():
     # Paths for this script
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
-    filepath_conf_path = os.path.join(project_dir, 'conf', 'filepaths.yaml')
+    filepath_conf_path = os.path.join(project_dir, 'conf', 'download_filepaths.yaml')
 
     # Parse the configuration files
     with open(filepath_conf_path) as filepath_conf_file:

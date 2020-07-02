@@ -2,6 +2,7 @@
 # A root of these paths is a directory of this project. Please specify this in your script.
 # e.g. The absolute path of the data: {Project home directory}/{Following path}
 # All the paths are compatible with UNIX.
+# 'data_dir' is used to make a directory for these data automatically.
 
 # For simulating mutations (simulate.py)
 simulate:
