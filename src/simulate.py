@@ -26,26 +26,17 @@ def main():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
     filepath_conf_path = os.path.join(project_dir, 'conf', 'filepaths.yaml')
-    fileurl_conf_path = os.path.join(project_dir, 'conf', 'fileurls.yaml')
 
     # Parse the configuration files
     with open(filepath_conf_path) as filepath_conf_file:
         filepath_conf = yaml.safe_load(filepath_conf_file)['simulate']
         filepath_dict = {path_key: os.path.join(project_dir, filepath_conf[path_key]) for path_key in filepath_conf}
 
-    with open(fileurl_conf_path) as fileurl_conf_file:
-        fileurl_dict = yaml.safe_load(fileurl_conf_file)['simulation']
-
     # Parse arguments
     parser = create_arg_parser()
     args = parser.parse_args()
 
-    if args.mode == 'download':
-        print(f'[{get_curr_time()}, Progress] Download essential data')
-        download_data(filepath_dict, fileurl_dict)
-        print(f'[{get_curr_time()}, Progress] Done')
-
-    elif args.mode == 'prepare':  # Process the downloaded data
+    if args.mode == 'prepare':  # Process the downloaded data
         print(f'[{get_curr_time()}, Progress] Prepare data in order to generate random mutations')
         prepare_data(filepath_dict)
         print(f'[{get_curr_time()}, Progress] Done')
@@ -63,10 +54,6 @@ def create_arg_parser() -> argparse.ArgumentParser:
     # Create a top-level argument parser
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(description='Execution mode', dest='mode')
-
-    # Create a parser for downloading data
-    subparsers.add_parser('download', description='Download data essential for the simulation',
-                          help='Download data (arg "download -h" for usage)')
 
     # Create a parser for processing the downloaded data as a preparation step
     subparsers.add_parser('prepare', description='Process the downloaded data for preparation',
@@ -114,23 +101,6 @@ def check_args_validity(args: argparse.Namespace):
     if not args.num_proc < 1 and not args.num_proc > mp.cpu_count():
         raise ValueError(f'--num_proc got an invalid value ({args.num_proc}). '
                          f'It must be in the range [1, {mp.cpu_count()}].')
-
-
-def download_data(filepath_dict: dict, fileurl_dict: dict):
-    """ Download essential data for this script using wget commands"""
-
-    data_dir = filepath_dict['data_dir']
-    os.makedirs(data_dir, exist_ok=True)
-
-    for data_key in fileurl_dict:
-        data_dest_path = filepath_dict[data_key]
-
-        if os.path.isfile(data_dest_path):
-            print(f'[INFO] "{data_dest_path}" already exists.')
-        else:
-            cmd = f'wget -O {data_dest_path} {fileurl_dict[data_key]}'
-            print(f'[CMD] {cmd}')
-            os.system(cmd)
 
 
 def prepare_data(filepath_dict: dict):
