@@ -23,7 +23,7 @@ def main():
     # Paths for this script
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
-    filepath_conf_path = os.path.join(project_dir, 'conf', 'download_filepaths.yaml')
+    filepath_conf_path = os.path.join(project_dir, 'conf', 'prepare_filepaths.yaml')
 
     # Parse the configuration files
     with open(filepath_conf_path) as filepath_conf_file:
@@ -131,7 +131,7 @@ def simulate_mutation(filepath_dict: dict, args: argparse.Namespace):
     fasta_path_dict = {}
 
     for chrom in unq_chroms:
-        fasta_file_path = filepath_dict[f'{chrom}_masked']
+        fasta_file_path = filepath_dict[f'{chrom}']
         fasta_path_dict[chrom] = fasta_file_path
 
     # Make files listing random mutations

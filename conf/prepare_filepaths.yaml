@@ -1,0 +1,43 @@
+# This configuration file lists paths of data processed or extracted from downloaded files.
+# Each of files preprocessed from previously downloaded files has a key hierarchy same with the corresponded file in 'download_filepaths.yaml'.
+# A root of these paths is a directory of this project. Please specify this in your script.
+# e.g. The absolute path of the data: {Project home directory}/{Following path}
+# All the paths are compatible with UNIX.
+# 'data_dir' is used to make a directory for these data automatically.
+
+simulate:
+  data_dir: data/simulate/chrom
+  gap: data/simulate/sort_gap.txt.gz
+  mask_region: data/simulate/mask_region.bed.gz
+  chrom_size: data/simulate/chrom_size_hg38.txt
+  chr1: data/simulate/chrom/chr1_masked.fa
+  chr2: data/simulate/chrom/chr2_masked.fa
+  chr3: data/simulate/chrom/chr3_masked.fa
+  chr4: data/simulate/chrom/chr4_masked.fa
+  chr5: data/simulate/chrom/chr5_masked.fa
+  chr6: data/simulate/chrom/chr6_masked.fa
+  chr7: data/simulate/chrom/chr7_masked.fa
+  chr8: data/simulate/chrom/chr8_masked.fa
+  chr9: data/simulate/chrom/chr9_masked.fa
+  chr10: data/simulate/chrom/chr10_masked.fa
+  chr11: data/simulate/chrom/chr11_masked.fa
+  chr12: data/simulate/chrom/chr12_masked.fa
+  chr13: data/simulate/chrom/chr13_masked.fa
+  chr14: data/simulate/chrom/chr14_masked.fa
+  chr15: data/simulate/chrom/chr15_masked.fa
+  chr16: data/simulate/chrom/chr16_masked.fa
+  chr17: data/simulate/chrom/chr17_masked.fa
+  chr18: data/simulate/chrom/chr18_masked.fa
+  chr19: data/simulate/chrom/chr19_masked.fa
+  chr20: data/simulate/chrom/chr20_masked.fa
+  chr21: data/simulate/chrom/chr21_masked.fa
+  chr22: data/simulate/chrom/chr22_masked.fa
+  chrX: data/simulate/chrom/chrX_masked.fa
+  chrY: data/simulate/chrom/chrY_masked.fa
+
+annotate:
+  data_dir: data/annotate
+  phastCons46wayVt: data/annotate/phastCons46way.vertebrate.hg19ToHg38.bw
+  phyloP46wayVt: data/annotate/phyloP46way.vertebrate.hg19ToHg38.bw
+  Yale_H3K27ac_CBC: data/annotate/PEC_ASD_Yale-UCSF_CBC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.filt.bed.gz
+  Yale_H3K27ac_DFC: data/annotate/PEC_ASD_Yale-UCSF_DFC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.filt.bed.gz
