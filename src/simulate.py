@@ -7,10 +7,8 @@ For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
 """
 import argparse
-import gzip
 import multiprocessing as mp
 import os
-from collections import defaultdict
 from functools import partial
 
 import numpy as np
@@ -35,49 +33,34 @@ def main():
     # Parse arguments
     parser = create_arg_parser()
     args = parser.parse_args()
+    print_args(args)
+    check_args_validity(args)
 
-    if args.mode == 'prepare':  # Process the downloaded data
-        print(f'[{get_curr_time()}, Progress] Prepare data in order to generate random mutations')
-        prepare_data(filepath_dict)
-        print(f'[{get_curr_time()}, Progress] Done')
-
-    elif args.mode == 'mutation':  # Generate random mutations
-        print(f'[{get_curr_time()}, Progress] Get random mutations by simulating generation of mutations')
-        print_args(args)
-        check_args_validity(args)
-        simulate_mutation(filepath_dict, args)
-        print(f'[{get_curr_time()}, Progress] Done')
+    print(f'[{get_curr_time()}, Progress] Get random mutations by simulating generation of mutations')
+    simulate_mutation(filepath_dict, args)
+    print(f'[{get_curr_time()}, Progress] Done')
 
 
 def create_arg_parser() -> argparse.ArgumentParser:
     """ Create an argument parser for this script and return it """
     # Create a top-level argument parser
     parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(description='Execution mode', dest='mode')
-
-    # Create a parser for processing the downloaded data as a preparation step
-    subparsers.add_parser('prepare', description='Process the downloaded data for preparation',
-                          help='Process the downloaded data (arg "prepare -h" for usage')
-
-    # Create a parser for generating random mutations
-    parser_mut = subparsers.add_parser('mutation', description='Generate random mutations',
-                                       help='Generate random mutations (arg "mutation -h" for usage')
-    parser_mut.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
-                            help='Input VCF file which is referred to generate random mutations')
-    parser_mut.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
-                            help='File listing sample IDs with their families and sample_types (case or ctrl)')
-    parser_mut.add_argument('-o', '--out_dir', dest='out_dir', required=False, type=str,
-                            help='Directory of outputs that lists random mutations. '
-                                 'The number of outputs will be the same with the number of simulations. '
-                                 '(Default: ./random-mutation)', default='random-mutation')
-    parser_mut.add_argument('-t', '--out_tag', dest='out_tag', required=False, type=str,
-                            help='Prefix of output files. Each output file name will start with this tag. '
-                                 '(Default: rand_mut)', default='rand_mut')
-    parser_mut.add_argument('-n', '--num_sim', dest='num_sim', required=False, type=int,
-                            help='Number of simulations to generate random mutations (Default: 1)', default=1)
-    parser_mut.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                            help='Number of processes for this script (only necessary for split VCF files) '
-                                 '(Default: 1)', default=1)
+    parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str,
+                        help='Input VCF file which is referred to generate random mutations')
+    parser.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                        help='File listing sample IDs with their families and sample_types (case or ctrl)')
+    parser.add_argument('-o', '--out_dir', dest='out_dir', required=False, type=str,
+                        help='Directory of outputs that lists random mutations. '
+                             'The number of outputs will be the same with the number of simulations. '
+                             '(Default: ./random-mutation)', default='random-mutation')
+    parser.add_argument('-t', '--out_tag', dest='out_tag', required=False, type=str,
+                        help='Prefix of output files. Each output file name will start with this tag. '
+                             '(Default: rand_mut)', default='rand_mut')
+    parser.add_argument('-n', '--num_sim', dest='num_sim', required=False, type=int,
+                        help='Number of simulations to generate random mutations (Default: 1)', default=1)
+    parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                        help='Number of processes for this script (only necessary for split VCF files) '
+                             '(Default: 1)', default=1)
 
     return parser
 
@@ -101,86 +84,6 @@ def check_args_validity(args: argparse.Namespace):
     if not args.num_proc < 1 and not args.num_proc > mp.cpu_count():
         raise ValueError(f'--num_proc got an invalid value ({args.num_proc}). '
                          f'It must be in the range [1, {mp.cpu_count()}].')
-
-
-def prepare_data(filepath_dict: dict):
-    make_mask_region_bed(filepath_dict)
-    mask_fasta(filepath_dict)
-    make_chrom_size_txt(filepath_dict)
-
-
-def make_mask_region_bed(filepath_dict: dict):
-    """ Make a bed file listing masked regions by merging gap and LCR regions """
-    gap_path = filepath_dict['gap']
-    lcr_path = filepath_dict['lcr']
-    sort_gap_path = filepath_dict['sort_gap']
-    mask_region_path = filepath_dict['mask_region']
-
-    if not os.path.isfile(sort_gap_path):
-        cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
-        print(f'[{get_curr_time()}, Progress] Sort the gap regions')
-        os.system(cmd)
-
-    if not os.path.isfile(mask_region_path):
-        cmd = f'zcat {sort_gap_path} {lcr_path} | sortBed -i stdin | gzip > {mask_region_path}'
-        print(f'[{get_curr_time()}, Progress] Merge the gap and LCR regions')
-        os.system(cmd)
-
-
-def mask_fasta(filepath_dict: dict):
-    """ Mask regions on the genome files (FASTA files) and save results as new FASTA files """
-    mask_region_path = filepath_dict['mask_region']
-    chroms = [f'chr{n}' for n in range(1, 23)]
-
-    for chrom in chroms:
-        in_fa_gz_path = filepath_dict[chrom]
-        in_fa_path = in_fa_gz_path.replace('.gz', '')
-        out_fa_path = filepath_dict[f'{chrom}_masked']
-
-        if not os.path.isfile(out_fa_path):
-            print(f'[{get_curr_time()}, Progress] Mask the {chrom} fasta file and index the output')
-            cmd = f'gunzip {in_fa_gz_path};'
-            cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
-            cmd += f'samtools faidx {out_fa_path};'
-            os.system(cmd)
-
-
-def make_chrom_size_txt(filepath_dict: dict):
-    """ Make a txt file listing total size, mapped, AT/GC, and effective sizes of each chromosome """
-    chrom_size_path = filepath_dict['chrom_size']
-    chroms = [f'chr{n}' for n in range(1, 23)]
-
-    if not os.path.isfile(chrom_size_path):
-        print(f'[{get_curr_time()}, Progress] Make a file listing total, mapped, AT/GC, and effective sizes '
-              f'of each chromosome')
-
-        with open(chrom_size_path, 'w') as outfile:
-            print('Chrom', 'Size', 'Mapped', 'AT', 'GC', 'Effective', sep='\t', file=outfile)
-
-            for chrom in chroms:
-                print(f'[{get_curr_time()}, Progress] {chrom}')
-                mask_fa_path = filepath_dict[f'{chrom}_masked']
-                fa_idx_path = mask_fa_path.replace('.gz', '.fai')
-
-                with open(fa_idx_path) as fa_idx_file:
-                    line = fa_idx_file.read()
-                    fields = line.split('\t')
-                    chrom_size = int(fields[1])
-                    base_start_idx = int(fields[2])
-
-                with gzip.open(mask_fa_path, 'rt') as mask_fa_file:
-                    base_cnt_dict = defaultdict(int)
-                    mask_fa_file.seek(base_start_idx)
-                    seq = mask_fa_file.read()
-
-                    for base in seq:
-                        base_cnt_dict[base.upper()] += 1
-
-                map_size = chrom_size - base_cnt_dict['N']
-                at_size = base_cnt_dict['A'] + base_cnt_dict['T']
-                gc_size = base_cnt_dict['G'] + base_cnt_dict['C']
-                effect_size = (at_size / 1.75) + gc_size
-                print(chrom, chrom_size, map_size, at_size, gc_size, effect_size, sep='\t', file=outfile)
 
 
 def simulate_mutation(filepath_dict: dict, args: argparse.Namespace):
@@ -259,8 +162,6 @@ def simulate_mutation(filepath_dict: dict, args: argparse.Namespace):
         )
         pool.close()
         pool.join()
-
-    print(f'[{get_curr_time()}, Progress] Done')
 
 
 def parse_vcf(vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
