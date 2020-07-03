@@ -1,5 +1,5 @@
 data/
-.gitignore
 .idea/
 explorer/
 results/
+src/__pycache__/
