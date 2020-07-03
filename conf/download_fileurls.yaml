@@ -28,3 +28,6 @@ simulate:
   chr22: http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chr22.fa.gz
   chrX: http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chrX.fa.gz
   chrY: http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chrY.fa.gz
+
+annotation:
+  chrom_size: http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/hg38.chrom.sizes

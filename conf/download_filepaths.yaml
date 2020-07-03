@@ -37,6 +37,7 @@ simulate:
 # For annotating variants
 annotate:
   data_dir: data/annotate
+  chrom_size: data/annotate/hg38.chrom.sizes
   gnomADg: data/annotate/gnomad.genomes.r2.0.1.sites.GRCh38.noVEP.vcf.gz
   phastCons46wayVt: data/annotate/phastCons46way.vertebrate.hg19ToHg38.bw
   phyloP46wayVt: data/annotate/phyloP46way.vertebrate.hg19ToHg38.bw
