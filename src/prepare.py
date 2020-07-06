@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
 Script for data preparation for category-wide association study (CWAS)
+#TODO: Multiprocessing, File existence check
 """
 import argparse
 import gzip
@@ -56,7 +57,7 @@ def main():
             filt_yale_bed(ori_filepath_dict[file_key], target_filepath_dict[file_key])
             bgzip_tabix(target_filepath_dict[file_key])
 
-        # Make BED files for conservation from the BigWig files
+        # Make BED files for conservation scores from the BigWig files
         chrom_size_path = ori_filepath_dict['chrom_size']
         chrom_size_dict = {}
 
@@ -92,14 +93,20 @@ def make_mask_region_bed(ori_filepath_dict: dict, target_filepath_dict: dict):
     sort_gap_path = target_filepath_dict['gap']
     mask_region_path = target_filepath_dict['mask_region']
 
-    if not os.path.isfile(sort_gap_path):
+    if os.path.isfile(sort_gap_path):
+        print(f'[{get_curr_time()}, Progress] There is already a list of sorted gap regions so skip this step')
+    else:
         cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
         print(f'[{get_curr_time()}, Progress] Sort the gap regions')
+        print(f'[{get_curr_time()} CMD] {cmd}')
         os.system(cmd)
 
-    if not os.path.isfile(mask_region_path):
+    if os.path.isfile(mask_region_path):
+        print(f'[{get_curr_time()}, Progress] Masked regions have already made so skip this step')
+    else:
         cmd = f'zcat {sort_gap_path} {lcr_path} | sortBed -i stdin | gzip > {mask_region_path}'
-        print(f'[{get_curr_time()}, Progress] Merge the gap and LCR regions')
+        print(f'[{get_curr_time()}, Progress] Make masked regions by merging the gap and LCR regions')
+        print(f'[{get_curr_time()} CMD] {cmd}')
         os.system(cmd)
 
 
@@ -113,11 +120,14 @@ def mask_fasta(ori_filepath_dict: dict, target_filepath_dict: dict):
         in_fa_path = in_fa_gz_path.replace('.gz', '')
         out_fa_path = target_filepath_dict[chrom]
 
-        if not os.path.isfile(out_fa_path):
+        if os.path.isfile(out_fa_path):
+            print(f'[{get_curr_time()}, Progress] Masked fasta file for {chrom} already exists so skip this step')
+        else:
             print(f'[{get_curr_time()}, Progress] Mask the {chrom} fasta file and index the output')
             cmd = f'gunzip {in_fa_gz_path};'
             cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
             cmd += f'samtools faidx {out_fa_path};'
+            print(f'[{get_curr_time()} CMD] {cmd}')
             os.system(cmd)
 
 
@@ -126,7 +136,10 @@ def make_chrom_size_txt(target_filepath_dict: dict):
     chrom_size_path = target_filepath_dict['chrom_size']
     chroms = [f'chr{n}' for n in range(1, 23)]
 
-    if not os.path.isfile(chrom_size_path):
+    if os.path.isfile(chrom_size_path):
+        print(f'[{get_curr_time()}, Progress] A file listing total, mapped, AT/GC, and effective sizes already exists '
+              f'so skip this step')
+    else:
         print(f'[{get_curr_time()}, Progress] Make a file listing total, mapped, AT/GC, and effective sizes '
               f'of each chromosome')
 
