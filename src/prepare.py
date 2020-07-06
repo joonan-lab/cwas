@@ -23,16 +23,26 @@ def main():
     target_file_conf_path = os.path.join(project_dir, 'conf', 'prepare_filepaths.yaml')  # Files that will be made
 
     # Parse the configuration files
-    with open(ori_file_conf_path) as ori_file_conf_file, open(target_file_conf_path) as target_file_conf_file:
-        ori_filepath_dict = yaml.safe_load(ori_file_conf_file)
-        target_filepath_dict = yaml.safe_load(target_file_conf_file)
+    ori_filepath_dict = {}
+    target_filepath_dict = {}
 
-        for file_group in target_filepath_dict:
-            for file_key in target_filepath_dict[file_group]:
-                ori_filepath_dict[file_group][file_group] = \
-                    os.path.join(project_dir, ori_filepath_dict[file_group][file_key])
-                target_filepath_dict[file_group][file_group] = \
-                    os.path.join(project_dir, target_filepath_dict[file_group][file_key])
+    with open(ori_file_conf_path) as ori_file_conf_file, open(target_file_conf_path) as target_file_conf_file:
+        ori_filepath_conf = yaml.safe_load(ori_file_conf_file)
+        target_filepath_conf = yaml.safe_load(target_file_conf_file)
+
+        for file_group in ori_filepath_conf:
+            ori_filepath_dict[file_group] = {}
+
+            for file_key in ori_filepath_conf[file_group]:
+                ori_filepath_dict[file_group][file_key] = \
+                    os.path.join(project_dir, ori_filepath_conf[file_group][file_key])
+
+        for file_group in target_filepath_conf:
+            target_filepath_dict[file_group] = {}
+
+            for file_key in target_filepath_conf[file_group]:
+                target_filepath_dict[file_group][file_key] = \
+                    os.path.join(project_dir, target_filepath_conf[file_group][file_key])
 
     # Parse arguments
     parser = create_arg_parser()
@@ -207,7 +217,7 @@ def make_bed_from_bw(in_bw_path: str, out_bed_path: str, cutoff: float, chrom_si
     chroms = [f'chr{n}' for n in range(1, 23)]
     bin_size = 1000000  # Size of chromosomal bins
 
-    if os.path.isfile(out_bed_path):
+    if os.path.isfile(out_bed_path) or os.path.isfile(out_bed_path + '.gz'):
         print(f'[{get_curr_time()}, Progress] A BED file for "{in_bw_path}" already exists so skip this step')
     else:
         print(f'[{get_curr_time()}, Progress] Make a BED file for "{in_bw_path}"')
