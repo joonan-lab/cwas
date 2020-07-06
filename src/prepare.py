@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Script for data preparation for category-wide association study (CWAS)
-#TODO: Multiprocessing, File existence check
+#TODO: Multiprocessing
 """
 import argparse
 import gzip
@@ -98,16 +98,14 @@ def make_mask_region_bed(ori_filepath_dict: dict, target_filepath_dict: dict):
     else:
         cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
         print(f'[{get_curr_time()}, Progress] Sort the gap regions')
-        print(f'[{get_curr_time()} CMD] {cmd}')
-        os.system(cmd)
+        execute_cmd(cmd)
 
     if os.path.isfile(mask_region_path):
         print(f'[{get_curr_time()}, Progress] Masked regions have already made so skip this step')
     else:
         cmd = f'zcat {sort_gap_path} {lcr_path} | sortBed -i stdin | gzip > {mask_region_path}'
         print(f'[{get_curr_time()}, Progress] Make masked regions by merging the gap and LCR regions')
-        print(f'[{get_curr_time()} CMD] {cmd}')
-        os.system(cmd)
+        execute_cmd(cmd)
 
 
 def mask_fasta(ori_filepath_dict: dict, target_filepath_dict: dict):
@@ -127,8 +125,7 @@ def mask_fasta(ori_filepath_dict: dict, target_filepath_dict: dict):
             cmd = f'gunzip {in_fa_gz_path};'
             cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
             cmd += f'samtools faidx {out_fa_path};'
-            print(f'[{get_curr_time()} CMD] {cmd}')
-            os.system(cmd)
+            execute_cmd(cmd)
 
 
 def make_chrom_size_txt(target_filepath_dict: dict):
@@ -142,7 +139,6 @@ def make_chrom_size_txt(target_filepath_dict: dict):
     else:
         print(f'[{get_curr_time()}, Progress] Make a file listing total, mapped, AT/GC, and effective sizes '
               f'of each chromosome')
-
         with open(chrom_size_path, 'w') as outfile:
             print('Chrom', 'Size', 'Mapped', 'AT', 'GC', 'Effective', sep='\t', file=outfile)
 
@@ -199,11 +195,7 @@ def bgzip_tabix(bed_path: str):
         print(f'[{get_curr_time()}, Progress] bgzip and tabix for "{bed_path}"')
         cmd = f'bgzip {bed_path};'
         cmd += f'tabix {bed_gz_path};'
-        print(f'[{get_curr_time()}, CMD] {cmd}')
-        exit_val = os.system(cmd)
-
-        if exit_val != 0:
-            print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
+        execute_cmd(cmd)
 
 
 def make_bed_from_bw(in_bw_path: str, out_bed_path: str, cutoff: float, chrom_size_dict: dict):
@@ -265,6 +257,14 @@ def make_bins(bin_size: int, total_size: int) -> list:
         bins.append((bin_cnt * bin_size, bin_cnt * bin_size + remain))
 
     return bins
+
+
+def execute_cmd(cmd: str):
+    print(f'[{get_curr_time()}, CMD] {cmd}')
+    exit_val = os.system(cmd)
+
+    if exit_val != 0:
+        print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
 
 
 if __name__ == '__main__':
