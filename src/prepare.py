@@ -83,6 +83,8 @@ def create_arg_parser() -> argparse.ArgumentParser:
     subparsers = parser.add_subparsers(description='Step for which data is prepared', dest='step')
     subparsers.add_parser('simulate', description='Prepare data to simulate random mutations',
                           help='Prepare data to simulate random mutations (arg "simulate -h" for usage)')
+    subparsers.add_parser('annotate', description='Prepare data to annotate variants',
+                          help='Prepare data to annotate variants (arg "annotate -h" for usage)')
     return parser
 
 
