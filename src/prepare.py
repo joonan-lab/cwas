@@ -176,23 +176,34 @@ def filt_yale_bed(in_bed_path: str, out_bed_path: str):
     """ Filter entries of a BED file from Yale (PsychENCODE Consortium) and
     write a BED file listing the filtered entries.
     """
-    with pysam.TabixFile(in_bed_path) as in_bed_file, open(out_bed_path, 'w') as out_bed_file:
-        for bed_fields in in_bed_file.fetch(parser=pysam.asTuple()):
-            bed_val = max([int(x.split('_')[0]) for x in bed_fields[3].split('&')])
+    if os.path.isfile(out_bed_path) or os.path.isfile(out_bed_path + '.gz'):
+        print(f'[{get_curr_time()}, Progress] Filtered bed file "{out_bed_path}" already exists '
+              f'so skip this filtering step')
+    else:
+        print(f'[{get_curr_time()}, Progress] Filter the bed file "{in_bed_path}"')
+        with pysam.TabixFile(in_bed_path) as in_bed_file, open(out_bed_path, 'w') as out_bed_file:
+            for bed_fields in in_bed_file.fetch(parser=pysam.asTuple()):
+                bed_val = max([int(x.split('_')[0]) for x in bed_fields[3].split('&')])
 
-            if bed_val > 1:
-                print(*bed_fields, sep='\t', file=out_bed_file)
+                if bed_val > 1:
+                    print(*bed_fields, sep='\t', file=out_bed_file)
 
 
 def bgzip_tabix(bed_path: str):
     """ Block compression (bgzip) and make an index (tabix) """
-    cmd = f'bgzip {bed_path};'
-    cmd += f'tabix {bed_path + ".gz"};'
-    print(f'[{get_curr_time()}, CMD] {cmd}')
-    exit_val = os.system(cmd)
+    bed_gz_path = bed_path + '.gz'
 
-    if exit_val != 0:
-        print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
+    if os.path.isfile(bed_gz_path):
+        print(f'[{get_curr_time()}, Progress] A bgzipped file for "{bed_path}" already exists so skip this step')
+    else:
+        print(f'[{get_curr_time()}, Progress] bgzip and tabix for "{bed_path}"')
+        cmd = f'bgzip {bed_path};'
+        cmd += f'tabix {bed_gz_path};'
+        print(f'[{get_curr_time()}, CMD] {cmd}')
+        exit_val = os.system(cmd)
+
+        if exit_val != 0:
+            print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
 
 
 def make_bed_from_bw(in_bw_path: str, out_bed_path: str, cutoff: float, chrom_size_dict: dict):
@@ -202,12 +213,16 @@ def make_bed_from_bw(in_bw_path: str, out_bed_path: str, cutoff: float, chrom_si
     chroms = [f'chr{n}' for n in range(1, 23)]
     bin_size = 1000000  # Size of chromosomal bins
 
-    with open(out_bed_path, 'w') as bed_file:
-        for chrom in chroms:
-            bed_entries = make_bed_entries(in_bw_path, chrom, chrom_size_dict[chrom], bin_size, cutoff)
+    if os.path.isfile(out_bed_path):
+        print(f'[{get_curr_time()}, Progress] A BED file for "{in_bw_path}" already exists so skip this step')
+    else:
+        print(f'[{get_curr_time()}, Progress] Make a BED file for "{in_bw_path}"')
+        with open(out_bed_path, 'w') as bed_file:
+            for chrom in chroms:
+                bed_entries = make_bed_entries(in_bw_path, chrom, chrom_size_dict[chrom], bin_size, cutoff)
 
-            for bed_entry in bed_entries:
-                print(*bed_entry, 1, sep='\t', file=bed_file)
+                for bed_entry in bed_entries:
+                    print(*bed_entry, 1, sep='\t', file=bed_file)
 
 
 def make_bed_entries(bw_path: str, chrom: str, chrom_size: int, chrom_bin_size: int, cutoff: float) -> list:
