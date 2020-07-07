@@ -1,0 +1,42 @@
+# This is a list of BED filenames used for variant annotation in category-wide association study (CWAS).
+# All of these files are compressed via bgzip and indexed via tabix.
+# All of these files can be found in "{Project home directory}/data/annotate" directory.
+# All of the keys are the same with the corresponding keys in categories.yaml.
+
+# For conservation categories (cons)
+phastCons46wayVt: phastCons46way.vertebrate.hg19ToHg38.bed.gz
+phyloP46wayVt: phyloP46way.vertebrate.hg19ToHg38.bed.gz
+
+# For functional annotation categories (region)
+ChmmState15_E1_Brain: ChmmState15.E1.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E2_Brain: ChmmState15.E2.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E3_Brain: ChmmState15.E3.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E4_Brain: ChmmState15.E4.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E5_Brain: ChmmState15.E5.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E6_Brain: ChmmState15.E6.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E7_Brain: ChmmState15.E7.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E8_Brain: ChmmState15.E8.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E9_Brain: ChmmState15.E9.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E10_Brain: ChmmState15.E10.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E11_Brain: ChmmState15.E11.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E12_Brain: ChmmState15.E12.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E13_Brain: ChmmState15.E13.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E14_Brain: ChmmState15.E14.Brain.hg19to38.sorted.bed.gz
+ChmmState15_E15_Brain: ChmmState15.E15.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_DNaseFDR001_Brain: EpigenomeByGroup4.DNaseFDR001.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_H3K27ac_Brain: EpigenomeByGroup4.H3K27ac.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_H3K27me3_Brain: EpigenomeByGroup4.H3K27me3.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_H3K36me3_Brain: EpigenomeByGroup4.H3K36me3.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_H3K4me1_Brain: EpigenomeByGroup4.H3K4me1.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_H3K4me3_Brain: EpigenomeByGroup4.H3K4me3.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_H3K9ac_Brain: EpigenomeByGroup4.H3K9ac.Brain.hg19to38.sorted.bed.gz
+EpigenomeByGroup4_H3K9me3_Brain: EpigenomeByGroup4.H3K9me3.Brain.hg19to38.sorted.bed.gz
+H3K27ac_160407_multiInt_filtBy2_merge_3col: H3K27ac.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz
+atac_norep_160407_multiInt_filtBy2_merge_3col: atac.norep.160407.multiInt.filtBy2.merge.3col.hg19to38.sorted.bed.gz
+HARs_Doan2016: hg19_HARs_Doan2016.hg19to38.sorted.bed.gz
+fantom5_enhancer_robust: fantom5.enhancer.robust.hg19to38.sorted.bed.gz
+EncodeDNaseClustersUCSC: bamo_EncodeDNaseClustersUCSC.hg19to38.sorted.bed.gz
+EncodeTfbsClusterV2UCSC: bamo_EncodeTfbsClusterV2UCSC.hg19to38.sorted.bed.gz
+vistaEnhancerUCSC: bamo_vistaEnhancerUCSC.hg19to38.sorted.bed.gz
+Yale_H3K27ac_CBC: PEC_ASD_Yale-UCSF_CBC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.filt.bed.gz
+Yale_H3K27ac_DFC: PEC_ASD_Yale-UCSF_DFC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.filt.bed.gz
