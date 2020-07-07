@@ -12,7 +12,7 @@ import pyBigWig as pbw
 import pysam
 import yaml
 
-from utils import get_curr_time
+from utils import get_curr_time, execute_cmd
 
 
 def main():
@@ -269,14 +269,6 @@ def make_bins(bin_size: int, total_size: int) -> list:
         bins.append((bin_cnt * bin_size, bin_cnt * bin_size + remain))
 
     return bins
-
-
-def execute_cmd(cmd: str):
-    print(f'[{get_curr_time()}, CMD] {cmd}')
-    exit_val = os.system(cmd)
-
-    if exit_val != 0:
-        print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
 
 
 if __name__ == '__main__':

@@ -1,6 +1,7 @@
 """
 This script includes generalized functions used in analyses of this project.
 """
+import os
 import sys
 from datetime import datetime
 
@@ -102,3 +103,11 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
             raise AssertionError('One group must have at most two labels.')
 
     return swap_labels
+
+
+def execute_cmd(cmd: str):
+    print(f'[{get_curr_time()}, CMD] {cmd}')
+    exit_val = os.system(cmd)
+
+    if exit_val != 0:
+        print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
