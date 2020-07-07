@@ -8,6 +8,7 @@ import gzip
 import os
 from collections import defaultdict
 
+import numpy as np
 import pyBigWig as pbw
 import pysam
 import yaml
@@ -82,6 +83,22 @@ def main():
                          0.2, chrom_size_dict)
         bgzip_tabix(target_filepath_dict['phyloP46wayVt'])
         bgzip_tabix(target_filepath_dict['phastCons46wayVt'])
+
+        # Path settings for this step
+        annot_dir = os.path.join(project_dir, 'data', 'annotate')
+        annot_conf_path = os.path.join(project_dir, 'conf', 'annotation.yaml')
+        annot_bed_path_dict = {}  # Dictionary of custom BED file paths
+
+        # Parse the configuration file for this step
+        with open(annot_conf_path) as annot_conf_file:
+            annot_filename_dict = yaml.safe_load(annot_conf_file)
+
+            for annot_key in annot_filename_dict:
+                annot_bed_path_dict[annot_key] = os.path.join(annot_dir, annot_filename_dict[annot_key])
+
+        # Merge annotation information of the custom BED files
+        merge_bed_path = os.path.join(annot_dir, 'merged_annotation.bed')
+        merge_annot(merge_bed_path, annot_bed_path_dict)
 
     print(f'[{get_curr_time()}, Progress] Done')
 
@@ -269,6 +286,119 @@ def make_bins(bin_size: int, total_size: int) -> list:
         bins.append((bin_cnt * bin_size, bin_cnt * bin_size + remain))
 
     return bins
+
+
+def merge_annot(out_bed_path: str, bed_path_dict: dict):
+    """ Merge all annotation information of coordinates from all the annotation BED files into one file.
+
+    For example, assume that following two coordinates exist in bed file A and B, respectively.
+    - chr1  100 300 1
+    - chr1  200 400 1
+
+    If these coordinates are merged, than following coordinates will be newly produced.
+    - chr1  100 200 annotation A
+    - chr1  200 300 annotation A & B
+    - chr1  300 400 annotation B
+
+    The information of annotation for each coordinate will be represented as an annotation integer, which is a one-hot
+    encoding of annotation information. For example, if all of the annotation files are A, B, and C, then an annotation
+    integer of the second coordinate above is represented as 6(b'110).
+
+    So here is a final result.
+    - chr1  100 200 4
+    - chr1  200 300 6
+    - chr1  300 400 2
+    """
+    if os.path.isfile(out_bed_path):
+        print(f'[{get_curr_time()}, Progress] A annotation-merged bed file already exists so skip the merge step.')
+    else:
+        print(f'[{get_curr_time()}, Progress] Merge all annotation information of all the input annotation BED files')
+        chroms = [f'chr{n}' for n in range(1, 23)]
+        chrom_to_bed_path = {chrom: out_bed_path.replace('.bed', f'.{chrom}.bed') for chrom in chroms}
+
+        # Make a merged BED file for each chromosome
+        for chrom in chroms:
+            print(f'[{get_curr_time()}, Progress] Merge for {chrom}')
+            chrom_merge_bed_path = chrom_to_bed_path[chrom]
+            merge_annot_by_chrom(chrom_merge_bed_path, bed_path_dict, chrom)
+
+        # Write headers of the merged bed file
+        print(f'[{get_curr_time()}, Progress] Create a BED file with merged annotation information')
+        with open(out_bed_path, 'w') as outfile:
+            annot_key_str = '|'.join(bed_path_dict.keys())
+            print(f'#ANNOT={annot_key_str}', file=outfile)
+            print('#chrom', 'start', 'end', 'annot_int', sep='\t', file=outfile)
+
+        # Append the merged BED file of each chromosome
+        for chrom in chroms:
+            cmd = f'cat {chrom_to_bed_path[chrom]} >> {out_bed_path};'
+            cmd += f'rm {chrom_to_bed_path[chrom]};'
+            execute_cmd(cmd)
+
+        bgzip_tabix(out_bed_path)
+
+
+def merge_annot_by_chrom(out_bed_path: str, bed_path_dict: dict, chrom: str):
+    """ Merge annotation information of all BED coordinates of one chromosome """
+    start_to_key_idx = {}
+    end_to_key_idx = {}
+    pos_list = []
+
+    # Read coordinates from each annotation bed file
+    for i, annot_bed_key in enumerate(bed_path_dict.keys()):
+        annot_bed_path = bed_path_dict[annot_bed_key]
+        with pysam.TabixFile(annot_bed_path) as bed_file:
+            for fields in bed_file.fetch(chrom, parser=pysam.asTuple()):
+                start = int(fields[1])
+                end = int(fields[2])
+
+                # Init
+                if start_to_key_idx.get(start) is None:
+                    start_to_key_idx[start] = []
+
+                if end_to_key_idx.get(end) is None:
+                    end_to_key_idx[end] = []
+
+                start_to_key_idx[start].append(i)
+                end_to_key_idx[end].append(i)
+                pos_list.append(start)
+                pos_list.append(end)
+
+    # Create a BED file listing new coordinates with merged annotation information
+    pos_list.sort()
+    one_hot = np.zeros(len(bed_path_dict.keys()))
+    prev_pos = -1
+    n_bed = 0
+
+    with open(out_bed_path, 'w') as outfile:
+        for pos in pos_list:
+            if n_bed > 0 and prev_pos != pos:  # Make a new coordinate
+                annot_int = one_hot_to_int(one_hot)
+                bed_entry = (chrom, prev_pos, pos, annot_int)
+                print(*bed_entry, sep='\t', file=outfile)
+
+            end_key_ind = end_to_key_idx.get(pos)
+            start_key_ind = start_to_key_idx.get(pos)
+
+            if end_key_ind is not None:  # This position is an end of at least one bed coordinate.
+                one_hot[end_key_ind] = 0
+                n_bed -= 1
+
+            if start_key_ind is not None:  # This position is a start of at least one bed coordinate.
+                one_hot[start_key_ind] = 1
+                n_bed += 1
+
+            prev_pos = pos
+
+
+def one_hot_to_int(one_hot: np.ndarray) -> int:
+    n = 0
+
+    for i in range(len(one_hot)):
+        if one_hot[i]:
+            n += 2 ** i
+
+    return n
 
 
 if __name__ == '__main__':
