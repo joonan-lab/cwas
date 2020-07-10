@@ -1,30 +1,19 @@
 #!/usr/bin/env python
 """
-Script for genomic and functional annotations using Variant Effect Predictor (VEP) and custom BED tracks
+Script for genomic and functional annotations using Variant Effect Predictor (VEP) and user-added custom BED files
 """
 
 import argparse
 import multiprocessing as mp
 import os
 
-import yaml
+import pysam
 
-from utils import get_curr_time
+from utils import get_curr_time, execute_cmd
 
 
 def main():
-    # Paths to essential configuration files
-    curr_dir = os.path.dirname(os.path.abspath(__file__))
-    project_dir = os.path.dirname(curr_dir)
-    filepath_conf_path = os.path.join(project_dir, 'conf', 'download_filepaths.yaml')
-    annot_path_dict = {}
-
-    # Parse the configuration file
-    with open(filepath_conf_path) as filepath_conf:
-        filepath_dict = yaml.safe_load(filepath_conf)['annotate']
-
-        for annot_key in filepath_dict:
-            annot_path_dict[annot_key] = os.path.join(project_dir, filepath_dict[annot_key])
+    print(__doc__)
 
     # Parse arguments
     parser = create_arg_parser()
@@ -33,41 +22,30 @@ def main():
     check_args_validity(args)
     print()
 
-    # Split the input file for each single chromosome
-    if args.split_vcf:
-        print(f'[{get_curr_time()}, Progress] Split the input VCFs')
-        chr_vcf_file_paths = split_vcf_by_chrom(args.in_vcf_path)
-        chr_vep_vcf_paths = []
-        cmds = []
+    # Path settings
+    curr_dir = os.path.dirname(os.path.abspath(__file__))
+    project_dir = os.path.dirname(curr_dir)
+    annot_bed_path = os.path.join(project_dir, 'data', 'annotate', 'merged_annotation.bed.gz')
+    tmp_vcf_path = args.in_vcf_path.replace('.vcf', '.vep.vcf')  # Temporary file for a result of VEP
+    tmp_vcf_gz_path = tmp_vcf_path + '.gz'
+    tmp_vcf_gz_idx_path = tmp_vcf_gz_path + '.tbi'
 
-        # Make commands for VEP
-        for chr_vcf_file_path in chr_vcf_file_paths:
-            chr_vep_vcf_path = chr_vcf_file_path.replace('.vcf', '.vep.vcf')
-            chr_vep_vcf_paths.append(chr_vep_vcf_path)
-            cmd = make_vep_cmd(chr_vcf_file_path, chr_vep_vcf_path, annot_path_dict)
-            cmds.append(cmd)
-
-        # Run VEP in parallel
-        print(f'[{get_curr_time()}, Progress] Run VEP')
-        pool = mp.Pool(args.num_proc)
-        pool.map(os.system, cmds)
-        pool.close()
-        pool.join()
-
-        # Concatenate the VEP outputs into one
-        print(f'[{get_curr_time()}, Progress] Concatenate the split VCFs')
-        concat_vcf_files(args.out_vcf_path, chr_vep_vcf_paths)
-
-        # Delete the split VCF files
-        for chr_vcf_file_path in chr_vcf_file_paths:
-            os.remove(chr_vcf_file_path)
-
-        for chr_vep_vcf_path in chr_vep_vcf_paths:
-            os.remove(chr_vep_vcf_path)
+    # Annotate by Ensembl Variant Effect Predictor (VEP)
+    print(f'[{get_curr_time()}, Progress] Run Variant Effect Predictor (VEP)')
+    if os.path.isfile(tmp_vcf_gz_path):
+        print(f'[{get_curr_time()}, Progress] The temporary VEP result already exists so skip this VEP step')
     else:
-        print(f'[{get_curr_time()}, Progress] Run VEP')
-        cmd = make_vep_cmd(args.in_vcf_path, args.out_vcf_path, annot_path_dict)
-        os.system(cmd)
+        cmd = make_vep_cmd(args.in_vcf_path, tmp_vcf_path)
+        execute_cmd(cmd)
+        bgzip_tabix(tmp_vcf_path)
+
+    # Annotate by the early prepared BED file with merged annotation information
+    print(f'[{get_curr_time()}, Progress] Annotate by user-added BED files')
+    annotate_by_bed(tmp_vcf_gz_path, args.out_vcf_path, annot_bed_path)
+
+    # Remove the temporary files
+    os.remove(tmp_vcf_gz_path)
+    os.remove(tmp_vcf_gz_idx_path)
 
     print(f'[{get_curr_time()}, Progress] Done')
 
@@ -77,7 +55,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('-i', '--infile', dest='in_vcf_path', required=True, type=str, help='Input VCF file')
     parser.add_argument('-o', '--outfile', dest='out_vcf_path', required=False, type=str,
-                        help='Path of the VCF output', default='vep_output.vcf')
+                        help='Path of the VCF output', default='annotate_output.vcf')
     parser.add_argument('-s', '--split', dest='split_vcf', required=False, type=int, choices={0, 1},
                         help='Split the input VCF by chromosome and run VEP for each split VCF (Default: 0)',
                         default=0)
@@ -137,7 +115,7 @@ def split_vcf_by_chrom(vcf_file_path: str) -> list:
     return vcf_file_paths
 
 
-def make_vep_cmd(in_vcf_path: str, out_vcf_path: str, custom_file_path_dict: dict) -> str:
+def make_vep_cmd(in_vcf_path: str, out_vcf_path: str) -> str:
     """ Make a command to execute VEP and return it.
     """
     # Basic information
@@ -168,26 +146,6 @@ def make_vep_cmd(in_vcf_path: str, out_vcf_path: str, custom_file_path_dict: dic
         '--symbol',
     ]
 
-    # Add custom annotations
-    for custom_annot in custom_file_path_dict:
-        custom_file_path = custom_file_path_dict[custom_annot]
-
-        if custom_file_path.endswith('vcf') or custom_file_path.endswith('vcf.gz'):
-            cmd_args += [
-                '--custom',
-                ','.join([custom_file_path, custom_annot, 'vcf', 'exact', '0', 'AF']),
-            ]
-        elif custom_file_path.endswith('bw') or custom_file_path.endswith('bw.gz'):
-            cmd_args += [
-                '--custom',
-                ','.join([custom_file_path, custom_annot, 'bigwig', 'overlap', '0']),
-            ]
-        elif custom_file_path.endswith('bed') or custom_file_path.endswith('bed.gz'):
-            cmd_args += [
-                '--custom',
-                ','.join([custom_file_path, custom_annot, 'bed', 'overlap', '0']),
-            ]
-
     cmd = ' '.join(cmd_args)
     return cmd
 
@@ -208,6 +166,63 @@ def concat_vcf_files(out_vcf_path: str, vcf_file_paths: list):
                     for line in vcf_file:
                         if not line.startswith('#'):
                             outfile.write(line)
+
+
+def bgzip_tabix(vcf_path: str):
+    """ Block compression (bgzip) and make an index (tabix) """
+    bed_gz_path = vcf_path + '.gz'
+
+    if os.path.isfile(bed_gz_path):
+        print(f'[{get_curr_time()}, Progress] A bgzipped file for "{vcf_path}" already exists so skip this step')
+    else:
+        print(f'[{get_curr_time()}, Progress] bgzip and tabix for "{vcf_path}"')
+        cmd = f'bgzip {vcf_path};'
+        cmd += f'tabix {bed_gz_path};'
+        execute_cmd(cmd)
+
+
+def annotate_by_bed(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str):
+    """ Annotate variants in the input VCF file using the prepared annotation BED file """
+    chroms = [f'chr{n}' for n in range(1, 23)]
+
+    with pysam.TabixFile(in_vcf_gz_path) as in_vcf_file, pysam.TabixFile(annot_bed_path) as annot_bed_file, \
+            open(out_vcf_path, 'w') as out_vcf_file:
+        # Make and write headers
+        vcf_headers = in_vcf_file.header
+        annot_key_str = annot_bed_file.header[0].split('=')[1]
+        annot_info_header = f'##INFO=<ID=ANNOT,Key={annot_key_str}>'
+        vcf_headers.append(annot_info_header)
+        vcf_headers[-1], vcf_headers[-2] = vcf_headers[-2], vcf_headers[-1]  # Swap
+
+        for vcf_header in vcf_headers:
+            print(vcf_header, file=out_vcf_file)
+
+        # Annotate by the input BED file
+        for chrom in chroms:
+            var_iter = in_vcf_file.fetch(chrom, parser=pysam.asTuple())
+            bed_iter = annot_bed_file.fetch(chrom, parser=pysam.asTuple())
+            variant = next(var_iter, None)
+            bed = next(bed_iter, None)
+
+            while variant is not None and bed is not None:
+                var_pos = int(variant[1]) - 1
+                bed_start = int(bed[1])
+                bed_end = int(bed[2])
+
+                if var_pos >= bed_end:
+                    bed = next(bed_iter, None)
+                else:
+                    if var_pos < bed_start:
+                        annot_int = 0
+                    else:
+                        annot_int = int(bed[3])
+
+                    print(str(variant) + f';ANNOT={annot_int}', file=out_vcf_file)
+                    variant = next(var_iter, None)
+
+            while variant is not None:  # Annotate the remain variants
+                print(str(variant) + ';ANNOT=0', file=out_vcf_file)
+                variant = next(var_iter, None)
 
 
 if __name__ == "__main__":
