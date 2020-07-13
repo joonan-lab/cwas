@@ -291,23 +291,30 @@ def make_bins(bin_size: int, total_size: int) -> list:
 def merge_annot(out_bed_path: str, bed_path_dict: dict):
     """ Merge all annotation information of coordinates from all the annotation BED files into one file.
 
-    For example, assume that following two coordinates exist in bed file A and B, respectively.
+    For example, assume that following three coordinates exist in bed file A, B and C, respectively.
     - chr1  100 300 1
     - chr1  200 400 1
+    - chr1  250 350 1
 
     If these coordinates are merged, than following coordinates will be newly produced.
     - chr1  100 200 annotation A
-    - chr1  200 300 annotation A & B
-    - chr1  300 400 annotation B
+    - chr1  200 250 annotation A, B
+    - chr1  250 300 annotation A, B, C
+    - chr1  300 350 annotation B, C
+    - chr1  350 400 annotation B
 
     The information of annotation for each coordinate will be represented as an annotation integer, which is a one-hot
-    encoding of annotation information. For example, if all of the annotation files are A, B, and C, then an annotation
-    integer of the second coordinate above is represented as 6(b'110).
+    encoding of annotation information. In this case, A and C are represented as a least significant bit and a most
+    significant bit, respectively, For example, if all of the annotation files are A, B, and C, then an annotation
+    integer of the second coordinate above is represented as 6(b'011).
 
     So here is a final result.
-    - chr1  100 200 4
-    - chr1  200 300 6
-    - chr1  300 400 2
+    - chr1  100 200 1
+    - chr1  200 250 3
+    - chr1  250 300 7
+    - chr1  300 350 6
+    - chr1  350 400 2
+
     """
     if os.path.isfile(out_bed_path):
         print(f'[{get_curr_time()}, Progress] A annotation-merged bed file already exists so skip the merge step.')
