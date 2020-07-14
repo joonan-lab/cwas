@@ -349,7 +349,7 @@ def merge_annot_by_chrom(out_bed_path: str, bed_path_dict: dict, chrom: str):
     """ Merge annotation information of all BED coordinates of one chromosome """
     start_to_key_idx = {}
     end_to_key_idx = {}
-    pos_list = []
+    pos_set = set()
 
     # Read coordinates from each annotation bed file
     for i, annot_bed_key in enumerate(bed_path_dict.keys()):
@@ -368,18 +368,19 @@ def merge_annot_by_chrom(out_bed_path: str, bed_path_dict: dict, chrom: str):
 
                 start_to_key_idx[start].append(i)
                 end_to_key_idx[end].append(i)
-                pos_list.append(start)
-                pos_list.append(end)
+                pos_set.add(start)
+                pos_set.add(end)
 
     # Create a BED file listing new coordinates with merged annotation information
-    pos_list.sort()
-    one_hot = np.zeros(len(bed_path_dict.keys()))
+    pos_list = sorted(pos_set)
+    annot_cnt = np.zeros(len(bed_path_dict.keys()))
     prev_pos = -1
     n_bed = 0
 
     with open(out_bed_path, 'w') as outfile:
         for pos in pos_list:
-            if n_bed > 0 and prev_pos != pos:  # Make a new coordinate
+            if n_bed > 0:  # Make a new coordinate
+                one_hot = np.vectorize(lambda x: 1 if x else 0)(annot_cnt)
                 annot_int = one_hot_to_int(one_hot)
                 bed_entry = (chrom, prev_pos, pos, annot_int)
                 print(*bed_entry, sep='\t', file=outfile)
@@ -388,12 +389,14 @@ def merge_annot_by_chrom(out_bed_path: str, bed_path_dict: dict, chrom: str):
             start_key_ind = start_to_key_idx.get(pos)
 
             if end_key_ind is not None:  # This position is an end of at least one bed coordinate.
-                one_hot[end_key_ind] = 0
-                n_bed -= 1
+                for end_key_idx in end_key_ind:
+                    annot_cnt[end_key_idx] -= 1
+                n_bed -= len(end_key_ind)
 
             if start_key_ind is not None:  # This position is a start of at least one bed coordinate.
-                one_hot[start_key_ind] = 1
-                n_bed += 1
+                for start_key_idx in start_key_ind:
+                    annot_cnt[start_key_idx] += 1
+                n_bed += len(start_key_ind)
 
             prev_pos = pos
 
