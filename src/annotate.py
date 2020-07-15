@@ -10,6 +10,7 @@ import os
 import pysam
 
 from utils import get_curr_time, execute_cmd
+from collections import deque
 
 
 def main():
@@ -26,7 +27,7 @@ def main():
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
     annot_bed_path = os.path.join(project_dir, 'data', 'annotate', 'merged_annotation.bed.gz')
-    tmp_vcf_path = args.in_vcf_path.replace('.vcf', '.vep.vcf')  # Temporary file for a result of VEP
+    tmp_vcf_path = args.in_vcf_path.replace('.vcf', '.tmp.vcf')  # Temporary file for a result of VEP
     tmp_vcf_gz_path = tmp_vcf_path + '.gz'
     tmp_vcf_gz_idx_path = tmp_vcf_gz_path + '.tbi'
 
@@ -199,29 +200,59 @@ def annotate_by_bed(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str)
 
         # Annotate by the input BED file
         for chrom in chroms:
+            print(f'[{get_curr_time()}, Progress] Annotate variants of {chrom}')
             var_iter = in_vcf_file.fetch(chrom, parser=pysam.asTuple())
             bed_iter = annot_bed_file.fetch(chrom, parser=pysam.asTuple())
+            bed_memory = deque()
             variant = next(var_iter, None)
-            bed = next(bed_iter, None)
 
-            while variant is not None and bed is not None:
-                var_pos = int(variant[1]) - 1
-                bed_start = int(bed[1])
-                bed_end = int(bed[2])
+            while variant is not None:
+                var_pos = int(variant[1]) - 1  # 1-based -> 0-based
+                var_ref = variant[3]
+                var_alt = variant[4]
 
-                if var_pos >= bed_end:
-                    bed = next(bed_iter, None)
-                else:
-                    if var_pos < bed_start:
-                        annot_int = 0
+                # Determine a search region for BED coordinates
+                if len(var_ref) == 1:  # Insertion or substitution
+                    region_start = var_pos
+                    region_end = var_pos + 2 if len(var_alt) > 1 else var_pos + 1
+                else:  # Deletion
+                    region_start = var_pos + 1
+                    region_end = region_start + len(var_ref) - 1
+
+                # Get an annotation integer
+                annot_int = 0
+                stop_bed_iter = False
+
+                # 1. Check the memory of previously checked BED coordinates
+                while len(bed_memory) > 0 and int(bed_memory[0][2]) <= region_start:
+                    # Remove non-overlapped coordinates
+                    bed_memory.popleft()
+
+                for bed in bed_memory:
+                    if int(bed[1]) < region_end:  # Overlap
+                        annot_int |= int(bed[3])
                     else:
-                        annot_int = int(bed[3])
+                        stop_bed_iter = True
+                        break
 
-                    print(str(variant) + f';ANNOT={annot_int}', file=out_vcf_file)
-                    variant = next(var_iter, None)
+                # 2. Continuously iterate over the list BED coordinates and check
+                if not stop_bed_iter:
+                    bed = next(bed_iter, None)
 
-            while variant is not None:  # Annotate the remain variants
-                print(str(variant) + ';ANNOT=0', file=out_vcf_file)
+                    while bed is not None:
+                        bed_start = int(bed[1])
+                        bed_end = int(bed[2])
+
+                        if region_start < bed_end:
+                            bed_memory.append(bed)
+                            if bed_start < region_end:  # Overlap
+                                annot_int |= int(bed[3])
+                            else:
+                                break
+
+                        bed = next(bed_iter, None)
+
+                print(str(variant) + f';ANNOT={annot_int}', file=out_vcf_file)
                 variant = next(var_iter, None)
 
 
