@@ -6,6 +6,7 @@ Script for genomic and functional annotations using Variant Effect Predictor (VE
 import argparse
 import multiprocessing as mp
 import os
+import yaml
 
 import pysam
 
@@ -26,17 +27,26 @@ def main():
     # Path settings
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
+    vep_custom_conf_path = os.path.join(project_dir, 'conf', 'vep_custom.yaml')
     annot_bed_path = os.path.join(project_dir, 'data', 'annotate', 'merged_annotation.bed.gz')
     tmp_vcf_path = args.in_vcf_path.replace('.vcf', '.tmp.vcf')  # Temporary file for a result of VEP
     tmp_vcf_gz_path = tmp_vcf_path + '.gz'
     tmp_vcf_gz_idx_path = tmp_vcf_gz_path + '.tbi'
 
     # Annotate by Ensembl Variant Effect Predictor (VEP)
+    vep_custom_path_dict = {}
+
+    with open(vep_custom_conf_path) as vep_custom_conf_file:
+        vep_custom_conf = yaml.safe_load(vep_custom_conf_file)
+
+    for file_key in vep_custom_conf:
+        vep_custom_path_dict[file_key] = os.path.join(project_dir, vep_custom_conf[file_key])
+
     print(f'[{get_curr_time()}, Progress] Run Variant Effect Predictor (VEP)')
     if os.path.isfile(tmp_vcf_gz_path):
         print(f'[{get_curr_time()}, Progress] The temporary VEP result already exists so skip this VEP step')
     else:
-        cmd = make_vep_cmd(args.in_vcf_path, tmp_vcf_path)
+        cmd = make_vep_cmd(args.in_vcf_path, tmp_vcf_path, vep_custom_path_dict)
         execute_cmd(cmd)
         bgzip_tabix(tmp_vcf_path)
 
@@ -116,7 +126,7 @@ def split_vcf_by_chrom(vcf_file_path: str) -> list:
     return vcf_file_paths
 
 
-def make_vep_cmd(in_vcf_path: str, out_vcf_path: str) -> str:
+def make_vep_cmd(in_vcf_path: str, out_vcf_path: str, custom_path_dict: dict = None) -> str:
     """ Make a command to execute VEP and return it.
     """
     # Basic information
@@ -146,6 +156,27 @@ def make_vep_cmd(in_vcf_path: str, out_vcf_path: str) -> str:
         '--nearest', 'symbol',
         '--symbol',
     ]
+
+    # Add custom annotations
+    if custom_path_dict is not None:
+        for custom_file_key in custom_path_dict:
+            custom_file_path = custom_path_dict[custom_file_key]
+
+            if custom_file_path.endswith('vcf') or custom_file_path.endswith('vcf.gz'):
+                cmd_args += [
+                    '--custom',
+                    ','.join([custom_file_path, custom_file_key, 'vcf', 'exact', '0', 'AF']),
+                ]
+            elif custom_file_path.endswith('bed') or custom_file_path.endswith('bed.gz'):
+                cmd_args += [
+                    '--custom',
+                    ','.join([custom_file_path, custom_file_key, 'bed', 'overlap', '0']),
+                ]
+            elif custom_file_path.endswith('bw'):
+                cmd_args += [
+                    '--custom',
+                    ','.join([custom_file_path, custom_file_key, 'bigwig', 'overlap', '0']),
+                ]
 
     cmd = ' '.join(cmd_args)
     return cmd
