@@ -276,7 +276,7 @@ cdef cnp.ndarray[long] annot_effect(variant_df: pd.DataFrame, dict effect_annot_
 # Step 5: Annotate by the annotation terms of the regions where the variants are
 cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, dict region_annot_idx_dict):
     cdef cnp.ndarray[long] annot_ints
-    cdef cnp.ndarray[str] region_vals
+    cdef cnp.ndarray[bint] region_vals
     cdef str region
 
     annot_ints = np.zeros(len(variant_df.index), dtype=int)
@@ -285,15 +285,9 @@ cdef cnp.ndarray annot_region(variant_df: pd.DataFrame, dict region_annot_idx_di
         if region == 'Any':
             continue
 
-        region_vals = variant_df[region].values
-
-        if region.startswith('Yale_H3K27ac'):
-            region_val_conv_func = lambda x: 0 if x == '' else max([int(y.split('_')[0]) for y in x.split('&')])
-            annot_int_conv_func = lambda x: 2 ** region_annot_idx_dict[region] if x > 1 else 0
-            annot_ints += np.vectorize(annot_int_conv_func)(np.vectorize(region_val_conv_func)(region_vals))
-        else:
-            annot_int_conv_func = lambda x: 0 if x == '' else 2 ** region_annot_idx_dict[region]
-            annot_ints += np.vectorize(annot_int_conv_func)(region_vals)
+        region_vals = variant_df[region].values.astype(np.int32)
+        annot_int_conv_func = lambda x: 2 ** region_annot_idx_dict[region] * x
+        annot_ints += np.vectorize(annot_int_conv_func)(region_vals)
 
     annot_ints += 2 ** region_annot_idx_dict['Any']
 

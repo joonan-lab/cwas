@@ -136,6 +136,7 @@ def parse_vep_vcf(vep_vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
     variant_df_rows = []
     variant_df_colnames = []
     csq_field_names = []  # The list of the field names that make up the CSQ information (the VEP result)
+    annot_field_names = []
 
     # Parse the VCF file
     with open(vep_vcf_path, 'r') as vep_vcf_file:
@@ -147,6 +148,10 @@ def parse_vep_vcf(vep_vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
                     csq_line = line.rstrip('">\n')
                     info_format_start_idx = re.search(r'Format: ', csq_line).span()[1]
                     csq_field_names = csq_line[info_format_start_idx:].split('|')
+                elif line.startswith('##INFO=<ID=ANNOT'):
+                    annot_line = line.rstrip('">\n')
+                    annot_field_str_idx = re.search(r'Key=', annot_line).span()[1]
+                    annot_field_names = annot_line[annot_field_str_idx:].split('|')
             else:
                 variant_df_row = line.rstrip('\n').split('\t')
                 variant_df_rows.append(variant_df_row)
@@ -163,8 +168,14 @@ def parse_vep_vcf(vep_vcf_path: str, rdd_colnames: list = None) -> pd.DataFrame:
     csq_records = list(map(lambda csq_str: csq_str.split('|'), csq_strs))
     csq_df = pd.DataFrame(csq_records, columns=csq_field_names)
 
+    # Parse the annotation integers
+    annot_ints = info_df['ANNOT'].values.astype(int)
+    annot_records = list(map(lambda annot_int: int_to_one_hot(annot_int, len(annot_field_names)), annot_ints))
+    annot_df = pd.DataFrame(annot_records, columns=annot_field_names)
+
     # Concatenate those DataFrames
-    variant_df = pd.concat([vep_vcf_df.drop(columns='INFO'), info_df.drop(columns='CSQ'), csq_df], axis='columns')
+    variant_df = pd.concat([vep_vcf_df.drop(columns='INFO'), info_df.drop(columns=['CSQ', 'ANNOT']), csq_df, annot_df],
+                           axis='columns')
 
     # Trim the columns redundant for CWAS
     if rdd_colnames is not None:
@@ -265,6 +276,20 @@ def categorize_each_sample(sample_var_dfs: list, category_dict: dict, gene_list_
         cat_result_dicts.append(cat_result_dict)
 
     return cat_result_dicts
+
+
+def int_to_one_hot(n, one_hot_len):
+    one_hot = np.zeros(one_hot_len)
+
+    for i in range(one_hot_len):
+        bit = n % 2
+        one_hot[i] += bit
+        n >>= 1
+
+        if n == 0:
+            break
+
+    return one_hot
 
 
 if __name__ == "__main__":
