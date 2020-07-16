@@ -1,7 +1,7 @@
 # This configuration lists remote URLs of data used in this project.
 
 # For simulating random mutations (simulate.py)
-simulate:
+simulation:
   lcr: https://github.com/lh3/varcmp/blob/master/scripts/LCR-hs38.bed.gz?raw=true  # Low-complexity regions
   gap: http://hgdownload.soe.ucsc.edu/goldenPath/hg38/database/gap.txt.gz  # Gap regions
   chr1: http://hgdownload.soe.ucsc.edu/goldenPath/hg38/chromosomes/chr1.fa.gz

@@ -5,7 +5,7 @@
 # All the paths are compatible with UNIX.
 # 'data_dir' is used to make a directory for these data automatically.
 
-simulate:
+simulation:
   data_dir: data/simulate/chrom
   gap: data/simulate/sort_gap.txt.gz
   mask_region: data/simulate/mask_region.bed.gz
@@ -35,7 +35,7 @@ simulate:
   chrX: data/simulate/chrom/chrX_masked.fa
   chrY: data/simulate/chrom/chrY_masked.fa
 
-annotate:
+annotation:
   data_dir: data/annotate
   phastCons46wayVt: data/annotate/phastCons46way.vertebrate.hg19ToHg38.bed
   phyloP46wayVt: data/annotate/phyloP46way.vertebrate.hg19ToHg38.bed

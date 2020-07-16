@@ -5,7 +5,7 @@
 # 'data_dir' is used to make a directory for these data automatically.
 
 # For simulating mutations (simulate.py)
-simulate:
+simulation:
   data_dir: data/simulate/chrom
   lcr: data/simulate/LCR-hs38.bed.gz  # Low-complexity regions
   gap: data/simulate/gap.txt.gz  # Gap regions
@@ -35,7 +35,7 @@ simulate:
   chrY: data/simulate/chrom/chrY.fa.gz
 
 # For annotating variants
-annotate:
+annotation:
   data_dir: data/annotate
   chrom_size: data/annotate/hg38.chrom.sizes
   gnomADg: data/annotate/gnomad.genomes.r2.0.1.sites.GRCh38.noVEP.vcf.gz
