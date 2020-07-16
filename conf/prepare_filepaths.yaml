@@ -37,7 +37,5 @@ simulation:
 
 annotation:
   data_dir: data/annotate
-  phastCons46wayVt: data/annotate/phastCons46way.vertebrate.hg19ToHg38.bed
-  phyloP46wayVt: data/annotate/phyloP46way.vertebrate.hg19ToHg38.bed
   Yale_H3K27ac_CBC: data/annotate/PEC_ASD_Yale-UCSF_CBC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.filt.bed
   Yale_H3K27ac_DFC: data/annotate/PEC_ASD_Yale-UCSF_DFC_Epigenomics_H3K27ac_sorted_merged_hg19ToHg38.sorted.filt.bed

@@ -9,7 +9,6 @@ import os
 from collections import defaultdict
 
 import numpy as np
-import pyBigWig as pbw
 import pysam
 import yaml
 
@@ -57,22 +56,6 @@ def main():
         for file_key in file_keys:
             filt_yale_bed(ori_filepath_dict[file_key], target_filepath_dict[file_key])
             bgzip_tabix(target_filepath_dict[file_key])
-
-        # Make BED files for conservation scores from the BigWig files
-        chrom_size_path = ori_filepath_dict['chrom_size']
-        chrom_size_dict = {}
-
-        with open(chrom_size_path) as chrom_size_file:
-            for line in chrom_size_file:
-                fields = line.strip().split('\t')
-                chrom_size_dict[fields[0]] = int(fields[1])
-
-        make_bed_from_bw(ori_filepath_dict['phyloP46wayVt'], target_filepath_dict['phyloP46wayVt'],
-                         2.0, chrom_size_dict)
-        make_bed_from_bw(ori_filepath_dict['phastCons46wayVt'], target_filepath_dict['phastCons46wayVt'],
-                         0.2, chrom_size_dict)
-        bgzip_tabix(target_filepath_dict['phyloP46wayVt'])
-        bgzip_tabix(target_filepath_dict['phastCons46wayVt'])
 
         # Path settings for this step
         annot_dir = os.path.join(project_dir, 'data', 'annotate')
@@ -215,67 +198,6 @@ def bgzip_tabix(bed_path: str):
         cmd = f'bgzip {bed_path};'
         cmd += f'tabix {bed_gz_path};'
         execute_cmd(cmd)
-
-
-def make_bed_from_bw(in_bw_path: str, out_bed_path: str, cutoff: float, chrom_size_dict: dict):
-    """ Make a BED file from a BigWig file.
-    A BED entry covers a region of which all positions have data values more than or equal to the input cutoff
-    """
-    chroms = [f'chr{n}' for n in range(1, 23)]
-    bin_size = 1000000  # Size of chromosomal bins
-
-    if os.path.isfile(out_bed_path) or os.path.isfile(out_bed_path + '.gz'):
-        print(f'[{get_curr_time()}, Progress] A BED file for "{in_bw_path}" already exists so skip this step')
-    else:
-        print(f'[{get_curr_time()}, Progress] Make a BED file for "{in_bw_path}"')
-        with open(out_bed_path, 'w') as bed_file:
-            for chrom in chroms:
-                bed_entries = make_bed_entries(in_bw_path, chrom, chrom_size_dict[chrom], bin_size, cutoff)
-
-                for bed_entry in bed_entries:
-                    print(*bed_entry, 1, sep='\t', file=bed_file)
-
-
-def make_bed_entries(bw_path: str, chrom: str, chrom_size: int, chrom_bin_size: int, cutoff: float) -> list:
-    """ Make BED entries from the input BigWig file """
-    chrom_bins = make_bins(chrom_bin_size, chrom_size)
-    bed_entries = []
-    interval_stack = []
-
-    with pbw.open(bw_path) as bw_file:
-        for start, end in chrom_bins:
-            intervals = bw_file.intervals(chrom, start, end)
-
-            if not intervals:
-                continue
-
-            for interval in intervals:
-                if intervals[2] < cutoff:
-                    continue
-
-                if not interval_stack or interval_stack[-1][1] == intervals[0]:  # Continuous interval
-                    interval_stack.append(interval)
-                else:
-                    bed_entries.append((chrom, interval_stack[0][0], interval_stack[-1][1]))
-                    interval_stack = [interval]
-
-    # Make a bed entry using remain intervals in the stack
-    bed_entries.append((chrom, interval_stack[0][0], interval_stack[-1][1]))
-    return bed_entries
-
-
-def make_bins(bin_size: int, total_size: int) -> list:
-    bins = []
-    bin_cnt = total_size // bin_size
-    remain = total_size % bin_size
-
-    for i in range(bin_cnt):
-        bins.append((bin_size * i, bin_size * (i + 1)))
-
-    if remain != 0:
-        bins.append((bin_cnt * bin_size, bin_cnt * bin_size + remain))
-
-    return bins
 
 
 def merge_annot(out_bed_path: str, bed_path_dict: dict):
