@@ -29,7 +29,7 @@ def main():
     project_dir = os.path.dirname(curr_dir)
     vep_custom_conf_path = os.path.join(project_dir, 'conf', 'vep_custom.yaml')
     annot_bed_path = os.path.join(project_dir, 'data', 'annotate', 'merged_annotation.bed.gz')
-    tmp_vcf_path = args.in_vcf_path.replace('.vcf', '.tmp.vcf')  # Temporary file for a result of VEP
+    tmp_vcf_path = args.out_vcf_path.replace('.vcf', '.tmp.vcf')  # Temporary file for a result of VEP
     tmp_vcf_gz_path = tmp_vcf_path + '.gz'
     tmp_vcf_gz_idx_path = tmp_vcf_gz_path + '.tbi'
 
@@ -46,7 +46,7 @@ def main():
     if os.path.isfile(tmp_vcf_gz_path):
         print(f'[{get_curr_time()}, Progress] The temporary VEP result already exists so skip this VEP step')
     else:
-        cmd = make_vep_cmd(args.in_vcf_path, tmp_vcf_path, vep_custom_path_dict)
+        cmd = make_vep_cmd(args.vep_script, args.in_vcf_path, tmp_vcf_path, vep_custom_path_dict)
         execute_cmd(cmd)
         bgzip_tabix(tmp_vcf_path)
 
@@ -73,6 +73,8 @@ def create_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
                         help='Number of processes for this script (only necessary for split VCF files) (Default: 1)',
                         default=1)
+    parser.add_argument('--vep', dest='vep_script', required=False, type=str,
+                        help='Path of a Perl script to execute VEP (Default: vep (binary))', default='vep')
 
     return parser
 
@@ -80,6 +82,7 @@ def create_arg_parser() -> argparse.ArgumentParser:
 def print_args(args: argparse.Namespace):
     print(f'[Setting] The input VCF file: {args.in_vcf_path}')
     print(f'[Setting] The output path: {args.out_vcf_path}')
+    print(f'[Setting] VEP script: {args.vep_script}')
 
     if args.split_vcf:
         print(f'[Setting] Split the input VCF file by chromosome and run vep for each split VCF')
@@ -90,6 +93,8 @@ def check_args_validity(args: argparse.Namespace):
     assert os.path.isfile(args.in_vcf_path), f'The input VCF file "{args.in_vcf_path}" cannot be found.'
     outfile_dir = os.path.dirname(args.out_vcf_path)
     assert outfile_dir == '' or os.path.isdir(outfile_dir), f'The outfile directory "{outfile_dir}" cannot be found.'
+    assert args.vep_script == 'vep' or os.path.isfile(args.vep_script), \
+        f'The VEP script "{args.vep_script}" is not a binary or an invalid path.'
     assert 1 <= args.num_proc <= mp.cpu_count(), \
         f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
 
@@ -126,12 +131,12 @@ def split_vcf_by_chrom(vcf_file_path: str) -> list:
     return vcf_file_paths
 
 
-def make_vep_cmd(in_vcf_path: str, out_vcf_path: str, custom_path_dict: dict = None) -> str:
+def make_vep_cmd(vep_script: str, in_vcf_path: str, out_vcf_path: str, custom_path_dict: dict = None) -> str:
     """ Make a command to execute VEP and return it.
     """
     # Basic information
     cmd_args = [
-        'vep',
+        vep_script,
         '--assembly', 'GRCh38',
         '--cache',
         '--force_overwrite',
@@ -231,7 +236,6 @@ def annotate_by_bed(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str)
 
         # Annotate by the input BED file
         for chrom in chroms:
-            print(f'[{get_curr_time()}, Progress] Annotate variants of {chrom}')
             var_iter = in_vcf_file.fetch(chrom, parser=pysam.asTuple())
             bed_iter = annot_bed_file.fetch(chrom, parser=pysam.asTuple())
             bed_memory = deque()
