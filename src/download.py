@@ -6,7 +6,7 @@ import os
 
 import yaml
 
-from utils import get_curr_time
+from utils import get_curr_time, execute_cmd
 
 
 def main():
@@ -31,7 +31,6 @@ def main():
         fileurl_dict = yaml.safe_load(fileurl_conf_file)
 
     # Download the data
-    print(f'[{get_curr_time()}, Progress] Download essential data for CWAS')
     download_data(filepath_dict, fileurl_dict)
     print(f'[{get_curr_time()}, Progress] Done')
 
@@ -40,7 +39,7 @@ def download_data(filepath_dict: dict, fileurl_dict: dict):
     """ Download essential data using wget commands"""
 
     for file_group in fileurl_dict:
-        print(f'[{get_curr_time()}, Progress] Start to download data to {file_group}')
+        print(f'[{get_curr_time()}, Progress] Start to download essential data for {file_group}')
         data_dir = filepath_dict[file_group]['data_dir']
         os.makedirs(data_dir, exist_ok=True)
 
@@ -51,11 +50,7 @@ def download_data(filepath_dict: dict, fileurl_dict: dict):
                 print(f'[{get_curr_time()}, INFO] "{data_dest_path}" already exists. Skip downloading this file.')
             else:
                 cmd = f'wget -O {data_dest_path} {fileurl_dict[file_group][data_key]}'
-                print(f'[{get_curr_time()}, CMD] {cmd}')
-                exit_val = os.system(cmd)
-
-                if exit_val != 0:
-                    print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
+                execute_cmd(cmd)
 
 
 if __name__ == '__main__':
