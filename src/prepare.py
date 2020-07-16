@@ -49,18 +49,18 @@ def main():
     parser = create_arg_parser()
     args = parser.parse_args()
 
-    if args.step == 'simulate':
+    if args.step == 'simulation':
         print(f'[{get_curr_time()}, Progress] Prepare data for random mutation simulation')
-        ori_filepath_dict = ori_filepath_dict['simulate']
-        target_filepath_dict = target_filepath_dict['simulate']
+        ori_filepath_dict = ori_filepath_dict['simulation']
+        target_filepath_dict = target_filepath_dict['simulation']
         make_mask_region_bed(ori_filepath_dict, target_filepath_dict)
         mask_fasta(ori_filepath_dict, target_filepath_dict)
         make_chrom_size_txt(target_filepath_dict)
 
-    elif args.step == 'annotate':
+    elif args.step == 'annotation':
         print(f'[{get_curr_time()}, Progress] Prepare data for variant annotation')
-        ori_filepath_dict = ori_filepath_dict['annotate']
-        target_filepath_dict = target_filepath_dict['annotate']
+        ori_filepath_dict = ori_filepath_dict['annotation']
+        target_filepath_dict = target_filepath_dict['annotation']
 
         # Filter entries of Yale PsychENCODE BED files
         file_keys = ['Yale_H3K27ac_CBC', 'Yale_H3K27ac_DFC']
@@ -108,9 +108,9 @@ def create_arg_parser() -> argparse.ArgumentParser:
     # Create a top-level argument parser
     parser = argparse.ArgumentParser(description=__doc__)
     subparsers = parser.add_subparsers(description='Step for which data is prepared', dest='step')
-    subparsers.add_parser('simulate', description='Prepare data to simulate random mutations',
+    subparsers.add_parser('simulation', description='Prepare data to simulate random mutations',
                           help='Prepare data to simulate random mutations (arg "simulate -h" for usage)')
-    subparsers.add_parser('annotate', description='Prepare data to annotate variants',
+    subparsers.add_parser('annotation', description='Prepare data to annotate variants',
                           help='Prepare data to annotate variants (arg "annotate -h" for usage)')
     return parser
 
