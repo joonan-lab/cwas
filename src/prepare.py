@@ -23,6 +23,10 @@ def main():
     ori_file_conf_path = os.path.join(project_dir, 'conf', 'download_filepaths.yaml')  # Files downloaded already
     target_file_conf_path = os.path.join(project_dir, 'conf', 'prepare_filepaths.yaml')  # Files that will be made
 
+    # Parse arguments
+    parser = create_arg_parser()
+    args = parser.parse_args()
+
     # Parse the configuration files
     ori_filepath_dict = {}
     target_filepath_dict = {}
@@ -31,36 +35,22 @@ def main():
         ori_filepath_conf = yaml.safe_load(ori_file_conf_file)
         target_filepath_conf = yaml.safe_load(target_file_conf_file)
 
-        for file_group in ori_filepath_conf:
-            ori_filepath_dict[file_group] = {}
+        for file_key in ori_filepath_conf[args.step]:
+            ori_filepath_dict[file_key] = \
+                os.path.join(project_dir, ori_filepath_conf[args.step][file_key])
 
-            for file_key in ori_filepath_conf[file_group]:
-                ori_filepath_dict[file_group][file_key] = \
-                    os.path.join(project_dir, ori_filepath_conf[file_group][file_key])
-
-        for file_group in target_filepath_conf:
-            target_filepath_dict[file_group] = {}
-
-            for file_key in target_filepath_conf[file_group]:
-                target_filepath_dict[file_group][file_key] = \
-                    os.path.join(project_dir, target_filepath_conf[file_group][file_key])
-
-    # Parse arguments
-    parser = create_arg_parser()
-    args = parser.parse_args()
+        for file_key in target_filepath_conf[args.step]:
+            target_filepath_dict[file_key] = \
+                os.path.join(project_dir, target_filepath_conf[args.step][file_key])
 
     if args.step == 'simulation':
-        print(f'[{get_curr_time()}, Progress] Prepare data for random mutation simulation')
-        ori_filepath_dict = ori_filepath_dict['simulation']
-        target_filepath_dict = target_filepath_dict['simulation']
+        print(f'[{get_curr_time()}, Progress] Prepare data for simulating random mutation')
         make_mask_region_bed(ori_filepath_dict, target_filepath_dict)
         mask_fasta(ori_filepath_dict, target_filepath_dict)
         make_chrom_size_txt(target_filepath_dict)
 
     elif args.step == 'annotation':
         print(f'[{get_curr_time()}, Progress] Prepare data for variant annotation')
-        ori_filepath_dict = ori_filepath_dict['annotation']
-        target_filepath_dict = target_filepath_dict['annotation']
 
         # Filter entries of Yale PsychENCODE BED files
         file_keys = ['Yale_H3K27ac_CBC', 'Yale_H3K27ac_DFC']
