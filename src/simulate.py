@@ -81,7 +81,7 @@ def check_args_validity(args: argparse.Namespace):
         raise FileNotFoundError(f'The input file "{args.sample_file_path}" cannot be found.')
     if args.num_sim < 1:
         raise ValueError(f'--num_sim got an invalid value ({args.num_sim}). The value must be more than 0.')
-    if not args.num_proc < 1 and not args.num_proc > mp.cpu_count():
+    if args.num_proc < 1 or args.num_proc > mp.cpu_count():
         raise ValueError(f'--num_proc got an invalid value ({args.num_proc}). '
                          f'It must be in the range [1, {mp.cpu_count()}].')
 
