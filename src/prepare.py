@@ -180,7 +180,7 @@ def filt_yale_bed(in_bed_path: str, out_bed_path: str):
         print(f'[{get_curr_time()}, Progress] Filter the bed file "{in_bed_path}"')
         with pysam.TabixFile(in_bed_path) as in_bed_file, open(out_bed_path, 'w') as out_bed_file:
             for bed_fields in in_bed_file.fetch(parser=pysam.asTuple()):
-                bed_val = max([int(x.split('_')[0]) for x in bed_fields[3].split('&')])
+                bed_val = int(bed_fields[3].split('_')[0])
 
                 if bed_val > 1:
                     print(*bed_fields, sep='\t', file=out_bed_file)
@@ -219,13 +219,12 @@ def merge_annot(out_bed_path: str, bed_path_dict: dict):
     else:
         print(f'[{get_curr_time()}, Progress] Merge all annotation information of all the input annotation BED files')
         chroms = [f'chr{n}' for n in range(1, 23)]
-        chrom_to_bed_path = {chrom: out_bed_path.replace('.bed', f'.{chrom}.bed') for chrom in chroms}
+        chr_merge_bed_paths = [out_bed_path.replace('.bed', f'.{chrom}.bed') for chrom in chroms]
 
         # Make a merged BED file for each chromosome
-        for chrom in chroms:
-            print(f'[{get_curr_time()}, Progress] Merge for {chrom}')
-            chrom_merge_bed_path = chrom_to_bed_path[chrom]
-            merge_annot_by_chrom(chrom_merge_bed_path, bed_path_dict, chrom)
+        for i in range(len(chroms)):
+            print(f'[{get_curr_time()}, Progress] Merge for {chroms[i]}')
+            merge_annot_by_chrom(chroms[i], chr_merge_bed_paths[i], bed_path_dict)
 
         # Write headers of the merged bed file
         print(f'[{get_curr_time()}, Progress] Create a BED file with merged annotation information')
@@ -235,16 +234,16 @@ def merge_annot(out_bed_path: str, bed_path_dict: dict):
             print('#chrom', 'start', 'end', 'annot_int', sep='\t', file=outfile)
 
         # Append the merged BED file of each chromosome
-        for chrom in chroms:
-            cmd = f'cat {chrom_to_bed_path[chrom]} >> {out_bed_path};'
-            cmd += f'rm {chrom_to_bed_path[chrom]};'
+        for i in range(len(chroms)):
+            cmd = f'cat {chr_merge_bed_paths[i]} >> {out_bed_path};'
+            cmd += f'rm {chr_merge_bed_paths[i]};'
             execute_cmd(cmd)
 
         bgzip_tabix(out_bed_path)
 
 
-def merge_annot_by_chrom(out_bed_path: str, bed_path_dict: dict, chrom: str):
-    """ Merge annotation information of all BED coordinates of one chromosome """
+def merge_annot_by_chrom(chrom: str, out_bed_path: str, bed_path_dict: dict):
+    """ Merge annotation information of all BED coordinates of one chromosome from all the BED files """
     start_to_key_idx = {}
     end_to_key_idx = {}
     pos_set = set()
