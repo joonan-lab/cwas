@@ -4,7 +4,6 @@ Script for data preparation for category-wide association study (CWAS)
 #TODO: Multiprocessing
 """
 import argparse
-import gzip
 import os
 from collections import defaultdict
 
@@ -16,6 +15,8 @@ from utils import get_curr_time, execute_cmd
 
 
 def main():
+    print(__doc__)
+
     # Paths for this script
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
@@ -44,9 +45,15 @@ def main():
 
     if args.step == 'simulation':
         print(f'[{get_curr_time()}, Progress] Prepare data for simulating random mutation')
-        make_mask_region_bed(ori_filepath_dict, target_filepath_dict)
-        mask_fasta(ori_filepath_dict, target_filepath_dict)
-        make_chrom_size_txt(target_filepath_dict)
+        sort_gap_region(ori_filepath_dict['gap'], target_filepath_dict['gap'])
+        make_mask_region(ori_filepath_dict['lcr'], target_filepath_dict['gap'], target_filepath_dict['mask_region'])
+
+        chroms = [f'chr{n}' for n in range(1, 23)]
+        for chrom in chroms:
+            mask_fasta(ori_filepath_dict[chrom], target_filepath_dict[chrom], target_filepath_dict['mask_region'])
+
+        chr_fa_paths = [target_filepath_dict[chrom] for chrom in chroms]
+        create_chrom_size_list(chr_fa_paths, target_filepath_dict['chrom_size'])
 
     elif args.step == 'annotation':
         print(f'[{get_curr_time()}, Progress] Prepare data for variant annotation')
@@ -88,20 +95,18 @@ def create_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def make_mask_region_bed(ori_filepath_dict: dict, target_filepath_dict: dict):
-    """ Make a bed file listing masked regions by merging gap and LCR regions """
-    gap_path = ori_filepath_dict['gap']
-    lcr_path = ori_filepath_dict['lcr']
-    sort_gap_path = target_filepath_dict['gap']
-    mask_region_path = target_filepath_dict['mask_region']
-
+def sort_gap_region(in_gap_path: str, sort_gap_path: str):
+    """ Sort a list of gap regions using the UNIX command and create a BED file listing sorted gap regions """
     if os.path.isfile(sort_gap_path):
         print(f'[{get_curr_time()}, Progress] There is already a list of sorted gap regions so skip this step')
     else:
-        cmd = f'gunzip -c {gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
+        cmd = f'gunzip -c {in_gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
         print(f'[{get_curr_time()}, Progress] Sort the gap regions')
         execute_cmd(cmd)
 
+
+def make_mask_region(lcr_path: str, sort_gap_path: str, mask_region_path: str):
+    """ Create a BED file listing masked regions by merging gap and LCR regions """
     if os.path.isfile(mask_region_path):
         print(f'[{get_curr_time()}, Progress] Masked regions have already made so skip this step')
     else:
@@ -110,52 +115,46 @@ def make_mask_region_bed(ori_filepath_dict: dict, target_filepath_dict: dict):
         execute_cmd(cmd)
 
 
-def mask_fasta(ori_filepath_dict: dict, target_filepath_dict: dict):
-    """ Mask regions on the genome files (FASTA files) and save results as new FASTA files """
-    mask_region_path = target_filepath_dict['mask_region']
-    chroms = [f'chr{n}' for n in range(1, 23)]
-
-    for chrom in chroms:
-        in_fa_gz_path = ori_filepath_dict[chrom]
-        in_fa_path = in_fa_gz_path.replace('.gz', '')
-        out_fa_path = target_filepath_dict[chrom]
-
-        if os.path.isfile(out_fa_path):
-            print(f'[{get_curr_time()}, Progress] Masked fasta file for {chrom} already exists so skip this step')
+def mask_fasta(in_fa_path: str, out_fa_path: str, mask_region_path: str):
+    """ Mask regions of the input FASTA file and save the result as a new FASTA file """
+    if os.path.isfile(out_fa_path):
+        print(f'[{get_curr_time()}, Progress] Masked fasta file "{out_fa_path}" already exists so skip this step')
+    else:
+        print(f'[{get_curr_time()}, Progress] Mask the fasta file "{in_fa_path}" and index the output')
+        if in_fa_path.endswith('.gz'):  # Gzipped FASTA file that must be gunzipped
+            cmd = f'gunzip {in_fa_path};'
+            in_fa_path = in_fa_path.replace('.gz', '')
         else:
-            print(f'[{get_curr_time()}, Progress] Mask the {chrom} fasta file and index the output')
-            cmd = f'gunzip {in_fa_gz_path};'
-            cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
-            cmd += f'samtools faidx {out_fa_path};'
-            execute_cmd(cmd)
+            cmd = ''
+
+        cmd += f'maskFastaFromBed -fi {in_fa_path} -fo {out_fa_path} -bed {mask_region_path};'
+        cmd += f'samtools faidx {out_fa_path};'
+        execute_cmd(cmd)
 
 
-def make_chrom_size_txt(target_filepath_dict: dict):
-    """ Make a txt file listing total size, mapped, AT/GC, and effective sizes of each chromosome """
-    chrom_size_path = target_filepath_dict['chrom_size']
-    chroms = [f'chr{n}' for n in range(1, 23)]
-
-    if os.path.isfile(chrom_size_path):
+def create_chrom_size_list(chr_fa_paths: list, out_txt_path: str):
+    """ Create a txt file listing the sizes total, mapped, AT/GC, and effective sizes of each chromosome """
+    if os.path.isfile(out_txt_path):
         print(f'[{get_curr_time()}, Progress] A file listing total, mapped, AT/GC, and effective sizes already exists '
               f'so skip this step')
     else:
-        print(f'[{get_curr_time()}, Progress] Make a file listing total, mapped, AT/GC, and effective sizes '
+        print(f'[{get_curr_time()}, Progress] Create a file listing total, mapped, AT/GC, and effective sizes '
               f'of each chromosome')
-        with open(chrom_size_path, 'w') as outfile:
+        with open(out_txt_path, 'w') as outfile:
             print('Chrom', 'Size', 'Mapped', 'AT', 'GC', 'Effective', sep='\t', file=outfile)
 
-            for chrom in chroms:
-                print(f'[{get_curr_time()}, Progress] {chrom}')
-                mask_fa_path = target_filepath_dict[f'{chrom}']
-                fa_idx_path = mask_fa_path + '.fai'
+            for chr_fa_path in chr_fa_paths:
+                print(f'[{get_curr_time()}, Progress] Write sizes of "{chr_fa_path}"')
+                fa_idx_path = chr_fa_path + '.fai'
 
                 with open(fa_idx_path) as fa_idx_file:
                     line = fa_idx_file.read()
                     fields = line.split('\t')
+                    chrom = fields[0]
                     chrom_size = int(fields[1])
                     base_start_idx = int(fields[2])
 
-                with gzip.open(mask_fa_path, 'rt') as mask_fa_file:
+                with open(chr_fa_path, 'r') as mask_fa_file:
                     base_cnt_dict = defaultdict(int)
                     mask_fa_file.seek(base_start_idx)
                     seq = mask_fa_file.read()
