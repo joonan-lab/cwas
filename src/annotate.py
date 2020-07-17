@@ -10,7 +10,7 @@ import yaml
 
 import pysam
 
-from utils import get_curr_time, execute_cmd
+from utils import get_curr_time, execute_cmd, bgzip_tabix
 from collections import deque
 
 
@@ -203,19 +203,6 @@ def concat_vcf_files(out_vcf_path: str, vcf_file_paths: list):
                     for line in vcf_file:
                         if not line.startswith('#'):
                             outfile.write(line)
-
-
-def bgzip_tabix(vcf_path: str):
-    """ Block compression (bgzip) and make an index (tabix) """
-    bed_gz_path = vcf_path + '.gz'
-
-    if os.path.isfile(bed_gz_path):
-        print(f'[{get_curr_time()}, Progress] A bgzipped file for "{vcf_path}" already exists so skip this step')
-    else:
-        print(f'[{get_curr_time()}, Progress] bgzip and tabix for "{vcf_path}"')
-        cmd = f'bgzip {vcf_path};'
-        cmd += f'tabix {bed_gz_path};'
-        execute_cmd(cmd)
 
 
 def annotate_by_bed(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str):

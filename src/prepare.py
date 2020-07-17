@@ -11,7 +11,7 @@ import numpy as np
 import pysam
 import yaml
 
-from utils import get_curr_time, execute_cmd
+from utils import get_curr_time, execute_cmd, bgzip_tabix
 
 
 def main():
@@ -184,19 +184,6 @@ def filt_yale_bed(in_bed_path: str, out_bed_path: str):
 
                 if bed_val > 1:
                     print(*bed_fields, sep='\t', file=out_bed_file)
-
-
-def bgzip_tabix(bed_path: str):
-    """ Block compression (bgzip) and make an index (tabix) """
-    bed_gz_path = bed_path + '.gz'
-
-    if os.path.isfile(bed_gz_path):
-        print(f'[{get_curr_time()}, Progress] A bgzipped file for "{bed_path}" already exists so skip this step')
-    else:
-        print(f'[{get_curr_time()}, Progress] bgzip and tabix for "{bed_path}"')
-        cmd = f'bgzip {bed_path};'
-        cmd += f'tabix {bed_gz_path};'
-        execute_cmd(cmd)
 
 
 def merge_annot(out_bed_path: str, bed_path_dict: dict):
