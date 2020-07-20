@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 """
 Script for data preparation for category-wide association study (CWAS)
-#TODO: Multiprocessing
 """
 import argparse
+import multiprocessing as mp
 import os
 from collections import defaultdict
+from functools import partial
 
 import numpy as np
 import pysam
@@ -49,8 +50,17 @@ def main():
         make_mask_region(ori_filepath_dict['lcr'], target_filepath_dict['gap'], target_filepath_dict['mask_region'])
 
         chroms = [f'chr{n}' for n in range(1, 23)]
-        for chrom in chroms:
-            mask_fasta(ori_filepath_dict[chrom], target_filepath_dict[chrom], target_filepath_dict['mask_region'])
+        if args.num_proc == 1:
+            for chrom in chroms:
+                mask_fasta(ori_filepath_dict[chrom], target_filepath_dict[chrom], target_filepath_dict['mask_region'])
+        else:
+            pool = mp.Pool(args.num_proc)
+            pool.starmap(
+                partial(mask_fasta, mask_region_path=target_filepath_dict['mask_region']),
+                [(ori_filepath_dict[chrom], target_filepath_dict[chrom]) for chrom in chroms],
+            )
+            pool.close()
+            pool.join()
 
         chr_fa_paths = [target_filepath_dict[chrom] for chrom in chroms]
         create_chrom_size_list(chr_fa_paths, target_filepath_dict['chrom_size'])
@@ -78,7 +88,7 @@ def main():
 
         # Merge annotation information of the custom BED files
         merge_bed_path = os.path.join(annot_dir, 'merged_annotation.bed')
-        merge_annot(merge_bed_path, annot_bed_path_dict)
+        merge_annot(merge_bed_path, annot_bed_path_dict, args.num_proc)
 
     print(f'[{get_curr_time()}, Progress] Done')
 
@@ -87,11 +97,29 @@ def create_arg_parser() -> argparse.ArgumentParser:
     """ Create an argument parser for this script and return it """
     # Create a top-level argument parser
     parser = argparse.ArgumentParser(description=__doc__)
-    subparsers = parser.add_subparsers(description='Step for which data is prepared', dest='step')
-    subparsers.add_parser('simulation', description='Prepare data to simulate random mutations',
-                          help='Prepare data to simulate random mutations (arg "simulate -h" for usage)')
-    subparsers.add_parser('annotation', description='Prepare data to annotate variants',
-                          help='Prepare data to annotate variants (arg "annotate -h" for usage)')
+    subparsers = parser.add_subparsers(
+        description='Step for which data is prepared {simulation, annotation}',
+        dest='step'
+    )
+    parser_sim = subparsers.add_parser(
+        'simulation',
+        description='Prepare data to simulate random mutations',
+        help='Prepare data to simulate random mutations (arg "simulate -h" for usage)'
+    )
+    parser_sim.add_argument(
+        '-p', '--num_proc', dest='num_proc', required=False, type=int, default=1,
+        help='Number of processes that will be used to mask FASTA files (Default: 1)',
+    )
+    parser_annot = subparsers.add_parser(
+        'annotation',
+        description='Prepare data to annotate variants',
+        help='Prepare data to annotate variants (arg "annotate -h" for usage)'
+    )
+    parser_annot.add_argument(
+        '-p', '--num_proc', dest='num_proc', required=False, type=int, default=1,
+        help='Number of processes that will be used to merge annotation information of BED files '
+             'by each chromosome (Default: 1)',
+    )
     return parser
 
 
@@ -186,7 +214,7 @@ def filt_yale_bed(in_bed_path: str, out_bed_path: str):
                     print(*bed_fields, sep='\t', file=out_bed_file)
 
 
-def merge_annot(out_bed_path: str, bed_path_dict: dict):
+def merge_annot(out_bed_path: str, bed_path_dict: dict, num_proc: int = 1):
     """ Merge all annotation information of coordinates from all the annotation BED files into one file.
 
     For example, assume that following three coordinates exist in bed file A, B and C, respectively.
@@ -222,9 +250,17 @@ def merge_annot(out_bed_path: str, bed_path_dict: dict):
         chr_merge_bed_paths = [out_bed_path.replace('.bed', f'.{chrom}.bed') for chrom in chroms]
 
         # Make a merged BED file for each chromosome
-        for i in range(len(chroms)):
-            print(f'[{get_curr_time()}, Progress] Merge for {chroms[i]}')
-            merge_annot_by_chrom(chroms[i], chr_merge_bed_paths[i], bed_path_dict)
+        if num_proc == 1:
+            for i in range(len(chroms)):
+                merge_annot_by_chrom(chroms[i], chr_merge_bed_paths[i], bed_path_dict)
+        else:
+            pool = mp.Pool(num_proc)
+            pool.starmap(
+                partial(merge_annot_by_chrom, bed_path_dict=bed_path_dict),
+                [(chroms[j], chr_merge_bed_paths[j]) for j in range(len(chroms))],
+            )
+            pool.close()
+            pool.join()
 
         # Write headers of the merged bed file
         print(f'[{get_curr_time()}, Progress] Create a BED file with merged annotation information')
@@ -244,6 +280,7 @@ def merge_annot(out_bed_path: str, bed_path_dict: dict):
 
 def merge_annot_by_chrom(chrom: str, out_bed_path: str, bed_path_dict: dict):
     """ Merge annotation information of all BED coordinates of one chromosome from all the BED files """
+    print(f'[{get_curr_time()}, Progress] Merge for {chrom}')
     start_to_key_idx = {}
     end_to_key_idx = {}
     pos_set = set()
