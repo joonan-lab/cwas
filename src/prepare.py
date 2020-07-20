@@ -49,24 +49,30 @@ def main():
 
     if args.step == 'simulation':
         print(f'[{get_curr_time()}, Progress] Prepare data for simulating random mutation')
-        sort_gap_region(ori_filepath_dict['gap'], target_filepath_dict['gap'])
-        make_mask_region(ori_filepath_dict['lcr'], target_filepath_dict['gap'], target_filepath_dict['mask_region'])
+        sort_gap_region(ori_filepath_dict['gap'], target_filepath_dict['gap'], args.force_overwrite)
+        make_mask_region(ori_filepath_dict['lcr'], target_filepath_dict['gap'], target_filepath_dict['mask_region'],
+                         args.force_overwrite)
 
         chroms = [f'chr{n}' for n in range(1, 23)]
         if args.num_proc == 1:
             for chrom in chroms:
-                mask_fasta(ori_filepath_dict[chrom], target_filepath_dict[chrom], target_filepath_dict['mask_region'])
+                mask_fasta(ori_filepath_dict[chrom], target_filepath_dict[chrom], target_filepath_dict['mask_region'],
+                           args.force_overwrite)
         else:
             pool = mp.Pool(args.num_proc)
             pool.starmap(
-                partial(mask_fasta, mask_region_path=target_filepath_dict['mask_region']),
+                partial(
+                    mask_fasta,
+                    mask_region_path=target_filepath_dict['mask_region'],
+                    force_overwrite=args.force_overwrite
+                ),
                 [(ori_filepath_dict[chrom], target_filepath_dict[chrom]) for chrom in chroms],
             )
             pool.close()
             pool.join()
 
         chr_fa_paths = [target_filepath_dict[chrom] for chrom in chroms]
-        create_chrom_size_list(chr_fa_paths, target_filepath_dict['chrom_size'])
+        create_chrom_size_list(chr_fa_paths, target_filepath_dict['chrom_size'], args.force_overwrite)
 
     elif args.step == 'annotation':
         print(f'[{get_curr_time()}, Progress] Prepare data for variant annotation')
@@ -74,8 +80,8 @@ def main():
         # Filter entries of Yale PsychENCODE BED files
         file_keys = ['Yale_H3K27ac_CBC', 'Yale_H3K27ac_DFC']
         for file_key in file_keys:
-            filt_yale_bed(ori_filepath_dict[file_key], target_filepath_dict[file_key])
-            bgzip_tabix(target_filepath_dict[file_key])
+            filt_yale_bed(ori_filepath_dict[file_key], target_filepath_dict[file_key], args.force_overwrite)
+            bgzip_tabix(target_filepath_dict[file_key], args.force_overwrite)
 
         # Path settings for this step
         annot_dir = os.path.join(project_dir, 'data', 'annotate')
@@ -91,7 +97,7 @@ def main():
 
         # Merge annotation information of the custom BED files
         merge_bed_path = os.path.join(annot_dir, 'merged_annotation.bed')
-        merge_annot(merge_bed_path, annot_bed_path_dict, args.num_proc)
+        merge_annot(merge_bed_path, annot_bed_path_dict, args.num_proc, args.force_overwrite)
 
     print(f'[{get_curr_time()}, Progress] Done')
 
@@ -104,25 +110,33 @@ def create_arg_parser() -> argparse.ArgumentParser:
         description='Step for which data is prepared {simulation, annotation}',
         dest='step'
     )
+
+    def add_common_args(subparser: argparse.ArgumentParser):
+        """ Add common arguments to the subparser """
+        subparser.add_argument(
+            '-f', '--force_overwrite', dest='force_overwrite', action='store_const', const=1, default=0,
+            help='Force to generate new data regardless of existence of data'
+        )
+        subparser.add_argument(
+            '-p', '--num_proc', dest='num_proc', required=False, type=int, default=1,
+            help='Number of processes that will be used to merge annotation information of BED files '
+                 'by each chromosome (Default: 1)',
+        )
+
     parser_sim = subparsers.add_parser(
         'simulation',
         description='Prepare data to simulate random mutations',
         help='Prepare data to simulate random mutations (arg "simulate -h" for usage)'
     )
-    parser_sim.add_argument(
-        '-p', '--num_proc', dest='num_proc', required=False, type=int, default=1,
-        help='Number of processes that will be used to mask FASTA files (Default: 1)',
-    )
+    add_common_args(parser_sim)
+
     parser_annot = subparsers.add_parser(
         'annotation',
         description='Prepare data to annotate variants',
         help='Prepare data to annotate variants (arg "annotate -h" for usage)'
     )
-    parser_annot.add_argument(
-        '-p', '--num_proc', dest='num_proc', required=False, type=int, default=1,
-        help='Number of processes that will be used to merge annotation information of BED files '
-             'by each chromosome (Default: 1)',
-    )
+    add_common_args(parser_annot)
+
     return parser
 
 
@@ -136,9 +150,9 @@ def check_args_validity(args: argparse.Namespace):
         f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
 
 
-def sort_gap_region(in_gap_path: str, sort_gap_path: str):
+def sort_gap_region(in_gap_path: str, sort_gap_path: str, force_overwrite: int = 0):
     """ Sort a list of gap regions using the UNIX command and create a BED file listing sorted gap regions """
-    if os.path.isfile(sort_gap_path):
+    if not force_overwrite and os.path.isfile(sort_gap_path):
         print(f'[{get_curr_time()}, Progress] There is already a list of sorted gap regions so skip this step')
     else:
         cmd = f'gunzip -c {in_gap_path} | cut -f2,3,4 - | sort -k1,1 -k2,2n | gzip > {sort_gap_path};'
@@ -146,9 +160,9 @@ def sort_gap_region(in_gap_path: str, sort_gap_path: str):
         execute_cmd(cmd)
 
 
-def make_mask_region(lcr_path: str, sort_gap_path: str, mask_region_path: str):
+def make_mask_region(lcr_path: str, sort_gap_path: str, mask_region_path: str, force_overwrite: int = 0):
     """ Create a BED file listing masked regions by merging gap and LCR regions """
-    if os.path.isfile(mask_region_path):
+    if not force_overwrite and os.path.isfile(mask_region_path):
         print(f'[{get_curr_time()}, Progress] Masked regions have already made so skip this step')
     else:
         cmd = f'zcat {sort_gap_path} {lcr_path} | sortBed -i stdin | gzip > {mask_region_path}'
@@ -156,9 +170,9 @@ def make_mask_region(lcr_path: str, sort_gap_path: str, mask_region_path: str):
         execute_cmd(cmd)
 
 
-def mask_fasta(in_fa_path: str, out_fa_path: str, mask_region_path: str):
+def mask_fasta(in_fa_path: str, out_fa_path: str, mask_region_path: str, force_overwrite: int = 0):
     """ Mask regions of the input FASTA file and save the result as a new FASTA file """
-    if os.path.isfile(out_fa_path):
+    if not force_overwrite and os.path.isfile(out_fa_path):
         print(f'[{get_curr_time()}, Progress] Masked fasta file "{out_fa_path}" already exists so skip this step')
     else:
         print(f'[{get_curr_time()}, Progress] Mask the fasta file "{in_fa_path}" and index the output')
@@ -173,9 +187,9 @@ def mask_fasta(in_fa_path: str, out_fa_path: str, mask_region_path: str):
         execute_cmd(cmd)
 
 
-def create_chrom_size_list(chr_fa_paths: list, out_txt_path: str):
+def create_chrom_size_list(chr_fa_paths: list, out_txt_path: str, force_overwrite: int = 0):
     """ Create a txt file listing the sizes total, mapped, AT/GC, and effective sizes of each chromosome """
-    if os.path.isfile(out_txt_path):
+    if not force_overwrite and os.path.isfile(out_txt_path):
         print(f'[{get_curr_time()}, Progress] A file listing total, mapped, AT/GC, and effective sizes already exists '
               f'so skip this step')
     else:
@@ -210,11 +224,11 @@ def create_chrom_size_list(chr_fa_paths: list, out_txt_path: str):
                 print(chrom, chrom_size, map_size, at_size, gc_size, effect_size, sep='\t', file=outfile)
 
 
-def filt_yale_bed(in_bed_path: str, out_bed_path: str):
+def filt_yale_bed(in_bed_path: str, out_bed_path: str, force_overwrite: int = 0):
     """ Filter entries of a BED file from Yale (PsychENCODE Consortium) and
     write a BED file listing the filtered entries.
     """
-    if os.path.isfile(out_bed_path) or os.path.isfile(out_bed_path + '.gz'):
+    if not force_overwrite and (os.path.isfile(out_bed_path) or os.path.isfile(out_bed_path + '.gz')):
         print(f'[{get_curr_time()}, Progress] Filtered bed file "{out_bed_path}" already exists '
               f'so skip this filtering step')
     else:
@@ -227,7 +241,7 @@ def filt_yale_bed(in_bed_path: str, out_bed_path: str):
                     print(*bed_fields, sep='\t', file=out_bed_file)
 
 
-def merge_annot(out_bed_path: str, bed_path_dict: dict, num_proc: int = 1):
+def merge_annot(out_bed_path: str, bed_path_dict: dict, num_proc: int = 1, force_overwrite: int = 0):
     """ Merge all annotation information of coordinates from all the annotation BED files into one file.
 
     For example, assume that following three coordinates exist in bed file A, B and C, respectively.
@@ -255,7 +269,7 @@ def merge_annot(out_bed_path: str, bed_path_dict: dict, num_proc: int = 1):
     - chr1  350 400 2
 
     """
-    if os.path.isfile(out_bed_path):
+    if not force_overwrite and (os.path.isfile(out_bed_path) or os.path.isfile(out_bed_path + '.gz')):
         print(f'[{get_curr_time()}, Progress] A annotation-merged bed file already exists so skip the merge step.')
     else:
         print(f'[{get_curr_time()}, Progress] Merge all annotation information of all the input annotation BED files')
@@ -288,7 +302,7 @@ def merge_annot(out_bed_path: str, bed_path_dict: dict, num_proc: int = 1):
             cmd += f'rm {chr_merge_bed_paths[i]};'
             execute_cmd(cmd)
 
-        bgzip_tabix(out_bed_path)
+        bgzip_tabix(out_bed_path, force_overwrite)
 
 
 def merge_annot_by_chrom(chrom: str, out_bed_path: str, bed_path_dict: dict):
