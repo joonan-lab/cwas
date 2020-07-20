@@ -27,6 +27,9 @@ def main():
     # Parse arguments
     parser = create_arg_parser()
     args = parser.parse_args()
+    print_args(args)
+    check_args_validity(args)
+    print()
 
     # Parse the configuration files
     ori_filepath_dict = {}
@@ -121,6 +124,16 @@ def create_arg_parser() -> argparse.ArgumentParser:
              'by each chromosome (Default: 1)',
     )
     return parser
+
+
+def print_args(args: argparse.Namespace):
+    print(f'[Setting] Step to be prepared: {args.step}')
+    print(f'[Setting] No. Processes for this script: {args.num_proc}')
+
+
+def check_args_validity(args: argparse.Namespace):
+    assert 1 <= args.num_proc <= mp.cpu_count(), \
+        f'Invalid number of processes "{args.num_proc:,d}". It must be in the range [1, {mp.cpu_count()}].'
 
 
 def sort_gap_region(in_gap_path: str, sort_gap_path: str):
