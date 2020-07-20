@@ -21,7 +21,7 @@ def main():
     fileurl_conf_path = os.path.join(project_dir, 'conf', 'download_fileurls.yaml')
 
     # Parse arguments
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--force_overwrite', dest='force_overwrite', action='store_const',
                         const=1, default=0, help='Force to overwrite when downloading data (Default: 0)')
     args = parser.parse_args()
