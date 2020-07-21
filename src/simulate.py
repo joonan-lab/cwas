@@ -29,7 +29,7 @@ def main():
 
     # Parse the configuration files
     with open(filepath_conf_path) as filepath_conf_file:
-        filepath_conf = yaml.safe_load(filepath_conf_file)['simulate']
+        filepath_conf = yaml.safe_load(filepath_conf_file)['simulation']
         filepath_dict = {path_key: os.path.join(project_dir, filepath_conf[path_key]) for path_key in filepath_conf}
 
     # Parse arguments
