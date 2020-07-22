@@ -13,7 +13,7 @@ from functools import partial
 
 import numpy as np
 import pandas as pd
-from scipy.stats import binom_test
+from scipy.stats import binom_test, norm
 
 from utils import cmp_two_arr, div_dist_num, get_curr_time, swap_label
 
@@ -184,17 +184,20 @@ def run_burden_binom(cwas_cat_df: pd.DataFrame, sample_df: pd.DataFrame) -> pd.D
     burden_df['Relative_Risk'] = case_dnv_cnt / ctrl_dnv_cnt
 
     # Binomial tests
-    def binom_two_tail(n1, n2):
+    def binom_two_tail(n1: int, n2: int):
         return binom_test(x=n1, n=n1 + n2, p=0.5, alternative='two-sided')
 
-    def binom_one_tail(n1, n2):
-        return binom_test(x=n1, n=n1 + n2, p=0.5, alternative='greater') if n1 > n2 \
-            else binom_test(x=n2, n=n1 + n2, p=0.5, alternative='greater')
+    def binom_one_tail(n1: int, n2: int):
+        return binom_test(x=n1, n=n1 + n2, p=0.5, alternative='greater')
 
     burden_df['P'] = \
         np.vectorize(binom_two_tail)(case_dnv_cnt.round(), ctrl_dnv_cnt.round())
+
+    # Following metrics is for getting number of effective tests
+    # Add a pseudo-count in order to avoid p-values of one
     burden_df['P_1side'] = \
-        np.vectorize(binom_one_tail)(case_dnv_cnt.round(), ctrl_dnv_cnt.round())
+        np.vectorize(binom_one_tail)(case_dnv_cnt.round() + 1, ctrl_dnv_cnt.round() + 1)
+    burden_df['Z_1side'] = norm.ppf(1 - burden_df['P_1side'].values)  # P-value -> Z-score
 
     return burden_df
 
