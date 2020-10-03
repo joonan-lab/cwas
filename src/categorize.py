@@ -45,7 +45,7 @@ def main():
         raise
 
     # Parse the arguments
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = create_arg_parser()
     args = parser.parse_args()
     print_args(args)
     check_args_validity(args)
