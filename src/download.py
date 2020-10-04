@@ -17,13 +17,18 @@ def main():
     # Paths for this script
     curr_dir = os.path.dirname(os.path.abspath(__file__))
     project_dir = os.path.dirname(curr_dir)
-    filepath_conf_path = os.path.join(project_dir, 'conf', 'download_filepaths.yaml')
-    fileurl_conf_path = os.path.join(project_dir, 'conf', 'download_fileurls.yaml')
+    filepath_conf_path = \
+        os.path.join(project_dir, 'conf', 'download_filepaths.yaml')
+    fileurl_conf_path = \
+        os.path.join(project_dir, 'conf', 'download_fileurls.yaml')
 
     # Parse arguments
     parser = argparse.ArgumentParser()
-    parser.add_argument('-f', '--force_overwrite', dest='force_overwrite', action='store_const',
-                        const=1, default=0, help='Force to overwrite when downloading data (Default: 0)')
+    parser.add_argument(
+        '-f', '--force_overwrite', dest='force_overwrite',
+        action='store_const', const=1, default=0,
+        help='Force to overwrite when downloading data (Default: 0)'
+    )
     args = parser.parse_args()
 
     # Parse the configuration files
@@ -32,7 +37,11 @@ def main():
 
         for file_group in filepath_dict:
             for file_key in filepath_dict[file_group]:
-                filepath_dict[file_group][file_key] = os.path.join(project_dir, filepath_dict[file_group][file_key])
+                filepath_dict[file_group][file_key] = \
+                    os.path.join(
+                        project_dir,
+                        filepath_dict[file_group][file_key]
+                    )
 
     with open(fileurl_conf_path) as fileurl_conf_file:
         fileurl_dict = yaml.safe_load(fileurl_conf_file)
@@ -42,11 +51,13 @@ def main():
     print(f'[{get_curr_time()}, Progress] Done')
 
 
-def download_data(filepath_dict: dict, fileurl_dict: dict, force_overwrite: int):
+def download_data(filepath_dict: dict, fileurl_dict: dict,
+                  force_overwrite: int):
     """ Download essential data using wget commands"""
 
     for file_group in fileurl_dict:
-        print(f'[{get_curr_time()}, Progress] Start to download essential data for {file_group}')
+        print(f'[{get_curr_time()}, Progress] Start to download essential data '
+              f'for {file_group}')
         data_dir = filepath_dict[file_group]['data_dir']
         os.makedirs(data_dir, exist_ok=True)
 
@@ -54,9 +65,11 @@ def download_data(filepath_dict: dict, fileurl_dict: dict, force_overwrite: int)
             data_dest_path = filepath_dict[file_group][data_key]
 
             if not force_overwrite and os.path.isfile(data_dest_path):
-                print(f'[{get_curr_time()}, INFO] "{data_dest_path}" already exists. Skip downloading this file.')
+                print(f'[{get_curr_time()}, INFO] "{data_dest_path}" already '
+                      f'exists. Skip downloading this file.')
             else:
-                cmd = f'wget -O {data_dest_path} {fileurl_dict[file_group][data_key]}'
+                cmd = f'wget -O {data_dest_path} ' \
+                      f'{fileurl_dict[file_group][data_key]}'
                 execute_cmd(cmd)
 
 
