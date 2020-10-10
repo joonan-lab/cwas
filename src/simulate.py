@@ -218,17 +218,26 @@ def parse_info_str(info_str: str) -> dict:
 
 def label_variant(ref: str, alt: str) -> int:
     """ Return an integer according to the type of the input small variant
-    """
-    assert len(ref) == 1 or len(alt) == 1, 'This function current support only small variants such as SNV and INDEL.'
 
-    if len(ref) == 1 and len(alt) == 1:
+    ** Labels **
+        INDEL1 if ref or alt has a 3n + 1 length
+        INDEL2 if ref or alt has a 2 or 3n + 2 length
+        INDEL3 if ref or alt has a 3n length
+        where n is an positive integer
+    """
+    assert len(ref) == 1 or len(alt) == 1, \
+        'This function current support only small variants ' \
+        'such as SNV and INDEL.'
+    len_sum = len(ref) + len(alt)
+
+    if len_sum == 2:
         return 0  # SNV
-    elif len(ref) % 3 == 1 or len(alt) % 3 == 1:
-        return 1  # Indel0
-    elif len(ref) % 3 == 2 or len(alt) % 3 == 2:
-        return 2  # Indel1
-    else:  # len(ref) % 3 == 0 or len(alt) % 3 == 0:
-        return 3  # Indel2
+    elif len_sum % 3 == 0:
+        return 2  # Indel2
+    elif len_sum % 3 == 1:
+        return 3  # Indel3
+    else:  # len_sum % 3 == 2
+        return 1  # Indel1
 
 
 def make_rand_mut_files(output_paths: list, fam_to_label_cnt: dict, fam_to_sample_set: dict, fasta_path_dict: dict,
