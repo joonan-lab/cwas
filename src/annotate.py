@@ -47,7 +47,7 @@ def main():
         print(f'[{get_curr_time()}, Progress] The temporary VEP result already exists so skip this VEP step')
     else:
         cmd = make_vep_cmd(args.vep_script, args.in_vcf_path, tmp_vcf_path, vep_custom_path_dict)
-        execute_cmd(cmd)
+        execute_cmd(cmd, True)
         bgzip_tabix(tmp_vcf_path)
 
     # Annotate by the early prepared BED file with merged annotation information
