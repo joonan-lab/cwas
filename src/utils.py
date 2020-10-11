@@ -105,12 +105,17 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
     return swap_labels
 
 
-def execute_cmd(cmd: str):
+def execute_cmd(cmd: str, stop: bool = False):
     print(f'[{get_curr_time()}, CMD] {cmd}')
     exit_val = os.system(cmd)
 
     if exit_val != 0:
-        print(f'[{get_curr_time()}, WARNING] This CMD is failed with this exit value {exit_val}.')
+        if stop:
+            sys.exit(f'[{get_curr_time()}, ERROR] This CMD is failed with this '
+                     f'exit value {exit_val}.')
+        else:
+            print(f'[{get_curr_time()}, WARNING] This CMD is failed with this '
+                  f'exit value {exit_val}.')
 
 
 def bgzip_tabix(in_file_path: str, force_overwrite: int = 0):
