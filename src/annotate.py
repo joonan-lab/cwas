@@ -138,7 +138,7 @@ def make_vep_cmd(vep_script: str, in_vcf_path: str, out_vcf_path: str, custom_pa
     cmd_args = [
         vep_script,
         '--assembly', 'GRCh38',
-        '--cache',
+        '--offline',
         '--force_overwrite',
         '--format', 'vcf',
         '-i', in_vcf_path,
