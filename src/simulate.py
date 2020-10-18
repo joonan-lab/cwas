@@ -220,24 +220,24 @@ def label_variant(ref: str, alt: str) -> int:
     """ Return an integer according to the type of the input small variant
 
     ** Labels **
-        INDEL1 if ref or alt has a 3n + 1 length
-        INDEL2 if ref or alt has a 2 or 3n + 2 length
-        INDEL3 if ref or alt has a 3n length
-        where n is an positive integer
+        INDEL1 if a difference of lengths between ref and alt is 3n + 1
+        INDEL2 if the difference is 3n + 2
+        INDEL3 if the difference is 3n + 3
+        where n is 0 or a positive integer
     """
     assert len(ref) == 1 or len(alt) == 1, \
         'This function current support only small variants ' \
         'such as SNV and INDEL.'
-    len_sum = len(ref) + len(alt)
+    len_diff = abs(len(ref) - len(alt))
 
-    if len_sum == 2:
+    if len_diff == 0:
         return 0  # SNV
-    elif len_sum % 3 == 0:
-        return 2  # Indel2
-    elif len_sum % 3 == 1:
-        return 3  # Indel3
-    else:  # len_sum % 3 == 2
-        return 1  # Indel1
+    elif len_diff % 3 == 1:
+        return 1  # INDEL1
+    elif len_diff % 3 == 2:
+        return 2  # INDEL2
+    else:  # len_diff % 3 == 0
+        return 3  # INDEL3
 
 
 def make_rand_mut_files(output_paths: list, fam_to_label_cnt: dict, fam_to_sample_set: dict, fasta_path_dict: dict,
