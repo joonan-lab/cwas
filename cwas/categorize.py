@@ -1,7 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Script for categorizing de novo variants (DNVs) annotated by VEP into CWAS categories,
-which are combinations of annotation terms, and counting the number of variants for each category.
+This is a script in purpose of categorizing de novo variants (DNVs)
+annotated by Variant Effect Predictor (VEP). The categories are combinations
+of annotation terms, and counting the number of variants.
+
+The output is a matrix which consists of the numbers of variants
+for each category per sample.
 
 For more detailed information, please refer to An et al., 2018 (PMID 30545852).
 
@@ -18,7 +22,11 @@ import pandas as pd
 import pyximport
 import yaml
 
-pyximport.install(language_level=3, reload_support=True, setup_args={'include_dirs': np.get_include()})
+pyximport.install(
+    language_level=3,
+    reload_support=True,
+    setup_args={'include_dirs': np.get_include()}
+)
 from categorization import categorize_variant as _categorize_variant
 from utils import div_list, get_curr_time
 
@@ -32,7 +40,8 @@ def main():
     project_dir = os.path.dirname(curr_dir)
     gene_mat_path = os.path.join(project_dir, 'conf', 'gene_matrix.txt')
     cat_conf_path = os.path.join(project_dir, 'conf', 'categories.yaml')
-    rdd_cat_path = os.path.join(project_dir, 'conf', 'redundant_categories.yaml')
+    rdd_cat_path = \
+        os.path.join(project_dir, 'conf', 'redundant_categories.yaml')
 
     # Configuration file validity check
     try:
