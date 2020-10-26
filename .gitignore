@@ -2,4 +2,4 @@ data/
 .idea/
 explorer/
 results/
-src/__pycache__/
+cwas/__pycache__/
