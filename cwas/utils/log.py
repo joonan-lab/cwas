@@ -5,20 +5,27 @@ import sys
 from datetime import datetime
 
 
+def print_log(log_type: str, log_msg: str, print_time: bool = False):
+    log_header = f'[{_get_curr_time()}, {log_type}]' if print_time \
+        else f'[{log_type}]'
+    _eprint(f'{log_header} {log_msg}')
+
+
 def print_arg(arg_name: str, arg_val: str):
-    _eprint(f'[ARG] {arg_name}: {arg_val}')
+    msg = f'{arg_name}: {arg_val}'
+    print_log('ARG', msg)
 
 
 def print_progress(msg: str):
-    _eprint(f'[{_get_curr_time()}, Progress] {msg}')
+    print_log('PROGRESS', msg, True)
 
 
 def print_warn(msg: str):
-    _eprint(f'[{_get_curr_time()}, WARNING] {msg}')
+    print_log('WARNING', msg, True)
 
 
 def print_err(msg: str):
-    _eprint(f'[{_get_curr_time()}, ERROR] {msg}')
+    print_log('ERROR', msg, True)
 
 
 # Ref:
