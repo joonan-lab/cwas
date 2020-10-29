@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 """
-Script to download essential data for category-wide association study (CWAS)
+Download essential data for this project
 """
 import argparse
 import os
 
 import yaml
 
-from utils import get_curr_time, execute_cmd
+import cwas.utils.log as log
+from cwas.utils.cmd import execute
 
 
 def main():
@@ -48,7 +49,7 @@ def main():
 
     # Download the data
     download_data(filepath_dict, fileurl_dict, args.force_overwrite)
-    print(f'[{get_curr_time()}, Progress] Done')
+    log.print_progress('Done')
 
 
 def download_data(filepath_dict: dict, fileurl_dict: dict,
@@ -56,8 +57,7 @@ def download_data(filepath_dict: dict, fileurl_dict: dict,
     """ Download essential data using wget commands"""
 
     for file_group in fileurl_dict:
-        print(f'[{get_curr_time()}, Progress] Start to download essential data '
-              f'for {file_group}')
+        log.print_progress(f'Start to download essential data for {file_group}')
         data_dir = filepath_dict[file_group]['data_dir']
         os.makedirs(data_dir, exist_ok=True)
 
@@ -65,12 +65,16 @@ def download_data(filepath_dict: dict, fileurl_dict: dict,
             data_dest_path = filepath_dict[file_group][data_key]
 
             if not force_overwrite and os.path.isfile(data_dest_path):
-                print(f'[{get_curr_time()}, INFO] "{data_dest_path}" already '
-                      f'exists. Skip downloading this file.')
+                log.print_log(
+                    'INFO',
+                    f'A file "{data_dest_path}" already exists. '
+                    f'Skip downloading this file.',
+                    True
+                )
             else:
                 cmd = f'wget -O {data_dest_path} ' \
                       f'{fileurl_dict[file_group][data_key]}'
-                execute_cmd(cmd)
+                execute(cmd)
 
 
 if __name__ == '__main__':
