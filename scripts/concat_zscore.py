@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Scripts to concatenate all Z-scores of multiple burden tests
+A script to concatenate all Z-scores of multiple burden tests
 """
 import pandas as pd
 from glob import glob
