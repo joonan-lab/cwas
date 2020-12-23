@@ -1,15 +1,31 @@
+from __future__ import annotations
+
 import argparse
 
 
 class Executable:
-    def run(self, args: argparse.ArgumentParser):
+    def __init__(self, args: argparse.Namespace):
+        self.args = args
+
+    @classmethod
+    def get_instance(cls) -> Executable:
+        arg_parser = cls.create_arg_parser()
+        args = arg_parser.parse_args()
+        cls.print_args(args)
+        cls.check_args_validity(args)
+        return cls(args)
+
+    @staticmethod
+    def create_arg_parser() -> argparse.ArgumentParser:
         pass
 
-    def create_arg_parser(self) -> argparse.ArgumentParser:
+    @staticmethod
+    def print_args(args: argparse.Namespace):
         pass
 
-    def print_args(self, args: argparse.ArgumentParser):
+    @staticmethod
+    def check_args_validity(args: argparse.Namespace):
         pass
 
-    def check_args_validity(self, args: argparse.ArgumentParser):
+    def run(self):
         pass
