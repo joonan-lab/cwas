@@ -3,12 +3,12 @@ from __future__ import annotations
 import argparse
 
 
-class Executable:
+class Runnable:
     def __init__(self, args: argparse.Namespace):
         self.args = args
 
     @classmethod
-    def get_instance(cls) -> Executable:
+    def get_instance(cls) -> Runnable:
         arg_parser = cls.create_arg_parser()
         args = arg_parser.parse_args()
         cls.print_args(args)
