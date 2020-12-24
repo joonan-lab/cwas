@@ -10,25 +10,25 @@ class Runnable(ABC):
 
     @classmethod
     def get_instance(cls) -> Runnable:
-        arg_parser = cls.create_arg_parser()
+        arg_parser = cls._create_arg_parser()
         args = arg_parser.parse_args()
-        cls.print_args(args)
-        cls.check_args_validity(args)
+        cls._print_args(args)
+        cls._check_args_validity(args)
         return cls(args)
 
     @staticmethod
     @abstractmethod
-    def create_arg_parser() -> argparse.ArgumentParser:
+    def _create_arg_parser() -> argparse.ArgumentParser:
         pass
 
     @staticmethod
     @abstractmethod
-    def print_args(args: argparse.Namespace):
+    def _print_args(args: argparse.Namespace):
         pass
 
     @staticmethod
     @abstractmethod
-    def check_args_validity(args: argparse.Namespace):
+    def _check_args_validity(args: argparse.Namespace):
         pass
 
     @abstractmethod
