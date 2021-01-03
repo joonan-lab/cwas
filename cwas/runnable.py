@@ -19,7 +19,7 @@ class Runnable(ABC):
     @staticmethod
     @abstractmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
-        pass
+        return argparse.ArgumentParser()
 
     @staticmethod
     @abstractmethod
