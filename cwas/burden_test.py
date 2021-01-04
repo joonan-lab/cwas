@@ -1,4 +1,5 @@
 import argparse
+from abc import abstractmethod
 
 from runnable import Runnable
 
@@ -17,4 +18,8 @@ class BurdenTest(Runnable):
         pass
 
     def run(self):
+        pass
+
+    @abstractmethod
+    def test(self):
         pass
