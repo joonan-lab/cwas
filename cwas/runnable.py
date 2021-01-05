@@ -9,9 +9,9 @@ class Runnable(ABC):
         self.args = args
 
     @classmethod
-    def get_instance(cls) -> Runnable:
+    def get_instance(cls, argv: list = None) -> Runnable:
         arg_parser = cls._create_arg_parser()
-        args = arg_parser.parse_args()
+        args = arg_parser.parse_args(argv)
         cls._print_args(args)
         cls._check_args_validity(args)
         return cls(args)
