@@ -3,7 +3,7 @@ import argparse
 from burden_test import BurdenTest
 
 
-class BinomialTest(BurdenTest):
+class PermutTest(BurdenTest):
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         pass
