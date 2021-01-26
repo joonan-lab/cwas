@@ -1,8 +1,9 @@
 import argparse
-import os
 import multiprocessing as mp
+import os
 
-from runnable import Runnable
+import cwas.utils.log as log
+from cwas.runnable import Runnable
 
 
 class Categorization(Runnable):
@@ -20,22 +21,15 @@ class Categorization(Runnable):
                             type=int,
                             help='Number of processes for this script',
                             default=1)
-        parser.add_argument('-a', '--af_known', dest='af_known', required=False,
-                            type=str, choices=['yes', 'no', 'only'],
-                            help='Keep the variants '
-                                 'with known allele frequencies',
-                            default='yes')
 
         return parser
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        print(f'[Setting] The input VCF file: {args.in_vcf_path}')
-        print(f'[Setting] The output path: {args.outfile_path}')
-        print(f'[Setting] No. processes for this script: {args.num_proc:,d}')
-        print(
-            f'[Setting] Keep the variants with known allele frequencies: '
-            f'{args.af_known}')
+        log.print_arg('The input VCF file', args.in_vcf_path)
+        log.print_arg('The output path', args.outfile_path)
+        log.print_arg('No. processes for the categorization',
+                      f'{args.num_proc: ,d}')
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
