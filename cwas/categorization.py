@@ -1,7 +1,7 @@
 import argparse
-import multiprocessing as mp
 import os
 
+import cwas.utils.error as error
 import cwas.utils.log as log
 from cwas.runnable import Runnable
 
@@ -16,31 +16,27 @@ class Categorization(Runnable):
         parser.add_argument('-o', '--outfile', dest='outfile_path',
                             required=False, type=str,
                             help='Path of the output',
-                            default='cwas_cat_result.txt')
+                            default='cwas_categorization_result.txt')
         parser.add_argument('-p', '--num_proc', dest='num_proc', required=False,
                             type=int,
-                            help='Number of processes for this script',
+                            help='Number of worker processes for the '
+                                 'categorization',
                             default=1)
-
         return parser
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg('The input VCF file', args.in_vcf_path)
         log.print_arg('The output path', args.outfile_path)
-        log.print_arg('No. processes for the categorization',
+        log.print_arg('No. worker processes for the categorization',
                       f'{args.num_proc: ,d}')
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        assert os.path.isfile(args.in_vcf_path), \
-            f'The input VCF file "{args.in_vcf_path}" cannot be found.'
+        error.check_is_file(args.in_vcf_path)
         outfile_dir = os.path.dirname(args.outfile_path)
-        assert outfile_dir == '' or os.path.isdir(outfile_dir), \
-            f'The outfile directory "{outfile_dir}" cannot be found.'
-        assert 1 <= args.num_proc <= mp.cpu_count(), \
-            f'Invalid number of processes "{args.num_proc:,d}". ' \
-            f'It must be in the range [1, {mp.cpu_count()}].'
+        error.check_is_dir(outfile_dir)
+        error.check_num_proc(args.num_proc)
 
     def run(self):
         pass
