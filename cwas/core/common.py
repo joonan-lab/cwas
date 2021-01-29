@@ -1,5 +1,5 @@
 """
-Core algorithms for CWAS
+Common algorithms for CWAS
 """
 import numpy as np
 
