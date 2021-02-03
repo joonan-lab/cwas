@@ -22,8 +22,11 @@ def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
 
 def div_dist_num(num: int, num_group: int) -> list:
     """ Divide and distribute the number to each group almost equally. """
-    assert num >= num_group, \
-        'The argument "num" must be larger than the argument "num_group".'
+    if num >= num_group:
+        raise ValueError(
+            'The argument "num" must be larger than the argument "num_group".'
+        )
+
     num_per_groups = []
     num_per_group = num // num_group
     remain_num = num % num_group
@@ -40,9 +43,12 @@ def div_dist_num(num: int, num_group: int) -> list:
 
 def div_list(in_list: list, num_sub_list: int) -> list:
     """ Divide the input list into multiple sub-lists """
-    assert len(in_list) >= num_sub_list, \
-        'The length of the input list must be larger than the argument ' \
-        '"num_sub_list".'
+    if len(in_list) >= num_sub_list:
+        raise ValueError(
+            'The length of the input list must be larger '
+            'than the argument "num_sub_list".'
+        )
+
     sub_lists = []
     sub_len = len(in_list) // num_sub_list
 
