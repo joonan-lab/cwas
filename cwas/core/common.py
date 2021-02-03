@@ -5,8 +5,8 @@ import numpy as np
 
 
 def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
-    """ Return True if two arrays have the same items regardless of the order,
-    else return False
+    """ Return True if two arrays have the same items regardless of the order.
+    Otherwise, it returns False.
     """
     if len(array1) != len(array2):
         return False
