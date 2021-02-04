@@ -22,6 +22,11 @@ def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
 
 def div_dist_num(num: int, num_group: int) -> list:
     """ Divide and distribute the number to each group almost equally. """
+    if num <= 0 or num_group <= 0:
+        raise ValueError(
+            'Only positive integers are accepted as arguments.'
+        )
+
     if num < num_group:
         raise ValueError(
             'The argument "num" must be larger than the argument "num_group".'
@@ -43,6 +48,16 @@ def div_dist_num(num: int, num_group: int) -> list:
 
 def div_list(in_list: list, num_sub_list: int) -> list:
     """ Divide the input list into multiple sub-lists """
+    if len(in_list) == 0:
+        raise ValueError(
+            'This function does not accept an empty list as an argument.'
+        )
+
+    if num_sub_list <= 0:
+        raise ValueError(
+            'The number of sub-lists must be a positive integer.'
+        )
+
     if len(in_list) < num_sub_list:
         raise ValueError(
             'The length of the input list must be larger '
