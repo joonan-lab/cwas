@@ -46,35 +46,35 @@ def div_dist_num(num: int, num_group: int) -> list:
     return num_per_groups
 
 
-def div_list(in_list: list, num_sub_list: int) -> list:
-    """ Divide the input list into multiple sub-lists """
-    if len(in_list) == 0:
+def chunk_list(_list: list, num_chunk: int) -> list:
+    """ Split the input list into multiple chunks """
+    if len(_list) == 0:
         raise ValueError(
             'This function does not accept an empty list as an argument.'
         )
 
-    if num_sub_list <= 0:
+    if num_chunk <= 0:
         raise ValueError(
-            'The number of sub-lists must be a positive integer.'
+            'The number of chunks must be a positive integer.'
         )
 
-    if len(in_list) < num_sub_list:
+    if len(_list) < num_chunk:
         raise ValueError(
             'The length of the input list must be larger '
-            'than the argument "num_sub_list".'
+            'than the number of chunks.'
         )
 
-    sub_lists = []
-    sub_list_lens = div_dist_num(len(in_list), num_sub_list)
+    chunks = []
+    chunk_lens = div_dist_num(len(_list), num_chunk)
 
-    # Make sub-lists
+    # Make chunks
     i = 0
-    for sub_list_len in sub_list_lens:
-        sub_list = in_list[i: i + sub_list_len]
-        sub_lists.append(sub_list)
-        i += sub_list_len
+    for chunk_len in chunk_lens:
+        chunk = _list[i: i + chunk_len]
+        chunks.append(chunk)
+        i += chunk_len
 
-    return sub_lists
+    return chunks
 
 
 def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
