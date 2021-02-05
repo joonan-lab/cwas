@@ -65,13 +65,14 @@ def div_list(in_list: list, num_sub_list: int) -> list:
         )
 
     sub_lists = []
-    sub_len = len(in_list) // num_sub_list
+    sub_list_lens = div_dist_num(len(in_list), num_sub_list)
 
-    for i in range(num_sub_list - 1):
-        sub_list = in_list[sub_len * i: sub_len * (i + 1)]
+    # Make sub-lists
+    i = 0
+    for sub_list_len in sub_list_lens:
+        sub_list = in_list[i: i + sub_list_len]
         sub_lists.append(sub_list)
-
-    sub_lists.append(in_list[sub_len * (num_sub_list - 1):])
+        i += sub_list_len
 
     return sub_lists
 
