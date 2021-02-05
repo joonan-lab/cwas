@@ -48,3 +48,44 @@ def test_div_dist_num():
         num += 1
         expected[i] += 1
         assert expected == common.div_dist_num(num, num_group)
+
+
+def test_chunk_list():
+    # ValueError will be raised if the input list is empty.
+    with pytest.raises(ValueError):
+        _ = common.chunk_list([], 5)
+
+    _list = [1, 2, 3, 4, 5]
+
+    # ValueError will be raised
+    # if the number of lists is not a positive integer.
+    with pytest.raises(ValueError):
+        _ = common.chunk_list(_list, -1)
+
+    with pytest.raises(ValueError):
+        _ = common.chunk_list(_list, 0)
+
+    result = common.chunk_list(_list, 1)
+    expected = [[1, 2, 3, 4, 5]]
+    assert result == expected
+
+    result = common.chunk_list(_list, 2)
+    expected = [[1, 2, 3], [4, 5]]
+    assert result == expected
+
+    result = common.chunk_list(_list, 3)
+    expected = [[1, 2], [3, 4], [5]]
+    assert result == expected
+
+    result = common.chunk_list(_list, 4)
+    expected = [[1, 2], [3], [4], [5]]
+    assert result == expected
+
+    result = common.chunk_list(_list, 5)
+    expected = [[1], [2], [3], [4], [5]]
+    assert result == expected
+
+    # ValueError is raised if the number of lists exceeds the length of the
+    # input list.
+    with pytest.raises(ValueError):
+        _ = common.chunk_list(_list, 6)
