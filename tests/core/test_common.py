@@ -26,6 +26,10 @@ def test_cmp_two_arr():
     np.random.shuffle(arr2)
     assert common.cmp_two_arr(arr1, arr2)
 
+    # False if the items of each list are not the same.
+    arr2 = np.array([1, 14, 3, 6, 5])
+    assert not common.cmp_two_arr(arr1, arr2)
+
 
 def test_div_dist_num():
     # Raise ValueError if one of any argument is not a positive integer.
