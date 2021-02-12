@@ -93,3 +93,38 @@ def test_chunk_list():
     # input list.
     with pytest.raises(ValueError):
         _ = common.chunk_list(_list, 6)
+
+
+def test_swap_label():
+    # Make an input for testing
+    label_group_pairs = []
+
+    for n in range(1, 6):
+        group_id = f'g{n}'
+        label_group_pairs.append((f'{group_id}_l1', group_id))
+        label_group_pairs.append((f'{group_id}_l2', group_id))
+
+    np.random.shuffle(label_group_pairs)
+
+    labels = np.array([pair[0] for pair in label_group_pairs])
+    group_ids = np.array([pair[1] for pair in label_group_pairs])
+
+    # Basic testing
+    swap_labels = common.swap_label(labels, group_ids)
+    assert len(swap_labels) == len(group_ids)
+    assert np.any(labels != swap_labels)  # Swapping is succeeded.
+
+    # Check if the labels are swapped within their groups.
+    for swap_label, group_id in zip(swap_labels, group_ids):
+        assert swap_label.startswith(group_id)
+
+    # Test the case where more than 2 labels are in the same group.
+    group_id = f'g{np.random.randint(1, 6)}'
+    new_label = f'{group_id}_l3'
+    labels = np.append(labels, new_label)
+    group_ids = np.append(group_ids, group_id)
+    np.random.shuffle(labels)
+    np.random.shuffle(group_ids)
+
+    with pytest.raises(AssertionError) as e_info:
+        assert group_id in str(e_info.value)
