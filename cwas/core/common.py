@@ -102,7 +102,7 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
         assert group_hit_cnt == 0 or group_hit_cnt == 1, \
             f'Too many labels (more than 2) in a group "{group_id}".'
 
-        if group_to_hit_cnt == 0:
+        if group_hit_cnt == 0:
             group_to_hit_cnt[group_id] = 1
             group_to_idx[group_id] = i
         else:
