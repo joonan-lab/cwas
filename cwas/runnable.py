@@ -7,6 +7,15 @@ from abc import ABC, abstractmethod
 class Runnable(ABC):
     def __init__(self, args: argparse.Namespace):
         self.args = args
+        self._set_env()
+
+    @abstractmethod
+    def _set_env(self):
+        """
+        Set paths of configuration files and resources to run.
+        These paths are assigned to attributes of this instance.
+        """
+        pass
 
     @classmethod
     def get_instance(cls, argv: list = None) -> Runnable:
