@@ -3,3 +3,5 @@ data/
 explorer/
 results/
 cwas/__pycache__/
+build/
+dist/
