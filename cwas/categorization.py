@@ -1,5 +1,6 @@
 import argparse
 import os
+from importlib.resources import path
 
 import cwas.utils.error as error
 import cwas.utils.log as log
@@ -7,6 +8,14 @@ from cwas.runnable import Runnable
 
 
 class Categorization(Runnable):
+    def _set_env(self):
+        with path('cwas.config', 'gene_matrix') as gene_mat_path:
+            self.gene_mat_path = gene_mat_path
+        with path('cwas.config', 'categories.yaml') as cat_conf_path:
+            self.cat_conf_path = cat_conf_path
+        with path('cwas.config', 'redundant_categories.yaml') as rdd_cat_path:
+            self.rdd_cat_path = rdd_cat_path
+
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(description=__doc__)
