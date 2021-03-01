@@ -3,26 +3,26 @@ from __future__ import annotations
 import argparse
 from abc import ABC, abstractmethod
 
+from cwas.utils.log import print_err
+
 
 class Runnable(ABC):
     def __init__(self, args: argparse.Namespace):
         self.args = args
-        self._set_env()
-        self._check_env()
+        try:
+            self._set_env()
+        except FileNotFoundError:
+            print_err('One of configuration files or resources does not exist.')
+            raise
 
     @abstractmethod
     def _set_env(self):
         """
         Set paths of configuration files and resources to run.
-        These paths are assigned to attributes of this instance.
-        """
-        pass
 
-    @abstractmethod
-    def _check_env(self):
-        """
-        This method must be defined to verify your environment.
-        This method may include exception or error handling.
+        Use importlib.resources.path function with 'with' statement
+        in order to assign the path as a pathlib.Path object and
+        in order to raise FileNotFoundError if the path is invalid.
         """
         pass
 
