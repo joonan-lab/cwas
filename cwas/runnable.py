@@ -10,14 +10,6 @@ from cwas.utils.log import print_err
 class Runnable(ABC):
     def __init__(self, args: argparse.Namespace):
         self.args = args
-        self._set_attr()
-
-    @abstractmethod
-    def _set_attr(self):
-        """
-        Set attributes of the instance of this class.
-        """
-        pass
 
     def _assign_config_to_attr(self, attr_name: str, config_filename: str):
         """
