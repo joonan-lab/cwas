@@ -10,21 +10,19 @@ class Runnable(ABC):
     def __init__(self, args: argparse.Namespace):
         self.args = args
         try:
-            self._set_env()
+            self._set_attr()
         except FileNotFoundError:
             print_err('One of configuration files or resources does not exist.')
             raise
 
     @abstractmethod
-    def _set_env(self):
+    def _set_attr(self):
         """
-        Set paths of configuration files and resources to run.
-
-        Use importlib.resources.path function with 'with' statement
-        in order to assign the path as a pathlib.Path object and
-        in order to raise FileNotFoundError if the path is invalid.
+        Set attributes of the instance of this class.
         """
         pass
+
+
 
     @classmethod
     def get_instance(cls, argv: list = None) -> Runnable:

@@ -8,7 +8,7 @@ from cwas.runnable import Runnable
 
 
 class Categorization(Runnable):
-    def _set_env(self):
+    def _set_attr(self):
         with path('cwas.config', 'gene_matrix') as gene_mat_path:
             self.gene_mat_path = gene_mat_path
         with path('cwas.config', 'categories.yaml') as cat_conf_path:
