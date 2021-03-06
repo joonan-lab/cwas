@@ -118,3 +118,15 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
             group_idx += 1
 
     return swap_labels
+
+
+def int_to_one_hot(n, one_hot_len):
+    one_hot = np.zeros(one_hot_len)
+
+    for i in range(one_hot_len):
+        bit = n % 2
+        one_hot[i] += bit
+        n >>= 1
+
+        if n == 0:
+            break
