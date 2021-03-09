@@ -45,34 +45,26 @@ def parse_vep_vcf(vep_vcf_path: pathlib.Path) -> pd.DataFrame:
                 variant_rows.append(variant_row)
 
     vep_vcf_df = pd.DataFrame(variant_rows, columns=variant_col_names)
+    info_df = _parse_info_column(vep_vcf_df['INFO'], csq_field_names,
+                                 annot_field_names)
+    vep_vcf_df.drop(columns='INFO', inplace=True)
+    vep_vcf_df = pd.concat([vep_vcf_df, info_df], axis='columns')
 
-    # Parse the INFO field
-    info_strs = vep_vcf_df['INFO'].values
-    info_dicts = list(map(_parse_info_str, info_strs))
+    return vep_vcf_df
+
+
+def _parse_info_column(info_column: pd.Series, csq_field_names: list,
+                       annot_field_names: list) -> pd.DataFrame:
+    """ Parse the INFO column and make a pd.DataFrame object """
+    info_values = info_column.values
+    info_dicts = list(map(_parse_info_str, info_values))
     info_df = pd.DataFrame(info_dicts)
+    csq_df = _parse_csq_column(info_df['CSQ'], csq_field_names)
+    annot_df = _parse_annot_column(info_df['ANNOT'], annot_field_names)
+    info_df.drop(columns=['CSQ', 'ANNOT'], inplace=True)
+    info_df = pd.concat([info_df, csq_df, annot_df], axis='columns')
 
-    # Parse the CSQ strings (VEP results)
-    csq_strs = info_df['CSQ'].values
-    csq_records = list(map(lambda csq_str: csq_str.split('|'), csq_strs))
-    csq_df = pd.DataFrame(csq_records, columns=csq_field_names)
-
-    # Parse the annotation integers
-    annot_ints = info_df['ANNOT'].values.astype(int)
-    annot_field_cnt = len(annot_field_names)
-    annot_records = \
-        list(map(lambda annot_int: int_to_one_hot(annot_int, annot_field_cnt),
-                 annot_ints))
-    annot_df = pd.DataFrame(annot_records, columns=annot_field_names)
-
-    # Concatenate those DataFrames
-    variant_df = pd.concat([
-        vep_vcf_df.drop(columns='INFO'),
-        info_df.drop(columns=['CSQ', 'ANNOT']),
-        csq_df,
-        annot_df
-    ], axis='columns')
-
-    return variant_df
+    return info_df
 
 
 def _parse_info_str(info_str: str) -> dict:
@@ -85,3 +77,31 @@ def _parse_info_str(info_str: str) -> dict:
         info_dict[key] = value
 
     return info_dict
+
+
+def _parse_csq_column(csq_column: pd.Series, csq_field_names: list) -> \
+        pd.DataFrame:
+    """ Parse the CSQ strings in the CSQ column and make a pd.DataFrame
+    object
+    """
+    csq_values = csq_column.values
+    csq_records = \
+        list(map(lambda csq_str: csq_str.split('|'), csq_values))
+    csq_df = pd.DataFrame(csq_records, columns=csq_field_names)
+
+    return csq_df
+
+
+def _parse_annot_column(annot_column: pd.Series, annot_field_names: list) -> \
+        pd.DataFrame:
+    """ Parse the annotation integer in the ANNOT column and make a
+    pd.DataFrame object
+    """
+    annot_ints = annot_column.values.astype(int)
+    annot_field_cnt = len(annot_field_names)
+    annot_records = \
+        list(map(lambda annot_int: int_to_one_hot(annot_int, annot_field_cnt),
+                 annot_ints))
+    annot_df = pd.DataFrame(annot_records, columns=annot_field_names)
+
+    return annot_df
