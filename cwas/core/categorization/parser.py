@@ -10,6 +10,7 @@ import re
 import pandas as pd
 
 from cwas.core.common import int_to_one_hot
+from cwas.utils.log import print_err
 
 
 def parse_vep_vcf(vep_vcf_path: pathlib.Path) -> pd.DataFrame:
@@ -53,10 +54,15 @@ def parse_vep_vcf(vep_vcf_path: pathlib.Path) -> pd.DataFrame:
                 variant_row = line.rstrip('\n').split('\t')
                 variant_rows.append(variant_row)
 
-    # TODO: Check if the DataFrame has such columns
     vep_vcf_df = pd.DataFrame(variant_rows, columns=variant_col_names)
-    info_df = _parse_info_column(vep_vcf_df['INFO'], csq_field_names,
-                                 annot_field_names)
+    try:
+        info_df = _parse_info_column(vep_vcf_df['INFO'], csq_field_names,
+                                     annot_field_names)
+    except KeyError:
+        print_err('The VCF does not have INFO column or '
+                  'the INFO values do not have expected field keys.')
+        raise
+
     vep_vcf_df.drop(columns='INFO', inplace=True)
     vep_vcf_df = pd.concat([vep_vcf_df, info_df], axis='columns')
 
