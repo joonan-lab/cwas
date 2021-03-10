@@ -130,3 +130,5 @@ def int_to_one_hot(n, one_hot_len):
 
         if n == 0:
             break
+
+    return one_hot
