@@ -21,29 +21,39 @@ def parse_vep_vcf(vep_vcf_path: pathlib.Path) -> pd.DataFrame:
     csq_field_names = []  # CSQ is information from VEP
     annot_field_names = []  # Custom annotation field names
 
-    # TODO: check the format of the VCF, the input VCF must have such lines.
     # Read and parse the input VCF
     with vep_vcf_path.open('r') as vep_vcf_file:
+        has_col_name = False
+        has_csq_info = False
+        has_annot_info = False
         for line in vep_vcf_file:
             if line.startswith('#'):  # Comments
                 if line.startswith('#CHROM'):
+                    has_col_name = True
                     variant_col_names = line[1:].rstrip('\n').split('\t')
                 elif line.startswith('##INFO=<ID=CSQ'):
+                    has_csq_info = True
                     csq_line = line.rstrip('">\n')
                     info_format_start_idx = \
                         re.search(r'Format: ', csq_line).span()[1]
                     csq_field_names = \
                         csq_line[info_format_start_idx:].split('|')
                 elif line.startswith('##INFO=<ID=ANNOT'):
+                    has_annot_info = True
                     annot_line = line.rstrip('">\n')
                     annot_field_str_idx = \
                         re.search(r'Key=', annot_line).span()[1]
                     annot_field_names = \
                         annot_line[annot_field_str_idx:].split('|')
-            else:
+            else:  # Rows of variant information follow the comments.
+                assert has_col_name, 'The VCF does not have column names.'
+                assert has_csq_info, 'The VCF does not have CSQ information.'
+                assert has_annot_info, 'The VCF does not have annotation ' \
+                                       'information.'
                 variant_row = line.rstrip('\n').split('\t')
                 variant_rows.append(variant_row)
 
+    # TODO: Check if the DataFrame has such columns
     vep_vcf_df = pd.DataFrame(variant_rows, columns=variant_col_names)
     info_df = _parse_info_column(vep_vcf_df['INFO'], csq_field_names,
                                  annot_field_names)
