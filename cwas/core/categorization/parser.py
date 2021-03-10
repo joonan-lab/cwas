@@ -9,7 +9,7 @@ import re
 
 import pandas as pd
 
-from cwas.core.common import int_to_one_hot
+from cwas.core.common import int_to_bit_arr
 from cwas.utils.log import print_err
 
 
@@ -116,7 +116,7 @@ def _parse_annot_column(annot_column: pd.Series, annot_field_names: list) -> \
     annot_ints = annot_column.values.astype(int)
     annot_field_cnt = len(annot_field_names)
     annot_records = \
-        list(map(lambda annot_int: int_to_one_hot(annot_int, annot_field_cnt),
+        list(map(lambda annot_int: int_to_bit_arr(annot_int, annot_field_cnt),
                  annot_ints))
     annot_df = pd.DataFrame(annot_records, columns=annot_field_names)
 

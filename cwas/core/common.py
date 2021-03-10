@@ -120,15 +120,18 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
     return swap_labels
 
 
-def int_to_one_hot(n, one_hot_len):
-    one_hot = np.zeros(one_hot_len)
+def int_to_bit_arr(n: int, bit_arr_len: int) -> np.ndarray:
+    if n < 0 or bit_arr_len < 0:
+        raise ValueError('A negative integer argument does not allowed.')
 
-    for i in range(one_hot_len):
+    bit_arr = np.zeros(bit_arr_len)
+
+    for i in range(bit_arr_len):
         bit = n % 2
-        one_hot[i] += bit
+        bit_arr[i] += bit
         n >>= 1
 
         if n == 0:
             break
 
-    return one_hot
+    return bit_arr
