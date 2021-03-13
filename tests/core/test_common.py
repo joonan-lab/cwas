@@ -129,6 +129,7 @@ def test_swap_label():
     with pytest.raises(AssertionError) as e_info:
         assert group_id in str(e_info.value)
 
+
 def test_int_to_bit_arr():
     # A negative integer is not allowed as an argument.
     with pytest.raises(ValueError):
@@ -138,6 +139,8 @@ def test_int_to_bit_arr():
         _ = common.int_to_bit_arr(5, -1)
 
     assert common.int_to_bit_arr(5, 0).size == 0
+    assert common.int_to_bit_arr(5, 3).size == 3
+    assert common.int_to_bit_arr(5, 5).size == 5
     assert (common.int_to_bit_arr(1, 3) == np.array([0, 0, 1])).all()
     assert (common.int_to_bit_arr(2, 3) == np.array([0, 1, 0])).all()
     assert (common.int_to_bit_arr(3, 3) == np.array([0, 1, 1])).all()
@@ -145,4 +148,3 @@ def test_int_to_bit_arr():
     assert (common.int_to_bit_arr(5, 3) == np.array([1, 0, 1])).all()
     assert (common.int_to_bit_arr(6, 3) == np.array([1, 1, 0])).all()
     assert (common.int_to_bit_arr(7, 3) == np.array([1, 1, 1])).all()
-
