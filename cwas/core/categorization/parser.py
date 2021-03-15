@@ -13,9 +13,10 @@ from cwas.core.common import int_to_bit_arr
 from cwas.utils.log import print_err
 
 
-def parse_vep_vcf(vep_vcf_path: pathlib.Path) -> pd.DataFrame:
-    """ Parse a Variant Calling File (VCF) from Variant Effect Predictor (VEP)
-    and make a pandas.DataFrame object listing annotated variants.
+def parse_annot_vcf(annot_vcf_path: pathlib.Path) -> pd.DataFrame:
+    """ Parse a Variant Calling File (VCF) that includes Variant Effect
+    Predictor (VEP) and CWAS annotation information and make a
+    pandas.DataFrame object listing annotated variants.
     """
     variant_col_names = []
     variant_rows = []  # Item: a list of values of each column
@@ -23,7 +24,7 @@ def parse_vep_vcf(vep_vcf_path: pathlib.Path) -> pd.DataFrame:
     annot_field_names = []  # Custom annotation field names
 
     # Read and parse the input VCF
-    with vep_vcf_path.open('r') as vep_vcf_file:
+    with annot_vcf_path.open('r') as vep_vcf_file:
         has_col_name = False
         has_csq_info = False
         has_annot_info = False
@@ -54,19 +55,19 @@ def parse_vep_vcf(vep_vcf_path: pathlib.Path) -> pd.DataFrame:
                 variant_row = line.rstrip('\n').split('\t')
                 variant_rows.append(variant_row)
 
-    vep_vcf_df = pd.DataFrame(variant_rows, columns=variant_col_names)
+    annot_vcf_df = pd.DataFrame(variant_rows, columns=variant_col_names)
     try:
-        info_df = _parse_info_column(vep_vcf_df['INFO'], csq_field_names,
+        info_df = _parse_info_column(annot_vcf_df['INFO'], csq_field_names,
                                      annot_field_names)
     except KeyError:
         print_err('The VCF does not have INFO column or '
                   'the INFO values do not have expected field keys.')
         raise
 
-    vep_vcf_df.drop(columns='INFO', inplace=True)
-    vep_vcf_df = pd.concat([vep_vcf_df, info_df], axis='columns')
+    annot_vcf_df.drop(columns='INFO', inplace=True)
+    annot_vcf_df = pd.concat([annot_vcf_df, info_df], axis='columns')
 
-    return vep_vcf_df
+    return annot_vcf_df
 
 
 def _parse_info_column(info_column: pd.Series, csq_field_names: list,
