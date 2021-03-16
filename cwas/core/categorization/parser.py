@@ -7,6 +7,7 @@ algorithm.
 import pathlib
 import re
 
+import numpy as np
 import pandas as pd
 
 from cwas.core.common import int_to_bit_arr
@@ -122,3 +123,26 @@ def _parse_annot_column(annot_column: pd.Series, annot_field_names: list) -> \
     annot_df = pd.DataFrame(annot_records, columns=annot_field_names)
 
     return annot_df
+
+
+def parse_gene_matrix(gene_matrix_path: pathlib.Path) -> dict:
+    """ Parse the gene matrix file and make a dictionary.
+    The keys and values of the dictionary are gene symbols
+    and a set of type names where the gene is associated,
+    respectively.
+    """
+    gene_matrix_dict = {}
+
+    with gene_matrix_path.open('r') as gene_matrix_file:
+        header = gene_matrix_file.readline()
+        all_gene_type_names = np.array(header.rstrip('\n').split('\t')[1:])
+
+        for line in gene_matrix_file:
+            fields = line.rstrip('\n').split('\t')
+            gene_symbol = fields[0]
+            gene_matrix_values = \
+                (np.array(fields[1:]) == '1')  # Convert to the boolean array
+            gene_type_names = all_gene_type_names[gene_matrix_values]
+            gene_matrix_dict[gene_symbol] = set(gene_type_names)
+
+    return gene_matrix_dict
