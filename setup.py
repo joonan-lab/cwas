@@ -17,5 +17,10 @@ setuptools.setup(
     ],
     python_requires='>=3.7',
     include_package_data=True,
+    entry_points={
+        'console_scripts': [
+            'cwas = cwas.__main__:main'
+        ]
+    }
 )
 
