@@ -1,6 +1,7 @@
 import argparse
 
 from cwas.runnable import Runnable
+from cwas.utils.log import print_log
 
 
 class Configuration(Runnable):
@@ -20,4 +21,4 @@ class Configuration(Runnable):
         pass
 
     def run(self):
-        pass
+        print_log('Notice', 'Not implemented yet.')

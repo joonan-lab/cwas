@@ -1,6 +1,7 @@
 import argparse
 from abc import abstractmethod
 
+from cwas.utils.log import print_log
 from runnable import Runnable
 
 
@@ -18,7 +19,7 @@ class BurdenTest(Runnable):
         pass
 
     def run(self):
-        pass
+        print_log('Notice', 'Not implemented yet.')
 
     @abstractmethod
     def test(self):

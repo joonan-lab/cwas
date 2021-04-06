@@ -1,6 +1,7 @@
 import argparse
 
 from cwas.runnable import Runnable
+from cwas.utils.log import print_log
 
 
 class Annotation(Runnable):
@@ -20,4 +21,4 @@ class Annotation(Runnable):
         pass
 
     def run(self):
-        pass
+        print_log('Notice', 'Not implemented yet.')
