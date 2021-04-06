@@ -2,7 +2,7 @@ import argparse
 from abc import abstractmethod
 
 from cwas.utils.log import print_log
-from runnable import Runnable
+from cwas.runnable import Runnable
 
 
 class BurdenTest(Runnable):

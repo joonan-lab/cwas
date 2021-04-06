@@ -1,6 +1,6 @@
 import argparse
 
-from burden_test import BurdenTest
+from cwas.burden_test import BurdenTest
 
 
 class BinomTest(BurdenTest):
