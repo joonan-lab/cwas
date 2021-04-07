@@ -1,5 +1,5 @@
-def main():
-    print("Hello, CWAS!")
+import cwas.cli
+
 
 if __name__ == '__main__':
-    main()
+    cwas.cli.main()
