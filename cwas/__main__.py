@@ -1,5 +1,9 @@
 import cwas.cli
 
 
-if __name__ == '__main__':
+def main():
     cwas.cli.main()
+
+
+if __name__ == '__main__':
+    main()
