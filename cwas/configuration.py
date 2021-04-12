@@ -21,4 +21,5 @@ class Configuration(Runnable):
         pass
 
     def run(self):
+        print_log('LOG', 'CWAS Configuration')
         print_log('Notice', 'Not implemented yet.')

@@ -19,6 +19,7 @@ class BurdenTest(Runnable):
         pass
 
     def run(self):
+        print_log('LOG', 'CWAS Burden Test')
         print_log('Notice', 'Not implemented yet.')
 
     @abstractmethod

@@ -45,4 +45,5 @@ class Categorization(Runnable):
         error.check_num_proc(args.num_proc)
 
     def run(self):
+        log.print_log('LOG', 'CWAS Categorization')
         log.print_log('Notice', 'Not implemented yet.')

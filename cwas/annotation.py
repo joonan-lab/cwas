@@ -21,4 +21,5 @@ class Annotation(Runnable):
         pass
 
     def run(self):
+        print_log('LOG', 'CWAS Annotation')
         print_log('Notice', 'Not implemented yet.')
