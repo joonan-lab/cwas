@@ -1,5 +1,4 @@
 import argparse
-import os
 from pathlib import Path
 
 import cwas.utils.log as log
@@ -16,9 +15,9 @@ class Configuration(Runnable):
             description='Arguments for CWAS Configuration',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
-        default_work_dir = str(Path.home() / '.cwas')
+        default_work_dir = Path.home() / '.cwas'
         parser.add_argument('-d', '--work_dir', dest='work_dir', required=False,
-                            type=str, default=default_work_dir,
+                            type=Path, default=default_work_dir,
                             help='Path to your CWAS workspace'
                             )
         return parser
@@ -29,8 +28,19 @@ class Configuration(Runnable):
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        if os.path.isdir(args.work_dir):
-            log.print_warn('The CWAS workspace already exists.')
+        if args.work_dir.exists():
+            if args.work_dir.is_dir():
+                log.print_warn('The CWAS workspace already exists.')
+            else:
+                log.print_err('The argument points to another kind of file.')
+                raise NotADirectoryError(
+                    f"Non-directory file: '{args.work_dir}'")
 
     def run(self):
+        try:
+            self.args.work_dir.mkdir(parents=True, exist_ok=True)
+        except NotADirectoryError:
+            log.print_err('The input CWAS workspace path is invalid.')
+            raise
+
         log.print_log('Notice', 'Not implemented yet.')
