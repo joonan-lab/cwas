@@ -1,7 +1,9 @@
 import argparse
+import os
+from pathlib import Path
 
+import cwas.utils.log as log
 from cwas.runnable import Runnable
-from cwas.utils.log import print_log
 
 
 class Configuration(Runnable):
@@ -10,15 +12,25 @@ class Configuration(Runnable):
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
-        pass
+        parser = argparse.ArgumentParser(
+            description='Arguments for CWAS Configuration',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
+        default_work_dir = str(Path.home() / '.cwas')
+        parser.add_argument('-d', '--work_dir', dest='work_dir', required=False,
+                            type=str, default=default_work_dir,
+                            help='Path to your CWAS workspace'
+                            )
+        return parser
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        pass
+        log.print_arg('CWAS workspace', args.work_dir)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        pass
+        if os.path.isdir(args.work_dir):
+            log.print_warn('The CWAS workspace already exists.')
 
     def run(self):
-        print_log('Notice', 'Not implemented yet.')
+        log.print_log('Notice', 'Not implemented yet.')
