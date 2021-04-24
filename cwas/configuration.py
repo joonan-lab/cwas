@@ -16,7 +16,13 @@ class Configuration(Runnable):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter
         )
         default_work_dir = Path.home() / '.cwas'
-        parser.add_argument('-d', '--work_dir', dest='work_dir', required=False,
+
+        parser.add_argument('-ad', '--annotation_data_dir', dest='data_dir',
+                            required=True, type=Path,
+                            help="Path to your annotation data dictionary"
+                            )
+        parser.add_argument('-wd', '--work_dir', dest='work_dir',
+                            required=False,
                             type=Path, default=default_work_dir,
                             help='Path to your CWAS workspace'
                             )
