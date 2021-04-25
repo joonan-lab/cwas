@@ -3,13 +3,18 @@ from __future__ import annotations
 import argparse
 from abc import ABC, abstractmethod
 from importlib.resources import path
+from pathlib import Path
 
 from cwas.utils.log import print_err
 
 
 class Runnable(ABC):
     def __init__(self, args: argparse.Namespace):
-        self.args = args
+        for arg in vars(args):
+            arg_val = args.arg
+            if isinstance(arg_val, Path):
+                arg_val = arg_val.resolve()
+            setattr(self, arg, arg_val.resolve())
 
     def _assign_config_to_attr(self, attr_name: str, config_filename: str):
         """

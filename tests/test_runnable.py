@@ -13,8 +13,7 @@ class TestRunnable(unittest.TestCase):
     @patch.multiple(Runnable, __abstractmethods__=set())
     def test_get_instance(self):
         inst = Runnable.get_instance(argv=list())
-        assert hasattr(inst, 'args')
-        assert isinstance(inst.args, argparse.Namespace)
+        assert isinstance(inst, Runnable)
 
     @patch.multiple(Runnable, __abstractmethods__=set())
     def test_run(self):
