@@ -2,9 +2,31 @@ import argparse
 import pathlib
 import unittest
 import pytest
+import random
 from unittest.mock import patch
 
 from cwas.runnable import Runnable
+
+
+class RunnableMock(Runnable):
+    @staticmethod
+    def _create_arg_parser() -> argparse.ArgumentParser:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('-d', dest='test_dir', type=pathlib.Path)
+        parser.add_argument('-f', dest='test_file', type=pathlib.Path)
+        parser.add_argument('-n', dest='test_int', type=int)
+        return parser
+
+    @staticmethod
+    def _check_args_validity(args: argparse.Namespace):
+        pass
+
+    @staticmethod
+    def _print_args(args: argparse.Namespace):
+        pass
+
+    def run(self):
+        pass
 
 
 class TestRunnable(unittest.TestCase):
@@ -31,3 +53,20 @@ class TestRunnable(unittest.TestCase):
         # Set a fake file
         with pytest.raises(FileNotFoundError):
             inst._assign_config_to_attr('non_exist', 'non_exist.txt')
+
+    def test_argument_assignment(self):
+        randint = random.randint(1, 1000000)
+        test_dir = pathlib.Path.home() / f'.cwas-test-{randint}'
+        test_dir.mkdir()
+        test_file = test_dir / 'test.txt'
+        test_file.touch()
+
+        argv = ['-d', str(test_dir), '-f', str(test_file), '-n', str(randint)]
+        inst = RunnableMock.get_instance(argv)
+
+        assert hasattr(inst, 'test_dir')
+        assert hasattr(inst, 'test_file')
+        assert hasattr(inst, 'test_int')
+        assert isinstance(getattr(inst, 'test_dir'), pathlib.Path)
+        assert isinstance(getattr(inst, 'test_file'), pathlib.Path)
+        assert getattr(inst, 'test_int') == randint
