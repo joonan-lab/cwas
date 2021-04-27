@@ -2,6 +2,9 @@ import argparse
 import os
 from pathlib import Path
 
+import dotenv
+
+import cwas.config
 import cwas.utils.log as log
 from cwas.runnable import Runnable
 
@@ -18,11 +21,11 @@ class Configuration(Runnable):
         )
         default_work_dir = Path.home() / '.cwas'
 
-        parser.add_argument('-ad', '--annotation_data_dir', dest='data_dir',
+        parser.add_argument('-d', '--annotation_data_dir', dest='data_dir',
                             required=True, type=Path,
-                            help="Path to your annotation data dictionary"
+                            help="Path to your annotation data directory"
                             )
-        parser.add_argument('-wd', '--work_dir', dest='work_dir',
+        parser.add_argument('-w', '--workspace', dest='work_dir',
                             required=False,
                             type=Path, default=default_work_dir,
                             help='Path to your CWAS workspace'
@@ -32,7 +35,7 @@ class Configuration(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg('CWAS workspace', args.work_dir)
-        log.print_arg('Your annotation data dictionary', args.data_dir)
+        log.print_arg('Your annotation data directory', args.data_dir)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -55,10 +58,16 @@ class Configuration(Runnable):
                                f'directory')
             os.symlink(data_dir, data_dir_symlink, target_is_directory=True)
         except NotADirectoryError:
-            log.print_err('The input CWAS workspace path is invalid.')
+            log.print_err('The path to CWAS workspace is invalid.')
             raise
         except FileExistsError:
             log.print_warn(f'"{data_dir_symlink}" already exists so skip '
-                           f'making symbolic link for your data dictionary.')
+                           f'making symbolic link for your data directory.')
+
+        log.print_progress('Create a dotenv')
+        cwas_config_dir = Path(cwas.config.__file__).parent
+        env_path = cwas_config_dir.resolve() / '.env'
+        env_path.touch()
+        dotenv.set_key(env_path, 'CWAS_WORKSPACE', str(work_dir))
 
         log.print_log('Notice', 'Not implemented yet.')
