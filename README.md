@@ -1,5 +1,6 @@
 # Category-wide association study (CWAS) (An et al. 2018)
 
+***WARNING**: The current *README.md* document is based on the master branch, which will be updated soon.
 *Note: This is a modified version of the original CWAS repository.*
 *The original CWAS repository: [sanderslab/cwas](https://github.com/sanderslab/cwas)*
 
@@ -129,7 +130,6 @@ If users want, users can generate lists of random mutations as a VCF format via 
 - -t, --out_tag = Prefix of the generated VCFs. Each VCF filename will start with this tag. Default is *rand_mut*.
 - -n, --num_sim = Number of simulations. The number of generated VCFs will be same with the number of simulations.
 - -p, --num_proc = Number of processes for this script. Default is *1*.
-   
 ##### Generated VCF path:
 `{out_dir}/{out_tag}.{simultation index [1, num_sim]}.vcf`
 
@@ -148,7 +148,7 @@ If users want, users can generate lists of random mutations as a VCF format via 
 
 # Note: '[]' means they are optional arguments. 
 ```
- 
+
 ## CWAS Execution
 ### Step 1. Variant annotation
 This step purposes to annotate user-provided de novo variants. In this step, the variants is annotated for genomic regions, conservation scores, functional regions including user-defined functional regions. *Variant Effect Predictor* (VEP; https://www.ensembl.org/vep) is used to annotate genomic regions and conservation scores.
