@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 
 import dotenv
+import yaml
 
 import cwas.config
 import cwas.utils.log as log
@@ -63,7 +64,7 @@ class Configuration(Runnable):
         try:
             log.print_progress(f'Create CWAS workspace "{work_dir}"')
             work_dir.mkdir(parents=True, exist_ok=True)
-            log.print_progress(f'Create a symlink "{data_dir}" for your data '
+            log.print_progress(f'Create a symlink "{data_dir}" of your data '
                                f'directory')
             os.symlink(data_dir, data_dir_symlink, target_is_directory=True)
         except NotADirectoryError:
@@ -72,6 +73,25 @@ class Configuration(Runnable):
         except FileExistsError:
             log.print_warn(f'"{data_dir_symlink}" already exists so skip '
                            f'making symbolic link for your data directory.')
+        data_dir = data_dir_symlink
+
+        annot_key_conf = getattr(self, 'annot_key_conf')
+        bed_key_conf = work_dir / 'annotation_key_bed.yaml'
+        bw_key_conf = work_dir / 'annotation_key_bw.yaml'
+        if annot_key_conf is None:
+            log.print_progress('Create a annotation key list (.yaml)')
+            bed_filenames = [str(bed_filepath)
+                             for bed_filepath in data_dir.glob('*.bed.gz')]
+            bed_key_dict = {bed_filename: bed_filename[:-7].replace('.', '_')
+                            for bed_filename in bed_filenames}
+            bw_filenames = [str(bw_filepath)
+                            for bw_filepath in data_dir.glob('*.bw')]
+            bw_key_dict = {bw_filename: bw_filename[:-3].replace('.', '_')
+                           for bw_filename in bw_filenames}
+            with bed_key_conf.open('w') as bed_key_f:
+                yaml.dump(bed_key_dict, bed_key_f)
+            with bw_key_conf.open('w') as bw_key_f:
+                yaml.dump(bw_key_dict, bw_key_f)
 
         log.print_progress('Create a dotenv')
         cwas_config_dir = Path(cwas.config.__file__).parent
