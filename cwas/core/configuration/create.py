@@ -18,3 +18,24 @@ def create_annotation_key(out_file_path: pathlib.Path,
 
     with out_file_path.open('w') as out_f:
         yaml.dump(annot_key_dict, out_f)
+
+
+def split_annotation_key(bed_key_path: pathlib.Path,
+                         bw_key_path: pathlib.Path,
+                         annotation_key_path: pathlib.Path):
+    """Split the input annotation key configuration file"""
+    with annotation_key_path.open('r') as annot_key_f:
+        annotation_key_dict = yaml.safe_load(annot_key_f)
+
+    bed_key_dict = {}
+    bw_key_dict = {}
+    for filename, file_key in annotation_key_dict:
+        if filename.endswith('bed.gz'):
+            bed_key_dict[filename] = file_key
+        elif filename.endswith('bw'):
+            bw_key_dict[filename] = file_key
+
+    with bed_key_path.open('w') as bed_out_f:
+        yaml.dump(bed_key_dict, bed_out_f)
+    with bw_key_path.open('w') as bw_out_f:
+        yaml.dump(bw_key_dict, bw_out_f)

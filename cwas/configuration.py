@@ -6,7 +6,7 @@ import dotenv
 
 import cwas.config
 import cwas.utils.log as log
-from cwas.core.configuration.create import create_annotation_key
+import cwas.core.configuration.create as create
 from cwas.runnable import Runnable
 
 
@@ -80,8 +80,11 @@ class Configuration(Runnable):
         bw_key_conf = work_dir / 'annotation_key_bw.yaml'
         if annot_key_conf is None:
             log.print_progress('Create a annotation key list (.yaml)')
-            create_annotation_key(bed_key_conf, data_dir, 'bed')
-            create_annotation_key(bw_key_conf, data_dir, 'bw')
+            create.create_annotation_key(bed_key_conf, data_dir, 'bed')
+            create.create_annotation_key(bw_key_conf, data_dir, 'bw')
+        else:
+            create.split_annotation_key(bed_key_conf, bw_key_conf,
+                                        annot_key_conf)
 
         log.print_progress('Create a dotenv')
         cwas_config_dir = Path(cwas.config.__file__).parent
