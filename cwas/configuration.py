@@ -3,10 +3,10 @@ import os
 from pathlib import Path
 
 import dotenv
-import yaml
 
 import cwas.config
 import cwas.utils.log as log
+from cwas.core.configuration.create import create_annotation_key
 from cwas.runnable import Runnable
 
 
@@ -80,18 +80,8 @@ class Configuration(Runnable):
         bw_key_conf = work_dir / 'annotation_key_bw.yaml'
         if annot_key_conf is None:
             log.print_progress('Create a annotation key list (.yaml)')
-            bed_filenames = [str(bed_filepath)
-                             for bed_filepath in data_dir.glob('*.bed.gz')]
-            bed_key_dict = {bed_filename: bed_filename[:-7].replace('.', '_')
-                            for bed_filename in bed_filenames}
-            bw_filenames = [str(bw_filepath)
-                            for bw_filepath in data_dir.glob('*.bw')]
-            bw_key_dict = {bw_filename: bw_filename[:-3].replace('.', '_')
-                           for bw_filename in bw_filenames}
-            with bed_key_conf.open('w') as bed_key_f:
-                yaml.dump(bed_key_dict, bed_key_f)
-            with bw_key_conf.open('w') as bw_key_f:
-                yaml.dump(bw_key_dict, bw_key_f)
+            create_annotation_key(bed_key_conf, data_dir, 'bed')
+            create_annotation_key(bw_key_conf, data_dir, 'bw')
 
         log.print_progress('Create a dotenv')
         cwas_config_dir = Path(cwas.config.__file__).parent
