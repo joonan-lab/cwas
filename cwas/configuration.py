@@ -1,12 +1,11 @@
 import argparse
-import os
 from pathlib import Path
 
 import dotenv
 
 import cwas.config
-import cwas.utils.log as log
 import cwas.core.configuration.create as create
+import cwas.utils.log as log
 from cwas.runnable import Runnable
 
 
@@ -59,21 +58,23 @@ class Configuration(Runnable):
 
     def run(self):
         work_dir = getattr(self, 'work_dir')
-        data_dir = getattr(self, 'data_dir')
-        data_dir_symlink = work_dir / 'annotation-data'
+        log.print_progress(f'Create CWAS workspace "{work_dir}"')
         try:
-            log.print_progress(f'Create CWAS workspace "{work_dir}"')
             work_dir.mkdir(parents=True, exist_ok=True)
-            log.print_progress(f'Create a symlink "{data_dir}" of your data '
-                               f'directory')
-            os.symlink(data_dir, data_dir_symlink, target_is_directory=True)
         except NotADirectoryError:
             log.print_err('The path to CWAS workspace is invalid.')
             raise
+
+        data_dir = getattr(self, 'data_dir')
+        data_dir_symlink = work_dir / 'annotation-data'
+        log.print_progress(f'Create a symlink "{data_dir}" of your data '
+                           f'directory')
+        try:
+            data_dir_symlink.symlink_to(data_dir, target_is_directory=True)
+            data_dir = data_dir_symlink
         except FileExistsError:
             log.print_warn(f'"{data_dir_symlink}" already exists so skip '
-                           f'making symbolic link for your data directory.')
-        data_dir = data_dir_symlink
+                           f'making symbolic link of your data directory.')
 
         annot_key_conf = getattr(self, 'annot_key_conf')
         bed_key_conf = work_dir / 'annotation_key_bed.yaml'
