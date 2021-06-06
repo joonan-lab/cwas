@@ -44,13 +44,16 @@ def create_annotation_dir(create_workspace):
 
 
 def create_annotation_key_conf():
-    with _annotation_key_conf.open('w') as key_file:
-        print('bed_annot1.bed.gz', 'bed1', sep='\t', file=key_file)
-        print('bed.annot2.bed.gz', 'bed2', sep='\t', file=key_file)
-        print('bed.annot3.bed', 'bed3', sep='\t', file=key_file)
-        print('bw_annot1.bw', 'bw1', sep='\t', file=key_file)
-        print('bw.annot2.bw', 'bw2', sep='\t', file=key_file)
-        print('bw.annot3.bw.gz', 'bw3', sep='\t', file=key_file)
+    annot_key_dict = {
+        'bed_annot1.bed.gz': 'bed1',
+        'bed.annot2.bed.gz': 'bed2',
+        'bed.annot3.bed': 'bed3',
+        'bw_annot1.bw': 'bw1',
+        'bw.annot2.bw': 'bw2',
+        'bw.annot3.bw.gz': 'bw3',
+    }
+    with _annotation_key_conf.open('w') as out_f:
+        yaml.dump(annot_key_dict, out_f)
 
 
 def test_create_annotation_key_bed():
@@ -65,6 +68,7 @@ def test_create_annotation_key_bed():
     assert bed_key['bed_annot1.bed.gz'] == 'bed_annot1'
     assert bed_key['bed.annot2.bed.gz'] == 'bed_annot2'
 
+
 def test_create_annotation_key_bw():
     bw_key_conf = _tmp_dir / 'annotation_key_bw.yaml'
     create.create_annotation_key(bw_key_conf, _annotation_dir, 'bw')
@@ -73,7 +77,7 @@ def test_create_annotation_key_bw():
         bw_key = yaml.safe_load(f)
     assert 'bw_annot1.bw' in bw_key
     assert 'bw.annot2.bw' in bw_key
-    assert 'bw.annot3.bw.gz' in bw_key
+    assert 'bw.annot3.bw.gz' not in bw_key
     assert bw_key['bw_annot1.bw'] == 'bw_annot1'
     assert bw_key['bw.annot2.bw'] == 'bw_annot2'
 
@@ -81,7 +85,7 @@ def test_create_annotation_key_bw():
 def test_split_annotation_key():
     bed_key_conf = _tmp_dir / 'split_key_bed.yaml'
     bw_key_conf = _tmp_dir / 'split_key_bw.yaml'
-    create.split_annotation_key(_annotation_key_conf, bed_key_conf, bw_key_conf)
+    create.split_annotation_key(bed_key_conf, bw_key_conf, _annotation_key_conf)
 
     assert bed_key_conf.exists()
     with bed_key_conf.open() as f:
