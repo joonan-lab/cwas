@@ -28,16 +28,16 @@ class Configuration(Runnable):
                             required=True, type=Path,
                             help="Path to your annotation data directory"
                             )
-        parser.add_argument('-c', '--bigwig_cutoff', dest='bw_cutoff_conf',
-                            required=False, type=Path, default=None,
-                            help="Path to a configuration file (.yaml) that "
-                                 "specifies the annotation cutoff of "
-                                 "each BigWig file")
         parser.add_argument('-k', '--annotation_key', dest='annot_key_conf',
                             required=False, type=Path, default=None,
                             help="Path to a configuration file (.yaml) that "
                                  "specifies the annotation key of each "
                                  "annotation data file")
+        parser.add_argument('-c', '--bigwig_cutoff', dest='bw_cutoff_conf',
+                            required=False, type=Path, default=None,
+                            help="Path to a configuration file (.yaml) that "
+                                 "specifies the annotation cutoff of "
+                                 "each BigWig file")
         parser.add_argument('-w', '--workspace', dest='work_dir',
                             required=False,
                             type=Path, default=default_work_dir,
@@ -47,8 +47,10 @@ class Configuration(Runnable):
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        log.print_arg('CWAS workspace', args.work_dir)
         log.print_arg('Your annotation data directory', args.data_dir)
+        log.print_arg('Your annotation key list', args.annot_key_conf)
+        log.print_arg('Your BigWig cutoff list', args.bw_cutoff_conf)
+        log.print_arg('CWAS workspace', args.work_dir)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
