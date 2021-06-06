@@ -14,8 +14,8 @@ _annotation_dir = _tmp_dir / 'annotation-data'
 _annotation_key_conf = _tmp_dir / 'annotation_key.yaml'
 
 
-@pytest.fixture(scope='session', autouse=True)
-def run_around_tests():
+@pytest.fixture(scope='module', autouse=True)
+def create_workspace():
     _tmp_dir.mkdir()
     yield
     for f in _tmp_dir.glob('*'):
@@ -23,8 +23,8 @@ def run_around_tests():
     _tmp_dir.rmdir()
 
 
-@pytest.fixture(scope='session', autouse=True)
-def create_annotation_dir():
+@pytest.fixture(scope='module', autouse=True)
+def create_annotation_dir(create_workspace):
     _annotation_dir.mkdir()
     annot_filepaths = [
         _annotation_dir / 'bed_annot1.bed.gz',
@@ -36,13 +36,13 @@ def create_annotation_dir():
     ]
     for annot_filepath in annot_filepaths:
         annot_filepath.touch()
+    create_annotation_key_conf()
     yield
     for f in _annotation_dir.glob('*'):
         f.unlink()
     _annotation_dir.rmdir()
 
 
-@pytest.fixture(scope='session', autouse=True)
 def create_annotation_key_conf():
     with _annotation_key_conf.open('w') as key_file:
         print('bed_annot1.bed.gz', 'bed1', sep='\t', file=key_file)
@@ -53,7 +53,7 @@ def create_annotation_key_conf():
         print('bw.annot3.bw.gz', 'bw3', sep='\t', file=key_file)
 
 
-def test_create_annotation_key():
+def test_create_annotation_key_bed():
     bed_key_conf = _tmp_dir / 'annotation_key_bed.yaml'
     create.create_annotation_key(bed_key_conf, _annotation_dir, 'bed')
     assert bed_key_conf.exists()
@@ -65,6 +65,7 @@ def test_create_annotation_key():
     assert bed_key['bed_annot1.bed.gz'] == 'bed_annot1'
     assert bed_key['bed.annot2.bed.gz'] == 'bed_annot2'
 
+def test_create_annotation_key_bw():
     bw_key_conf = _tmp_dir / 'annotation_key_bw.yaml'
     create.create_annotation_key(bw_key_conf, _annotation_dir, 'bw')
     assert bw_key_conf.exists()
