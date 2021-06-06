@@ -12,6 +12,10 @@ from cwas.runnable import Runnable
 class Configuration(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
+        work_dir = getattr(self, 'work_dir')
+        self.data_dir_symlink = work_dir / 'annotation-data'
+        self.bed_key_conf = work_dir / 'annotation_key_bed.yaml'
+        self.bw_key_conf = work_dir / 'annotation_key_bw.yaml'
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -57,6 +61,14 @@ class Configuration(Runnable):
                     f"Non-directory file: '{args.work_dir}'")
 
     def run(self):
+        self._create_workspace()
+        self._create_data_dir_symlink()
+        self._create_annotation_key_list()
+        self._create_dotenv()
+
+        log.print_log('Notice', 'Not implemented yet.')
+
+    def _create_workspace(self):
         work_dir = getattr(self, 'work_dir')
         log.print_progress(f'Create CWAS workspace "{work_dir}"')
         try:
@@ -65,32 +77,36 @@ class Configuration(Runnable):
             log.print_err('The path to CWAS workspace is invalid.')
             raise
 
+    def _create_data_dir_symlink(self):
         data_dir = getattr(self, 'data_dir')
-        data_dir_symlink = work_dir / 'annotation-data'
-        log.print_progress(f'Create a symlink "{data_dir}" of your data '
-                           f'directory')
+        data_dir_symlink = getattr(self, 'data_dir_symlink')
+        log.print_progress(f'Create a symlink of your data directory '
+                           f'"{data_dir_symlink}"')
         try:
             data_dir_symlink.symlink_to(data_dir, target_is_directory=True)
-            data_dir = data_dir_symlink
         except FileExistsError:
             log.print_warn(f'"{data_dir_symlink}" already exists so skip '
-                           f'making symbolic link of your data directory.')
+                           f'creating the symbolic link')
 
+    def _create_annotation_key_list(self):
+        bed_key_conf = getattr(self, 'bed_key_conf')
+        bw_key_conf = getattr(self, 'bw_key_conf')
+        log.print_progress(f'Create annotation key lists '
+                           f'"{bed_key_conf}" and "{bw_key_conf}"')
+        data_dir = getattr(self, 'data_dir_symlink')
         annot_key_conf = getattr(self, 'annot_key_conf')
-        bed_key_conf = work_dir / 'annotation_key_bed.yaml'
-        bw_key_conf = work_dir / 'annotation_key_bw.yaml'
+
         if annot_key_conf is None:
-            log.print_progress('Create a annotation key list (.yaml)')
             create.create_annotation_key(bed_key_conf, data_dir, 'bed')
             create.create_annotation_key(bw_key_conf, data_dir, 'bw')
         else:
             create.split_annotation_key(bed_key_conf, bw_key_conf,
                                         annot_key_conf)
 
-        log.print_progress('Create a dotenv')
+    def _create_dotenv(self):
+        work_dir = getattr(self, 'work_dir')
         cwas_config_dir = Path(cwas.config.__file__).parent
         env_path = cwas_config_dir.resolve() / '.env'
+        log.print_progress(f'Create and set package dotenv')
         env_path.touch()
         dotenv.set_key(env_path, 'CWAS_WORKSPACE', str(work_dir))
-
-        log.print_log('Notice', 'Not implemented yet.')
