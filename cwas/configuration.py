@@ -1,11 +1,9 @@
 import argparse
 from pathlib import Path
 
-import dotenv
-
-import cwas.config
 import cwas.core.configuration.create as create
 import cwas.utils.log as log
+from cwas.env import set_env
 from cwas.runnable import Runnable
 
 
@@ -64,9 +62,9 @@ class Configuration(Runnable):
 
     def run(self):
         self._create_workspace()
+        set_env('CWAS_WORKSPACE', str(getattr(self, 'work_dir')))
         self._create_data_dir_symlink()
         self._create_annotation_key_list()
-        self._create_dotenv()
 
         log.print_log('Notice', 'Not implemented yet.')
 
@@ -104,11 +102,3 @@ class Configuration(Runnable):
         else:
             create.split_annotation_key(bed_key_conf, bw_key_conf,
                                         annot_key_conf)
-
-    def _create_dotenv(self):
-        work_dir = getattr(self, 'work_dir')
-        cwas_config_dir = Path(cwas.config.__file__).parent
-        env_path = cwas_config_dir.resolve() / '.env'
-        log.print_progress(f'Create and set package dotenv')
-        env_path.touch()
-        dotenv.set_key(env_path, 'CWAS_WORKSPACE', str(work_dir))
