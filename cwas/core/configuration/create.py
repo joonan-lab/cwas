@@ -12,7 +12,8 @@ def create_annotation_key(out_file_path: pathlib.Path,
 
     glob_key = '*.bed.gz' if file_type == 'bed' else '*.bw'
     file_ext_len = len(glob_key) - 1  # Ignore '*'
-    filenames = [str(file_path) for file_path in annotation_dir.glob(glob_key)]
+    filenames = [str(file_path.name)
+                 for file_path in annotation_dir.glob(glob_key)]
     annot_key_dict = {filename: filename[:-file_ext_len].replace('.', '_')
                       for filename in filenames}
 
@@ -29,11 +30,11 @@ def split_annotation_key(bed_key_path: pathlib.Path,
 
     bed_key_dict = {}
     bw_key_dict = {}
-    for filename, file_key in annotation_key_dict:
+    for filename in annotation_key_dict:
         if filename.endswith('bed.gz'):
-            bed_key_dict[filename] = file_key
+            bed_key_dict[filename] = annotation_key_dict[filename]
         elif filename.endswith('bw'):
-            bw_key_dict[filename] = file_key
+            bw_key_dict[filename] = annotation_key_dict[filename]
 
     with bed_key_path.open('w') as bed_out_f:
         yaml.dump(bed_key_dict, bed_out_f)
