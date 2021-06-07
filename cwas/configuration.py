@@ -24,8 +24,10 @@ class Configuration(Runnable):
         default_work_dir = Path.home() / '.cwas'
         parser.add_argument('-d', '--annotation_data_dir', dest='data_dir',
                             required=True, type=Path,
-                            help="Path to your annotation data directory"
-                            )
+                            help="Path to your annotation data directory")
+        parser.add_argument('-m', '--gene_matrix', dest='gene_matrix',
+                            required=True, type=Path,
+                            help="Path to your gene matrix")
         parser.add_argument('-k', '--annotation_key', dest='annot_key_conf',
                             required=False, type=Path, default=None,
                             help="Path to a configuration file (.yaml) that "
@@ -39,8 +41,7 @@ class Configuration(Runnable):
         parser.add_argument('-w', '--workspace', dest='work_dir',
                             required=False,
                             type=Path, default=default_work_dir,
-                            help='Path to your CWAS workspace'
-                            )
+                            help='Path to your CWAS workspace')
         return parser
 
     @staticmethod
