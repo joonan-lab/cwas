@@ -118,3 +118,31 @@ def test_split_annotation_key():
     assert 'bw_annot1.bw' in bw_key and bw_key['bw_annot1.bw'] == 'bw1'
     assert 'bw.annot2.bw' in bw_key and bw_key['bw.annot2.bw'] == 'bw2'
     assert 'bw.annot3.bw.gz' not in bw_key
+
+
+def test_create_category_domain_list():
+    # Setting
+    bed_key_conf = _tmp_dir / 'split_key_bed.yaml'
+    bw_key_conf = _tmp_dir / 'split_key_bw.yaml'
+    create.split_annotation_key(bed_key_conf, bw_key_conf, _annotation_key_conf)
+
+    domain_list_path = _tmp_dir / 'category_domains.yaml'
+    create.create_category_domain_list(domain_list_path, bed_key_conf,
+                                       bw_key_conf, _gene_matrix_path)
+
+    assert domain_list_path.is_file()
+
+    with domain_list_path.open('r') as domain_list_f, \
+         bed_key_conf.open('r') as bed_key_f, \
+         bw_key_conf.open('r') as bw_key_f, \
+         _gene_matrix_path.open('r') as gene_mat_f:
+        domain_dict = yaml.safe_load(domain_list_f)
+        bed_key_dict = yaml.safe_load(bed_key_f)
+        bw_key_dict = yaml.safe_load(bw_key_f)
+        gene_mat_header = gene_mat_f.readline()
+        gene_list_domains = gene_mat_header.strip().split()
+        gene_list_domains = gene_list_domains[2:]
+
+    assert len(domain_dict['region']) == 1 + len(bed_key_dict)
+    assert len(domain_dict['conservation']) == 1 + len(bw_key_dict)
+    assert len(domain_dict['gene_list']) == 1 + len(gene_list_domains)
