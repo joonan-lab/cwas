@@ -12,11 +12,14 @@ import cwas.core.configuration.create as create
 _tmp_dir = Path.home() / f'.cwas_test_{randint(1, 1000000)}'
 _annotation_dir = _tmp_dir / 'annotation-data'
 _annotation_key_conf = _tmp_dir / 'annotation_key.yaml'
+_gene_matrix_path = _tmp_dir / 'gene_matrix.txt'
 
 
 @pytest.fixture(scope='module', autouse=True)
 def create_workspace():
     _tmp_dir.mkdir()
+    create_annotation_key_conf()
+    create_gene_matrix()
     yield
     for f in _tmp_dir.glob('*'):
         f.unlink()
@@ -36,7 +39,6 @@ def create_annotation_dir(create_workspace):
     ]
     for annot_filepath in annot_filepaths:
         annot_filepath.touch()
-    create_annotation_key_conf()
     yield
     for f in _annotation_dir.glob('*'):
         f.unlink()
@@ -54,6 +56,20 @@ def create_annotation_key_conf():
     }
     with _annotation_key_conf.open('w') as out_f:
         yaml.dump(annot_key_dict, out_f)
+
+
+def create_gene_matrix():
+    gene_matrix_header = [
+        'gene_id',
+        'gene_name',
+        'gene1',
+        'gene2',
+        'gene3',
+        'gene4',
+        'gene5'
+    ]
+    with _gene_matrix_path.open('w') as out_f:
+        print(*gene_matrix_header, sep='\t', file=out_f)
 
 
 def test_create_annotation_key_bed():
