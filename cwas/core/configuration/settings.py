@@ -6,7 +6,7 @@ Default category domain information for CWAS project.
 # 'conservation' domains are added by BigWig file keys.
 # 'gene_list' domains are added by gene matrix.
 # 'region' domains are added by BED file keys.
-default_domains = {
+_default_domains = {
     'variant_type': [
         'All',
         'SNV',
@@ -44,7 +44,7 @@ default_domains = {
 
 # A category (domain combination) that includes a redundant domain pair will be
 # excluded from CWAS analysis.
-redundant_domain_pairs = {
+_redundant_domain_pairs = {
     ('variant_type', 'gencode'): {
         ('All', 'FrameshiftRegion'),
         ('All', 'InFrameRegion'),
@@ -69,3 +69,11 @@ redundant_domain_pairs = {
         ('Any', 'lincRnaRegion'),
     }
 }
+
+
+def get_default_domains() -> dict:
+    return dict(_default_domains)
+
+
+def get_redundant_domain_pairs() -> dict:
+    return dict(_redundant_domain_pairs)
