@@ -12,6 +12,7 @@ class Configuration(Runnable):
         super().__init__(args)
         work_dir = getattr(self, 'work_dir')
         self.data_dir_symlink = work_dir / 'annotation-data'
+        self.gene_mat_symlink = work_dir / 'gene_matrix.txt'
         self.bed_key_conf = work_dir / 'annotation_key_bed.yaml'
         self.bw_key_conf = work_dir / 'annotation_key_bw.yaml'
 
@@ -47,6 +48,7 @@ class Configuration(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg('Your annotation data directory', args.data_dir)
+        log.print_arg('Your gene matrix', args.gene_matrix)
         log.print_arg('Your annotation key list', args.annot_key_conf)
         log.print_arg('Your BigWig cutoff list', args.bw_cutoff_conf)
         log.print_arg('CWAS workspace', args.work_dir)
@@ -65,6 +67,7 @@ class Configuration(Runnable):
         self._create_workspace()
         set_env('CWAS_WORKSPACE', str(getattr(self, 'work_dir')))
         self._create_data_dir_symlink()
+        self._create_gene_matrix_symlink()
         self._create_annotation_key_list()
 
         log.print_log('Notice', 'Not implemented yet.')
@@ -81,13 +84,26 @@ class Configuration(Runnable):
     def _create_data_dir_symlink(self):
         data_dir = getattr(self, 'data_dir')
         data_dir_symlink = getattr(self, 'data_dir_symlink')
-        log.print_progress(f'Create a symlink of your data directory '
-                           f'"{data_dir_symlink}"')
+        log.print_progress(f'Create a symlink to your annotation data '
+                           f'directory "{data_dir_symlink}"')
         try:
             data_dir_symlink.symlink_to(data_dir, target_is_directory=True)
         except FileExistsError:
             log.print_warn(f'"{data_dir_symlink}" already exists so skip '
                            f'creating the symbolic link')
+
+    def _create_gene_matrix_symlink(self):
+        gene_matrix = getattr(self, 'gene_matrix')
+        gene_matrix_symlink = getattr(self, 'gene_matrix_symlink')
+        log.print_progress(f'Create a symlink to your gene matrix '
+                           f'"{gene_matrix_symlink}"')
+
+        try:
+            gene_matrix_symlink.symlink_to(gene_matrix)
+        except FileExistsError:
+            log.print_warn(f'"{gene_matrix_symlink}" already exists so skip '
+                           f'creating the symbolic link')
+
 
     def _create_annotation_key_list(self):
         bed_key_conf = getattr(self, 'bed_key_conf')
