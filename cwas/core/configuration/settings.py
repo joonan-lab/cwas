@@ -42,6 +42,8 @@ _default_domains = {
     ]
 }
 
+_domain_types = list(_default_domains.keys())
+
 # A category (domain combination) that includes a redundant domain pair will be
 # excluded from CWAS analysis.
 _redundant_domain_pairs = {
@@ -74,6 +76,8 @@ _redundant_domain_pairs = {
 def get_default_domains() -> dict:
     return dict(_default_domains)
 
+def get_domain_types() -> list:
+    return list(_domain_types)
 
 def get_redundant_domain_pairs() -> dict:
     return dict(_redundant_domain_pairs)

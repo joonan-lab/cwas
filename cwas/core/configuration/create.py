@@ -6,6 +6,8 @@ from __future__ import annotations
 import yaml
 
 from cwas.core.configuration.settings import get_default_domains
+from cwas.core.configuration.settings import get_domain_types
+from cwas.core.configuration.settings import get_redundant_domain_pairs
 
 
 def create_annotation_key(out_file_path: pathlib.Path,
@@ -68,3 +70,20 @@ def create_category_domain_list(domain_list_path: pathlib.Path,
 
     with domain_list_path.open('w') as domain_list_f:
         yaml.dump(domains, domain_list_f)
+
+
+def create_redundant_category_table(category_table_path: pathlib.Path):
+    domain_types = get_domain_types()
+    table_row_template = \
+        {domain_type: '*' for domain_type in domain_types}
+
+    with category_table_path.open('w') as out_f:
+        print(*domain_types, sep='\t', file=out_f)
+        redundant_domain_pairs = get_redundant_domain_pairs()
+        for domain_type_pair, domain_pair_set in redundant_domain_pairs.items():
+            for domain_pair in domain_pair_set:
+                table_row = dict(table_row_template)
+                for i, domain_type in enumerate(domain_type_pair):
+                    table_row[domain_type] = domain_pair[i]
+                print(*[table_row[domain_type] for domain_type in domain_types],
+                      sep='\t', file=out_f)
