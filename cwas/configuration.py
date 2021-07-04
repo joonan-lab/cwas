@@ -13,8 +13,8 @@ class Configuration(Runnable):
         work_dir = getattr(self, 'work_dir')
         self.data_dir_symlink = work_dir / 'annotation-data'
         self.gene_mat_symlink = work_dir / 'gene_matrix.txt'
-        self.bed_key_conf = work_dir / 'annotation_key_bed.yaml'
-        self.bw_key_conf = work_dir / 'annotation_key_bw.yaml'
+        self.bed_key_list = work_dir / 'annotation_key_bed.yaml'
+        self.bw_key_list = work_dir / 'annotation_key_bw.yaml'
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -104,18 +104,18 @@ class Configuration(Runnable):
             log.print_warn(f'"{gene_matrix_symlink}" already exists so skip '
                            f'creating the symbolic link')
 
-
     def _create_annotation_key_list(self):
-        bed_key_conf = getattr(self, 'bed_key_conf')
-        bw_key_conf = getattr(self, 'bw_key_conf')
+        bed_key_list = getattr(self, 'bed_key_list')
+        bw_key_list = getattr(self, 'bw_key_list')
         log.print_progress(f'Create annotation key lists '
-                           f'"{bed_key_conf}" and "{bw_key_conf}"')
+                           f'"{bed_key_list}" and "{bw_key_list}"')
         data_dir = getattr(self, 'data_dir_symlink')
         annot_key_conf = getattr(self, 'annot_key_conf')
 
         if annot_key_conf is None:
-            create.create_annotation_key(bed_key_conf, data_dir, 'bed')
-            create.create_annotation_key(bw_key_conf, data_dir, 'bw')
+            create.create_annotation_key(bed_key_list, data_dir, 'bed')
+            create.create_annotation_key(bw_key_list, data_dir, 'bw')
         else:
-            create.split_annotation_key(bed_key_conf, bw_key_conf,
+            create.split_annotation_key(bed_key_list, bw_key_list,
                                         annot_key_conf)
+
