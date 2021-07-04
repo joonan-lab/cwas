@@ -23,7 +23,7 @@ def create_annotation_key(out_file_path: pathlib.Path,
                       for filename in filenames}
 
     with out_file_path.open('w') as out_f:
-        yaml.dump(annot_key_dict, out_f)
+        yaml.safe_dump(annot_key_dict, out_f)
 
 
 def split_annotation_key(bed_key_path: pathlib.Path,
@@ -42,9 +42,9 @@ def split_annotation_key(bed_key_path: pathlib.Path,
             bw_key_dict[filename] = annotation_key_dict[filename]
 
     with bed_key_path.open('w') as bed_out_f:
-        yaml.dump(bed_key_dict, bed_out_f)
+        yaml.safe_dump(bed_key_dict, bed_out_f)
     with bw_key_path.open('w') as bw_out_f:
-        yaml.dump(bw_key_dict, bw_out_f)
+        yaml.safe_dump(bw_key_dict, bw_out_f)
 
 
 def create_bw_cutoff_list(bw_cutoff_list: pathlib.Path,
@@ -100,7 +100,7 @@ def create_category_domain_list(domain_list_path: pathlib.Path,
     domains['gene_list'] += gene_list_domains
 
     with domain_list_path.open('w') as domain_list_f:
-        yaml.dump(domains, domain_list_f)
+        yaml.safe_dump(domains, domain_list_f)
 
 
 def create_redundant_category_table(category_table_path: pathlib.Path):
