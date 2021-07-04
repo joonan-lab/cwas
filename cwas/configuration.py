@@ -12,9 +12,12 @@ class Configuration(Runnable):
         super().__init__(args)
         work_dir = getattr(self, 'work_dir')
         self.data_dir_symlink = work_dir / 'annotation-data'
-        self.gene_mat_symlink = work_dir / 'gene_matrix.txt'
+        self.gene_matrix_symlink = work_dir / 'gene_matrix.txt'
         self.bed_key_list = work_dir / 'annotation_key_bed.yaml'
         self.bw_key_list = work_dir / 'annotation_key_bw.yaml'
+        self.bw_cutoff_list = work_dir / 'annotation_cutoff_bw.yaml'
+        self.category_domain_list = work_dir / 'category_domain.yaml'
+        self.redundant_category_table = work_dir / 'redundant_category.txt'
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -70,8 +73,7 @@ class Configuration(Runnable):
         self._create_gene_matrix_symlink()
         self._create_annotation_key_list()
         self._create_bw_cutoff_list()
-
-        log.print_log('Notice', 'Not implemented yet.')
+        self._create_category_info()
 
     def _create_workspace(self):
         work_dir = getattr(self, 'work_dir')
@@ -126,4 +128,20 @@ class Configuration(Runnable):
         bw_cutoff_conf = getattr(self, 'bw_cutoff_conf')  # User-defined
         log.print_progress(f'Create BigWig cufoff list "{bw_cutoff_list}"')
         create.create_bw_cutoff_list(bw_cutoff_list, bw_key_list,
-                                    bw_cutoff_conf)
+                                     bw_cutoff_conf)
+
+    def _create_category_info(self):
+        """ Create a list of category domains and a redundant category table"""
+        domain_list = getattr(self, 'category_domain_list')
+        bed_key_list = getattr(self, 'bed_key_list')
+        bw_key_list = getattr(self, 'bw_key_list')
+        gene_matrix = getattr(self, 'gene_matrix')
+        redundant_category_table = getattr(self, 'redundant_category_table')
+
+        log.print_progress(f'Create a CWAS category domain list '
+                           f'"{domain_list}"')
+        create.create_category_domain_list(domain_list, bed_key_list,
+                                           bw_key_list, gene_matrix)
+        log.print_progress(f'Create a redundant category table '
+                           f'"{redundant_category_table}"')
+        create.create_redundant_category_table(redundant_category_table)
