@@ -69,6 +69,7 @@ class Configuration(Runnable):
         self._create_data_dir_symlink()
         self._create_gene_matrix_symlink()
         self._create_annotation_key_list()
+        self._create_bw_cutoff_list()
 
         log.print_log('Notice', 'Not implemented yet.')
 
@@ -119,3 +120,10 @@ class Configuration(Runnable):
             create.split_annotation_key(bed_key_list, bw_key_list,
                                         annot_key_conf)
 
+    def _create_bw_cutoff_list(self):
+        bw_cutoff_list = getattr(self, 'bw_cutoff_list')
+        bw_key_list = getattr(self, 'bw_key_list')
+        bw_cutoff_conf = getattr(self, 'bw_cutoff_conf')  # User-defined
+        log.print_progress(f'Create BigWig cufoff list "{bw_cutoff_list}"')
+        create.create_bw_cutoff_list(bw_cutoff_list, bw_key_list,
+                                    bw_cutoff_conf)

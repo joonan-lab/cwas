@@ -8,6 +8,7 @@ import yaml
 from cwas.core.configuration.settings import get_default_domains
 from cwas.core.configuration.settings import get_domain_types
 from cwas.core.configuration.settings import get_redundant_domain_pairs
+from cwas.utils.log import print_err
 
 
 def create_annotation_key(out_file_path: pathlib.Path,
@@ -44,6 +45,36 @@ def split_annotation_key(bed_key_path: pathlib.Path,
         yaml.dump(bed_key_dict, bed_out_f)
     with bw_key_path.open('w') as bw_out_f:
         yaml.dump(bw_key_dict, bw_out_f)
+
+
+def create_bw_cutoff_list(bw_cutoff_list: pathlib.Path,
+                          bw_key_list: pathlib.Path,
+                          user_def_cutoff_list: pathlib.Pathlib = None):
+    """ All the arguments must be in a proper YAML format."""
+    default_cutoff = 0.0
+
+    with bw_key_list.open('r') as bw_key_f:
+        try:
+            bw_key_dict = yaml.safe_load(bw_key_f)
+            bw_cutoff_dict = {bw_key: default_cutoff
+                              for bw_key in bw_key_dict.values()}
+        except yaml.YAMLError:
+            print_err(f'"{bw_key_list}" is not in a proper YAML format.')
+            raise
+
+    with user_def_cutoff_list.open('r') as user_def_cutoff_f:
+        try:
+            user_def_cutoff_dict = yaml.safe_load(user_def_cutoff_f)
+            for bw_filename, bw_cutoff in user_def_cutoff_dict.items():
+                bw_key = bw_key_dict.get(bw_filename)
+                if bw_key is not None:
+                    bw_cutoff_dict[bw_key] = bw_cutoff
+        except yaml.YAMLError:
+            print_err(f'"{bw_key_list}" is not in a proper YAML format.')
+            raise
+
+    with bw_cutoff_list.open('w') as bw_cutoff_f:
+        yaml.safe_dump(bw_cutoff_dict, bw_cutoff_f)
 
 
 def create_category_domain_list(domain_list_path: pathlib.Path,
