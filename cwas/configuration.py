@@ -3,7 +3,6 @@ from pathlib import Path
 
 import cwas.core.configuration.create as create
 import cwas.utils.log as log
-from cwas.env import set_env
 from cwas.runnable import Runnable
 
 
@@ -68,12 +67,12 @@ class Configuration(Runnable):
 
     def run(self):
         self._create_workspace()
-        set_env('CWAS_WORKSPACE', str(getattr(self, 'work_dir')))
         self._create_data_dir_symlink()
         self._create_gene_matrix_symlink()
         self._create_annotation_key_list()
         self._create_bw_cutoff_list()
         self._create_category_info()
+        self._set_env()
 
     def _create_workspace(self):
         work_dir = getattr(self, 'work_dir')
@@ -145,3 +144,15 @@ class Configuration(Runnable):
         log.print_progress(f'Create a redundant category table '
                            f'"{redundant_category_table}"')
         create.create_redundant_category_table(redundant_category_table)
+
+    def _set_env(self):
+        log.print_progress('Set CWAS environment variables')
+        cwas_env = getattr(self, 'env')
+        cwas_env.set_env('CWAS_WORKSPACE', getattr(self, 'work_dir'))
+        cwas_env.set_env('ANNOTATION_DATA', self.data_dir_symlink)
+        cwas_env.set_env('GENE_MATRIX', self.gene_matrix_symlink)
+        cwas_env.set_env('ANNOTATION_BED_KEY', self.bed_key_list)
+        cwas_env.set_env('ANNOTATION_BW_KEY', self.bw_key_list)
+        cwas_env.set_env('ANNOTATION_BW_CUTOFF', self.bw_cutoff_list)
+        cwas_env.set_env('CATEGORY_DOMAIN', self.category_domain_list)
+        cwas_env.set_env('REDUNDANT_CATEGORY', self.redundant_category_table)
