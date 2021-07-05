@@ -5,7 +5,6 @@ Manage CWAS environment variables
 from pathlib import Path
 
 import dotenv
-import yaml
 
 
 # Ref: https://python-patterns.guide/gang-of-four/singleton/
@@ -28,9 +27,10 @@ class Env(Singleton):
     def get_env(self, env_key):
         return self.env.get(env_key)
 
-    def set_env(self, env_key, env_value):
-        self.env[env_key] = env_value
+    def set_env(self, env_key: str, env_value):
+        self.env[env_key] = str(env_value).strip()
 
     def save(self):
         with self.path.open('w') as env_f:
-            yaml.safe_dump(self.env, env_f)
+            for k, v in self.env.items():
+                print(f'{k}={v}', file=env_f)
