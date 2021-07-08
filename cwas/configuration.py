@@ -57,13 +57,30 @@ class Configuration(Runnable):
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
+        def _check_is_file(filepath: Path):
+            if not filepath.is_file():
+                raise FileNotFoundError(
+                    f'"{filepath}" is not a file or invalid.')
+
+        def _check_is_dir(dirpath: Path):
+            if not dirpath.is_dir():
+                raise NotADirectoryError(f'"{dirpath}" is not a directory or '
+                                         f'invalid.')
+
+        _check_is_dir(args.data_dir)
+        _check_is_file(args.gene_matrix)
+        if args.annot_key_conf is not None:
+            _check_is_file(args.annot_key_conf)
+        if args.bw_cutoff_conf is not None:
+            _check_is_file(args.bw_cutoff_conf)
+
         if args.work_dir.exists():
             if args.work_dir.is_dir():
-                log.print_warn('The CWAS workspace already exists.')
+                log.print_warn(f'The CWAS workspace "{args.work_dir}" already '
+                               f'exists.')
             else:
-                log.print_err('The argument points to another kind of file.')
-                raise NotADirectoryError(
-                    f"Non-directory file: '{args.work_dir}'")
+                raise NotADirectoryError(f'The CWAS workspace "{args.work_dir}"'
+                                         f' is not a directory.')
 
     def run(self):
         self._create_workspace()
