@@ -44,10 +44,12 @@ def create_workspace(tmp_dir, gene_matrix, annotation_key_conf, bw_cutoff_conf):
     create_gene_matrix(gene_matrix)
     create_annotation_key_conf(annotation_key_conf)
     create_bw_cutoff_conf(bw_cutoff_conf)
+    print('[TEST] Temporary CWAS workspace has created.')
     yield
     for f in tmp_dir.glob('*'):
         f.unlink()
     tmp_dir.rmdir()
+    print('[TEST] Temporary CWAS workspace has deleted.')
 
 
 @pytest.fixture(scope='module', autouse=True)
