@@ -7,9 +7,10 @@ import yaml
 import cwas.core.configuration.create as create
 
 
-def test_create_annotation_key_bed(tmp_dir, annotation_dir):
-    bed_key_conf = tmp_dir / 'annotation_key_bed.yaml'
+def test_create_annotation_key_bed(cwas_workspace, annotation_dir):
+    bed_key_conf = cwas_workspace / 'annotation_key_bed.yaml'
     create.create_annotation_key(bed_key_conf, annotation_dir, 'bed')
+
     assert bed_key_conf.exists()
     with bed_key_conf.open() as f:
         bed_key = yaml.safe_load(f)
@@ -19,10 +20,13 @@ def test_create_annotation_key_bed(tmp_dir, annotation_dir):
     assert bed_key['bed_annot1.bed.gz'] == 'bed_annot1'
     assert bed_key['bed.annot2.bed.gz'] == 'bed_annot2'
 
+    bed_key_conf.unlink()
 
-def test_create_annotation_key_bw(tmp_dir, annotation_dir):
-    bw_key_conf = tmp_dir / 'annotation_key_bw.yaml'
+
+def test_create_annotation_key_bw(cwas_workspace, annotation_dir):
+    bw_key_conf = cwas_workspace / 'annotation_key_bw.yaml'
     create.create_annotation_key(bw_key_conf, annotation_dir, 'bw')
+
     assert bw_key_conf.exists()
     with bw_key_conf.open() as f:
         bw_key = yaml.safe_load(f)
@@ -32,10 +36,12 @@ def test_create_annotation_key_bw(tmp_dir, annotation_dir):
     assert bw_key['bw_annot1.bw'] == 'bw_annot1'
     assert bw_key['bw.annot2.bw'] == 'bw_annot2'
 
+    bw_key_conf.unlink()
 
-def test_split_annotation_key(tmp_dir, annotation_key_conf):
-    bed_key_conf = tmp_dir / 'split_key_bed.yaml'
-    bw_key_conf = tmp_dir / 'split_key_bw.yaml'
+
+def test_split_annotation_key(cwas_workspace, annotation_key_conf):
+    bed_key_conf = cwas_workspace / 'split_key_bed.yaml'
+    bw_key_conf = cwas_workspace / 'split_key_bw.yaml'
     create.split_annotation_key(bed_key_conf, bw_key_conf, annotation_key_conf)
 
     assert bed_key_conf.exists()
@@ -54,10 +60,13 @@ def test_split_annotation_key(tmp_dir, annotation_key_conf):
     assert 'bw.annot2.bw' in bw_key and bw_key['bw.annot2.bw'] == 'bw2'
     assert 'bw.annot3.bw.gz' not in bw_key
 
+    bed_key_conf.unlink()
+    bw_key_conf.unlink()
 
-def test_create_bw_cutoff_list(tmp_dir, annotation_dir, bw_cutoff_conf):
-    bw_cutoff_list = tmp_dir / 'annotation_cutoff_bw.yaml'
-    bw_key_list = tmp_dir / 'annotation_key_bw.yaml'
+
+def test_create_bw_cutoff_list(cwas_workspace, annotation_dir, bw_cutoff_conf):
+    bw_cutoff_list = cwas_workspace / 'annotation_cutoff_bw.yaml'
+    bw_key_list = cwas_workspace / 'annotation_key_bw.yaml'
     create.create_annotation_key(bw_key_list, annotation_dir, 'bw')
     create.create_bw_cutoff_list(bw_cutoff_list, bw_key_list, bw_cutoff_conf)
 
@@ -75,14 +84,18 @@ def test_create_bw_cutoff_list(tmp_dir, annotation_dir, bw_cutoff_conf):
                user_def_cutoff_dict[bw_filename] == bw_cutoff_dict[bw_key]
     assert not (set(bw_cutoff_dict.keys()) - set(bw_key_dict.values()))
 
+    bw_cutoff_list.unlink()
+    bw_key_list.unlink()
 
-def test_create_category_domain_list(tmp_dir, annotation_key_conf, gene_matrix):
+
+def test_create_category_domain_list(cwas_workspace, annotation_key_conf,
+                                     gene_matrix):
     # Setting
-    bed_key_conf = tmp_dir / 'split_key_bed.yaml'
-    bw_key_conf = tmp_dir / 'split_key_bw.yaml'
+    bed_key_conf = cwas_workspace / 'split_key_bed.yaml'
+    bw_key_conf = cwas_workspace / 'split_key_bw.yaml'
     create.split_annotation_key(bed_key_conf, bw_key_conf, annotation_key_conf)
 
-    domain_list_path = tmp_dir / 'category_domains.yaml'
+    domain_list_path = cwas_workspace / 'category_domain.yaml'
     create.create_category_domain_list(domain_list_path, bed_key_conf,
                                        bw_key_conf, gene_matrix)
 
@@ -103,16 +116,22 @@ def test_create_category_domain_list(tmp_dir, annotation_key_conf, gene_matrix):
     assert len(domain_dict['conservation']) == 1 + len(bw_key_dict)
     assert len(domain_dict['gene_list']) == 1 + len(gene_list_domains)
 
+    bed_key_conf.unlink()
+    bw_key_conf.unlink()
+    domain_list_path.unlink()
 
-def test_create_redundant_category_table(tmp_dir):
-    redundant_category_table = tmp_dir / 'redundant_category.txt'
+
+def test_create_redundant_category_table(cwas_workspace):
+    redundant_category_table = cwas_workspace / 'redundant_category.txt'
     create.create_redundant_category_table(redundant_category_table)
     assert redundant_category_table.exists()
+    redundant_category_table.unlink()
 
 
-def test__load_yaml_file_error(tmp_dir):
-    test_path = tmp_dir / 'not_yaml.txt'
+def test__load_yaml_file_error(cwas_workspace):
+    test_path = cwas_workspace / 'not_yaml.txt'
     with test_path.open('w') as test_f:
         print('{Hello: World!}"', file=test_f)
     with pytest.raises(yaml.YAMLError):
         _ = create.split_annotation_key(None, None, test_path)
+    test_path.unlink()

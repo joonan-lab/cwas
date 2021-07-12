@@ -7,53 +7,73 @@ from random import randint
 import pytest
 import yaml
 
-
-@pytest.fixture(scope='module')
-def tmp_dir():
-    _tmp_dir = Path.home() / f'.cwas_test_{randint(1, 1000000)}'
-    return _tmp_dir
+_rand_n = randint(1, 1000000)
 
 
 @pytest.fixture(scope='module')
-def annotation_dir(tmp_dir):
-    _annotation_dir = tmp_dir / 'annotation-data'
+def cwas_workspace():
+    _tmp_workspace = Path.home() / f'.cwas-test-{_rand_n}'
+    return _tmp_workspace
+
+
+@pytest.fixture(scope='module')
+def cwas_input_dir():
+    _tmp_input_dir = Path.home() / f'.cwas-test-input-{_rand_n}'
+    return _tmp_input_dir
+
+
+@pytest.fixture(scope='module')
+def annotation_dir(cwas_input_dir):
+    _annotation_dir = cwas_input_dir / 'annotation-data'
     return _annotation_dir
 
 
 @pytest.fixture(scope='module')
-def annotation_key_conf(tmp_dir):
-    _annotation_key_conf = tmp_dir / 'annotation_key.yaml'
+def annotation_key_conf(cwas_input_dir):
+    _annotation_key_conf = cwas_input_dir / 'annotation_key.yaml'
     return _annotation_key_conf
 
 
 @pytest.fixture(scope='module')
-def bw_cutoff_conf(tmp_dir):
-    _bw_cutoff_conf = tmp_dir / 'user_def_bigwig_cutoff.yaml'
+def bw_cutoff_conf(cwas_input_dir):
+    _bw_cutoff_conf = cwas_input_dir / 'user_def_bigwig_cutoff.yaml'
     return _bw_cutoff_conf
 
 
 @pytest.fixture(scope='module')
-def gene_matrix(tmp_dir):
-    _gene_matrix = tmp_dir / 'gene_matrix.txt'
+def gene_matrix(cwas_input_dir):
+    _gene_matrix = cwas_input_dir / 'gene_matrix.txt'
     return _gene_matrix
 
 
 @pytest.fixture(scope='module', autouse=True)
-def create_workspace(tmp_dir, gene_matrix, annotation_key_conf, bw_cutoff_conf):
-    tmp_dir.mkdir()
-    create_gene_matrix(gene_matrix)
-    create_annotation_key_conf(annotation_key_conf)
-    create_bw_cutoff_conf(bw_cutoff_conf)
+def create_cwas_workspace(cwas_workspace):
+    cwas_workspace.mkdir()
     print('[TEST] Temporary CWAS workspace has created.')
     yield
-    for f in tmp_dir.glob('*'):
+    for f in cwas_workspace.glob('*'):
         f.unlink()
-    tmp_dir.rmdir()
+    cwas_workspace.rmdir()
     print('[TEST] Temporary CWAS workspace has deleted.')
 
 
 @pytest.fixture(scope='module', autouse=True)
-def create_annotation_dir(create_workspace, annotation_dir):
+def create_cwas_input_dir(cwas_input_dir, gene_matrix, annotation_key_conf,
+                          bw_cutoff_conf):
+    cwas_input_dir.mkdir()
+    create_gene_matrix(gene_matrix)
+    create_annotation_key_conf(annotation_key_conf)
+    create_bw_cutoff_conf(bw_cutoff_conf)
+    print('[TEST] Temporary CWAS input directory has created.')
+    yield
+    for f in cwas_input_dir.glob('*'):
+        f.unlink()
+    cwas_input_dir.rmdir()
+    print('[TEST] Temporary CWAS input directory has deleted.')
+
+
+@pytest.fixture(scope='module', autouse=True)
+def create_annotation_dir(create_cwas_input_dir, annotation_dir):
     annotation_dir.mkdir()
     annot_filepaths = [
         annotation_dir / 'bed_annot1.bed.gz',
