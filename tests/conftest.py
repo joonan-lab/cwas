@@ -10,43 +10,43 @@ import yaml
 _rand_n = randint(1, 1000000)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='package')
 def cwas_workspace():
     _tmp_workspace = Path.home() / f'.cwas-test-{_rand_n}'
     return _tmp_workspace
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='package')
 def cwas_input_dir():
     _tmp_input_dir = Path.home() / f'.cwas-test-input-{_rand_n}'
     return _tmp_input_dir
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='package')
 def annotation_dir(cwas_input_dir):
     _annotation_dir = cwas_input_dir / 'annotation-data'
     return _annotation_dir
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='package')
 def annotation_key_conf(cwas_input_dir):
     _annotation_key_conf = cwas_input_dir / 'annotation_key.yaml'
     return _annotation_key_conf
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='package')
 def bw_cutoff_conf(cwas_input_dir):
     _bw_cutoff_conf = cwas_input_dir / 'user_def_bigwig_cutoff.yaml'
     return _bw_cutoff_conf
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='package')
 def gene_matrix(cwas_input_dir):
     _gene_matrix = cwas_input_dir / 'gene_matrix.txt'
     return _gene_matrix
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='package', autouse=True)
 def create_cwas_workspace(cwas_workspace):
     cwas_workspace.mkdir()
     print('[TEST] Temporary CWAS workspace has created.')
@@ -57,7 +57,7 @@ def create_cwas_workspace(cwas_workspace):
     print('[TEST] Temporary CWAS workspace has deleted.')
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='package', autouse=True)
 def create_cwas_input_dir(cwas_input_dir, gene_matrix, annotation_key_conf,
                           bw_cutoff_conf):
     cwas_input_dir.mkdir()
@@ -72,7 +72,7 @@ def create_cwas_input_dir(cwas_input_dir, gene_matrix, annotation_key_conf,
     print('[TEST] Temporary CWAS input directory has deleted.')
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope='package', autouse=True)
 def create_annotation_dir(create_cwas_input_dir, annotation_dir):
     annotation_dir.mkdir()
     annot_filepaths = [

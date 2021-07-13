@@ -26,8 +26,8 @@ def test_run_configuration(cwas_workspace, annotation_dir, annotation_key_conf,
     category_domain_list = cwas_workspace / 'category_domain.yaml'
     redundant_category_table = cwas_workspace / 'redundant_category.txt'
 
-    assert data_dir.is_dir()
-    assert gene_matrix.is_file()
+    assert data_dir.is_dir() and data_dir.is_symlink()
+    assert gene_matrix.is_file() and gene_matrix.is_symlink()
     assert bed_key_list.is_file()
     assert bw_key_list.is_file()
     assert bw_cutoff_list.is_file()
@@ -35,10 +35,6 @@ def test_run_configuration(cwas_workspace, annotation_dir, annotation_key_conf,
     assert redundant_category_table.is_file()
 
     # Teardown
-    for f in data_dir.glob('*'):
-        f.unlink()
-    data_dir.unlink()
-    gene_matrix.unlink()
     bed_key_list.unlink()
     bw_key_list.unlink()
     bw_cutoff_list.unlink()
