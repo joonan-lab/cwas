@@ -1,6 +1,7 @@
 """
 Default category domain information for CWAS project.
 """
+from copy import deepcopy
 
 # This domain dictionary is incomplete.
 # 'conservation' domains are added by BigWig file keys.
@@ -74,10 +75,12 @@ _redundant_domain_pairs = {
 
 
 def get_default_domains() -> dict:
-    return dict(_default_domains)
+    return deepcopy(_default_domains)
+
 
 def get_domain_types() -> list:
-    return list(_domain_types)
+    return deepcopy(_domain_types)
+
 
 def get_redundant_domain_pairs() -> dict:
-    return dict(_redundant_domain_pairs)
+    return deepcopy(_redundant_domain_pairs)
