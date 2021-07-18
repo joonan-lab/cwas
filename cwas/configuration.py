@@ -1,4 +1,5 @@
 import argparse
+import shutil
 from pathlib import Path
 
 import cwas.core.configuration.create as create
@@ -45,6 +46,9 @@ class Configuration(Runnable):
                             required=False,
                             type=Path, default=default_work_dir,
                             help='Path to your CWAS workspace')
+        parser.add_argument('-v', '--vep', dest='vep', required=False,
+                            type=Path, default=None,
+                            help='Path to Variant Effect Predictor (VEP)')
         return parser
 
     @staticmethod
@@ -54,6 +58,7 @@ class Configuration(Runnable):
         log.print_arg('Your annotation key list', args.annot_key_conf)
         log.print_arg('Your BigWig cutoff list', args.bw_cutoff_conf)
         log.print_arg('CWAS workspace', args.work_dir)
+        log.print_arg('Variant Effect Predictor (VEP)', args.vep)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -82,7 +87,11 @@ class Configuration(Runnable):
                 raise NotADirectoryError(f'The CWAS workspace "{args.work_dir}"'
                                          f' is not a directory.')
 
+        if args.vep is not None and shutil.which(args.vep) is None:
+            raise ValueError(f'"{args.vep} is not an executable."')
+
     def run(self):
+        self._find_vep()
         self._create_workspace()
         self._create_data_dir_symlink()
         self._create_gene_matrix_symlink()
@@ -90,6 +99,16 @@ class Configuration(Runnable):
         self._create_bw_cutoff_list()
         self._create_category_info()
         self._set_env()
+
+    def _find_vep(self):
+        vep = getattr(self, 'vep')
+        if vep is None:
+            log.print_progress(f'Find pre-installed VEP')
+            vep = shutil.which('vep')
+
+            if vep is None:
+                raise RuntimeError('VEP is not installed. Install VEP first.')
+            setattr(self, 'vep', Path(vep))
 
     def _create_workspace(self):
         work_dir = getattr(self, 'work_dir')
@@ -165,6 +184,7 @@ class Configuration(Runnable):
     def _set_env(self):
         log.print_progress('Set CWAS environment variables')
         cwas_env = getattr(self, 'env')
+        cwas_env.set_env('VEP', getattr(self, 'vep'))
         cwas_env.set_env('CWAS_WORKSPACE', getattr(self, 'work_dir'))
         cwas_env.set_env('ANNOTATION_DATA', self.data_dir_symlink)
         cwas_env.set_env('GENE_MATRIX', self.gene_matrix_symlink)
