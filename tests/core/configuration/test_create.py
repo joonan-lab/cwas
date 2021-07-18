@@ -88,6 +88,24 @@ def test_create_bw_cutoff_list(cwas_workspace, annotation_dir, bw_cutoff_conf):
     bw_key_list.unlink()
 
 
+def test_create_bw_cutoff_wo_user_def(cwas_workspace, annotation_dir):
+    bw_cutoff_list = cwas_workspace / 'annotation_cutoff_bw.yaml'
+    bw_key_list = cwas_workspace / 'annotation_key_bw.yaml'
+    create.create_annotation_key(bw_key_list, annotation_dir, 'bw')
+    create.create_bw_cutoff_list(bw_cutoff_list, bw_key_list)
+
+    assert bw_cutoff_list.exists()
+
+    with bw_key_list.open() as f:
+        bw_key_dict = yaml.safe_load(f)
+    with bw_cutoff_list.open() as f:
+        bw_cutoff_dict = yaml.safe_load(f)
+    assert not (set(bw_cutoff_dict.keys()) - set(bw_key_dict.values()))
+
+    bw_cutoff_list.unlink()
+    bw_key_list.unlink()
+
+
 def test_create_category_domain_list(cwas_workspace, annotation_key_conf,
                                      gene_matrix):
     # Setting

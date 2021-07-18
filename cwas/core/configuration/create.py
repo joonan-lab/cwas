@@ -51,7 +51,8 @@ def create_bw_cutoff_list(bw_cutoff_list: pathlib.Path,
 
     bw_key_dict = _load_yaml_file(bw_key_list)
     bw_cutoff_dict = {bw_key: default_cutoff for bw_key in bw_key_dict.values()}
-    user_def_cutoff_dict = _load_yaml_file(user_def_cutoff_list)
+    user_def_cutoff_dict = _load_yaml_file(user_def_cutoff_list) \
+        if user_def_cutoff_list is not None else {}
 
     for bw_filename, bw_cutoff in user_def_cutoff_dict.items():
         bw_key = bw_key_dict.get(bw_filename)
