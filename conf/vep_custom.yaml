@@ -1,7 +1,0 @@
-# This is a list of files for VEP custom annotations.
-# A root of these paths is a directory of this project. Please specify this in your script.
-# e.g. The absolute path of the data: {Project home directory}/{Following path}
-# All the paths are compatible with UNIX.
-
-phastCons46wayVt: data/annotate/phastCons46way.vertebrate.hg19ToHg38.bw
-phyloP46wayVt: data/annotate/phyloP46way.vertebrate.hg19ToHg38.bw
