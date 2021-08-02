@@ -51,10 +51,12 @@ def merge_bed_files(
     - chr1  350 400 2 (b'010)
 
     """
-    if not force_overwrite and out_merge_bed.exists():
-        raise FileExistsError(
-            f"{out_merge_bed} already exists. Check this first."
-        )
+    if not force_overwrite:
+        bed_gz_path = Path(str(out_merge_bed) + '.gz')
+        if out_merge_bed.exists() or bed_gz_path.exists():
+            log.print_warn('Merged BED file already exists. '
+                           'This file will not be overwritten.')
+        return
 
     tmp_dir = out_merge_bed.parent / "tmp"
     tmp_dir.mkdir(exist_ok=True)
