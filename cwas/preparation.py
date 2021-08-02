@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 from multiprocessing import cpu_count
 from pathlib import Path
 
@@ -7,6 +8,7 @@ import yaml
 import cwas.utils.log as log
 from cwas.core.preparation.annotation import merge_bed_files
 from cwas.runnable import Runnable
+from cwas.utils.cmd import execute
 
 
 class Preparation(Runnable):
@@ -67,4 +69,23 @@ class Preparation(Runnable):
         merge_bed_files(merge_bed_path, bed_file_and_keys,
                         num_proc, force_overwrite)
 
-        cwas_env.set_env('MERGED_BED', merge_bed_path)
+        # Compress your BED file using 'bgzip'
+        bgzip_args = ['bgzip', str(merge_bed_path)]
+        bed_gz_path = Path(str(merge_bed_path) + '.gz')
+        try:
+            execute(bgzip_args)
+        except subprocess.CalledProcessError:
+            log.print_err(
+                f'Failed to compress your BED file "{merge_bed_path}".')
+            raise
+
+        # Make an index using 'tabix'
+        tabix_args = ['tabix', str(bed_gz_path)]
+        try:
+            execute(tabix_args)
+        except subprocess.CalledProcessError:
+            log.print_err(
+                f'Failed to index your compressed BED file "{bed_gz_path}.')
+            raise
+
+        cwas_env.set_env('MERGED_BED', bed_gz_path)
