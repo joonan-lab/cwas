@@ -2,12 +2,15 @@
 Functions to prepare CWAS annotation step
 """
 from __future__ import annotations
+import subprocess
+from cwas.utils.cmd import execute_bin
 
 import multiprocessing as mp
 from functools import partial
 from pathlib import Path
 
 import cwas.utils.log as log
+from cwas.utils.error import check_is_file
 import numpy as np
 import pysam
 
@@ -206,3 +209,46 @@ def _one_hot_to_int(one_hot: np.ndarray) -> int:
             n += 2 ** i
 
     return n
+
+
+def compress_bed_file(bed_file_path: Path) -> Path:
+    """Compress the BED file using bgzip"""
+    try:
+        check_is_file(str(bed_file_path))
+    except FileNotFoundError:
+        log.print_err(f'Your BED file "{bed_file_path}" cannot be found.')
+        raise
+
+    try:
+        execute_bin('bgzip', [str(bed_file_path)])
+    except subprocess.CalledProcessError:
+        log.print_err(
+            f'Failed to compress your BED file "{bed_file_path}".')
+        raise
+    except FileNotFoundError:
+        log.print_err('Install bgzip first.')
+        raise
+
+    return Path(str(bed_file_path) + '.gz')
+
+
+def index_bed_file(comp_bed_path: Path) -> Path:
+    """Index the compressed BED file"""
+    try:
+        check_is_file(str(comp_bed_path))
+    except FileNotFoundError:
+        log.print_err(
+            f'Your "bgzipped" BED file "{comp_bed_path}" cannot be found.')
+        raise
+
+    try:
+        execute_bin('tabix', [str(comp_bed_path)])
+    except subprocess.CalledProcessError:
+        log.print_err(
+            f'Failed to index your "bgzipped" BED file "{comp_bed_path}".')
+        raise
+    except FileNotFoundError:
+        log.print_err('Install tabix first.')
+        raise
+
+    return Path(str(comp_bed_path) + '.tbi')
