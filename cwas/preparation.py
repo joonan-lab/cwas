@@ -1,14 +1,13 @@
 import argparse
-import subprocess
 from multiprocessing import cpu_count
 from pathlib import Path
 
 import yaml
 
 import cwas.utils.log as log
-from cwas.core.preparation.annotation import compress_bed_file, index_bed_file, merge_bed_files
+from cwas.core.preparation.annotation import (compress_bed_file,
+                                              index_bed_file, merge_bed_files)
 from cwas.runnable import Runnable
-from cwas.utils.cmd import execute
 
 
 class Preparation(Runnable):
@@ -76,4 +75,4 @@ class Preparation(Runnable):
         bed_idx_path = index_bed_file(bed_gz_path)
 
         cwas_env.set_env('MERGED_BED', bed_gz_path)
-        cwas_env.set_env('BED_INDEX', bed_idx_path)
+        cwas_env.set_env('MERGED_BED_INDEX', bed_idx_path)
