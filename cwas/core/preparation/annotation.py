@@ -54,11 +54,10 @@ def merge_bed_files(
     - chr1  350 400 2 (b'010)
 
     """
-    if not force_overwrite:
-        bed_gz_path = Path(str(out_merge_bed) + '.gz')
-        if out_merge_bed.exists() or bed_gz_path.exists():
-            log.print_warn('Merged BED file already exists. '
-                           'This file will not be overwritten.')
+    bed_gz_path = Path(str(out_merge_bed) + '.gz')
+    if not force_overwrite and \
+       (out_merge_bed.exists() or bed_gz_path.exists()):
+        log.print_warn('Merged BED file already exists. Skip merging.')
         return
 
     tmp_dir = out_merge_bed.parent / "tmp"
@@ -78,12 +77,12 @@ def merge_bed_files(
         if num_proc == 1:
             for chrom in chroms:
                 merge_bed_files_by_chrom(
-                    merge_bed_paths[chrom], chrom, bed_paths)
+                    merge_bed_paths[chrom], chrom, bed_paths, force_overwrite)
         else:
             pool = mp.Pool(num_proc)
             pool.starmap(
                 partial(merge_bed_files_by_chrom,
-                        bed_paths=bed_paths),
+                        bed_paths=bed_paths, force_overwrite=force_overwrite),
                 [(merge_bed_paths[chrom], chrom) for chrom in chroms],
             )
             pool.close()
@@ -112,13 +111,14 @@ def merge_bed_files_by_chrom(
     out_merge_bed: Path,
     chrom: str,
     bed_file_paths: list[Path],
+    force_overwrite: int = 0,
 ):
+    if not force_overwrite and out_merge_bed.exists():
+        log.print_warn(f'"{out_merge_bed}" already exists. '
+                       f'Skip merging BED files for {chrom}.')
+        return
     try:
-        if out_merge_bed.exists():
-            log.print_warn(f'"{out_merge_bed}" already exists '
-                           f'so merging for {chrom} will be skipped.')
-        else:
-            _merge_bed_files_by_chrom(out_merge_bed, chrom, bed_file_paths)
+        _merge_bed_files_by_chrom(out_merge_bed, chrom, bed_file_paths)
     except:
         log.print_err(
             f'Some error occurred during merging BED files for {chrom}.')
@@ -213,11 +213,7 @@ def _one_hot_to_int(one_hot: np.ndarray) -> int:
 
 def compress_bed_file(bed_file_path: Path) -> Path:
     """Compress the BED file using bgzip"""
-    try:
-        check_is_file(str(bed_file_path))
-    except FileNotFoundError:
-        log.print_err(f'Your BED file "{bed_file_path}" cannot be found.')
-        raise
+    check_is_file(bed_file_path)
 
     try:
         execute_bin('bgzip', [str(bed_file_path)])
@@ -226,7 +222,7 @@ def compress_bed_file(bed_file_path: Path) -> Path:
             f'Failed to compress your BED file "{bed_file_path}".')
         raise
     except FileNotFoundError:
-        log.print_err('Install bgzip first.')
+        log.print_err('"bgzip" is not installed in your environment.')
         raise
 
     return Path(str(bed_file_path) + '.gz')
@@ -234,21 +230,16 @@ def compress_bed_file(bed_file_path: Path) -> Path:
 
 def index_bed_file(comp_bed_path: Path) -> Path:
     """Index the compressed BED file"""
-    try:
-        check_is_file(str(comp_bed_path))
-    except FileNotFoundError:
-        log.print_err(
-            f'Your "bgzipped" BED file "{comp_bed_path}" cannot be found.')
-        raise
+    check_is_file(comp_bed_path)
 
     try:
         execute_bin('tabix', [str(comp_bed_path)])
     except subprocess.CalledProcessError:
         log.print_err(
-            f'Failed to index your "bgzipped" BED file "{comp_bed_path}".')
+            f'Failed to index your compressed BED file "{comp_bed_path}".')
         raise
     except FileNotFoundError:
-        log.print_err('Install tabix first.')
+        log.print_err('"tabix" is not installed in your environment.')
         raise
 
     return Path(str(comp_bed_path) + '.tbi')
