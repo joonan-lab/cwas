@@ -31,7 +31,7 @@ def execute_bin(
 
     if bin_path is None:
         raise FileNotFoundError(
-            f'"{bin_name}" cannot be found.')
+            f'The binary "{bin_name}" cannot be found.')
 
     cmd = [bin_path] + args
     return execute(cmd, raise_err)
