@@ -4,18 +4,31 @@ project. Those conditions should be checked to prevent this project from
 being shut down unexpectedly.
 """
 import multiprocessing as mp
-import os
+from pathlib import Path
+from typing import Union
 
 
-def check_is_file(file_path: str):
-    if not file_path or not os.path.isfile(file_path):
+def check_is_file(file_path: Union[Path, str]):
+    if not file_path:
+        raise ValueError(f'file_path: {file_path}')
+
+    if not isinstance(file_path, Path):
+        file_path = Path(file_path)
+
+    if not file_path.is_file():
         raise FileNotFoundError(
-            f'"{file_path}" is not a valid file path. Check this path first.'
+            f'"{file_path}" cannot be found. Check this file path first.'
         )
 
 
-def check_is_dir(dir_path: str):
-    if dir_path and not os.path.isdir(dir_path):
+def check_is_dir(dir_path: Union[Path, str]):
+    if not dir_path:
+        raise ValueError(f'dir_path: {dir_path}')
+
+    if not isinstance(dir_path, Path):
+        dir_path = Path(dir_path)
+
+    if not dir_path.is_dir():
         raise NotADirectoryError(
             f'"{dir_path}" is not a valid directory. Check this path first.'
         )
