@@ -1,5 +1,4 @@
 import argparse
-from multiprocessing import cpu_count
 from pathlib import Path
 
 import yaml
@@ -8,6 +7,7 @@ import cwas.utils.log as log
 from cwas.core.preparation.annotation import (compress_bed_file,
                                               index_bed_file, merge_bed_files)
 from cwas.runnable import Runnable
+from cwas.utils.error import check_num_proc
 
 
 class Preparation(Runnable):
@@ -35,11 +35,7 @@ class Preparation(Runnable):
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        min_num_proc = 1
-        max_num_proc = cpu_count()
-        if args.num_proc < min_num_proc or args.num_proc > max_num_proc:
-            raise ValueError(f'Wrong No. processes "{args.num_proc}" '
-                             f'(range: {min_num_proc} ~ {max_num_proc})')
+        check_num_proc(args.num_proc)
 
     def run(self):
         self._prepare_annotation()
