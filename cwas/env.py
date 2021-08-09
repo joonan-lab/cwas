@@ -3,6 +3,7 @@ Manage CWAS environment variables
 """
 
 from pathlib import Path
+from typing import Optional
 
 import dotenv
 
@@ -24,7 +25,8 @@ class Env(Singleton):
             self.path.touch()
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
 
-    def get_env(self, env_key):
+    def get_env(self, env_key) -> Optional[str]:
+        """Return None if the environment value does not exist"""
         return self.env.get(env_key)
 
     def set_env(self, env_key: str, env_value):
