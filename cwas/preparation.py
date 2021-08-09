@@ -26,6 +26,7 @@ class Preparation(Runnable):
         parser.add_argument('-f', '--force_overwrite', dest='force_overwrite',
                             action='store_const', const=1, default=0,
                             help='Force to overwrite the result')
+        return parser
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
