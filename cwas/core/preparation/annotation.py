@@ -82,7 +82,8 @@ def merge_bed_files(
             pool = mp.Pool(num_proc)
             pool.starmap(
                 partial(merge_bed_files_by_chrom,
-                        bed_paths=bed_paths, force_overwrite=force_overwrite),
+                        bed_file_paths=bed_paths,
+                        force_overwrite=force_overwrite),
                 [(merge_bed_paths[chrom], chrom) for chrom in chroms],
             )
             pool.close()
@@ -90,6 +91,10 @@ def merge_bed_files(
     except:
         log.print_err(
             'Merging BED files has failed because some error occurred.')
+        # Remove the temporary directory if empty
+        if not list(tmp_dir.glob('*')):
+            log.print_progress(f'Remove "{tmp_dir}"')
+            tmp_dir.rmdir()
         raise
 
     with out_merge_bed.open('w') as outfile:
@@ -118,12 +123,14 @@ def merge_bed_files_by_chrom(
                        f'Skip merging BED files for {chrom}.')
         return
     try:
+        log.print_progress(f'Merge BED files for {chrom}')
         _merge_bed_files_by_chrom(out_merge_bed, chrom, bed_file_paths)
     except:
         log.print_err(
             f'Some error occurred during merging BED files for {chrom}.')
         if out_merge_bed.exists():
             # Clean the incomplete output
+            log.print_progress(f'Remove "{out_merge_bed}"')
             out_merge_bed.unlink()
         raise
 
