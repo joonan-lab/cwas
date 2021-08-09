@@ -45,9 +45,15 @@ class Preparation(Runnable):
         log.print_progress(
             'Data preprocessing to prepare CWAS annotation step')
         cwas_env = getattr(self, 'env')
-        workspace = Path(cwas_env.get_env('CWAS_WORKSPACE'))
-        annot_data_dir = Path(cwas_env.get_env('ANNOTATION_DATA'))
-        bed_key_list_path = workspace / cwas_env.get_env('ANNOTATION_BED_KEY')
+        try:
+            workspace = cwas_env.get_env('CWAS_WORKSPACE')
+            workspace = Path(cwas_env.get_env('CWAS_WORKSPACE'))
+            annot_data_dir = Path(cwas_env.get_env('ANNOTATION_DATA'))
+            bed_key_list_path = \
+                workspace / cwas_env.get_env('ANNOTATION_BED_KEY')
+        except TypeError:
+            raise RuntimeError('Failed to get one of CWAS environment variable.'
+                               ' Maybe you omitted to run Configuration step.')
 
         with bed_key_list_path.open() as bed_key_list_file:
             bed_key_list = yaml.safe_load(bed_key_list_file)
