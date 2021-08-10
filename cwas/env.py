@@ -2,6 +2,7 @@
 Manage CWAS environment variables
 """
 
+from collections import OrderedDict
 from pathlib import Path
 from typing import Optional
 
@@ -31,6 +32,10 @@ class Env(Singleton):
 
     def set_env(self, env_key: str, env_value):
         self.env[env_key] = str(env_value).strip()
+
+    def reset(self):
+        """Make the 'env' attribute empty"""
+        self.env = OrderedDict()
 
     def save(self):
         with self.path.open('w') as env_f:
