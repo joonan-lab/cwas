@@ -70,12 +70,24 @@ class Preparation(Runnable):
         merge_bed_path = workspace / 'merged_annotation.bed'
         merge_bed_files(merge_bed_path, bed_file_and_keys,
                         num_proc, force_overwrite)
+        if not merge_bed_path.exists():
+            raise RuntimeError(
+                f'Unexpected Error. Failed to create the merged BED file.'
+            )
 
         log.print_progress("Compress your BED file.")
         bed_gz_path = compress_bed_file(merge_bed_path)
+        if not bed_gz_path.exists():
+            raise RuntimeError(
+                f'Unexpected Error. Failed to compress the BED file.'
+            )
 
         log.print_progress("Make an index of your BED file.")
         bed_idx_path = index_bed_file(bed_gz_path)
+        if not bed_idx_path.exists():
+            raise RuntimeError(
+                f'Unexpected Error. Failed to create the BED file index.'
+            )
 
         cwas_env.set_env('MERGED_BED', bed_gz_path)
         cwas_env.set_env('MERGED_BED_INDEX', bed_idx_path)
