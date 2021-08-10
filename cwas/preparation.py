@@ -46,7 +46,6 @@ class Preparation(Runnable):
             'Data preprocessing to prepare CWAS annotation step')
         cwas_env = getattr(self, 'env')
         try:
-            workspace = cwas_env.get_env('CWAS_WORKSPACE')
             workspace = Path(cwas_env.get_env('CWAS_WORKSPACE'))
             annot_data_dir = Path(cwas_env.get_env('ANNOTATION_DATA'))
             bed_key_list_path = \

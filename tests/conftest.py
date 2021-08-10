@@ -82,7 +82,7 @@ def create_annotation_dir(create_cwas_input_dir, annotation_dir):
         annotation_dir / 'bw_annot1.bw',
         annotation_dir / 'bw.annot2.bw',
         annotation_dir / 'bw.annot3.bw.gz',
-        ]
+    ]
     for annot_filepath in annot_filepaths:
         annot_filepath.touch()
     yield
