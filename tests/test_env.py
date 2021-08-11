@@ -2,9 +2,11 @@
 Test cwas.env
 """
 from __future__ import annotations
+
 from typing import OrderedDict
-import pytest
+
 import dotenv
+import pytest
 from cwas.env import Env
 
 
@@ -44,6 +46,11 @@ def test_env_setting(env_mock):
     env_mock.set_env(env_key, expected)
     env_value = env_mock.get_env(env_key)
     assert env_value == expected
+
+
+def test_env_get_nonexist(env_mock):
+    env_value = env_mock.get_env('FAKE')
+    assert env_value is None
 
 
 def test_env_prev_set_exists(env_mock):
