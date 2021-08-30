@@ -2,10 +2,7 @@ from __future__ import annotations
 
 import argparse
 from abc import ABC, abstractmethod
-from importlib.resources import path
 from pathlib import Path
-
-from cwas.utils.log import print_err
 
 
 class Runnable(ABC):

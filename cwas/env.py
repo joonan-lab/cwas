@@ -21,7 +21,7 @@ class Singleton(object):
 
 class Env(Singleton):
     def __init__(self):
-        self.path = Path(__file__).parent.resolve() / '.env'
+        self.path = Path(__file__).parent.resolve() / ".env"
         if not self.path.exists():
             self.path.touch()
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
@@ -38,6 +38,6 @@ class Env(Singleton):
         self.env = OrderedDict()
 
     def save(self):
-        with self.path.open('w') as env_f:
+        with self.path.open("w") as env_f:
             for k, v in self.env.items():
-                print(f'{k}={v}', file=env_f)
+                print(f"{k}={v}", file=env_f)

@@ -23,9 +23,7 @@ def cmp_two_arr(array1: np.ndarray, array2: np.ndarray) -> bool:
 def div_dist_num(num: int, num_group: int) -> list:
     """ Divide and distribute the number to each group almost equally. """
     if num <= 0 or num_group <= 0:
-        raise ValueError(
-            'Only positive integers are accepted as arguments.'
-        )
+        raise ValueError("Only positive integers are accepted as arguments.")
 
     if num < num_group:
         raise ValueError(
@@ -50,18 +48,16 @@ def chunk_list(_list: list, num_chunk: int) -> list:
     """ Split the input list into multiple chunks """
     if len(_list) == 0:
         raise ValueError(
-            'This function does not accept an empty list as an argument.'
+            "This function does not accept an empty list as an argument."
         )
 
     if num_chunk <= 0:
-        raise ValueError(
-            'The number of chunks must be a positive integer.'
-        )
+        raise ValueError("The number of chunks must be a positive integer.")
 
     if len(_list) < num_chunk:
         raise ValueError(
-            'The length of the input list must be larger '
-            'than the number of chunks.'
+            "The length of the input list must be larger "
+            "than the number of chunks."
         )
 
     chunks = []
@@ -70,7 +66,7 @@ def chunk_list(_list: list, num_chunk: int) -> list:
     # Make chunks
     i = 0
     for chunk_len in chunk_lens:
-        chunk = _list[i: i + chunk_len]
+        chunk = _list[i : i + chunk_len]
         chunks.append(chunk)
         i += chunk_len
 
@@ -99,8 +95,9 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
     for i, label in enumerate(labels):
         group_id = group_ids[i]
         group_hit_cnt = group_to_hit_cnt.get(group_id, 0)
-        assert group_hit_cnt == 0 or group_hit_cnt == 1, \
-            f'Too many labels (more than 2) in a group "{group_id}".'
+        assert (
+            group_hit_cnt == 0 or group_hit_cnt == 1
+        ), f'Too many labels (more than 2) in a group "{group_id}".'
 
         if group_hit_cnt == 0:
             group_to_hit_cnt[group_id] = 1
@@ -122,7 +119,7 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
 
 def int_to_bit_arr(n: int, bit_arr_len: int) -> np.ndarray:
     if n < 0 or bit_arr_len < 0:
-        raise ValueError('A negative integer argument does not allowed.')
+        raise ValueError("A negative integer argument does not allowed.")
 
     bit_arr = np.zeros(bit_arr_len)
 

@@ -14,15 +14,15 @@ def test_check_is_file(tmpdir):
         error.check_is_file(None)
 
     # If a input path is valid, there will be no error,
-    real_path = tmpdir.join('hello.txt')
-    real_path.write('Hello')
+    real_path = tmpdir.join("hello.txt")
+    real_path.write("Hello")
     error.check_is_file(real_path)
     assert True
     error.check_is_file(Path(real_path))
     assert True
 
     # If a input path is invalid, FileNotFoundError will be raised.
-    fake_path = tmpdir.join('nofile.txt')
+    fake_path = tmpdir.join("nofile.txt")
     with pytest.raises(FileNotFoundError):
         error.check_is_file(fake_path)
 
@@ -33,7 +33,7 @@ def test_check_is_dir(tmp_path):
         error.check_is_dir(None)
 
     # If a directory of the input path exists, there will be no error.
-    real_dir = tmp_path / 'real'
+    real_dir = tmp_path / "real"
     real_dir.mkdir()
     error.check_is_dir(real_dir)
     assert True
@@ -42,7 +42,7 @@ def test_check_is_dir(tmp_path):
 
     # If a directory of the input path does not exist,
     # NotADirectoryError is raised.
-    fake_dir = tmp_path / 'fake'
+    fake_dir = tmp_path / "fake"
     with pytest.raises(NotADirectoryError):
         error.check_is_dir(fake_dir)
 
