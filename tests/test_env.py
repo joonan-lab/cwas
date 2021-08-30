@@ -18,12 +18,12 @@ class EnvMock(Env):
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def env_path(cwas_workspace):
-    return cwas_workspace / '.env'
+    return cwas_workspace / ".env"
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def env_mock(env_path):
     env = EnvMock(env_path)
     return env
@@ -41,39 +41,39 @@ def test_env_singleton(env_path):
 
 
 def test_env_setting(env_mock):
-    env_key = 'TEST'
-    expected = 'Hello!'
+    env_key = "TEST"
+    expected = "Hello!"
     env_mock.set_env(env_key, expected)
     env_value = env_mock.get_env(env_key)
     assert env_value == expected
 
 
 def test_env_get_nonexist(env_mock):
-    env_value = env_mock.get_env('FAKE')
+    env_value = env_mock.get_env("FAKE")
     assert env_value is None
 
 
 def test_env_prev_set_exists(env_mock):
     # Test if the environment variable exists.
-    env_key = 'TEST'
-    expected = 'Hello!'
+    env_key = "TEST"
+    expected = "Hello!"
     env_value = env_mock.get_env(env_key)
     assert env_value == expected
 
 
 def test_env_reset(env_mock):
     env_mock.reset()
-    env_key = 'TEST'
+    env_key = "TEST"
     env_value = env_mock.get_env(env_key)
     assert env_value is None
 
 
-def test_env_save(env_mock, env_path):
-    env_key = 'TEST'
-    expected = 'Hello!'
+def test_env_save(env_mock):
+    env_key = "TEST"
+    expected = "Hello!"
     env_mock.set_env(env_key, expected)
     env_mock.save()
-    with env_path.open() as env_file:
+    with env_mock.path.open() as env_file:
         env_line = env_file.read()
         env_line = env_line.strip()
-    assert env_line == 'TEST=Hello!'
+    assert env_line == "TEST=Hello!"
