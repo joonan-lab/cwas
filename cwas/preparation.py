@@ -17,22 +17,36 @@ class Preparation(Runnable):
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(
-            description='Arguments for Annotation Data Preparation',
+            description="Arguments for Annotation Data Preparation",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
-        parser.add_argument('-p', '--num_proc', dest='num_proc',
-                            required=False, type=int, default=1,
-                            help='Max No. processes for this step')
-        parser.add_argument('-f', '--force_overwrite', dest='force_overwrite',
-                            action='store_const', const=1, default=0,
-                            help='Force to overwrite the result')
+        parser.add_argument(
+            "-p",
+            "--num_proc",
+            dest="num_proc",
+            required=False,
+            type=int,
+            default=1,
+            help="Max No. processes for this step",
+        )
+        parser.add_argument(
+            "-f",
+            "--force_overwrite",
+            dest="force_overwrite",
+            action="store_const",
+            const=1,
+            default=0,
+            help="Force to overwrite the result",
+        )
         return parser
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        log.print_arg('No. Processes for this step', args.num_proc)
-        log.print_arg('Force to overwrite the result',
-                      'Y' if args.force_overwrite else 'N')
+        log.print_arg("No. Processes for this step", args.num_proc)
+        log.print_arg(
+            "Force to overwrite the result",
+            "Y" if args.force_overwrite else "N",
+        )
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -42,17 +56,19 @@ class Preparation(Runnable):
         self._prepare_annotation()
 
     def _prepare_annotation(self):
-        log.print_progress(
-            'Data preprocessing to prepare CWAS annotation step')
-        cwas_env = getattr(self, 'env')
+        log.print_progress("Data preprocessing to prepare CWAS annotation step")
+        cwas_env = getattr(self, "env")
         try:
-            workspace = Path(cwas_env.get_env('CWAS_WORKSPACE'))
-            annot_data_dir = Path(cwas_env.get_env('ANNOTATION_DATA'))
-            bed_key_list_path = \
-                workspace / cwas_env.get_env('ANNOTATION_BED_KEY')
+            workspace = Path(cwas_env.get_env("CWAS_WORKSPACE"))
+            annot_data_dir = Path(cwas_env.get_env("ANNOTATION_DATA"))
+            bed_key_list_path = workspace / cwas_env.get_env(
+                "ANNOTATION_BED_KEY"
+            )
         except TypeError:
-            raise RuntimeError('Failed to get one of CWAS environment variable.'
-                               ' Maybe you omitted to run Configuration step.')
+            raise RuntimeError(
+                "Failed to get one of CWAS environment variable."
+                " Maybe you omitted to run Configuration step."
+            )
 
         with bed_key_list_path.open() as bed_key_list_file:
             bed_key_list = yaml.safe_load(bed_key_list_file)
@@ -63,30 +79,32 @@ class Preparation(Runnable):
             bed_file_and_keys.append((bed_file_path, bed_key))
 
         log.print_progress(
-            'Merge all of your annotation BED files into one BED file')
-        num_proc = getattr(self, 'num_proc')
-        force_overwrite = getattr(self, 'force_overwrite')
-        merge_bed_path = workspace / 'merged_annotation.bed'
-        merge_bed_files(merge_bed_path, bed_file_and_keys,
-                        num_proc, force_overwrite)
+            "Merge all of your annotation BED files into one BED file"
+        )
+        num_proc = getattr(self, "num_proc")
+        force_overwrite = getattr(self, "force_overwrite")
+        merge_bed_path = workspace / "merged_annotation.bed"
+        merge_bed_files(
+            merge_bed_path, bed_file_and_keys, num_proc, force_overwrite
+        )
         if not merge_bed_path.exists():
             raise RuntimeError(
-                f'Unexpected Error. Failed to create the merged BED file.'
+                f"Unexpected Error. Failed to create the merged BED file."
             )
 
         log.print_progress("Compress your BED file.")
         bed_gz_path = compress_bed_file(merge_bed_path)
         if not bed_gz_path.exists():
             raise RuntimeError(
-                f'Unexpected Error. Failed to compress the BED file.'
+                f"Unexpected Error. Failed to compress the BED file."
             )
 
         log.print_progress("Make an index of your BED file.")
         bed_idx_path = index_bed_file(bed_gz_path)
         if not bed_idx_path.exists():
             raise RuntimeError(
-                f'Unexpected Error. Failed to create the BED file index.'
+                f"Unexpected Error. Failed to create the BED file index."
             )
 
-        cwas_env.set_env('MERGED_BED', bed_gz_path)
-        cwas_env.set_env('MERGED_BED_INDEX', bed_idx_path)
+        cwas_env.set_env("MERGED_BED", bed_gz_path)
+        cwas_env.set_env("MERGED_BED_INDEX", bed_idx_path)

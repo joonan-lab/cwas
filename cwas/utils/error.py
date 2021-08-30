@@ -10,7 +10,7 @@ from typing import Union
 
 def check_is_file(file_path: Union[Path, str]):
     if not file_path:
-        raise ValueError(f'file_path: {file_path}')
+        raise ValueError(f"file_path: {file_path}")
 
     if not isinstance(file_path, Path):
         file_path = Path(file_path)
@@ -23,7 +23,7 @@ def check_is_file(file_path: Union[Path, str]):
 
 def check_is_dir(dir_path: Union[Path, str]):
     if not dir_path:
-        raise ValueError(f'dir_path: {dir_path}')
+        raise ValueError(f"dir_path: {dir_path}")
 
     if not isinstance(dir_path, Path):
         dir_path = Path(dir_path)
@@ -39,11 +39,11 @@ def check_num_proc(num_proc: int):
 
     if num_proc < 1:
         raise ValueError(
-            f'Your number of worker processes \'{num_proc}\' is invalid. '
-            f'This number must be a positive integer.'
+            f"Your number of worker processes '{num_proc}' is invalid. "
+            f"This number must be a positive integer."
         )
     elif num_proc > max_num_proc:
         raise ValueError(
-            f'Your number of worker processes \'{num_proc}\' exceeds the '
-            f'number of available CPUs in your computer ({max_num_proc}).'
+            f"Your number of worker processes '{num_proc}' exceeds the "
+            f"number of available CPUs in your computer ({max_num_proc})."
         )

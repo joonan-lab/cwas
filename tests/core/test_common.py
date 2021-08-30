@@ -1,10 +1,9 @@
 """
 Test the methods in cwas.core.common
 """
+import cwas.core.common as common
 import numpy as np
 import pytest
-
-import cwas.core.common as common
 
 
 def test_cmp_two_arr():
@@ -100,9 +99,9 @@ def test_swap_label():
     label_group_pairs = []
 
     for n in range(1, 6):
-        group_id = f'g{n}'
-        label_group_pairs.append((f'{group_id}_l1', group_id))
-        label_group_pairs.append((f'{group_id}_l2', group_id))
+        group_id = f"g{n}"
+        label_group_pairs.append((f"{group_id}_l1", group_id))
+        label_group_pairs.append((f"{group_id}_l2", group_id))
 
     np.random.shuffle(label_group_pairs)
 
@@ -119,8 +118,8 @@ def test_swap_label():
         assert swap_label.startswith(group_id)
 
     # Test the case where more than 2 labels are in the same group.
-    group_id = f'g{np.random.randint(1, 6)}'
-    new_label = f'{group_id}_l3'
+    group_id = f"g{np.random.randint(1, 6)}"
+    new_label = f"{group_id}_l3"
     labels = np.append(labels, new_label)
     group_ids = np.append(group_ids, group_id)
     np.random.shuffle(labels)
