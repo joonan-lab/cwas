@@ -4,8 +4,11 @@ from pathlib import Path
 import yaml
 
 import cwas.utils.log as log
-from cwas.core.preparation.annotation import (compress_bed_file,
-                                              index_bed_file, merge_bed_files)
+from cwas.core.preparation.annotation import (
+    compress_bed_file,
+    index_bed_file,
+    merge_bed_files,
+)
 from cwas.runnable import Runnable
 from cwas.utils.error import check_num_proc
 
@@ -87,24 +90,11 @@ class Preparation(Runnable):
         merge_bed_files(
             merge_bed_path, bed_file_and_keys, num_proc, force_overwrite
         )
-        if not merge_bed_path.exists():
-            raise RuntimeError(
-                f"Unexpected Error. Failed to create the merged BED file."
-            )
-
         log.print_progress("Compress your BED file.")
         bed_gz_path = compress_bed_file(merge_bed_path)
-        if not bed_gz_path.exists():
-            raise RuntimeError(
-                f"Unexpected Error. Failed to compress the BED file."
-            )
 
         log.print_progress("Make an index of your BED file.")
         bed_idx_path = index_bed_file(bed_gz_path)
-        if not bed_idx_path.exists():
-            raise RuntimeError(
-                f"Unexpected Error. Failed to create the BED file index."
-            )
 
         cwas_env.set_env("MERGED_BED", bed_gz_path)
         cwas_env.set_env("MERGED_BED_INDEX", bed_idx_path)

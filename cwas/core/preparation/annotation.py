@@ -54,10 +54,9 @@ def merge_bed_files(
     - chr1  350 400 2 (b'010)
 
     """
-    bed_gz_path = Path(str(out_merge_bed) + '.gz')
-    if not force_overwrite and \
-       (out_merge_bed.exists() or bed_gz_path.exists()):
-        log.print_warn('Merged BED file already exists. Skip merging.')
+    bed_gz_path = Path(str(out_merge_bed) + ".gz")
+    if not force_overwrite and (out_merge_bed.exists() or bed_gz_path.exists()):
+        log.print_warn("Merged BED file already exists. Skip merging.")
         return
 
     tmp_dir = out_merge_bed.parent / "tmp"
@@ -77,27 +76,31 @@ def merge_bed_files(
         if num_proc == 1:
             for chrom in chroms:
                 merge_bed_files_by_chrom(
-                    merge_bed_paths[chrom], chrom, bed_paths, force_overwrite)
+                    merge_bed_paths[chrom], chrom, bed_paths, force_overwrite
+                )
         else:
             pool = mp.Pool(num_proc)
             pool.starmap(
-                partial(merge_bed_files_by_chrom,
-                        bed_file_paths=bed_paths,
-                        force_overwrite=force_overwrite),
+                partial(
+                    merge_bed_files_by_chrom,
+                    bed_file_paths=bed_paths,
+                    force_overwrite=force_overwrite,
+                ),
                 [(merge_bed_paths[chrom], chrom) for chrom in chroms],
             )
             pool.close()
             pool.join()
     except:
         log.print_err(
-            'Merging BED files has failed because some error occurred.')
+            "Merging BED files has failed because some error occurred."
+        )
         # Remove the temporary directory if empty
-        if not list(tmp_dir.glob('*')):
+        if not list(tmp_dir.glob("*")):
             log.print_progress(f'Remove "{tmp_dir}"')
             tmp_dir.rmdir()
         raise
 
-    with out_merge_bed.open('w') as outfile:
+    with out_merge_bed.open("w") as outfile:
         annot_key_str = "|".join(bed_ids)
         print(f"#ANNOT={annot_key_str}", file=outfile)
         print("#chrom", "start", "end", "annot_int", sep="\t", file=outfile)
@@ -106,7 +109,7 @@ def merge_bed_files(
             merge_bed_path = merge_bed_paths[chrom]
             with merge_bed_path.open() as merge_bed_file:
                 for line in merge_bed_file:
-                    print(line, end='', file=outfile)
+                    print(line, end="", file=outfile)
             merge_bed_path.unlink()
 
     tmp_dir.rmdir()
@@ -119,15 +122,18 @@ def merge_bed_files_by_chrom(
     force_overwrite: int = 0,
 ):
     if not force_overwrite and out_merge_bed.exists():
-        log.print_warn(f'"{out_merge_bed}" already exists. '
-                       f'Skip merging BED files for {chrom}.')
+        log.print_warn(
+            f'"{out_merge_bed}" already exists. '
+            f"Skip merging BED files for {chrom}."
+        )
         return
     try:
-        log.print_progress(f'Merge BED files for {chrom}')
+        log.print_progress(f"Merge BED files for {chrom}")
         _merge_bed_files_by_chrom(out_merge_bed, chrom, bed_file_paths)
     except:
         log.print_err(
-            f'Some error occurred during merging BED files for {chrom}.')
+            f"Some error occurred during merging BED files for {chrom}."
+        )
         if out_merge_bed.exists():
             # Clean the incomplete output
             log.print_progress(f'Remove "{out_merge_bed}"')
@@ -136,9 +142,7 @@ def merge_bed_files_by_chrom(
 
 
 def _merge_bed_files_by_chrom(
-    out_merge_bed: Path,
-    chrom: str,
-    bed_file_paths: list[Path],
+    out_merge_bed: Path, chrom: str, bed_file_paths: list[Path],
 ):
     """ Merge annotation information of all BED coordinates of one chromosome
     from all the BED files """
@@ -167,7 +171,8 @@ def _merge_bed_files_by_chrom(
                     pos_set.add(end)
     except OSError:
         log.print_err(
-            f'{bed_file_path} cannot be found or is inappropriate file format.')
+            f"{bed_file_path} cannot be found or is inappropriate file format."
+        )
         raise
 
     # Create a BED file listing new coordinates
@@ -177,7 +182,7 @@ def _merge_bed_files_by_chrom(
     prev_pos = -1
     n_bed = 0
 
-    with out_merge_bed.open('w') as outfile:
+    with out_merge_bed.open("w") as outfile:
         for pos in pos_list:
             if n_bed > 0:  # Make a new coordinate
                 one_hot = np.vectorize(lambda x: 1 if x else 0)(annot_cnt)
@@ -220,33 +225,50 @@ def _one_hot_to_int(one_hot: np.ndarray) -> int:
 
 def compress_bed_file(bed_file_path: Path) -> Path:
     """Compress the BED file using bgzip"""
-    check_is_file(bed_file_path)
+    gz_path = Path(str(bed_file_path) + ".gz")
+    if gz_path.exists():
+        log.print_warn(
+            f'The compressed BED file "{bed_file_path}" already exists. '
+            f"Skip compressing."
+        )
+    else:
+        check_is_file(bed_file_path)
 
-    try:
-        execute_bin('bgzip', [str(bed_file_path)])
-    except subprocess.CalledProcessError:
-        log.print_err(
-            f'Failed to compress your BED file "{bed_file_path}".')
-        raise
-    except FileNotFoundError:
-        log.print_err('"bgzip" is not installed in your environment.')
-        raise
+        try:
+            execute_bin("bgzip", [str(bed_file_path)])
+        except subprocess.CalledProcessError:
+            log.print_err(
+                f'Failed to compress your BED file "{bed_file_path}".'
+            )
+            raise
+        except FileNotFoundError:
+            log.print_err('"bgzip" is not installed in your environment.')
+            raise
 
-    return Path(str(bed_file_path) + '.gz')
+    return gz_path
 
 
 def index_bed_file(comp_bed_path: Path) -> Path:
     """Index the compressed BED file"""
-    check_is_file(comp_bed_path)
+    idx_path = Path(str(comp_bed_path) + ".tbi")
+    if idx_path.exists():
+        log.print_warn(
+            f'The BED file index "{comp_bed_path}" already exists. '
+            f"Skip indexing."
+        )
+    else:
+        check_is_file(comp_bed_path)
 
-    try:
-        execute_bin('tabix', [str(comp_bed_path)])
-    except subprocess.CalledProcessError:
-        log.print_err(
-            f'Failed to index your compressed BED file "{comp_bed_path}".')
-        raise
-    except FileNotFoundError:
-        log.print_err('"tabix" is not installed in your environment.')
-        raise
+        try:
+            execute_bin("tabix", [str(comp_bed_path)])
+        except subprocess.CalledProcessError:
+            log.print_err(
+                f'Failed to index your compressed BED file "{comp_bed_path}".'
+            )
+            raise
+        except FileNotFoundError:
+            log.print_err('"tabix" is not installed in your environment.')
+            raise
 
-    return Path(str(comp_bed_path) + '.tbi')
+    return idx_path
+
