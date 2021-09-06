@@ -20,8 +20,12 @@ class Singleton(object):
 
 
 class Env(Singleton):
-    def __init__(self):
-        self.path = Path(__file__).parent.resolve() / ".env"
+    def __init__(self, env_path: Path = None):
+        if env_path is None and getattr(self, "path") is None:
+            self.path = Path(__file__).parent.resolve() / ".env"
+        elif env_path:
+            self.path = env_path
+
         if not self.path.exists():
             self.path.touch()
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
