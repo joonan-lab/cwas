@@ -4,9 +4,12 @@ import argparse
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from cwas.env import Env
+
 
 class Runnable(ABC):
     def __init__(self, args: argparse.Namespace):
+        self.env = Env()
         arg_dict = vars(args)
         for arg in arg_dict:
             arg_val = arg_dict.get(arg)
@@ -21,6 +24,9 @@ class Runnable(ABC):
         cls._print_args(args)
         cls._check_args_validity(args)
         return cls(args)
+
+    def set_env_path(self, path: Path):
+        self.env.set_path(path)
 
     @staticmethod
     @abstractmethod

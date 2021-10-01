@@ -246,4 +246,4 @@ class Configuration(Runnable):
         cwas_env.set_env("ANNOTATION_BW_CUTOFF", self.bw_cutoff_list)
         cwas_env.set_env("CATEGORY_DOMAIN", self.category_domain_list)
         cwas_env.set_env("REDUNDANT_CATEGORY", self.redundant_category_table)
-
+        cwas_env.save()
