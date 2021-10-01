@@ -21,14 +21,29 @@ class Singleton(object):
 
 class Env(Singleton):
     def __init__(self, env_path: Path = None):
-        if env_path is None and getattr(self, "path") is None:
-            self.path = Path(__file__).parent.resolve() / ".env"
-        elif env_path:
-            self.path = env_path
+        if env_path is None:
+            if hasattr(self, "path"):
+                env_path = self.path
+            else:
+                env_path = Path.home() / ".cwas_config"
 
-        if not self.path.exists():
-            self.path.touch()
+        self.set_path(env_path)
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
+
+    def set_path(self, path: Path):
+        assert path is not None, "The 'path' argument cannot be None."
+        old_path = getattr(self, "path", None)
+
+        if old_path == path:
+            return
+
+        self.path = path
+
+        if old_path is not None and old_path.exists():
+            old_path.unlink()
+
+        if not path.exists():
+            path.touch()
 
     def get_env(self, env_key) -> Optional[str]:
         """Return None if the environment value does not exist"""
