@@ -44,7 +44,7 @@ class TestRunnable(unittest.TestCase):
 
     def test_argument_assignment(self):
         randint = random.randint(1, 1000000)
-        test_dir = pathlib.Path.home() / f".cwas-test-{randint}"
+        test_dir = pathlib.Path.home() / f".cwas-runnable-test-{randint}"
         test_dir.mkdir()
         test_file = test_dir / "test.txt"
         test_file.touch()
@@ -58,3 +58,7 @@ class TestRunnable(unittest.TestCase):
         assert isinstance(getattr(inst, "test_dir"), pathlib.Path)
         assert isinstance(getattr(inst, "test_file"), pathlib.Path)
         assert getattr(inst, "test_int") == randint
+
+        # Teardown
+        test_file.unlink()
+        test_dir.rmdir()
