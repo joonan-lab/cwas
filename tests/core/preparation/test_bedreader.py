@@ -3,6 +3,7 @@ Test the 'BedReader' class in the cwas.core.preparation.bedreader module
 """
 import pytest
 from cwas.core.preparation.bedreader import BedReader
+from cwas.core.preparation.utils import compress_bed_file, index_bed_file
 
 
 @pytest.fixture(scope="module")
@@ -17,10 +18,13 @@ def bed_coordinates():
 
 @pytest.fixture(scope="module")
 def tmp_bed_path(cwas_workspace, bed_coordinates):
-    bed_path_txt = cwas_workspace / ".test.bed"
-    with bed_path.open("w") as bed_file:
+    txt_bed_path = cwas_workspace / ".test.bed"
+    with txt_bed_path.open("w") as bed_file:
         for bed_coordinate in bed_coordinates:
             print(*bed_coordinate, sep="\t", file=bed_file)
+
+    bed_path = compress_bed_file(txt_bed_path)
+    _ = index_bed_file(bed_path)
 
     return bed_path
 
