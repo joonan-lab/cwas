@@ -6,11 +6,17 @@ import pysam
 
 
 class BedReader:
-    def __init__(self, bed_path: pathlib.Path) -> None:
+    def __init__(self, bed_path: pathlib.Path):
         self.bed_path = bed_path
         self.contig = None
         self.start = None
         self.stop = None
+
+        if not self.bed_path.exists():
+            raise OSError(
+                f"Failed to initialize a BedReader instance. "
+                f"'{self.bed_path}' does not exists."
+            )
 
     def __iter__(self):
         with pysam.TabixFile(str(self.bed_path)) as bed_file:
@@ -20,5 +26,5 @@ class BedReader:
                 contig, start, stop = fields
                 yield (contig, int(start), int(stop))
 
-    def set_contig(self, contig: str) -> None:
+    def set_contig(self, contig: str):
         self.contig = contig

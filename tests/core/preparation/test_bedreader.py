@@ -34,6 +34,12 @@ def test_init_bedreader(tmp_bed_path):
     assert isinstance(bedreader, BedReader)
 
 
+def test_fail_init_bedreader(cwas_workspace):
+    invalid_bed_path = cwas_workspace / ".not_exist.bed"
+    with pytest.raises(OSError):
+        BedReader(invalid_bed_path)
+
+
 def test_read_coordinates(tmp_bed_path, bed_coordinates):
     bedreader = BedReader(tmp_bed_path)
     expected = bed_coordinates
