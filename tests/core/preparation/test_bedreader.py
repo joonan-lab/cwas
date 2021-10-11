@@ -9,9 +9,9 @@ from cwas.core.preparation.utils import compress_bed_file, index_bed_file
 @pytest.fixture(scope="module")
 def bed_coordinates():
     coordinates = [
-        ("chr1", 1, 2, 1),
-        ("chr2", 20, 30, 1),
-        ("chr3", 100, 200, 1),
+        ("chr1", 1, 2),
+        ("chr2", 20, 30),
+        ("chr3", 100, 200),
     ]
     return coordinates
 
