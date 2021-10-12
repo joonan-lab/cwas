@@ -4,11 +4,8 @@ from pathlib import Path
 import yaml
 
 import cwas.utils.log as log
-from cwas.core.preparation.annotation import (
-    compress_bed_file,
-    index_bed_file,
-    merge_bed_files,
-)
+from cwas.core.preparation.annotation import merge_bed_files
+from cwas.core.preparation.utils import compress_bed_file, index_bed_file
 from cwas.runnable import Runnable
 from cwas.utils.error import check_num_proc
 
