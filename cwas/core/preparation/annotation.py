@@ -4,12 +4,14 @@ Functions to prepare CWAS annotation step
 from __future__ import annotations
 
 import multiprocessing as mp
+from collections import defaultdict
 from functools import partial
 from pathlib import Path
+from typing import Generator
 
 import cwas.utils.log as log
 import numpy as np
-import pysam
+from cwas.core.preparation.bedreader import BedReader
 
 
 def merge_bed_files(
@@ -60,7 +62,7 @@ def merge_bed_files(
     tmp_dir.mkdir(exist_ok=True)
 
     # Make temporary merged BED paths for each chromosome
-    chroms = [f"chr{n}" for n in range(1, 23)]
+    chroms = (f"chr{n}" for n in range(1, 23))
     merge_bed_paths = {}
 
     for chrom in chroms:
@@ -126,7 +128,7 @@ def merge_bed_files_by_chrom(
         return
     try:
         log.print_progress(f"Merge BED files for {chrom}")
-        _merge_bed_files_by_chrom(out_merge_bed, chrom, bed_file_paths)
+        _merge_bed_files(out_merge_bed, chrom, bed_file_paths)
     except:
         log.print_err(
             f"Some error occurred during merging BED files for {chrom}."
@@ -138,39 +140,33 @@ def merge_bed_files_by_chrom(
         raise
 
 
-def _merge_bed_files_by_chrom(
+def bed_reader_iter(
+    bed_file_paths: list[Path], chrom: str
+) -> Generator(BedReader):
+    """Generate the BedReader instance for each BED file paths"""
+    for bed_file_path in bed_file_paths:
+        bedreader_inst = BedReader(bed_file_path)
+        bedreader_inst.set_contig(chrom)
+        yield bedreader_inst
+
+
+def _merge_bed_files(
     out_merge_bed: Path, chrom: str, bed_file_paths: list[Path],
 ):
     """ Merge annotation information of all BED coordinates of one chromosome
     from all the BED files """
-    start_to_key_idx = {}
-    end_to_key_idx = {}
+    start_to_key_idx = defaultdict(list)
+    end_to_key_idx = defaultdict(list)
     pos_set = set()
+    bed_readers = bed_reader_iter(bed_file_paths, chrom)
 
     # Read coordinates from each annotation bed file
-    try:
-        for i, bed_file_path in enumerate(bed_file_paths):
-            with pysam.TabixFile(str(bed_file_path)) as bed_file:
-                for fields in bed_file.fetch(chrom, parser=pysam.asTuple()):
-                    start = int(fields[1])
-                    end = int(fields[2])
-
-                    # Init
-                    if start_to_key_idx.get(start) is None:
-                        start_to_key_idx[start] = []
-
-                    if end_to_key_idx.get(end) is None:
-                        end_to_key_idx[end] = []
-
-                    start_to_key_idx[start].append(i)
-                    end_to_key_idx[end].append(i)
-                    pos_set.add(start)
-                    pos_set.add(end)
-    except OSError:
-        log.print_err(
-            f"{bed_file_path} cannot be found or is inappropriate file format."
-        )
-        raise
+    for i, bed_reader in enumerate(bed_readers):
+        for _, start, end, *_ in bed_reader:
+            start_to_key_idx[start].append(i)
+            end_to_key_idx[end].append(i)
+            pos_set.add(start)
+            pos_set.add(end)
 
     # Create a BED file listing new coordinates
     # with merged annotation information

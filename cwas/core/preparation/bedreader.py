@@ -23,8 +23,8 @@ class BedReader:
             for fields in bed_file.fetch(
                 self.contig, self.start, self.stop, parser=pysam.asTuple()
             ):
-                contig, start, stop = fields
-                yield (contig, int(start), int(stop))
+                contig, start, stop, *others = fields
+                yield (contig, int(start), int(stop), *others)
 
     def set_contig(self, contig: str):
         self.contig = contig
