@@ -57,13 +57,10 @@ class Preparation(Runnable):
 
     def _prepare_annotation(self):
         log.print_progress("Data preprocessing to prepare CWAS annotation step")
-        cwas_env = getattr(self, "env")
         try:
-            workspace = Path(cwas_env.get_env("CWAS_WORKSPACE"))
-            annot_data_dir = Path(cwas_env.get_env("ANNOTATION_DATA"))
-            bed_key_list_path = workspace / cwas_env.get_env(
-                "ANNOTATION_BED_KEY"
-            )
+            workspace = Path(self.get_env("CWAS_WORKSPACE"))
+            annot_data_dir = Path(self.get_env("ANNOTATION_DATA"))
+            bed_key_list_path = workspace / self.get_env("ANNOTATION_BED_KEY")
         except TypeError:
             raise RuntimeError(
                 "Failed to get one of CWAS environment variable."
@@ -93,5 +90,5 @@ class Preparation(Runnable):
         log.print_progress("Make an index of your BED file.")
         bed_idx_path = index_bed_file(bed_gz_path)
 
-        cwas_env.set_env("MERGED_BED", bed_gz_path)
-        cwas_env.set_env("MERGED_BED_INDEX", bed_idx_path)
+        self.set_env("MERGED_BED", bed_gz_path)
+        self.set_env("MERGED_BED_INDEX", bed_idx_path)

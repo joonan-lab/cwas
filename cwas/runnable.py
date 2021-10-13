@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Any, Optional
 
 from cwas.env import Env
 
@@ -18,7 +19,7 @@ class Runnable(ABC):
             setattr(self, arg, arg_val)
 
     @classmethod
-    def get_instance(cls, argv: list = None) -> Runnable:
+    def get_instance(cls, argv: list = []) -> Runnable:
         arg_parser = cls._create_arg_parser()
         args = arg_parser.parse_args(argv)
         cls._print_args(args)
@@ -27,6 +28,15 @@ class Runnable(ABC):
 
     def set_env_path(self, path: Path):
         self.env.set_path(path)
+
+    def set_env(self, env_key: str, env_value: Any):
+        self.env.set_env(env_key, env_value)
+
+    def get_env(self, env_key: str) -> Optional[str]:
+        return self.env.get_env(env_key)
+
+    def save_env(self):
+        self.env.save()
 
     @staticmethod
     @abstractmethod
