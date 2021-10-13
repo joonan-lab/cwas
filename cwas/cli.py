@@ -3,7 +3,6 @@ Command line tool for Category-wide association study (CWAS)
 """
 import sys
 
-from cwas.env import Env
 from cwas.factory import get_runnable
 from cwas.utils.log import print_log
 
