@@ -4,7 +4,7 @@ Manage CWAS environment variables
 
 from collections import OrderedDict
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import dotenv
 
@@ -31,6 +31,7 @@ class Env(Singleton):
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
 
     def set_path(self, path: Path):
+        """Set the dotenv path"""
         assert path is not None, "The 'path' argument cannot be None."
         old_path = getattr(self, "path", None)
 
@@ -45,11 +46,12 @@ class Env(Singleton):
         if not path.exists():
             path.touch()
 
-    def get_env(self, env_key) -> Optional[str]:
+    def get_env(self, env_key: str) -> Optional[str]:
         """Return None if the environment value does not exist"""
         return self.env.get(env_key)
 
-    def set_env(self, env_key: str, env_value):
+    def set_env(self, env_key: str, env_value: Any):
+        """Set a new value to the environment variable (key)"""
         self.env[env_key] = str(env_value).strip()
 
     def reset(self):
@@ -57,6 +59,7 @@ class Env(Singleton):
         self.env = OrderedDict()
 
     def save(self):
+        """Make a new dotenv"""
         with self.path.open("w") as env_f:
             for k, v in self.env.items():
                 print(f"{k}={v}", file=env_f)
