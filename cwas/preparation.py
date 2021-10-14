@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from typing import Tuple
 
 import yaml
 
@@ -53,26 +54,33 @@ class Preparation(Runnable):
         check_num_proc(args.num_proc)
 
     def run(self):
-        self._prepare_annotation()
+        self._load_env()
+        bed_gz_path, bed_idx_path = self._prepare_annotation()
+        self._save_as_env(bed_gz_path, bed_idx_path)
 
-    def _prepare_annotation(self):
-        log.print_progress("Data preprocessing to prepare CWAS annotation step")
+    def _load_env(self):
+        """Load environment variables to attributes"""
         try:
-            workspace = Path(self.get_env("CWAS_WORKSPACE"))
-            annot_data_dir = Path(self.get_env("ANNOTATION_DATA"))
-            bed_key_list_path = workspace / self.get_env("ANNOTATION_BED_KEY")
+            self.workspace = Path(self.get_env("CWAS_WORKSPACE"))
+            self.annot_data_dir = Path(self.get_env("ANNOTATION_DATA"))
+            self.bed_key_list_path = self.workspace / self.get_env(
+                "ANNOTATION_BED_KEY"
+            )
         except TypeError:
             raise RuntimeError(
                 "Failed to get one of CWAS environment variable."
                 " Maybe you omitted to run Configuration step."
             )
 
-        with bed_key_list_path.open() as bed_key_list_file:
+    def _prepare_annotation(self) -> Tuple[Path, Path]:
+        log.print_progress("Data preprocessing to prepare CWAS annotation step")
+
+        with self.bed_key_list_path.open() as bed_key_list_file:
             bed_key_list = yaml.safe_load(bed_key_list_file)
 
         bed_file_and_keys = []
         for bed_filename, bed_key in bed_key_list.items():
-            bed_file_path = annot_data_dir / bed_filename
+            bed_file_path = self.annot_data_dir / bed_filename
             bed_file_and_keys.append((bed_file_path, bed_key))
 
         log.print_progress(
@@ -80,7 +88,7 @@ class Preparation(Runnable):
         )
         num_proc = getattr(self, "num_proc")
         force_overwrite = getattr(self, "force_overwrite")
-        merge_bed_path = workspace / "merged_annotation.bed"
+        merge_bed_path = self.workspace / "merged_annotation.bed"
         merge_bed_files(
             merge_bed_path, bed_file_and_keys, num_proc, force_overwrite
         )
@@ -90,5 +98,9 @@ class Preparation(Runnable):
         log.print_progress("Make an index of your BED file.")
         bed_idx_path = index_bed_file(bed_gz_path)
 
+        return bed_gz_path, bed_idx_path
+
+    def _save_as_env(self, bed_gz_path: Path, bed_idx_path: Path):
         self.set_env("MERGED_BED", bed_gz_path)
         self.set_env("MERGED_BED_INDEX", bed_idx_path)
+        self.save_env()
