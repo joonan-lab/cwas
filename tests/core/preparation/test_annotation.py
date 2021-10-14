@@ -30,15 +30,18 @@ def input_coordinates():
     input_coordinates = []
 
     # Number of appends = Number of BED files
-    input_coordinates.append(
-        [(100, 300, 1),]
-    )
-    input_coordinates.append(
-        [(200, 400, 1),]
-    )
-    input_coordinates.append(
-        [(250, 350, 1),]
-    )
+    input_coordinates.append([
+        (100, 300, 1),
+        (1000, 1100, 1),
+    ])
+    input_coordinates.append([
+        (200, 400, 1),
+        (1150, 1200, 1),
+    ])
+    input_coordinates.append([
+        (250, 350, 1),
+        (1250, 1350, 1),
+    ])
 
     return input_coordinates
 
@@ -51,6 +54,9 @@ def output_coordinates():
         (250, 300, 7),
         (300, 350, 6),
         (350, 400, 2),
+        (1000, 1100, 1),
+        (1150, 1200, 2),
+        (1250, 1350, 4),
     ]
     return output_coordinates
 

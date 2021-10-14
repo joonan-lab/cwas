@@ -1,18 +1,18 @@
 """
 Test cwas.configuration
 """
+import pytest
 from cwas.configuration import Configuration
 
 
-def test_run_configuration(
+@pytest.fixture(scope="module")
+def configuration_inst(
     cwas_workspace,
     annotation_dir,
     annotation_key_conf,
     bw_cutoff_conf,
     gene_matrix,
 ):
-    env_file_path = cwas_workspace / ".config"
-
     argv = [
         "-d",
         str(annotation_dir),
@@ -26,8 +26,13 @@ def test_run_configuration(
         str(cwas_workspace),
     ]
     inst = Configuration.get_instance(argv)
-    inst.set_env_path(env_file_path)
-    inst.run()
+    return inst
+
+
+def test_run_configuration_make_files(cwas_workspace, configuration_inst):
+    env_file_path = cwas_workspace / ".config"
+    configuration_inst.set_env_path(env_file_path)
+    configuration_inst.run()
 
     data_dir_symlink = cwas_workspace / "annotation-data"
     gene_matrix_symlink = cwas_workspace / "gene_matrix.txt"
@@ -55,3 +60,23 @@ def test_run_configuration(
     category_domain_list.unlink()
     redundant_category_table.unlink()
     env_file_path.unlink()
+
+
+def test_env_after_run_configuration(cwas_workspace, configuration_inst):
+    env_file_path = cwas_workspace / ".config"
+    configuration_inst.set_env_path(env_file_path)
+    configuration_inst.run()
+
+    env_keys = [
+        "VEP",
+        "CWAS_WORKSPACE",
+        "ANNOTATION_DATA",
+        "GENE_MATRIX",
+        "ANNOTATION_BED_KEY",
+        "ANNOTATION_BW_KEY",
+        "ANNOTATION_BW_CUTOFF",
+        "CATEGORY_DOMAIN",
+        "REDUNDANT_CATEGORY",
+    ]
+    for env_key in env_keys:
+        assert configuration_inst.get_env(env_key)
