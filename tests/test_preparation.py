@@ -25,7 +25,6 @@ class PreparationMock(Preparation):
 
 @pytest.fixture(scope="function")
 def set_env(cwas_workspace, annotation_dir):
-    print("HEllo")
     env = Env()
     env_path = cwas_workspace / ".cwas_config"
     env.set_path(env_path)
