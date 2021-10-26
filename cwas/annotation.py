@@ -9,7 +9,7 @@ import argparse
 from pathlib import Path
 
 from cwas.runnable import Runnable
-from cwas.utils.error import check_is_file, check_num_proc
+from cwas.utils.check import check_is_file, check_num_proc
 from cwas.utils.log import print_arg, print_log
 
 

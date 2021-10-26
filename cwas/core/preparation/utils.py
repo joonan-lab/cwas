@@ -6,7 +6,7 @@ from pathlib import Path
 
 import cwas.utils.log as log
 from cwas.utils.cmd import execute_bin
-from cwas.utils.error import check_is_file
+from cwas.utils.check import check_is_file
 
 
 def compress_bed_file(bed_file_path: Path) -> Path:

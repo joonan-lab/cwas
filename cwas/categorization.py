@@ -1,7 +1,7 @@
 import argparse
 import os
 
-import cwas.utils.error as error
+import cwas.utils.check as check
 import cwas.utils.log as log
 from cwas.runnable import Runnable
 
