@@ -10,13 +10,16 @@ from cwas.start import Start
 
 @pytest.fixture(scope="module")
 def args(cwas_workspace: Path) -> list:
-    return ["-w", cwas_workspace]
+    return ["-w", str(cwas_workspace)]
 
 
 @pytest.fixture(scope="module", autouse=True)
 def run_start(args: list):
     inst = Start.get_instance(args)
     inst.run()
+    yield
+    cwas_env_path = Path.home() / ".cwas_env"
+    cwas_env_path.unlink()
 
 
 def test_initial_file_exist(cwas_workspace: Path):
@@ -40,13 +43,26 @@ def test_config_keys(cwas_workspace: Path):
             config_key_set.add(config_key)
 
     expected_key_set = {
-        "VEP",
-        "ANNOTATION_DATA",
+        "ANNOTATION_DATA_DIR",
         "GENE_MATRIX",
-        "ANNOTATION_BED_KEY",
-        "ANNOTATION_VW_KEY",
-        "ANNOTATION_BW_CUTOFF",
-        "CATEGORY_DOMAIN",
-        "REDUNDANT_CATEGORY",
+        "ANNOTATION_KEY_CONFIG",
+        "BIGWIG_CUTOFF_CONFIG",
+        "VEP",
     }
     assert config_key_set == expected_key_set
+
+
+def test_run_without_args():
+    inst = Start.get_instance()
+    inst.run()
+
+    expect_default_workspace = Path.home() / ".cwas"
+    actual_workspace = getattr(inst, "workspace")
+
+    assert expect_default_workspace == actual_workspace
+    assert expect_default_workspace.is_dir()
+
+    # Teardown
+    for f in expect_default_workspace.glob("*"):
+        f.unlink()
+    expect_default_workspace.rmdir()

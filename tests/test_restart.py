@@ -9,7 +9,7 @@ from cwas.start import Start
 
 @pytest.fixture(scope="module")
 def args(cwas_workspace: Path) -> list:
-    return ["-w", cwas_workspace]
+    return ["-w", str(cwas_workspace)]
 
 
 @pytest.fixture(scope="module")
@@ -46,6 +46,9 @@ def create_env_early(env: dict):
 def run_start(args: list, create_config_early, create_env_early):
     inst = Start.get_instance(args)
     inst.run()
+    yield
+    cwas_env_path = Path.home() / ".cwas_env"
+    cwas_env_path.unlink()
 
 
 def test_cwas_config(cwas_workspace: Path, config: dict):
@@ -64,6 +67,6 @@ def get_config_from_file(config_path: Path) -> dict:
     config_from_file = {}
     with config_path.open() as config_file:
         for line in config_file:
-            k, v = line.strip.split("=")
+            k, v = line.strip().split("=")
             config_from_file[k] = v
     return config_from_file
