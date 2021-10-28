@@ -25,7 +25,7 @@ class Env(Singleton):
             if hasattr(self, "path"):
                 env_path = self.path
             else:
-                env_path = Path.home() / ".cwas_config"
+                env_path = Path.home() / ".cwas_env"
 
         self.set_path(env_path)
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
