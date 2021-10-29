@@ -20,6 +20,7 @@ def run_start(args: list):
     yield
     cwas_env_path = Path.home() / ".cwas_env"
     cwas_env_path.unlink()
+    os.unsetenv("CWAS_WORKSPACE")
 
 
 def test_initial_file_exist(cwas_workspace: Path):

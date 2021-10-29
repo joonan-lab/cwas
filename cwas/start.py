@@ -62,8 +62,9 @@ class Start(Runnable):
         self.workspace.mkdir(exist_ok=True)
 
     def _update_env(self):
-        self.env.set_env("WORKSPACE", self.workspace)
+        self.env.set_env("CWAS_WORKSPACE", self.workspace)
         self.env.save()
+        self.env.load_env_to_os()
 
     def _create_config_file(self):
         config = self._init_config()
