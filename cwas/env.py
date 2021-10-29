@@ -30,6 +30,9 @@ class Env(Singleton):
         self.set_path(env_path)
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
 
+    def get_path(self) -> Path:
+        return self.path
+
     def set_path(self, path: Path):
         """Set the dotenv path"""
         assert path is not None, "The 'path' argument cannot be None."
@@ -63,3 +66,6 @@ class Env(Singleton):
         with self.path.open("w") as env_f:
             for k, v in self.env.items():
                 print(f"{k}={v}", file=env_f)
+
+    def load_env_to_os(self):
+        dotenv.load_dotenv(dotenv_path=self.path)
