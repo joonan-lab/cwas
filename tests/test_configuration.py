@@ -1,37 +1,51 @@
 """
 Test cwas.configuration
 """
+import os
+from pathlib import Path
+
 import pytest
 from cwas.configuration import Configuration
 
 
 @pytest.fixture(scope="module")
-def configuration_inst(
+def set_cwas_env(cwas_workspace: Path):
+    cwas_env_path = Path.home() / ".cwas_env"
+    with cwas_env_path.open("w") as cwas_env_file:
+        print(f"CWAS_WORKSPACE={str(cwas_workspace)}", file=cwas_env_file)
+    os.environ["CWAS_WORKSPACE"] = str(cwas_workspace)
+
+
+@pytest.fixture(scope="module")
+def create_cwas_conf(
     cwas_workspace,
     annotation_dir,
     annotation_key_conf,
     bw_cutoff_conf,
     gene_matrix,
+    vep,
 ):
-    argv = [
-        "-d",
-        str(annotation_dir),
-        "-m",
-        str(gene_matrix),
-        "-k",
-        str(annotation_key_conf),
-        "-c",
-        str(bw_cutoff_conf),
-        "-w",
-        str(cwas_workspace),
-    ]
-    inst = Configuration.get_instance(argv)
+    config = {
+        "ANNOTATION_DATA_DIR": annotation_dir,
+        "GENE_MATRIX": gene_matrix,
+        "ANNOTATION_KEY_CONFIG": annotation_key_conf,
+        "BIGWIG_CUTOFF_CONFIG": bw_cutoff_conf,
+        "VEP": vep,
+    }
+    config_path = cwas_workspace / "configuration.txt"
+
+    with config_path.open("w") as config_file:
+        for k, v in config.items():
+            print(f"{k}={str(v)}", file=config_file)
+
+
+@pytest.fixture(scope="module")
+def configuration_inst(set_cwas_env, create_cwas_conf):
+    inst = Configuration.get_instance()
     return inst
 
 
 def test_run_configuration_make_files(cwas_workspace, configuration_inst):
-    env_file_path = cwas_workspace / ".config"
-    configuration_inst.set_env_path(env_file_path)
     configuration_inst.run()
 
     data_dir_symlink = cwas_workspace / "annotation-data"
@@ -49,7 +63,6 @@ def test_run_configuration_make_files(cwas_workspace, configuration_inst):
     assert bw_cutoff_list.is_file()
     assert category_domain_list.is_file()
     assert redundant_category_table.is_file()
-    assert env_file_path.is_file()
 
     # Teardown
     data_dir_symlink.unlink()
@@ -59,12 +72,9 @@ def test_run_configuration_make_files(cwas_workspace, configuration_inst):
     bw_cutoff_list.unlink()
     category_domain_list.unlink()
     redundant_category_table.unlink()
-    env_file_path.unlink()
 
 
-def test_env_after_run_configuration(cwas_workspace, configuration_inst):
-    env_file_path = cwas_workspace / ".config"
-    configuration_inst.set_env_path(env_file_path)
+def test_env_after_run_configuration(configuration_inst):
     configuration_inst.run()
 
     env_keys = [
