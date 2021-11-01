@@ -1,29 +1,37 @@
 """
-Test cwas.configuration
+Tests of the 'Configuration' step
 """
 import os
+import random
 from pathlib import Path
 
 import pytest
 from cwas.configuration import Configuration
 
 
-@pytest.fixture(scope="module")
-def set_cwas_env(cwas_workspace: Path):
+@pytest.fixture(scope="module", autouse=True)
+def create_cwas_env_file(cwas_workspace: Path):
     cwas_env_path = Path.home() / ".cwas_env"
     with cwas_env_path.open("w") as cwas_env_file:
         print(f"CWAS_WORKSPACE={str(cwas_workspace)}", file=cwas_env_file)
-    os.environ["CWAS_WORKSPACE"] = str(cwas_workspace)
+    yield
+    cwas_env_path.unlink()
 
 
 @pytest.fixture(scope="module")
-def create_cwas_conf(
-    cwas_workspace,
-    annotation_dir,
-    annotation_key_conf,
-    bw_cutoff_conf,
-    gene_matrix,
-    vep,
+def load_env_to_os(cwas_workspace: Path):
+    os.environ["CWAS_WORKSPACE"] = str(cwas_workspace)
+    yield
+    os.unsetenv("CWAS_WORKSPACE")
+
+
+@pytest.fixture
+def cwas_config(
+    annotation_dir: Path,
+    annotation_key_conf: Path,
+    bw_cutoff_conf: Path,
+    gene_matrix: Path,
+    vep: Path,
 ):
     config = {
         "ANNOTATION_DATA_DIR": annotation_dir,
@@ -32,20 +40,49 @@ def create_cwas_conf(
         "BIGWIG_CUTOFF_CONFIG": bw_cutoff_conf,
         "VEP": vep,
     }
+    return config
+
+
+@pytest.fixture
+def create_cwas_config_file(cwas_workspace, cwas_config):
+    _create_cwas_config_file(cwas_workspace, cwas_config)
+
+
+@pytest.fixture
+def create_cwas_config_file_incomplete(cwas_workspace, cwas_config):
+    random_config_key = random.choice(list(cwas_config.keys()))
+    cwas_config[random_config_key] = ""
+    _create_cwas_config_file(cwas_workspace, cwas_config)
+
+
+def _create_cwas_config_file(cwas_workspace, cwas_config):
     config_path = cwas_workspace / "configuration.txt"
 
     with config_path.open("w") as config_file:
-        for k, v in config.items():
+        for k, v in cwas_config.items():
             print(f"{k}={str(v)}", file=config_file)
 
 
-@pytest.fixture(scope="module")
-def configuration_inst(set_cwas_env, create_cwas_conf):
-    inst = Configuration.get_instance()
-    return inst
+def test_get_inst_without_load_to_env():
+    with pytest.raises(ValueError):
+        Configuration.get_instance()
 
 
-def test_run_configuration_make_files(cwas_workspace, configuration_inst):
+@pytest.fixture
+def configuration_inst(load_env_to_os):
+    return Configuration.get_instance()
+
+
+def test_run_configuration_with_incomplete_config(
+    configuration_inst, create_cwas_config_file_incomplete,
+):
+    with pytest.raises(ValueError):
+        configuration_inst.run()
+
+
+def test_run_configuration_make_files(
+    cwas_workspace, configuration_inst, create_cwas_config_file
+):
     configuration_inst.run()
 
     data_dir_symlink = cwas_workspace / "annotation-data"
