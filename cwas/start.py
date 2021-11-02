@@ -34,10 +34,6 @@ class Start(Runnable):
     def _print_args(args: argparse.Namespace):
         log.print_arg("CWAS Workspace", args.workspace)
 
-    @staticmethod
-    def _check_args_validity(args: argparse.Namespace):
-        super(Start, Start)._check_args_validity(args)
-
     def run(self):
         if self.workspace.is_dir():
             log.print_warn(

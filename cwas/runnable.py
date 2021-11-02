@@ -39,17 +39,14 @@ class Runnable(ABC):
         self.env.save()
 
     @staticmethod
-    @abstractmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         return argparse.ArgumentParser()
 
     @staticmethod
-    @abstractmethod
     def _print_args(args: argparse.Namespace):
         pass
 
     @staticmethod
-    @abstractmethod
     def _check_args_validity(args: argparse.Namespace):
         pass
 
