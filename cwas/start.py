@@ -54,8 +54,12 @@ class Start(Runnable):
             self._create_config_file()
 
     def _create_workspace(self):
-        log.print_progress("Create CWAS workspace")
-        self.workspace.mkdir(exist_ok=True)
+        log.print_progress(f"Create CWAS workspace '{self.workspace}'")
+        try:
+            self.workspace.mkdir(exist_ok=True)
+        except NotADirectoryError:
+            log.print_err("The path to CWAS workspace is invalid.")
+            raise
 
     def _update_env(self):
         self.env.set_env("CWAS_WORKSPACE", self.workspace)
