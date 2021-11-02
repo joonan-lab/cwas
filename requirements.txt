@@ -36,16 +36,6 @@ jedi==0.18.0
 Jinja2==3.0.1
 json5==0.9.6
 jsonschema==3.2.0
-jupyter==1.0.0
-jupyter-client==6.1.12
-jupyter-console==6.4.0
-jupyter-core==4.7.1
-jupyter-packaging==0.7.12
-jupyter-server==1.4.1
-jupyterlab==3.0.14
-jupyterlab-pygments==0.1.2
-jupyterlab-server==2.7.1
-jupyterlab-widgets==1.0.0
 MarkupSafe==2.0.1
 matplotlib-inline==0.1.2
 mistune==0.8.4
