@@ -31,14 +31,13 @@ def cwas_config(
     annotation_key_conf: Path,
     bw_cutoff_conf: Path,
     gene_matrix: Path,
-    vep: Path,
 ):
     config = {
         "ANNOTATION_DATA_DIR": annotation_dir,
         "GENE_MATRIX": gene_matrix,
         "ANNOTATION_KEY_CONFIG": annotation_key_conf,
         "BIGWIG_CUTOFF_CONFIG": bw_cutoff_conf,
-        "VEP": vep,
+        "VEP": "VEP",
     }
     return config
 
@@ -64,7 +63,7 @@ def _create_cwas_config_file(cwas_workspace, cwas_config):
 
 
 def test_get_inst_without_load_to_env():
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         Configuration.get_instance()
 
 
