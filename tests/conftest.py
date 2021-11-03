@@ -11,6 +11,12 @@ _rand_n = randint(1, 1000000)
 
 
 @pytest.fixture(scope="package")
+def cwas_env_path():
+    _tmp_env = Path.home() / f".cwas_env_{_rand_n}"
+    return _tmp_env
+
+
+@pytest.fixture(scope="package")
 def cwas_workspace():
     _tmp_workspace = Path.home() / f".cwas-test-{_rand_n}"
     return _tmp_workspace
