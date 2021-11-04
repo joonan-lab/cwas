@@ -28,7 +28,7 @@ class Env(Singleton):
                 env_path = Path.home() / ".cwas_env"
 
         self.set_path(env_path)
-        self.env = dotenv.dotenv_values(dotenv_path=self.path)
+        self.load_env_from_file()
 
     def get_path(self) -> Path:
         return self.path
@@ -66,6 +66,9 @@ class Env(Singleton):
         with self.path.open("w") as env_f:
             for k, v in self.env.items():
                 print(f"{k}={v}", file=env_f)
+
+    def load_env_from_file(self):
+        self.env = dotenv.dotenv_values(dotenv_path=self.path)
 
     def load_env_to_os(self):
         dotenv.load_dotenv(dotenv_path=self.path)
