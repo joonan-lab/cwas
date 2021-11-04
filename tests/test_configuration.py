@@ -1,28 +1,26 @@
 """
 Tests of the 'Configuration' step
 """
-import os
 import random
 from pathlib import Path
 
 import pytest
 from cwas.configuration import Configuration
+from cwas.env import Env
 
 
 @pytest.fixture(scope="module", autouse=True)
-def create_cwas_env_file(cwas_workspace: Path):
-    cwas_env_path = Path.home() / ".cwas_env"
+def create_cwas_env_file(cwas_env_path: Path, cwas_workspace: Path):
     with cwas_env_path.open("w") as cwas_env_file:
         print(f"CWAS_WORKSPACE={str(cwas_workspace)}", file=cwas_env_file)
     yield
     cwas_env_path.unlink()
 
 
-@pytest.fixture(scope="module")
-def load_env_to_os(cwas_workspace: Path):
-    os.environ["CWAS_WORKSPACE"] = str(cwas_workspace)
-    yield
-    os.unsetenv("CWAS_WORKSPACE")
+@pytest.fixture(scope="module", autouse=True)
+def set_env_path(cwas_env_path: Path):
+    env = Env()
+    env.set_path(cwas_env_path)
 
 
 @pytest.fixture
@@ -43,14 +41,49 @@ def cwas_config(
 
 
 @pytest.fixture
+def invalid_file_path(cwas_workspace: Path):
+    filename = f"invalid-{random.randint(1, 1000000)}"
+    return cwas_workspace / filename
+
+
+@pytest.fixture
 def create_cwas_config_file(cwas_workspace, cwas_config):
     _create_cwas_config_file(cwas_workspace, cwas_config)
 
 
 @pytest.fixture
-def create_cwas_config_file_incomplete(cwas_workspace, cwas_config):
-    random_config_key = random.choice(list(cwas_config.keys()))
-    cwas_config[random_config_key] = ""
+def create_incomplete_cwas_config_file(cwas_workspace, cwas_config):
+    _unset_required_config(cwas_config)
+    _create_cwas_config_file(cwas_workspace, cwas_config)
+
+
+@pytest.fixture
+def create_cwas_config_file_without_optional(cwas_workspace, cwas_config):
+    _unset_optional_config(cwas_config)
+    _create_cwas_config_file(cwas_workspace, cwas_config)
+
+
+@pytest.fixture
+def create_cwas_config_file_invalid_file_path(
+    cwas_workspace, cwas_config, invalid_file_path
+):
+    _set_invalid_file_path(cwas_config, invalid_file_path)
+    _create_cwas_config_file(cwas_workspace, cwas_config)
+
+
+@pytest.fixture
+def create_cwas_config_file_invalid_dir_path(
+    cwas_workspace, cwas_config, invalid_file_path
+):
+    _set_invalid_dir_path(cwas_config, invalid_file_path)
+    _create_cwas_config_file(cwas_workspace, cwas_config)
+
+
+@pytest.fixture
+def create_cwas_config_file_invalid_vep_path(
+    cwas_workspace, cwas_config, invalid_file_path
+):
+    _set_invalid_vep_path(cwas_config, invalid_file_path)
     _create_cwas_config_file(cwas_workspace, cwas_config)
 
 
@@ -62,28 +95,63 @@ def _create_cwas_config_file(cwas_workspace, cwas_config):
             print(f"{k}={str(v)}", file=config_file)
 
 
-def test_get_inst_without_load_to_env():
-    with pytest.raises(RuntimeError):
-        Configuration.get_instance()
+def _unset_required_config(cwas_config):
+    random_config_key = random.choice(
+        ["GENE_MATRIX", "ANNOTATION_DATA_DIR", "VEP"]
+    )
+    cwas_config[random_config_key] = ""
+
+
+def _unset_optional_config(cwas_config):
+    random_config_key = random.choice(
+        ["ANNOTATION_KEY_CONFIG", "BIGWIG_CUTOFF_CONFIG"]
+    )
+    cwas_config[random_config_key] = ""
+
+
+def _set_invalid_file_path(cwas_config, invalid_file_path):
+    random_file_key = random.choice(
+        ["GENE_MATRIX", "ANNOTATION_KEY_CONFIG", "BIGWIG_CUTOFF_CONFIG"]
+    )
+    cwas_config[random_file_key] = invalid_file_path
+
+
+def _set_invalid_dir_path(cwas_config, invalid_dir_path):
+    cwas_config["ANNOTATION_DATA_DIR"] = invalid_dir_path
+
+
+def _set_invalid_vep_path(cwas_config, invalid_vep_path):
+    cwas_config["VEP"] = invalid_vep_path
 
 
 @pytest.fixture
-def configuration_inst(load_env_to_os):
-    return Configuration.get_instance()
+def configuration_inst():
+    inst = Configuration.get_instance()
+    return inst
 
 
-def test_run_configuration_with_incomplete_config(
-    configuration_inst, create_cwas_config_file_incomplete,
+def test_run_configuration_with_incomplete(
+    configuration_inst, create_incomplete_cwas_config_file,
 ):
     with pytest.raises(ValueError):
         configuration_inst.run()
 
 
-def test_run_configuration_make_files(
+def test_run_configuration(
     cwas_workspace, configuration_inst, create_cwas_config_file
 ):
     configuration_inst.run()
+    _check_config_outputs(cwas_workspace)
 
+
+def test_run_configuration_without_optional(
+    cwas_workspace, configuration_inst, create_cwas_config_file_without_optional
+):
+    configuration_inst.run()
+    _check_config_outputs(cwas_workspace)
+
+
+def _check_config_outputs(cwas_workspace):
     data_dir_symlink = cwas_workspace / "annotation-data"
     gene_matrix_symlink = cwas_workspace / "gene_matrix.txt"
     bed_key_list = cwas_workspace / "annotation_key_bed.yaml"
@@ -110,7 +178,37 @@ def test_run_configuration_make_files(
     redundant_category_table.unlink()
 
 
-def test_env_after_run_configuration(configuration_inst):
+def test_run_configuration_with_incomplete(
+    configuration_inst, create_incomplete_cwas_config_file,
+):
+    with pytest.raises(ValueError):
+        configuration_inst.run()
+
+
+def test_run_configuration_with_invalid_file_path(
+    configuration_inst, create_cwas_config_file_invalid_file_path
+):
+    with pytest.raises(FileNotFoundError):
+        configuration_inst.run()
+
+
+def test_run_configuration_with_invalid_dir_path(
+    configuration_inst, create_cwas_config_file_invalid_dir_path
+):
+    with pytest.raises(NotADirectoryError):
+        configuration_inst.run()
+
+
+def test_run_configuration_with_invalid_vep_path(
+    configuration_inst, create_cwas_config_file_invalid_vep_path
+):
+    with pytest.raises(ValueError):
+        configuration_inst.run()
+
+
+def test_env_after_run_configuration(
+    configuration_inst, create_cwas_config_file
+):
     configuration_inst.run()
 
     env_keys = [
@@ -126,3 +224,15 @@ def test_env_after_run_configuration(configuration_inst):
     ]
     for env_key in env_keys:
         assert configuration_inst.get_env(env_key)
+
+
+def test_get_inst_without_env():
+    _make_env_empty()
+    with pytest.raises(RuntimeError):
+        Configuration.get_instance()
+
+
+def _make_env_empty():
+    env = Env()
+    env.reset()
+    env.save()

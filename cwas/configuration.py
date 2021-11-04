@@ -1,5 +1,4 @@
 import argparse
-import os
 import shutil
 from pathlib import Path
 
@@ -25,7 +24,7 @@ class Configuration(Runnable):
         )
 
     def _get_workspace(self):
-        workspace = os.getenv("CWAS_WORKSPACE")
+        workspace = self.get_env("CWAS_WORKSPACE")
         if workspace is None:
             raise RuntimeError(
                 "${CWAS_WORKSPACE} does not set. Run the Start step first."
@@ -106,14 +105,14 @@ class Configuration(Runnable):
         annot_key_conf = user_config.get("ANNOTATION_KEY_CONFIG")
         bw_cutoff_conf = user_config.get("BIGWIG_CUTOFF_CONFIG")
         self.annot_key_conf = (
-            None if annot_key_conf is None else Path(annot_key_conf)
+            None if not annot_key_conf else Path(annot_key_conf)
         )
         self.bw_cutoff_conf = (
-            None if bw_cutoff_conf is None else Path(bw_cutoff_conf)
+            None if not bw_cutoff_conf else Path(bw_cutoff_conf)
         )
 
     def _load_configuration(self) -> dict:
-        user_config = {}
+        user_config_dict = {}
 
         with self.user_config.open() as user_config_file:
             for line in user_config_file:
@@ -121,9 +120,9 @@ class Configuration(Runnable):
                 # The two 'CONFIG' file paths are optional.
                 if not k.endswith("CONFIG"):
                     self._check_config_value(k, v)
-                user_config[k] = v
+                user_config_dict[k] = v
 
-        return user_config
+        return user_config_dict
 
     def _check_config_value(self, key: str, value: str):
         if not value:
