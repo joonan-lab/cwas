@@ -42,14 +42,19 @@ def create_env_early(cwas_env_path: Path, env: dict):
 
 
 @pytest.fixture(scope="module", autouse=True)
+def set_env_path(cwas_env_path: Path):
+    env = Env()
+    env.set_path(cwas_env_path)
+
+
+@pytest.fixture(scope="module", autouse=True)
 def run_start(
     args: list, cwas_env_path: Path, create_config_early, create_env_early
 ):
     inst = Start.get_instance(args)
-    inst.set_env_path(cwas_env_path)
-    inst.env = Env()  # Reload
     inst.run()
     yield
+    cwas_env_path.unlink()
 
 
 def test_cwas_config(cwas_workspace: Path, config: dict):
