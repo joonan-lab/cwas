@@ -6,9 +6,9 @@ import yaml
 
 import cwas.utils.log as log
 from cwas.core.preparation.annotation import merge_bed_files
-from cwas.core.preparation.utils import compress_bed_file, index_bed_file
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
+from cwas.utils.cmd import compress_bed_file, index_bed_file
 
 
 class Preparation(Runnable):

@@ -7,7 +7,7 @@ import random
 
 import cwas.core.preparation.annotation as annotation
 import pytest
-from cwas.core.preparation.utils import compress_bed_file, index_bed_file
+from cwas.utils.cmd import compress_bed_file, index_bed_file
 
 NUM_CHROM = random.randint(1, 22)
 
@@ -30,18 +30,15 @@ def input_coordinates():
     input_coordinates = []
 
     # Number of appends = Number of BED files
-    input_coordinates.append([
-        (100, 300, 1),
-        (1000, 1100, 1),
-    ])
-    input_coordinates.append([
-        (200, 400, 1),
-        (1150, 1200, 1),
-    ])
-    input_coordinates.append([
-        (250, 350, 1),
-        (1250, 1350, 1),
-    ])
+    input_coordinates.append(
+        [(100, 300, 1), (1000, 1100, 1),]
+    )
+    input_coordinates.append(
+        [(200, 400, 1), (1150, 1200, 1),]
+    )
+    input_coordinates.append(
+        [(250, 350, 1), (1250, 1350, 1),]
+    )
 
     return input_coordinates
 

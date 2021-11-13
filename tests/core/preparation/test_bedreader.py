@@ -3,7 +3,7 @@ Test the 'BedReader' class in the cwas.core.preparation.bedreader module
 """
 import pytest
 from cwas.core.preparation.bedreader import BedReader
-from cwas.core.preparation.utils import compress_bed_file, index_bed_file
+from cwas.utils.cmd import compress_bed_file, index_bed_file
 
 
 @pytest.fixture(scope="module")
