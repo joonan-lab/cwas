@@ -12,30 +12,36 @@ from cwas.env import Env
 
 
 @pytest.fixture(scope="module")
-def env_inst(cwas_env_path: Path) -> Env:
-    env = Env(cwas_env_path)
-    yield env
-    if cwas_env_path.exists():
-        cwas_env_path.unlink()
+def env_inst():
+    return Env()
 
 
-def test_env_init(env_inst: Env):
+@pytest.fixture(scope="module", autouse=True)
+def teardown(env_inst: Path):
+    yield
+    env_inst.reset()
+    if env_inst.get_path().exists():
+        env_inst.get_path().unlink()
+
+
+def test_env_init(env_inst: Env, cwas_env_path: Path):
+    assert env_inst.get_path() is cwas_env_path
     assert isinstance(env_inst.env, OrderedDict)
 
 
 def test_env_singleton(cwas_env_path: Path):
-    # Test if the two instances are the same.
-    env1 = Env(cwas_env_path)
-    env2 = Env(cwas_env_path)
-
+    env1 = Env()
+    env2 = Env()
     assert env1 is env2
 
-    env3 = Env(Path(str(cwas_env_path) + "_new"))
+    new_env_path = Path(str(cwas_env_path) + "_new")
+    env3 = Env(new_env_path)
     env4 = Env()
-
     assert env1 is env3
     assert env1 is env4
-    assert str(env1.path).endswith("_new")
+    assert env1.get_path() is new_env_path
+
+    env1.set_path(cwas_env_path)
 
 
 def test_env_setting(env_inst: Env):
