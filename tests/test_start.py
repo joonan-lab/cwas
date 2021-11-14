@@ -1,7 +1,6 @@
 """
 Tests of the 'Start' step
 """
-import os
 from pathlib import Path
 
 import pytest
@@ -14,13 +13,18 @@ def args(cwas_workspace: Path) -> list:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def run_start(args: list, cwas_env_path: Path):
+def setup(args: list):
     inst = Start.get_instance(args)
-    inst.set_env_path(cwas_env_path)
     inst.run()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace: Path, cwas_env_path: Path):
     yield
     cwas_env_path.unlink()
-    os.unsetenv("CWAS_WORKSPACE")
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
 
 
 def test_initial_file_exist(cwas_env_path: Path, cwas_workspace: Path):
