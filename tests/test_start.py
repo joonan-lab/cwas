@@ -48,18 +48,8 @@ def test_config_keys(cwas_workspace: Path):
     assert config_key_set == expected_key_set
 
 
-def test_run_without_args(cwas_env_path: Path):
+def test_init_without_args():
     inst = Start.get_instance()
-    inst.set_env_path(cwas_env_path)
-    inst.run()
-
     expect_default_workspace = Path.home() / ".cwas"
     actual_workspace = getattr(inst, "workspace")
-
     assert expect_default_workspace == actual_workspace
-    assert expect_default_workspace.is_dir()
-
-    # Teardown
-    for f in expect_default_workspace.glob("*"):
-        f.unlink()
-    expect_default_workspace.rmdir()
