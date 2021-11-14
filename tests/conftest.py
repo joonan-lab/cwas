@@ -6,6 +6,7 @@ from random import randint
 
 import pytest
 import yaml
+from cwas.env import Env
 
 _rand_n = randint(1, 1000000)
 
@@ -14,6 +15,14 @@ _rand_n = randint(1, 1000000)
 def cwas_env_path():
     _tmp_env = Path.home() / f".cwas_env_{_rand_n}"
     return _tmp_env
+
+
+@pytest.fixture(scope="package", autouse=True)
+def cwas_env_inst(cwas_env_path):
+    env_inst = Env(cwas_env_path)
+    yield
+    if env_inst.get_path().exists():
+        env_inst.get_path().unlink()
 
 
 @pytest.fixture(scope="package")
