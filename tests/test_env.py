@@ -17,11 +17,10 @@ def env_inst():
 
 
 @pytest.fixture(scope="module", autouse=True)
-def teardown(env_inst: Path):
+def teardown(env_inst: Env):
     yield
     env_inst.reset()
-    if env_inst.get_path().exists():
-        env_inst.get_path().unlink()
+    env_inst.remove_file()
 
 
 def test_env_init(env_inst: Env, cwas_env_path: Path):

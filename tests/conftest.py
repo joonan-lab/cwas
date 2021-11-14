@@ -21,8 +21,7 @@ def cwas_env_path():
 def cwas_env_inst(cwas_env_path):
     env_inst = Env(cwas_env_path)
     yield
-    if env_inst.get_path().exists():
-        env_inst.get_path().unlink()
+    env_inst.remove_file()
 
 
 @pytest.fixture(scope="package")

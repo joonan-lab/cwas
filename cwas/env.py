@@ -56,6 +56,10 @@ class Env(Singleton):
             for k, v in self.env.items():
                 print(f"{k}={v}", file=env_f)
 
+    def remove_file(self):
+        if self.path.exists():
+            self.path.unlink()
+
     def load_env_from_file(self):
         self.env = dotenv.dotenv_values(dotenv_path=self.path)
 
