@@ -57,7 +57,7 @@ parso==0.8.2
 pathspec==0.7.0
 pexpect==4.8.0
 pickleshare==0.7.5
-pip==21.0.1
+pip==21.1
 prometheus-client==0.11.0
 prompt-toolkit==3.0.17
 ptyprocess==0.7.0
