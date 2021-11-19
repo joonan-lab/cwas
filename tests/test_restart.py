@@ -27,6 +27,7 @@ def env() -> dict:
 
 @pytest.fixture(scope="module")
 def create_config_early(cwas_workspace: Path, config: dict):
+    cwas_workspace.mkdir()
     cwas_config_path = cwas_workspace / "configuration.txt"
 
     with cwas_config_path.open("w") as config_file:
@@ -42,30 +43,34 @@ def create_env_early(cwas_env_path: Path, env: dict):
 
 
 @pytest.fixture(scope="module", autouse=True)
-def set_env_path(cwas_env_path: Path):
-    env = Env()
-    env.set_path(cwas_env_path)
+def setup(args: list, create_config_early, create_env_early):
+    inst = Start.get_instance(args)
+    inst.run()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def run_start(
-    args: list, cwas_env_path: Path, create_config_early, create_env_early
-):
-    inst = Start.get_instance(args)
-    inst.run()
+def teardown(cwas_workspace: Path, cwas_env_path: Path):
     yield
     cwas_env_path.unlink()
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
 
 
 def test_cwas_config(cwas_workspace: Path, config: dict):
     cwas_config_path = cwas_workspace / "configuration.txt"
     actual_config = get_config_from_file(cwas_config_path)
-    assert actual_config.items() >= config.items()
+    assert actual_config.items() == config.items()
 
 
 def test_cwas_env_path(cwas_env_path: Path, env: dict):
     actual_env = get_config_from_file(cwas_env_path)
+    expected_key_set = {
+        "CWAS_WORKSPACE",
+        "FAKE_ENV",
+    }
     assert actual_env.items() >= env.items()
+    assert set(actual_env.keys()) == expected_key_set
 
 
 def get_config_from_file(config_path: Path) -> dict:

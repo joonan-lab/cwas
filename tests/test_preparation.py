@@ -23,24 +23,37 @@ class PreparationMock(Preparation):
         return merged_bed_path, merged_bed_idx_path
 
 
-@pytest.fixture(scope="function")
-def set_env(cwas_workspace, annotation_dir):
+@pytest.fixture(scope="module", autouse=True)
+def setup(cwas_workspace: Path, annotation_dir: Path):
+    cwas_workspace.mkdir()
+    set_env(cwas_workspace, annotation_dir)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace: Path):
+    yield
+    reset_env()
+    remove_workspace(cwas_workspace)
+
+
+def set_env(cwas_workspace: Path, annotation_dir: Path):
     env = Env()
-    env_path = cwas_workspace / ".cwas_config"
-    env.set_path(env_path)
     env.set_env("CWAS_WORKSPACE", cwas_workspace)
     env.set_env("ANNOTATION_DATA", annotation_dir)
     env.set_env("ANNOTATION_BED_KEY", cwas_workspace / "bed_key.yaml")
     env.save()
 
 
-def test_run_without_configuration():
-    inst = PreparationMock.get_instance()
-    assert inst.get_env("CWAS_WORKSPACE") is None
-    assert inst.get_env("ANNOTATION_DATA") is None
-    assert inst.get_env("ANNOTATION_BED_KEY") is None
-    with pytest.raises(RuntimeError):
-        inst.run()
+def reset_env():
+    env = Env()
+    env.reset()
+    env.remove_file()
+
+
+def remove_workspace(cwas_workspace: Path):
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
 
 
 def test_default_args():
@@ -82,8 +95,15 @@ def test_parse_args_value_error():
         PreparationMock.get_instance(args)
 
 
-def test_env_after_run_preparation(set_env):
+def test_env_after_run_preparation():
     inst = PreparationMock.get_instance()
     inst.run()
     assert inst.get_env("MERGED_BED")
     assert inst.get_env("MERGED_BED_INDEX")
+
+
+def test_run_without_configuration():
+    inst = PreparationMock.get_instance()
+    Env().reset()
+    with pytest.raises(RuntimeError):
+        inst.run()
