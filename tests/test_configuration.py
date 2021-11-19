@@ -10,17 +10,26 @@ from cwas.env import Env
 
 
 @pytest.fixture(scope="module", autouse=True)
-def create_cwas_env_file(cwas_env_path: Path, cwas_workspace: Path):
-    with cwas_env_path.open("w") as cwas_env_file:
-        print(f"CWAS_WORKSPACE={str(cwas_workspace)}", file=cwas_env_file)
-    yield
-    cwas_env_path.unlink()
+def setup(cwas_workspace: Path):
+    cwas_workspace.mkdir()
+    set_env(cwas_workspace)
 
 
 @pytest.fixture(scope="module", autouse=True)
-def set_env_path(cwas_env_path: Path):
+def teardown(cwas_workspace: Path):
+    yield
     env = Env()
-    env.set_path(cwas_env_path)
+    env.reset()
+    env.remove_file()
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
+
+
+def set_env(cwas_workspace: Path):
+    env = Env()
+    env.set_env("CWAS_WORKSPACE", cwas_workspace)
+    env.save()
 
 
 @pytest.fixture
