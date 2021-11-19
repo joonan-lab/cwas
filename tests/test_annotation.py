@@ -22,6 +22,34 @@ def vcf_path(cwas_workspace):
 
 
 @pytest.fixture(scope="module", autouse=True)
+def setup(cwas_workspace, annotation_dir, vcf_path):
+    cwas_workspace.mkdir()
+    set_env(cwas_workspace, annotation_dir)
+    create_vcf_file(vcf_path)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace):
+    yield
+    env = Env()
+    env.reset()
+    env.remove_file()
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
+
+
+def set_env(cwas_workspace, annotation_dir):
+    env = Env()
+    env.set_env("CWAS_WORKSPACE", cwas_workspace)
+    env.set_env("VEP", "VEP")
+    env.set_env("ANNOTATION_DATA", annotation_dir)
+    env.set_env("ANNOTATION_BW_KEY", annotation_dir / "bw_key.yaml")
+    env.set_env("MERGED_BED", cwas_workspace / "merged.bed.gz")
+    env.set_env("MERGED_BED_INDEX", cwas_workspace / "merged.bed.gz.tbi")
+    env.save()
+
+
 def create_vcf_file(vcf_path):
     vcf_header = (
         "#CHROM",
@@ -43,33 +71,7 @@ def required_args(vcf_path):
     return ["-v", str(vcf_path)]
 
 
-@pytest.fixture(scope="function")
-def set_env(cwas_workspace, annotation_dir):
-    env = Env()
-    env_path = cwas_workspace / ".cwas_config"
-    env.set_path(env_path)
-    env.set_env("CWAS_WORKSPACE", cwas_workspace)
-    env.set_env("VEP", "VEP")
-    env.set_env("ANNOTATION_DATA", annotation_dir)
-    env.set_env("ANNOTATION_BW_KEY", annotation_dir / "bw_key.yaml")
-    env.set_env("MERGED_BED", cwas_workspace / "merged.bed.gz")
-    env.set_env("MERGED_BED_INDEX", cwas_workspace / "merged.bed.gz.tbi")
-    env.save()
-
-
-def test_run_annotation_with_empty_env(required_args):
-    inst = AnnotationMock.get_instance(required_args)
-    assert inst.get_env("CWAS_WORKSPACE") is None
-    assert inst.get_env("VEP") is None
-    assert inst.get_env("ANNOTATION_DATA") is None
-    assert inst.get_env("ANNOTATION_BW_KEY") is None
-    assert inst.get_env("MERGED_BED") is None
-    assert inst.get_env("MERGED_BED_INDEX") is None
-    with pytest.raises(RuntimeError):
-        inst.run()
-
-
-def test_parse_args(required_args, vcf_path)    :
+def test_parse_args(required_args, vcf_path):
     cpu = random.choice(range(1, cpu_count() + 1))
     args = required_args + ["-p", str(cpu)]
     inst = AnnotationMock.get_instance(args)
