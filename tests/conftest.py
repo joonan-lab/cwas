@@ -61,17 +61,6 @@ def gene_matrix(cwas_input_dir):
 
 
 @pytest.fixture(scope="package", autouse=True)
-def create_cwas_workspace(cwas_workspace):
-    cwas_workspace.mkdir()
-    print("[TEST] Temporary CWAS workspace has created.")
-    yield
-    for f in cwas_workspace.glob("*"):
-        f.unlink()
-    cwas_workspace.rmdir()
-    print("[TEST] Temporary CWAS workspace has deleted.")
-
-
-@pytest.fixture(scope="package", autouse=True)
 def create_cwas_input_dir(
     cwas_input_dir, gene_matrix, annotation_key_conf, bw_cutoff_conf
 ):
