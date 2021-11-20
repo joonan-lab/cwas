@@ -6,6 +6,23 @@ import pytest
 import yaml
 
 
+@pytest.fixture(scope="module", autouse=True)
+def setup(cwas_workspace):
+    cwas_workspace.mkdir()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace):
+    yield
+    remove_workspace(cwas_workspace)
+
+
+def remove_workspace(cwas_workspace):
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
+
+
 def test_create_annotation_key_bed(cwas_workspace, annotation_dir):
     bed_key_conf = cwas_workspace / "annotation_key_bed.yaml"
     create.create_annotation_key(bed_key_conf, annotation_dir, "bed")
