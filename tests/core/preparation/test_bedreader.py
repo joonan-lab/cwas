@@ -1,6 +1,8 @@
 """
 Test the 'BedReader' class in the cwas.core.preparation.bedreader module
 """
+from pathlib import Path
+
 import pytest
 from cwas.core.preparation.bedreader import BedReader
 from cwas.utils.cmd import compress_bed_file, index_bed_file
@@ -17,20 +19,53 @@ def bed_coordinates():
 
 
 @pytest.fixture(scope="module")
-def tmp_bed_path(cwas_workspace, bed_coordinates):
-    txt_bed_path = cwas_workspace / ".test.bed"
-    with txt_bed_path.open("w") as bed_file:
+def bed_txt_path(cwas_workspace):
+    return cwas_workspace / ".test.bed"
+
+
+@pytest.fixture(scope="module")
+def bed_gz_path(bed_txt_path):
+    return Path(str(bed_txt_path) + ".gz")
+
+
+def create_bed_file(bed_txt_path, bed_coordinates):
+    with bed_txt_path.open("w") as bed_file:
         for bed_coordinate in bed_coordinates:
             print(*bed_coordinate, sep="\t", file=bed_file)
 
-    bed_path = compress_bed_file(txt_bed_path)
-    _ = index_bed_file(bed_path)
-
-    return bed_path
+    bed_gz_path = compress_bed_file(bed_txt_path)
+    _ = index_bed_file(bed_gz_path)
 
 
-def test_init_bedreader(tmp_bed_path):
-    bedreader = BedReader(tmp_bed_path)
+@pytest.fixture(scope="module", autouse=True)
+def setup(cwas_workspace, bed_txt_path, bed_coordinates):
+    cwas_workspace.mkdir()
+    create_bed_file(bed_txt_path, bed_coordinates)
+
+
+def create_bed_file(bed_txt_path, bed_coordinates):
+    with bed_txt_path.open("w") as bed_file:
+        for bed_coordinate in bed_coordinates:
+            print(*bed_coordinate, sep="\t", file=bed_file)
+
+    bed_gz_path = compress_bed_file(bed_txt_path)
+    _ = index_bed_file(bed_gz_path)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace):
+    yield
+    remove_workspace(cwas_workspace)
+
+
+def remove_workspace(cwas_workspace):
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
+
+
+def test_init_bedreader(bed_gz_path):
+    bedreader = BedReader(bed_gz_path)
     assert isinstance(bedreader, BedReader)
 
 
@@ -40,16 +75,16 @@ def test_fail_init_bedreader(cwas_workspace):
         BedReader(invalid_bed_path)
 
 
-def test_read_coordinates(tmp_bed_path, bed_coordinates):
-    bedreader = BedReader(tmp_bed_path)
+def test_read_coordinates(bed_gz_path, bed_coordinates):
+    bedreader = BedReader(bed_gz_path)
     expected = bed_coordinates
     result = list(bedreader)
     assert expected == result
 
 
-def test_read_coordinates_with_set_contig(tmp_bed_path, bed_coordinates):
+def test_read_coordinates_with_set_contig(bed_gz_path, bed_coordinates):
     contig = "chr1"
-    bedreader = BedReader(tmp_bed_path)
+    bedreader = BedReader(bed_gz_path)
     bedreader.set_contig(contig)
     expected = [
         bed_coordinate

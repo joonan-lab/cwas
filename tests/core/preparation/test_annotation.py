@@ -4,23 +4,13 @@ Tests cwas.core.prepartion.annotation
 from __future__ import annotations
 
 import random
+from pathlib import Path
 
 import cwas.core.preparation.annotation as annotation
 import pytest
 from cwas.utils.cmd import compress_bed_file, index_bed_file
 
 NUM_CHROM = random.randint(1, 22)
-
-
-def create_bed_file(bed_path_txt: pathlib.Path, coordinates: list[tuple]):
-    with bed_path_txt.open("w") as bed_file:
-        for coordinate in coordinates:
-            print(*coordinate, sep="\t", file=bed_file)
-
-    bed_path = compress_bed_file(bed_path_txt)
-    _ = index_bed_file(bed_path)
-
-    return bed_path
 
 
 @pytest.fixture(scope="module")
@@ -59,39 +49,70 @@ def output_coordinates():
 
 
 @pytest.fixture(scope="module")
-def bed_file_paths(cwas_workspace, input_coordinates):
-    bed_file_path_txts = [
+def bed_txt_paths(cwas_workspace, input_coordinates):
+    return [
         cwas_workspace / f"test{i + 1}.bed"
         for i in range(len(input_coordinates))
     ]
-    chroms = [f"chr{i + 1}" for i in range(NUM_CHROM)]
-    bed_file_paths = []
 
-    for bed_file_path_txt, coordinates_per_file in zip(
-        bed_file_path_txts, input_coordinates
+
+@pytest.fixture(scope="module")
+def bed_gz_paths(bed_txt_paths):
+    return [Path(str(bed_txt_path) + ".gz") for bed_txt_path in bed_txt_paths]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup(cwas_workspace, bed_txt_paths, input_coordinates):
+    cwas_workspace.mkdir()
+    create_bed_files(bed_txt_paths, input_coordinates)
+
+
+def create_bed_files(bed_txt_paths, input_coordinates):
+    for bed_txt_path, coordinates_per_file in zip(
+        bed_txt_paths, input_coordinates
     ):
-        bed_coordinates = []
+        create_bed_file(bed_txt_path, bed_entries(coordinates_per_file))
+        bed_gz_path = compress_bed_file(bed_txt_path)
+        _ = index_bed_file(bed_gz_path)
 
-        for chrom in chroms:
-            for coordinate in coordinates_per_file:
-                bed_coordinates.append((chrom, *coordinate))
 
-        bed_file_path = create_bed_file(bed_file_path_txt, bed_coordinates)
-        bed_file_paths.append(bed_file_path)
+def bed_entries(coordinates):
+    for chrom in chroms():
+        for coordinate in coordinates:
+            yield (chrom, *coordinate)
 
-    yield bed_file_paths
 
-    for bed_file_path in bed_file_paths:
-        bed_file_path.unlink()
+def chroms():
+    for i in range(NUM_CHROM):
+        yield f"chr{i + 1}"
+
+
+def create_bed_file(bed_file_path, bed_entries):
+    print(bed_file_path)
+    with bed_file_path.open("w") as bed_file:
+        for bed_entry in bed_entries:
+            print(*bed_entry, sep="\t", file=bed_file)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace):
+    yield
+    remove_workspace(cwas_workspace)
+
+
+def remove_workspace(cwas_workspace):
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
 
 
 def test_merge_bed_file_by_chrom(
-    cwas_workspace, bed_file_paths, output_coordinates
+    cwas_workspace, bed_gz_paths, output_coordinates
 ):
     chrom = f"chr{random.randint(1, NUM_CHROM)}"
     result_bed_path = cwas_workspace / "result.bed"
     expected = [(chrom, *coordinate) for coordinate in output_coordinates]
-    annotation.merge_bed_files_by_chrom(result_bed_path, chrom, bed_file_paths)
+    annotation.merge_bed_files_by_chrom(result_bed_path, chrom, bed_gz_paths)
 
     with result_bed_path.open("r") as result_bed_file:
         for i, line in enumerate(result_bed_file):
@@ -101,13 +122,13 @@ def test_merge_bed_file_by_chrom(
     result_bed_path.unlink()
 
 
-def test_merge_bed_file_by_chrom_already_exists(cwas_workspace, bed_file_paths):
+def test_merge_bed_file_by_chrom_already_exists(cwas_workspace, bed_gz_paths):
     chrom = f"chr{random.randint(1, NUM_CHROM)}"
     result_bed_path = cwas_workspace / "result_empty.bed"
     result_bed_path.touch()
 
     # Expect the merging process will not run.
-    annotation.merge_bed_files_by_chrom(result_bed_path, chrom, bed_file_paths)
+    annotation.merge_bed_files_by_chrom(result_bed_path, chrom, bed_gz_paths)
 
     with result_bed_path.open("r") as result_bed_file:
         assert not result_bed_file.read()  # Expect this file is empty.
@@ -116,7 +137,7 @@ def test_merge_bed_file_by_chrom_already_exists(cwas_workspace, bed_file_paths):
 
 
 def test_merge_bed_file_by_chrom_force_overwrite(
-    cwas_workspace, bed_file_paths, output_coordinates
+    cwas_workspace, bed_gz_paths, output_coordinates
 ):
     chrom = f"chr{random.randint(1, NUM_CHROM)}"
     result_bed_path = cwas_workspace / "result_overwritten.bed"
@@ -126,9 +147,7 @@ def test_merge_bed_file_by_chrom_force_overwrite(
         assert not result_bed_file.read()  # Expect this file is empty.
 
     expected = [(chrom, *coordinate) for coordinate in output_coordinates]
-    annotation.merge_bed_files_by_chrom(
-        result_bed_path, chrom, bed_file_paths, 1
-    )
+    annotation.merge_bed_files_by_chrom(result_bed_path, chrom, bed_gz_paths, 1)
 
     with result_bed_path.open("r") as result_bed_file:
         for i, line in enumerate(result_bed_file):
@@ -138,15 +157,12 @@ def test_merge_bed_file_by_chrom_force_overwrite(
     result_bed_path.unlink()
 
 
-def test_merge_bed_files(cwas_workspace, bed_file_paths, output_coordinates):
+def test_merge_bed_files(cwas_workspace, bed_gz_paths, output_coordinates):
     result_bed_path = cwas_workspace / "result.bed"
     bed_file_and_keys = [
-        (bed_file_path, f"BED{i}")
-        for i, bed_file_path in enumerate(bed_file_paths)
+        (bed_gz_path, f"BED{i}") for i, bed_gz_path in enumerate(bed_gz_paths)
     ]
-    expected_annot_key = "|".join(
-        [f"BED{i}" for i in range(len(bed_file_paths))]
-    )
+    expected_annot_key = "|".join([f"BED{i}" for i in range(len(bed_gz_paths))])
     expected = [
         (f"#ANNOT={expected_annot_key}",),
         ("#chrom", "start", "end", "annot_int"),
@@ -167,16 +183,13 @@ def test_merge_bed_files(cwas_workspace, bed_file_paths, output_coordinates):
 
 
 def test_merge_bed_files_multiprocessing(
-    cwas_workspace, bed_file_paths, output_coordinates
+    cwas_workspace, bed_gz_paths, output_coordinates
 ):
     result_bed_path = cwas_workspace / "result.bed"
     bed_file_and_keys = [
-        (bed_file_path, f"BED{i}")
-        for i, bed_file_path in enumerate(bed_file_paths)
+        (bed_gz_path, f"BED{i}") for i, bed_gz_path in enumerate(bed_gz_paths)
     ]
-    expected_annot_key = "|".join(
-        [f"BED{i}" for i in range(len(bed_file_paths))]
-    )
+    expected_annot_key = "|".join([f"BED{i}" for i in range(len(bed_gz_paths))])
     expected = [
         (f"#ANNOT={expected_annot_key}",),
         ("#chrom", "start", "end", "annot_int"),
