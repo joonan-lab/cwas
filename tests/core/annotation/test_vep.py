@@ -52,7 +52,7 @@ def test_set_invalid_input_vcf(installed_vep, cwas_workspace):
         vep_inst.set_input_vcf(invalid_vcf_path)
 
 
-def test_set_input_vcf_with_none():
+def test_set_input_vcf_with_none(installed_vep):
     vep_inst = VEP(installed_vep)
     with pytest.raises(ValueError):
         vep_inst.set_input_vcf(None)
