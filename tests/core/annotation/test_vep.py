@@ -25,12 +25,12 @@ def test_init_vep(installed_vep):
 
 def test_init_vep_with_invalid_path(cwas_workspace):
     invalid_vep_path = str(cwas_workspace / "_vep_not_exists")
-    with pytest.raises(ValueError):
+    with pytest.raises(FileNotFoundError):
         _ = VEP(invalid_vep_path)
 
 
 def test_init_vep_with_no_arg():
-    with pytest.raises(ValueError):
+    with pytest.raises(TypeError):
         _ = VEP()
 
 
