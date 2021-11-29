@@ -1,4 +1,5 @@
 from pathlib import Path
+from build.lib.cwas.core.annotation import vep
 
 from cwas.utils.check import check_is_file
 
@@ -15,6 +16,9 @@ class VEP:
     def set_input_vcf(self, input_vcf_path: Path):
         self.input_vcf_path = input_vcf_path
         self._check_input_vcf_path()
+
+    def get_cmd(self):
+        return " ".join([self.vep, "-i", str(self.input_vcf_path)])
 
     def _check_vep_path(self):
         check_is_file(self.vep)
