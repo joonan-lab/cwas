@@ -2,6 +2,7 @@ import shutil
 from pathlib import Path
 
 import pytest
+from build.lib import cwas
 from cwas.core.annotation.vep import VEP
 
 
@@ -12,10 +13,20 @@ def installed_vep() -> str:
 
 @pytest.fixture(scope="module")
 def input_vcf_path(cwas_workspace) -> Path:
-    tmp_vcf_path = cwas_workspace / "test_vep.vcf"
-    tmp_vcf_path.touch()
-    yield tmp_vcf_path
-    tmp_vcf_path.unlink()
+    return cwas_workspace / "test_vep.vcf"
+
+
+@pytest.fixture(scope="module", autouse=True)
+def setup(cwas_workspace, input_vcf_path):
+    cwas_workspace.mkdir()
+    input_vcf_path.touch()
+
+
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace, input_vcf_path):
+    yield
+    input_vcf_path.unlink()
+    cwas_workspace.rmdir()
 
 
 def test_init_vep(installed_vep):
