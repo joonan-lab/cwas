@@ -2,7 +2,6 @@ import shutil
 from pathlib import Path
 
 import pytest
-from build.lib import cwas
 from cwas.core.annotation.vep import VEP
 
 
@@ -52,13 +51,13 @@ def test_init_vep_with_none():
 
 def test_set_input_vcf(installed_vep, input_vcf_path):
     vep_inst = VEP(installed_vep)
-    vep_inst.set_input_vcf(input_vcf_path)
+    vep_inst.set_input_vcf(str(input_vcf_path))
     assert f"-i {input_vcf_path}" in vep_inst.get_cmd()
 
 
 def test_set_invalid_input_vcf(installed_vep, cwas_workspace):
     vep_inst = VEP(installed_vep)
-    invalid_vcf_path = cwas_workspace / "test_not_exists.vcf"
+    invalid_vcf_path = str(cwas_workspace / "test_not_exists.vcf")
     with pytest.raises(FileNotFoundError):
         vep_inst.set_input_vcf(invalid_vcf_path)
 
