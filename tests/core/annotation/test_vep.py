@@ -66,3 +66,12 @@ def test_set_input_vcf_with_none(installed_vep):
     vep_inst = VEP(installed_vep)
     with pytest.raises(ValueError):
         vep_inst.set_input_vcf(None)
+
+
+def test_output_vcf_path(installed_vep, input_vcf_path):
+    vep_inst = VEP(installed_vep)
+    vep_inst.set_input_vcf(str(input_vcf_path))
+    assert vep_inst.output_vcf_path == str(input_vcf_path).replace(
+        ".vcf", ".annotated.vcf"
+    )
+
