@@ -19,4 +19,12 @@ class VEP:
         return self._output_vcf_path
 
     def get_cmd(self) -> str:
-        return " ".join([self._vep_path, "-i", str(self._input_vcf_path)])
+        return " ".join(
+            [
+                self._vep_path,
+                "-i",
+                self._input_vcf_path,
+                "-o",
+                self._output_vcf_path,
+            ]
+        )

@@ -66,3 +66,12 @@ def test_output_vcf_path(installed_vep_path, input_vcf_path):
     assert vep_inst.get_output_vcf_path() == input_vcf_path.replace(
         ".vcf", ".annotated.vcf"
     )
+
+
+def test_get_cmd_check_vcf_path(installed_vep_path, input_vcf_path):
+    vep_inst = VEP(installed_vep_path, input_vcf_path)
+    assert f"-i {input_vcf_path}" in vep_inst.get_cmd()
+    assert (
+        f"-o {input_vcf_path.replace('.vcf', '.annotated.vcf')}"
+        in vep_inst.get_cmd()
+    )
