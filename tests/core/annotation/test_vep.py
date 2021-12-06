@@ -6,7 +6,7 @@ from cwas.core.annotation.vep import VEP
 
 
 @pytest.fixture(scope="module")
-def installed_vep() -> str:
+def installed_vep_path() -> str:
     return shutil.which("vep")
 
 
@@ -28,9 +28,9 @@ def teardown(cwas_workspace, input_vcf_path):
     cwas_workspace.rmdir()
 
 
-def test_init_vep(installed_vep):
-    vep_inst = VEP(installed_vep)
-    assert vep_inst.get_vep_path() == installed_vep
+def test_init_vep(installed_vep_path):
+    vep_inst = VEP(installed_vep_path)
+    assert vep_inst.get_vep_path() == installed_vep_path
 
 
 def test_init_vep_with_invalid_path(cwas_workspace):
@@ -49,27 +49,27 @@ def test_init_vep_with_none():
         _ = VEP(None)
 
 
-def test_set_input_vcf(installed_vep, input_vcf_path):
-    vep_inst = VEP(installed_vep)
+def test_set_input_vcf(installed_vep_path, input_vcf_path):
+    vep_inst = VEP(installed_vep_path)
     vep_inst.set_input_vcf(str(input_vcf_path))
     assert f"-i {input_vcf_path}" in vep_inst.get_cmd()
 
 
-def test_set_invalid_input_vcf(installed_vep, cwas_workspace):
-    vep_inst = VEP(installed_vep)
+def test_set_invalid_input_vcf(installed_vep_path, cwas_workspace):
+    vep_inst = VEP(installed_vep_path)
     invalid_vcf_path = str(cwas_workspace / "test_not_exists.vcf")
     with pytest.raises(FileNotFoundError):
         vep_inst.set_input_vcf(invalid_vcf_path)
 
 
-def test_set_input_vcf_with_none(installed_vep):
-    vep_inst = VEP(installed_vep)
+def test_set_input_vcf_with_none(installed_vep_path):
+    vep_inst = VEP(installed_vep_path)
     with pytest.raises(ValueError):
         vep_inst.set_input_vcf(None)
 
 
-def test_output_vcf_path(installed_vep, input_vcf_path):
-    vep_inst = VEP(installed_vep)
+def test_output_vcf_path(installed_vep_path, input_vcf_path):
+    vep_inst = VEP(installed_vep_path)
     vep_inst.set_input_vcf(str(input_vcf_path))
     assert vep_inst.output_vcf_path == str(input_vcf_path).replace(
         ".vcf", ".annotated.vcf"
