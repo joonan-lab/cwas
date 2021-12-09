@@ -19,12 +19,42 @@ class VEP:
         return self._output_vcf_path
 
     def get_cmd(self) -> str:
-        return " ".join(
-            [
-                self._vep_path,
-                "-i",
-                self._input_vcf_path,
-                "-o",
-                self._output_vcf_path,
-            ]
-        )
+        args = [
+            self._vep_path,
+            "-i",
+            self._input_vcf_path,
+            "-o",
+            self._output_vcf_path,
+        ]
+        args += self._get_cmd_basic_vep_opt()
+        args += self._get_cmd_opt_pick_one_gene_isoform()
+        args += self._get_cmd_opt_pick_nearest_gene()
+        return " ".join(args)
+
+    def _get_cmd_basic_vep_opt(self) -> list:
+        """Return basic options (no plugins) of VEP"""
+        return [
+            "--assembly",
+            "GRCh38",
+            "--offline",
+            "--force_overwrite",
+            "--format",
+            "vcf",
+            "--vcf",
+            "--no_stats",
+            "--polyphen p",
+        ]
+
+    def _get_cmd_opt_pick_one_gene_isoform(self) -> list:
+        """Return options in order to pick a gene isoform 
+        with most severe consequence"""
+        return [
+            "--per_gene",
+            "--pick",
+            "--pick_order",
+            "canonical,appris,tsl,biotype,ccds,rank,length",
+        ]
+
+    def _get_cmd_opt_pick_nearest_gene(self) -> list:
+        """Return options in order to pick the nearest gene"""
+        return ["--distance", "2000", "--nearest", "symbol", "--symbol"]
