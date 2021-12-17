@@ -30,8 +30,8 @@ def teardown(cwas_workspace, input_vcf_path):
 
 def test_init_vep(installed_vep_path, input_vcf_path):
     vep_inst = VEP(installed_vep_path, input_vcf_path)
-    assert vep_inst.get_vep_path() == installed_vep_path
-    assert vep_inst.get_input_vcf_path() == input_vcf_path
+    assert vep_inst.vep_path == installed_vep_path
+    assert vep_inst.input_vcf_path == input_vcf_path
 
 
 def test_init_vep_with_invalid_vep_path(cwas_workspace, input_vcf_path):
@@ -63,16 +63,15 @@ def test_init_vep_with_invalid_input_vcf(installed_vep_path, cwas_workspace):
 
 def test_output_vcf_path(installed_vep_path, input_vcf_path):
     vep_inst = VEP(installed_vep_path, input_vcf_path)
-    assert vep_inst.get_output_vcf_path() == input_vcf_path.replace(
+    assert vep_inst.output_vcf_path == input_vcf_path.replace(
         ".vcf", ".annotated.vcf"
     )
 
 
-def test_get_cmd(installed_vep_path, input_vcf_path):
+def test_cmd(installed_vep_path, input_vcf_path):
     vep_inst = VEP(installed_vep_path, input_vcf_path)
-    assert vep_inst.get_cmd().startswith(installed_vep_path)
-    assert f"-i {input_vcf_path}" in vep_inst.get_cmd()
+    assert vep_inst.cmd.startswith(installed_vep_path)
+    assert f"-i {input_vcf_path}" in vep_inst.cmd
     assert (
-        f"-o {input_vcf_path.replace('.vcf', '.annotated.vcf')}"
-        in vep_inst.get_cmd()
+        f"-o {input_vcf_path.replace('.vcf', '.annotated.vcf')}" in vep_inst.cmd
     )

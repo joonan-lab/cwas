@@ -25,16 +25,20 @@ class VEP:
         except:
             raise
 
-    def get_vep_path(self) -> str:
+    @property
+    def vep_path(self) -> str:
         return self._vep_path
 
-    def get_input_vcf_path(self) -> str:
+    @property
+    def input_vcf_path(self) -> str:
         return self._input_vcf_path
 
-    def get_output_vcf_path(self) -> str:
+    @property
+    def output_vcf_path(self) -> str:
         return self._output_vcf_path
 
-    def get_cmd(self) -> str:
+    @property
+    def cmd(self) -> str:
         args = [
             self._vep_path,
             "-i",
