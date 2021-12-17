@@ -3,10 +3,10 @@ from cwas.utils.check import check_is_file
 
 class VEP:
     def __init__(self, vep_path: str, input_vcf_path: str) -> None:
-        check_is_file(input_vcf_path)
         self._vep_path = vep_path
         self._check_vep_path()
         self._input_vcf_path = input_vcf_path
+        self._check_input_vcf_path()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".annotated.vcf")
 
     def _check_vep_path(self):
@@ -14,6 +14,14 @@ class VEP:
             check_is_file(self._vep_path)
         except ValueError:
             raise ValueError(f"Invalid VEP path: {self._vep_path}")
+        except:
+            raise
+
+    def _check_input_vcf_path(self):
+        try:
+            check_is_file(self._input_vcf_path)
+        except ValueError:
+            raise ValueError(f"Invalid VCF path: {self._input_vcf_path}")
         except:
             raise
 
