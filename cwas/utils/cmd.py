@@ -21,6 +21,12 @@ class CmdExecutor:
     def execute(self) -> int:
         log.print_log("CMD", " ".join(self.cmd), True)
         output = subprocess.run(self.cmd, check=False)
+
+        if output.returncode:
+            log.print_warn(
+                f"Command {self.cmd} has failed"
+                f"with exit status {output.returncode}."
+            )
         return output.returncode
 
     def execute_raising_err(self) -> int:
