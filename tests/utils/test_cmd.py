@@ -10,6 +10,33 @@ import pytest
 _RAND_N = random.randint(1, 1000000)
 
 
+def test_cmd_executor():
+    bin_name = "ls"
+    args = ["-l"]
+    inst = cmd.CmdExecutor(bin_name, args)
+    return_code = inst.execute()
+    assert return_code == 0
+
+
+def test_cmd_executor_with_fail():
+    fake_filename = f"cwas_fake_{_RAND_N}"
+    bin_name = "ls"
+    args = ["-l", fake_filename]
+    inst = cmd.CmdExecutor(bin_name, args)
+    return_code = inst.execute()
+    assert return_code != 0
+
+
+def test_cmd_executor_raising_err():
+    fake_filename = f"cwas_fake_{_RAND_N}"
+    bin_name = "ls"
+    args = ["-l", fake_filename]
+    inst = cmd.CmdExecutor(bin_name, args)
+
+    with pytest.raises(subprocess.CalledProcessError):
+        inst.execute_raising_err()
+
+
 def test_execute_basic():
     args = ["ls", "-l"]
     output = cmd.execute(args)
