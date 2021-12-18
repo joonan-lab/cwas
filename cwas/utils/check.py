@@ -10,7 +10,7 @@ from typing import Union
 
 def check_is_file(file_path: Union[Path, str]):
     if not file_path:
-        raise ValueError(f"file_path: {file_path}")
+        raise ValueError(f"The file path cannot be None.")
 
     if not isinstance(file_path, Path):
         file_path = Path(file_path)
