@@ -1,5 +1,5 @@
 """
-Functions to make and execute system commands
+Utils to execute system command line.
 """
 import shutil
 import subprocess
@@ -7,6 +7,26 @@ from pathlib import Path
 
 import cwas.utils.log as log
 from cwas.utils.check import check_is_file
+
+
+class CmdExecutor:
+    def __init__(self, bin_name: str, args: list = []):
+        self._bin_name = bin_name
+        self._args = list(args)
+
+    @property
+    def cmd(self) -> list:
+        return [self._bin_name, *self._args]
+
+    def execute(self) -> int:
+        log.print_log("CMD", " ".join(self.cmd), True)
+        output = subprocess.run(self.cmd, check=False)
+        return output.returncode
+
+    def execute_raising_err(self) -> int:
+        log.print_log("CMD", " ".join(self.cmd), True)
+        output = subprocess.run(self.cmd, check=True)
+        return output.returncode
 
 
 def execute(args: list, raise_err: bool = True) -> subprocess.CompletedProcess:
