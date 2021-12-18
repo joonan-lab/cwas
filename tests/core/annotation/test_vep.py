@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from cwas.core.annotation.vep import VEP
+from cwas.core.annotation.vep import VepCmdGenerator
 
 
 @pytest.fixture(scope="module")
@@ -30,7 +30,7 @@ def teardown(cwas_workspace, vep_path, input_vcf_path):
 
 
 def test_init_vep(vep_path, input_vcf_path):
-    vep_inst = VEP(vep_path, input_vcf_path)
+    vep_inst = VepCmdGenerator(vep_path, input_vcf_path)
     assert vep_inst.vep_path == vep_path
     assert vep_inst.input_vcf_path == input_vcf_path
 
@@ -38,39 +38,39 @@ def test_init_vep(vep_path, input_vcf_path):
 def test_init_vep_with_invalid_vep_path(cwas_workspace, input_vcf_path):
     invalid_vep_path = str(cwas_workspace / "_vep_not_exists")
     with pytest.raises(FileNotFoundError):
-        _ = VEP(invalid_vep_path, input_vcf_path)
+        _ = VepCmdGenerator(invalid_vep_path, input_vcf_path)
 
 
 def test_init_vep_with_no_arg():
     with pytest.raises(TypeError):
-        _ = VEP()
+        _ = VepCmdGenerator()
 
 
 def test_init_vep_with_no_vep(input_vcf_path):
     with pytest.raises(ValueError):
-        _ = VEP(None, input_vcf_path)
+        _ = VepCmdGenerator(None, input_vcf_path)
 
 
 def test_init_vep_with_no_input_vcf(vep_path):
     with pytest.raises(ValueError):
-        _ = VEP(vep_path, None)
+        _ = VepCmdGenerator(vep_path, None)
 
 
 def test_init_vep_with_invalid_input_vcf(vep_path, cwas_workspace):
     invalid_vcf_path = str(cwas_workspace / "test_not_exists.vcf")
     with pytest.raises(FileNotFoundError):
-        _ = VEP(vep_path, invalid_vcf_path)
+        _ = VepCmdGenerator(vep_path, invalid_vcf_path)
 
 
 def test_output_vcf_path(vep_path, input_vcf_path):
-    vep_inst = VEP(vep_path, input_vcf_path)
+    vep_inst = VepCmdGenerator(vep_path, input_vcf_path)
     assert vep_inst.output_vcf_path == input_vcf_path.replace(
         ".vcf", ".annotated.vcf"
     )
 
 
 def test_cmd(vep_path, input_vcf_path):
-    vep_inst = VEP(vep_path, input_vcf_path)
+    vep_inst = VepCmdGenerator(vep_path, input_vcf_path)
     assert vep_inst.cmd.startswith(vep_path)
     assert f"-i {input_vcf_path}" in vep_inst.cmd
     assert (

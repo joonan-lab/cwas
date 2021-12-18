@@ -1,7 +1,10 @@
+"""
+Command line generator for Variant Effect Predictor (VEP)
+"""
 from cwas.utils.check import check_is_file
 
 
-class VEP:
+class VepCmdGenerator:
     def __init__(self, vep_path: str, input_vcf_path: str) -> None:
         self._vep_path = vep_path
         self._check_vep_path()
