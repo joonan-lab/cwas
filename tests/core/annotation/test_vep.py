@@ -1,4 +1,3 @@
-import shutil
 from pathlib import Path
 
 import pytest
@@ -6,8 +5,8 @@ from cwas.core.annotation.vep import VEP
 
 
 @pytest.fixture(scope="module")
-def installed_vep_path() -> str:
-    return shutil.which("vep")
+def vep_path(cwas_workspace) -> str:
+    return str(cwas_workspace / "vep_mock")
 
 
 @pytest.fixture(scope="module")
@@ -16,21 +15,23 @@ def input_vcf_path(cwas_workspace) -> str:
 
 
 @pytest.fixture(scope="module", autouse=True)
-def setup(cwas_workspace, input_vcf_path):
+def setup(cwas_workspace, vep_path, input_vcf_path):
     cwas_workspace.mkdir()
+    Path(vep_path).touch()
     Path(input_vcf_path).touch()
 
 
 @pytest.fixture(scope="module", autouse=True)
-def teardown(cwas_workspace, input_vcf_path):
+def teardown(cwas_workspace, vep_path, input_vcf_path):
     yield
+    Path(vep_path).unlink()
     Path(input_vcf_path).unlink()
     cwas_workspace.rmdir()
 
 
-def test_init_vep(installed_vep_path, input_vcf_path):
-    vep_inst = VEP(installed_vep_path, input_vcf_path)
-    assert vep_inst.vep_path == installed_vep_path
+def test_init_vep(vep_path, input_vcf_path):
+    vep_inst = VEP(vep_path, input_vcf_path)
+    assert vep_inst.vep_path == vep_path
     assert vep_inst.input_vcf_path == input_vcf_path
 
 
@@ -50,27 +51,27 @@ def test_init_vep_with_no_vep(input_vcf_path):
         _ = VEP(None, input_vcf_path)
 
 
-def test_init_vep_with_no_input_vcf(installed_vep_path):
+def test_init_vep_with_no_input_vcf(vep_path):
     with pytest.raises(ValueError):
-        _ = VEP(installed_vep_path, None)
+        _ = VEP(vep_path, None)
 
 
-def test_init_vep_with_invalid_input_vcf(installed_vep_path, cwas_workspace):
+def test_init_vep_with_invalid_input_vcf(vep_path, cwas_workspace):
     invalid_vcf_path = str(cwas_workspace / "test_not_exists.vcf")
     with pytest.raises(FileNotFoundError):
-        _ = VEP(installed_vep_path, invalid_vcf_path)
+        _ = VEP(vep_path, invalid_vcf_path)
 
 
-def test_output_vcf_path(installed_vep_path, input_vcf_path):
-    vep_inst = VEP(installed_vep_path, input_vcf_path)
+def test_output_vcf_path(vep_path, input_vcf_path):
+    vep_inst = VEP(vep_path, input_vcf_path)
     assert vep_inst.output_vcf_path == input_vcf_path.replace(
         ".vcf", ".annotated.vcf"
     )
 
 
-def test_cmd(installed_vep_path, input_vcf_path):
-    vep_inst = VEP(installed_vep_path, input_vcf_path)
-    assert vep_inst.cmd.startswith(installed_vep_path)
+def test_cmd(vep_path, input_vcf_path):
+    vep_inst = VEP(vep_path, input_vcf_path)
+    assert vep_inst.cmd.startswith(vep_path)
     assert f"-i {input_vcf_path}" in vep_inst.cmd
     assert (
         f"-o {input_vcf_path.replace('.vcf', '.annotated.vcf')}" in vep_inst.cmd
