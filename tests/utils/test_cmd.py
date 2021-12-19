@@ -37,6 +37,25 @@ def test_cmd_executor_raising_err():
         inst.execute_raising_err()
 
 
+def test_cmd_executor_with_invalid_bin():
+    with pytest.raises(FileNotFoundError):
+        cmd.CmdExecutor("not_exists")
+
+
+@pytest.fixture(scope="function")
+def bin_path(cwas_workspace):
+    cwas_workspace.mkdir()
+    _bin_path = cwas_workspace / "my_bin"
+    _bin_path.touch()
+    yield _bin_path
+    _bin_path.unlink()
+    cwas_workspace.rmdir()
+
+
+def test_cmd_executor_with_file(bin_path):
+    assert cmd.CmdExecutor(bin_path).bin_path == str(bin_path)
+
+
 def test_execute_basic():
     args = ["ls", "-l"]
     output = cmd.execute(args)
