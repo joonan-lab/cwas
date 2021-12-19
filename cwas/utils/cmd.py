@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Optional
 
 import cwas.utils.log as log
-from cwas.utils.check import check_is_file
 
 
 class CmdExecutor:
@@ -61,26 +60,14 @@ def compress_bed_file(bed_file_path: Path) -> Path:
     return result
 
 
-def index_bed_file(comp_bed_path: Path) -> Path:
+def index_bed_file(compressed_bed_path: Path) -> Path:
     """Index the compressed BED file"""
-    idx_path = Path(str(comp_bed_path) + ".tbi")
-    if idx_path.exists():
+    result = Path(str(compressed_bed_path) + ".tbi")
+    if result.exists():
         log.print_warn(
-            f'The BED file index "{comp_bed_path}" already exists. '
-            f"Skip indexing."
+            f'The BED file index "{result}" already exists. Skip indexing.'
         )
     else:
-        check_is_file(comp_bed_path)
+        CmdExecutor("tabix", [str(compressed_bed_path)]).execute_raising_err()
 
-        try:
-            CmdExecutor("tabix", [str(comp_bed_path)]).execute_raising_err()
-        except subprocess.CalledProcessError:
-            log.print_err(
-                f'Failed to index your compressed BED file "{comp_bed_path}".'
-            )
-            raise
-        except FileNotFoundError:
-            log.print_err('"tabix" is not installed in your environment.')
-            raise
-
-    return idx_path
+    return result
