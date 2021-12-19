@@ -9,15 +9,23 @@ from cwas.configuration import Configuration
 from cwas.env import Env
 
 
+@pytest.fixture(scope="module")
+def vep_mock(cwas_workspace: Path):
+    return cwas_workspace / "vep"
+
+
 @pytest.fixture(scope="module", autouse=True)
-def setup(cwas_workspace: Path):
+def setup(cwas_workspace: Path, vep_mock: Path):
     cwas_workspace.mkdir()
+    vep_mock.touch()
+    vep_mock.chmod(0o755)
     set_env(cwas_workspace)
 
 
 @pytest.fixture(scope="module", autouse=True)
-def teardown(cwas_workspace: Path):
+def teardown(cwas_workspace: Path, vep_mock: Path):
     yield
+    vep_mock.unlink()
     env = Env()
     env.reset()
     env.remove_file()
@@ -38,13 +46,14 @@ def cwas_config(
     annotation_key_conf: Path,
     bw_cutoff_conf: Path,
     gene_matrix: Path,
+    vep_mock: Path,
 ):
     config = {
         "ANNOTATION_DATA_DIR": annotation_dir,
         "GENE_MATRIX": gene_matrix,
         "ANNOTATION_KEY_CONFIG": annotation_key_conf,
         "BIGWIG_CUTOFF_CONFIG": bw_cutoff_conf,
-        "VEP": "VEP",
+        "VEP": vep_mock,
     }
     return config
 
