@@ -4,19 +4,31 @@ Utils to execute system command line.
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 import cwas.utils.log as log
 from cwas.utils.check import check_is_file
 
 
 class CmdExecutor:
-    def __init__(self, bin_name: str, args: list = []):
-        self._bin_name = bin_name
+    def __init__(self, bin: str, args: list = []):
+        def resolve_bin(bin: str) -> Optional[str]:
+            if Path(bin).resolve().is_file():
+                return str(Path(bin).resolve())
+            return shutil.which(bin)
+
+        self._bin_path = resolve_bin(bin)
+        if self._bin_path is None:
+            raise FileNotFoundError(f"Failed to find the binary '{bin}'")
         self._args = list(args)
 
     @property
+    def bin_path(self):
+        return self._bin_path
+
+    @property
     def cmd(self) -> list:
-        return [self._bin_name, *self._args]
+        return [self._bin_path, *self._args]
 
     def execute(self) -> int:
         log.print_log("CMD", " ".join(self.cmd), True)
