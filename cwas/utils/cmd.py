@@ -49,27 +49,16 @@ class CmdExecutor:
 
 def compress_bed_file(bed_file_path: Path) -> Path:
     """Compress the BED file using bgzip"""
-    gz_path = Path(str(bed_file_path) + ".gz")
-    if gz_path.exists():
+    result = Path(str(bed_file_path) + ".gz")
+    if result.exists():
         log.print_warn(
-            f'The compressed BED file "{bed_file_path}" already exists. '
+            f'The compressed BED file "{result}" already exists. '
             f"Skip compressing."
         )
     else:
-        check_is_file(bed_file_path)
+        CmdExecutor("bgzip", [str(bed_file_path)]).execute_raising_err()
 
-        try:
-            CmdExecutor("bgzip", [str(bed_file_path)]).execute_raising_err()
-        except subprocess.CalledProcessError:
-            log.print_err(
-                f'Failed to compress your BED file "{bed_file_path}".'
-            )
-            raise
-        except FileNotFoundError:
-            log.print_err('"bgzip" is not installed in your environment.')
-            raise
-
-    return gz_path
+    return result
 
 
 def index_bed_file(comp_bed_path: Path) -> Path:
