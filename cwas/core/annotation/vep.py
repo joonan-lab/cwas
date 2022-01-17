@@ -11,6 +11,7 @@ class VepCmdGenerator:
         self._input_vcf_path = input_vcf_path
         self._check_input_vcf_path()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".annotated.vcf")
+        self._bw_custom_annotations = []
 
     def _check_vep_path(self):
         try:
@@ -53,6 +54,10 @@ class VepCmdGenerator:
         args += self._get_cmd_opt_pick_one_gene_isoform()
         args += self._get_cmd_opt_pick_nearest_gene()
         return " ".join(args)
+
+    def add_bw_custom_annotation(self, bw_path: str, annotation_key: str):
+        check_is_file(bw_path)
+        self._bw_custom_annotations.append((bw_path, annotation_key))
 
     def _get_cmd_basic_vep_opt(self) -> list:
         """Return basic options (no plugins) of VEP"""
