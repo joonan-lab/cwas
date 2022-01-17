@@ -60,10 +60,20 @@ class Annotation(Runnable):
 
     @property
     def vep_cmd(self):
-        vep_cmd_generator = VepCmdGenerator(self.get_env("VEP"), self.vcf_path)
+        vep_cmd_generator = VepCmdGenerator(
+            self.get_env("VEP"), str(self.vcf_path)
+        )
+        vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
         for bw_path, annotation_key in self.bw_custom_annotations:
             vep_cmd_generator.add_bw_custom_annotation(bw_path, annotation_key)
         return vep_cmd_generator.cmd
+
+    @property
+    def vep_output_vcf_path(self):
+        return (
+            f"{self.get_env('CWAS_WORKSPACE')}/"
+            f"{self.vcf_path.name.replace('.vcf', '.vep.vcf')}"
+        )
 
     @property
     def bw_custom_annotations(self):
