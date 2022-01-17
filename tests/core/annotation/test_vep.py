@@ -76,3 +76,16 @@ def test_cmd(vep_path, input_vcf_path):
     assert (
         f"-o {input_vcf_path.replace('.vcf', '.annotated.vcf')}" in vep_inst.cmd
     )
+
+
+def test_cmd_for_bw_custom_annotation(vep_path, input_vcf_path, annotation_dir):
+    vep_inst = VepCmdGenerator(vep_path, input_vcf_path)
+    bw_paths = [
+        (bw_path, f"test{i + 1}")
+        for i, bw_path in enumerate(annotation_dir.glob("*.bw"))
+    ]
+    for bw_path, bw_key in bw_paths:
+        vep_inst.add_bw_custom_annotation(str(bw_path), bw_key)
+
+    for bw_path, bw_key in bw_paths:
+        assert f"--custom {bw_path},{bw_key},bigwig,overlap,0" in vep_inst.cmd

@@ -29,6 +29,10 @@ class VepCmdGenerator:
         except:
             raise
 
+    def add_bw_custom_annotation(self, bw_path: str, annotation_key: str):
+        check_is_file(bw_path)
+        self._bw_custom_annotations.append((bw_path, annotation_key))
+
     @property
     def vep_path(self) -> str:
         return self._vep_path
@@ -53,6 +57,7 @@ class VepCmdGenerator:
         args += self.cmd_option_basic
         args += self.cmd_option_pick_one_gene_isoform
         args += self.cmd_option_pick_nearest_gene
+        args += self.cmd_option_bw_custom_annotations
         return " ".join(args)
 
     @property
@@ -86,6 +91,14 @@ class VepCmdGenerator:
         """Return options in order to pick the nearest gene"""
         return ["--distance", "2000", "--nearest", "symbol", "--symbol"]
 
-    def add_bw_custom_annotation(self, bw_path: str, annotation_key: str):
-        check_is_file(bw_path)
-        self._bw_custom_annotations.append((bw_path, annotation_key))
+    @property
+    def cmd_option_bw_custom_annotations(self) -> list:
+        result = []
+
+        for bw_path, annotation_key in self._bw_custom_annotations:
+            result += [
+                "--custom",
+                ",".join([bw_path, annotation_key, "bigwig", "overlap", "0"]),
+            ]
+
+        return result
