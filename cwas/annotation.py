@@ -8,6 +8,8 @@ Variant Effect Predictor (VEP) to annotate user's VCF file.
 import argparse
 from pathlib import Path
 
+import yaml
+
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file, check_num_proc
 from cwas.utils.log import print_arg, print_log
@@ -54,3 +56,12 @@ class Annotation(Runnable):
 
     def run(self):
         print_log("Notice", "Not implemented yet.")
+
+    @property
+    def bw_custom_annotations(self):
+        with open(self.get_env("ANNOTATION_BW_KEY")) as infile:
+            bw_custom_path_dict = yaml.safe_load(infile)
+        annotation_data_dir = self.get_env("ANNOTATION_DATA")
+
+        for bw_filename, bw_annotation_key in bw_custom_path_dict.items():
+            yield (f"{annotation_data_dir}/{bw_filename}", bw_annotation_key)
