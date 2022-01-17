@@ -10,7 +10,7 @@ class VepCmdGenerator:
         self._check_vep_path()
         self._input_vcf_path = input_vcf_path
         self._check_input_vcf_path()
-        self._output_vcf_path = input_vcf_path.replace(".vcf", ".annotated.vcf")
+        self._output_vcf_path = input_vcf_path.replace(".vcf", ".vep.vcf")
         self._bw_custom_annotations = []
 
     def _check_vep_path(self):
