@@ -50,16 +50,13 @@ class VepCmdGenerator:
             "-o",
             self._output_vcf_path,
         ]
-        args += self._get_cmd_basic_vep_opt()
-        args += self._get_cmd_opt_pick_one_gene_isoform()
-        args += self._get_cmd_opt_pick_nearest_gene()
+        args += self.cmd_option_basic
+        args += self.cmd_option_pick_one_gene_isoform
+        args += self.cmd_option_pick_nearest_gene
         return " ".join(args)
 
-    def add_bw_custom_annotation(self, bw_path: str, annotation_key: str):
-        check_is_file(bw_path)
-        self._bw_custom_annotations.append((bw_path, annotation_key))
-
-    def _get_cmd_basic_vep_opt(self) -> list:
+    @property
+    def cmd_option_basic(self) -> list:
         """Return basic options (no plugins) of VEP"""
         return [
             "--assembly",
@@ -73,7 +70,8 @@ class VepCmdGenerator:
             "--polyphen p",
         ]
 
-    def _get_cmd_opt_pick_one_gene_isoform(self) -> list:
+    @property
+    def cmd_option_pick_one_gene_isoform(self) -> list:
         """Return options in order to pick a gene isoform 
         with most severe consequence"""
         return [
@@ -83,6 +81,11 @@ class VepCmdGenerator:
             "canonical,appris,tsl,biotype,ccds,rank,length",
         ]
 
-    def _get_cmd_opt_pick_nearest_gene(self) -> list:
+    @property
+    def cmd_option_pick_nearest_gene(self) -> list:
         """Return options in order to pick the nearest gene"""
         return ["--distance", "2000", "--nearest", "symbol", "--symbol"]
+
+    def add_bw_custom_annotation(self, bw_path: str, annotation_key: str):
+        check_is_file(bw_path)
+        self._bw_custom_annotations.append((bw_path, annotation_key))
