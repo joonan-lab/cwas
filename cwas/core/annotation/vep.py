@@ -51,33 +51,22 @@ class VepCmdGenerator:
 
     @property
     def cmd_str(self) -> str:
-        args = [
-            self._vep_path,
-            "-i",
-            self._input_vcf_path,
-            "-o",
-            self._output_vcf_path,
-        ]
-        args += self.cmd_option_basic
-        args += self.cmd_option_pick_one_gene_isoform
-        args += self.cmd_option_pick_nearest_gene
-        args += self.cmd_option_bw_custom_annotations
-        return " ".join(args)
+        return " ".join(self.cmd)
 
     @property
-    def cmd(self) -> str:
-        args = [
+    def cmd(self) -> list:
+        result = [
             self._vep_path,
             "-i",
             self._input_vcf_path,
             "-o",
             self._output_vcf_path,
         ]
-        args += self.cmd_option_basic
-        args += self.cmd_option_pick_one_gene_isoform
-        args += self.cmd_option_pick_nearest_gene
-        args += self.cmd_option_bw_custom_annotations
-        return " ".join(args)
+        result += self.cmd_option_basic
+        result += self.cmd_option_pick_one_gene_isoform
+        result += self.cmd_option_pick_nearest_gene
+        result += self.cmd_option_bw_custom_annotations
+        return result
 
     @property
     def cmd_option_basic(self) -> list:
