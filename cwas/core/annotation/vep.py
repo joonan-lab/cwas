@@ -45,6 +45,10 @@ class VepCmdGenerator:
     def output_vcf_path(self) -> str:
         return self._output_vcf_path
 
+    @output_vcf_path.setter
+    def output_vcf_path(self, arg: str):
+        self._output_vcf_path = arg
+
     @property
     def cmd(self) -> str:
         args = [
