@@ -65,7 +65,7 @@ def test_init_vep_with_invalid_input_vcf(vep_path, cwas_workspace):
 def test_output_vcf_path(vep_path, input_vcf_path):
     vep_inst = VepCmdGenerator(vep_path, input_vcf_path)
     assert vep_inst.output_vcf_path == input_vcf_path.replace(
-        ".vcf", ".annotated.vcf"
+        ".vcf", ".vep.vcf"
     )
 
 
@@ -73,9 +73,7 @@ def test_cmd(vep_path, input_vcf_path):
     vep_inst = VepCmdGenerator(vep_path, input_vcf_path)
     assert vep_inst.cmd.startswith(vep_path)
     assert f"-i {input_vcf_path}" in vep_inst.cmd
-    assert (
-        f"-o {input_vcf_path.replace('.vcf', '.annotated.vcf')}" in vep_inst.cmd
-    )
+    assert f"-o {input_vcf_path.replace('.vcf', '.vep.vcf')}" in vep_inst.cmd
 
 
 def test_cmd_for_bw_custom_annotation(vep_path, input_vcf_path, annotation_dir):
