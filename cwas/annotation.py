@@ -9,6 +9,7 @@ import argparse
 from pathlib import Path
 
 import yaml
+from cwas.core.annotation.vep import VepCmdGenerator
 
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file, check_num_proc
@@ -56,6 +57,13 @@ class Annotation(Runnable):
 
     def run(self):
         print_log("Notice", "Not implemented yet.")
+
+    @property
+    def vep_cmd(self):
+        vep_cmd_generator = VepCmdGenerator(self.get_env("VEP"), self.vcf_path)
+        for bw_path, annotation_key in self.bw_custom_annotations:
+            vep_cmd_generator.add_bw_custom_annotation(bw_path, annotation_key)
+        return vep_cmd_generator.cmd
 
     @property
     def bw_custom_annotations(self):
