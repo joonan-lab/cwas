@@ -80,7 +80,8 @@ class VepCmdGenerator:
             "vcf",
             "--vcf",
             "--no_stats",
-            "--polyphen p",
+            "--polyphen",
+            "p",
         ]
 
     @property
