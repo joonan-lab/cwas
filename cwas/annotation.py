@@ -9,11 +9,12 @@ import argparse
 from pathlib import Path
 
 import yaml
-from cwas.core.annotation.vep import VepCmdGenerator
 
+from cwas.core.annotation.vep import VepCmdGenerator
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file, check_num_proc
-from cwas.utils.log import print_arg, print_log
+from cwas.utils.cmd import CmdExecutor
+from cwas.utils.log import print_arg, print_log, print_progress
 
 
 class Annotation(Runnable):
@@ -55,9 +56,6 @@ class Annotation(Runnable):
         check_is_file(args.vcf_path)
         check_num_proc(args.num_proc)
 
-    def run(self):
-        print_log("Notice", "Not implemented yet.")
-
     @property
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
@@ -83,3 +81,20 @@ class Annotation(Runnable):
 
         for bw_filename, bw_annotation_key in bw_custom_path_dict.items():
             yield (f"{annotation_data_dir}/{bw_filename}", bw_annotation_key)
+
+    def run(self):
+        self.annotate_using_bigwig()
+        print_log("Notice", "Not implemented yet.")
+
+    def annotate_using_bigwig(self):
+        print_progress("BigWig custom annotations via VEP")
+        if Path(self.vep_output_vcf_path).is_file():
+            print_log(
+                "NOTICE",
+                "You have already done the BigWig custom annotations.",
+                True,
+            )
+            return
+
+        vep_bin, *vep_args = self.vep_cmd
+        CmdExecutor(vep_bin, vep_args).execute_raising_err()
