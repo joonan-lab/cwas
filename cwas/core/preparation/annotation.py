@@ -62,7 +62,7 @@ def merge_bed_files(
     tmp_dir.mkdir(exist_ok=True)
 
     # Make temporary merged BED paths for each chromosome
-    chroms = (f"chr{n}" for n in range(1, 23))
+    chroms = [f"chr{n}" for n in range(1, 23)]
     merge_bed_paths = {}
 
     for chrom in chroms:
