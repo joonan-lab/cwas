@@ -97,13 +97,16 @@ def create_bed_file(bed_file_path, bed_entries):
 @pytest.fixture(scope="module", autouse=True)
 def teardown(cwas_workspace):
     yield
-    remove_workspace(cwas_workspace)
+    remove_dir(cwas_workspace)
 
 
-def remove_workspace(cwas_workspace):
-    for f in cwas_workspace.glob("*"):
-        f.unlink()
-    cwas_workspace.rmdir()
+def remove_dir(your_dir):
+    for f in your_dir.glob("*"):
+        if f.is_dir():
+            remove_dir(f)
+        else:
+            f.unlink()
+    your_dir.rmdir()
 
 
 def test_merge_bed_file_by_chrom(
