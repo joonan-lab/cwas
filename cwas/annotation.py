@@ -10,6 +10,7 @@ from pathlib import Path
 
 import yaml
 
+from cwas.core.annotation.bed import annotate as _annotate_using_bed
 from cwas.core.annotation.vep import VepCmdGenerator
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file, check_num_proc
@@ -74,6 +75,17 @@ class Annotation(Runnable):
         )
 
     @property
+    def vep_output_vcf_gz_path(self):
+        return self.vep_output_vcf_path.replace(".vcf", ".vcf.gz")
+
+    @property
+    def annotated_vcf_path(self):
+        return (
+            f"{self.get_env('CWAS_WORKSPACE')}/"
+            f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf')}"
+        )
+
+    @property
     def bw_custom_annotations(self):
         with open(self.get_env("ANNOTATION_BW_KEY")) as infile:
             bw_custom_path_dict = yaml.safe_load(infile)
@@ -84,11 +96,15 @@ class Annotation(Runnable):
 
     def run(self):
         self.annotate_using_bigwig()
-        print_log("Notice", "Not implemented yet.")
+        self.process_vep_vcf()
+        self.annotate_using_bed()
 
     def annotate_using_bigwig(self):
         print_progress("BigWig custom annotations via VEP")
-        if Path(self.vep_output_vcf_path).is_file():
+        if (
+            Path(self.vep_output_vcf_path).is_file()
+            or Path(self.vep_output_vcf_gz_path).is_file()
+        ):
             print_log(
                 "NOTICE",
                 "You have already done the BigWig custom annotations.",
@@ -98,3 +114,27 @@ class Annotation(Runnable):
 
         vep_bin, *vep_args = self.vep_cmd
         CmdExecutor(vep_bin, vep_args).execute_raising_err()
+
+    def process_vep_vcf(self):
+        print_progress("Compress the VEP output using bgzip")
+        CmdExecutor("bgzip", [self.vep_output_vcf_path]).execute_raising_err()
+        print_progress("Create an index of the VEP output using tabix")
+        CmdExecutor(
+            "tabix", [self.vep_output_vcf_gz_path]
+        ).execute_raising_err()
+
+    def annotate_using_bed(self):
+        print_progress("BED custom annotation")
+        if Path(self.annotated_vcf_path).is_file():
+            print_log(
+                "NOTICE",
+                "You have already done the BED custom annotation.",
+                True,
+            )
+            return
+        _annotate_using_bed(
+            self.vep_output_vcf_gz_path,
+            self.annotated_vcf_path,
+            self.get_env("MERGED_BED"),
+        )
+
