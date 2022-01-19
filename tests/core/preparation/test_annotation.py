@@ -8,7 +8,7 @@ from pathlib import Path
 
 import cwas.core.preparation.annotation as annotation
 import pytest
-from cwas.utils.cmd import compress_using_bgzip, index_bed_file
+from cwas.utils.cmd import compress_using_bgzip, index_using_tabix
 
 NUM_CHROM = random.randint(1, 22)
 
@@ -73,7 +73,7 @@ def create_bed_files(bed_txt_paths, input_coordinates):
     ):
         create_bed_file(bed_txt_path, bed_entries(coordinates_per_file))
         bed_gz_path = compress_using_bgzip(bed_txt_path)
-        _ = index_bed_file(bed_gz_path)
+        _ = index_using_tabix(bed_gz_path)
 
 
 def bed_entries(coordinates):

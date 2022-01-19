@@ -8,7 +8,7 @@ import cwas.utils.log as log
 from cwas.core.preparation.annotation import merge_bed_files
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
-from cwas.utils.cmd import compress_using_bgzip, index_bed_file
+from cwas.utils.cmd import compress_using_bgzip, index_using_tabix
 
 
 class Preparation(Runnable):
@@ -96,7 +96,7 @@ class Preparation(Runnable):
         bed_gz_path = compress_using_bgzip(merge_bed_path)
 
         log.print_progress("Make an index of your BED file.")
-        bed_idx_path = index_bed_file(bed_gz_path)
+        bed_idx_path = index_using_tabix(bed_gz_path)
 
         return bed_gz_path, bed_idx_path
 

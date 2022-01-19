@@ -60,14 +60,14 @@ def compress_using_bgzip(input_file_path: Path) -> Path:
     return result
 
 
-def index_bed_file(compressed_bed_path: Path) -> Path:
+def index_using_tabix(compressed_file_path: Path) -> Path:
     """Index the compressed BED file"""
-    result = Path(str(compressed_bed_path) + ".tbi")
+    result = Path(str(compressed_file_path) + ".tbi")
     if result.exists():
         log.print_warn(
-            f'The BED file index "{result}" already exists. Skip indexing.'
+            f'The file index "{result}" already exists. Skip indexing.'
         )
     else:
-        CmdExecutor("tabix", [str(compressed_bed_path)]).execute_raising_err()
+        CmdExecutor("tabix", [str(compressed_file_path)]).execute_raising_err()
 
     return result
