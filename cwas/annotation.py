@@ -13,7 +13,7 @@ import yaml
 from cwas.core.annotation.bed import annotate as _annotate_using_bed
 from cwas.core.annotation.vep import VepCmdGenerator
 from cwas.runnable import Runnable
-from cwas.utils.check import check_is_file, check_num_proc
+from cwas.utils.check import check_is_file
 from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
@@ -36,26 +36,15 @@ class Annotation(Runnable):
             type=Path,
             help="Target VCF file",
         )
-        parser.add_argument(
-            "-p",
-            "--num_process",
-            dest="num_proc",
-            required=False,
-            type=int,
-            help="Number of worker processes to use",
-            default=1,
-        )
         return parser
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Target VCF file", args.vcf_path)
-        print_arg("Number of worker processes", args.num_proc)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.vcf_path)
-        check_num_proc(args.num_proc)
 
     @property
     def vep_cmd(self):

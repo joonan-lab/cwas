@@ -80,37 +80,13 @@ def required_args(vcf_path):
 
 
 def test_parse_args(required_args, vcf_path):
-    cpu = random.choice(range(1, cpu_count() + 1))
-    args = required_args + ["-p", str(cpu)]
-    inst = AnnotationMock.get_instance(args)
-    assert getattr(inst, "vcf_path") == vcf_path
-    assert getattr(inst, "num_proc") == cpu
-
-
-def test_parse_args_required_arg_only(required_args, vcf_path):
     inst = AnnotationMock.get_instance(required_args)
     assert getattr(inst, "vcf_path") == vcf_path
-    assert getattr(inst, "num_proc") == 1
 
 
 def test_parse_args_without_required_arg():
     args = []
     with pytest.raises(SystemExit):
-        AnnotationMock.get_instance(args)
-
-
-def test_parse_args_invalid_num_proc(required_args):
-    cpu = cpu_count() + 1
-    args = required_args + ["-p", str(cpu)]
-    with pytest.raises(ValueError):
-        AnnotationMock.get_instance(args)
-
-    args = required_args + ["-p", "0"]
-    with pytest.raises(ValueError):
-        AnnotationMock.get_instance(args)
-
-    args = required_args + ["-p", "-1"]
-    with pytest.raises(ValueError):
         AnnotationMock.get_instance(args)
 
 
