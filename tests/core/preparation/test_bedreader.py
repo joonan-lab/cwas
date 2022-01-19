@@ -93,3 +93,10 @@ def test_read_coordinates_with_set_contig(bed_gz_path, bed_coordinates):
     ]
     result = list(bedreader)
     assert expected == result
+
+
+def test_read_coordinates_with_invalid_contig(bed_gz_path):
+    invalid_contig = "test"
+    bedreader = BedReader(bed_gz_path)
+    bedreader.set_contig(invalid_contig)
+    assert list(bedreader) == []
