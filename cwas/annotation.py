@@ -14,7 +14,7 @@ from cwas.core.annotation.bed import annotate as _annotate_using_bed
 from cwas.core.annotation.vep import VepCmdGenerator
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file, check_num_proc
-from cwas.utils.cmd import CmdExecutor
+from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
 
@@ -117,11 +117,9 @@ class Annotation(Runnable):
 
     def process_vep_vcf(self):
         print_progress("Compress the VEP output using bgzip")
-        CmdExecutor("bgzip", [self.vep_output_vcf_path]).execute_raising_err()
+        vcf_gz_path = compress_using_bgzip(self.vep_output_vcf_path)
         print_progress("Create an index of the VEP output using tabix")
-        CmdExecutor(
-            "tabix", [self.vep_output_vcf_gz_path]
-        ).execute_raising_err()
+        index_using_tabix(vcf_gz_path)
 
     def annotate_using_bed(self):
         print_progress("BED custom annotation")
