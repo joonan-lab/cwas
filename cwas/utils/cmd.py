@@ -47,7 +47,6 @@ class CmdExecutor:
 
 
 def compress_using_bgzip(input_file_path: Path) -> Path:
-    """Compress the BED file using bgzip"""
     result = Path(str(input_file_path) + ".gz")
     if result.exists():
         log.print_warn(
@@ -61,7 +60,6 @@ def compress_using_bgzip(input_file_path: Path) -> Path:
 
 
 def index_using_tabix(compressed_file_path: Path) -> Path:
-    """Index the compressed BED file"""
     result = Path(str(compressed_file_path) + ".tbi")
     if result.exists():
         log.print_warn(
