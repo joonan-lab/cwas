@@ -46,16 +46,16 @@ class CmdExecutor:
         return output.returncode
 
 
-def compress_bed_file(bed_file_path: Path) -> Path:
+def compress_using_bgzip(input_file_path: Path) -> Path:
     """Compress the BED file using bgzip"""
-    result = Path(str(bed_file_path) + ".gz")
+    result = Path(str(input_file_path) + ".gz")
     if result.exists():
         log.print_warn(
-            f'The compressed BED file "{result}" already exists. '
+            f'The compressed file "{result}" already exists. '
             f"Skip compressing."
         )
     else:
-        CmdExecutor("bgzip", [str(bed_file_path)]).execute_raising_err()
+        CmdExecutor("bgzip", [str(input_file_path)]).execute_raising_err()
 
     return result
 

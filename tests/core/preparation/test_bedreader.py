@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 from cwas.core.preparation.bedreader import BedReader
-from cwas.utils.cmd import compress_bed_file, index_bed_file
+from cwas.utils.cmd import compress_using_bgzip, index_bed_file
 
 
 @pytest.fixture(scope="module")
@@ -33,7 +33,7 @@ def create_bed_file(bed_txt_path, bed_coordinates):
         for bed_coordinate in bed_coordinates:
             print(*bed_coordinate, sep="\t", file=bed_file)
 
-    bed_gz_path = compress_bed_file(bed_txt_path)
+    bed_gz_path = compress_using_bgzip(bed_txt_path)
     _ = index_bed_file(bed_gz_path)
 
 
@@ -48,7 +48,7 @@ def create_bed_file(bed_txt_path, bed_coordinates):
         for bed_coordinate in bed_coordinates:
             print(*bed_coordinate, sep="\t", file=bed_file)
 
-    bed_gz_path = compress_bed_file(bed_txt_path)
+    bed_gz_path = compress_using_bgzip(bed_txt_path)
     _ = index_bed_file(bed_gz_path)
 
 
