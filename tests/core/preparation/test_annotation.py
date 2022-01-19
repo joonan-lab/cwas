@@ -171,8 +171,8 @@ def test_merge_bed_files(cwas_workspace, bed_gz_paths, output_coordinates):
         ("#chrom", "start", "end", "annot_int"),
     ]
 
-    for i in range(3):
-        chrom = f"chrom{i + 1}"
+    for i in range(NUM_CHROM):
+        chrom = f"chr{i + 1}"
         for coordinate in output_coordinates:
             expected.append((chrom, *coordinate))
 
@@ -199,7 +199,7 @@ def test_merge_bed_files_multiprocessing(
     ]
 
     for i in range(NUM_CHROM):
-        chrom = f"chrom{i + 1}"
+        chrom = f"chr{i + 1}"
         for coordinate in output_coordinates:
             expected.append((chrom, *coordinate))
 
