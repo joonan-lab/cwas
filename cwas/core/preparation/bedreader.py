@@ -1,13 +1,14 @@
 """
 A container class that contains iterator protocol to read a BED file
 """
-from __future__ import annotations
+from pathlib import Path
+
 import pysam
 from cwas.utils.log import print_warn
 
 
 class BedReader:
-    def __init__(self, bed_path: pathlib.Path):
+    def __init__(self, bed_path: Path):
         self.bed_path = bed_path
         self.contig = None
         self.start = None
