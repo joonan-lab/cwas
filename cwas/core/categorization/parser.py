@@ -12,8 +12,8 @@ import pandas as pd
 from cwas.core.common import int_to_bit_arr
 from cwas.utils.log import print_err
 
-
-def parse_annot_vcf(annot_vcf_path: pathlib.Path) -> pd.DataFrame:
+# TODO: Make the code much clearer
+def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     """ Parse a Variant Calling File (VCF) that includes Variant Effect
     Predictor (VEP) and CWAS annotation information and make a
     pandas.DataFrame object listing annotated variants.
@@ -24,7 +24,7 @@ def parse_annot_vcf(annot_vcf_path: pathlib.Path) -> pd.DataFrame:
     annot_field_names = []  # Custom annotation field names
 
     # Read and parse the input VCF
-    with annot_vcf_path.open("r") as vep_vcf_file:
+    with vcf_path.open("r") as vep_vcf_file:
         has_col_name = False
         has_csq_info = False
         has_annot_info = False
@@ -60,10 +60,10 @@ def parse_annot_vcf(annot_vcf_path: pathlib.Path) -> pd.DataFrame:
                 variant_row = line.rstrip("\n").split("\t")
                 variant_rows.append(variant_row)
 
-    annot_vcf_df = pd.DataFrame(variant_rows, columns=variant_col_names)
+    result = pd.DataFrame(variant_rows, columns=variant_col_names)
     try:
         info_df = _parse_info_column(
-            annot_vcf_df["INFO"], csq_field_names, annot_field_names
+            result["INFO"], csq_field_names, annot_field_names
         )
     except KeyError:
         print_err(
@@ -72,10 +72,10 @@ def parse_annot_vcf(annot_vcf_path: pathlib.Path) -> pd.DataFrame:
         )
         raise
 
-    annot_vcf_df.drop(columns="INFO", inplace=True)
-    annot_vcf_df = pd.concat([annot_vcf_df, info_df], axis="columns")
+    result.drop(columns="INFO", inplace=True)
+    result = pd.concat([result, info_df], axis="columns")
 
-    return annot_vcf_df
+    return result
 
 
 def _parse_info_column(
