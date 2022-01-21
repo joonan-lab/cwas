@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 import cwas.utils.log as log
 from cwas.runnable import Runnable
@@ -33,6 +34,20 @@ class Categorization(Runnable):
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
+
+    @property
+    def annotated_vcf_path(self) -> Path:
+        return Path(self.get_env("ANNOTATED_VCF"))
+
+    @property
+    def gene_matrix(self) -> Path:
+        return Path(self.get_env("GENE_MATRIX"))
+
+    @property
+    def result_path(self) -> Path:
+        return (
+            Path(self.get_env("CWAS_WORKSPACE")) / "categorization_result.txt"
+        )
 
     def run(self):
         log.print_log("Notice", "Not implemented yet.")
