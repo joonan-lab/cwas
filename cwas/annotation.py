@@ -87,6 +87,7 @@ class Annotation(Runnable):
         self.annotate_using_bigwig()
         self.process_vep_vcf()
         self.annotate_using_bed()
+        self.update_env()
 
     def annotate_using_bigwig(self):
         print_progress("BigWig custom annotations via VEP")
@@ -125,3 +126,6 @@ class Annotation(Runnable):
             self.get_env("MERGED_BED"),
         )
 
+    def update_env(self):
+        self.set_env("ANNOTATED_VCF", self.annotated_vcf_path)
+        self.save_env()
