@@ -1,9 +1,6 @@
 """
 Test cwas.preparation
 """
-import random
-from multiprocessing import cpu_count
-
 import pytest
 import yaml
 from cwas.annotation import Annotation
