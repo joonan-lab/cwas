@@ -94,10 +94,10 @@ class Preparation(Runnable):
             self.force_overwrite,
         )
         log.print_progress("Compress your BED file.")
-        bed_gz_path = compress_using_bgzip(merge_bed_path)
+        bed_gz_path = compress_using_bgzip(merge_bed_path, self.force_overwrite)
 
         log.print_progress("Make an index of your BED file.")
-        bed_idx_path = index_using_tabix(bed_gz_path)
+        bed_idx_path = index_using_tabix(bed_gz_path, self.force_overwrite)
 
         return bed_gz_path, bed_idx_path
 
