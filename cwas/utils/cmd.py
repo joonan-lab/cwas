@@ -56,7 +56,10 @@ def compress_using_bgzip(
             f"Skip compressing."
         )
     else:
-        CmdExecutor("bgzip", [str(input_file_path)]).execute_raising_err()
+        args = [str(input_file_path)]
+        if force_overwrite:
+            args.append("-f")
+        CmdExecutor("bgzip", args).execute_raising_err()
 
     return result
 
