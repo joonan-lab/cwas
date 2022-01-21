@@ -51,3 +51,7 @@ class Categorization(Runnable):
 
     def run(self):
         log.print_log("Notice", "Not implemented yet.")
+
+    def update_env(self):
+        self.set_env("CATEGORIZATION_RESULT", self.result_path)
+        self.save_env()
