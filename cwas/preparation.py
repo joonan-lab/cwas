@@ -86,11 +86,12 @@ class Preparation(Runnable):
         log.print_progress(
             "Merge all of your annotation BED files into one BED file"
         )
-        num_proc = getattr(self, "num_proc")
-        force_overwrite = getattr(self, "force_overwrite")
         merge_bed_path = self.workspace / "merged_annotation.bed"
         merge_bed_files(
-            merge_bed_path, bed_file_and_keys, num_proc, force_overwrite
+            merge_bed_path,
+            bed_file_and_keys,
+            self.num_proc,
+            self.force_overwrite,
         )
         log.print_progress("Compress your BED file.")
         bed_gz_path = compress_using_bgzip(merge_bed_path)
