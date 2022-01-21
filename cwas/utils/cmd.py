@@ -46,9 +46,11 @@ class CmdExecutor:
         return output.returncode
 
 
-def compress_using_bgzip(input_file_path: Path) -> Path:
+def compress_using_bgzip(
+    input_file_path: Path, force_overwrite: bool = False
+) -> Path:
     result = Path(str(input_file_path) + ".gz")
-    if result.exists():
+    if not force_overwrite and result.exists():
         log.print_warn(
             f'The compressed file "{result}" already exists. '
             f"Skip compressing."
@@ -59,9 +61,11 @@ def compress_using_bgzip(input_file_path: Path) -> Path:
     return result
 
 
-def index_using_tabix(compressed_file_path: Path) -> Path:
+def index_using_tabix(
+    compressed_file_path: Path, force_overwrite: bool = False
+) -> Path:
     result = Path(str(compressed_file_path) + ".tbi")
-    if result.exists():
+    if not force_overwrite and result.exists():
         log.print_warn(
             f'The file index "{result}" already exists. Skip indexing.'
         )
