@@ -67,6 +67,19 @@ class Categorization(Runnable):
     def run(self):
         log.print_log("Notice", "Not implemented yet.")
 
+    def categorize_vcf_for_each_sample(self):
+        return [
+            _categorize_variant(
+                vcf_for_sample, self.category_domain, self.gene_matrix
+            )
+            for vcf_for_sample in self.split_annotated_vcf_by_sample()
+        ]
+
+    def split_annotated_vcf_by_sample(self) -> list:
+        groupby_sample = self.annotated_vcf.groupby("SAMPLE")
+        sample_ids = list(groupby_sample.groups)
+        return [groupby_sample.get_group(sample_id) for sample_id in sample_ids]
+
     def update_env(self):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)
         self.save_env()
