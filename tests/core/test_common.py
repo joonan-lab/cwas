@@ -130,13 +130,6 @@ def test_swap_label():
 
 
 def test_int_to_bit_arr():
-    # A negative integer is not allowed as an argument.
-    with pytest.raises(ValueError):
-        _ = common.int_to_bit_arr(-1, 5)
-
-    with pytest.raises(ValueError):
-        _ = common.int_to_bit_arr(5, -1)
-
     assert common.int_to_bit_arr(5, 0).size == 0
     assert common.int_to_bit_arr(5, 3).size == 3
     assert common.int_to_bit_arr(5, 5).size == 5
@@ -147,3 +140,12 @@ def test_int_to_bit_arr():
     assert (common.int_to_bit_arr(5, 3) == np.array([1, 0, 1])).all()
     assert (common.int_to_bit_arr(6, 3) == np.array([1, 1, 0])).all()
     assert (common.int_to_bit_arr(7, 3) == np.array([1, 1, 1])).all()
+
+
+def test_int_to_bit_arr_invalid_args():
+    # A negative integer is not allowed as an argument.
+    with pytest.raises(ValueError):
+        _ = common.int_to_bit_arr(-1, 5)
+
+    with pytest.raises(ValueError):
+        _ = common.int_to_bit_arr(5, -1)
