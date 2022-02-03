@@ -146,19 +146,15 @@ def parse_gene_matrix(gene_matrix_path: pathlib.Path) -> dict:
     and a set of type names where the gene is associated,
     respectively.
     """
-    gene_matrix_dict = {}
+    result = {}
 
     with gene_matrix_path.open("r") as gene_matrix_file:
         header = gene_matrix_file.readline()
-        all_gene_type_names = np.array(header.rstrip("\n").split("\t")[1:])
+        all_gene_types = np.array(header.rstrip("\n").split("\t")[2:])
 
         for line in gene_matrix_file:
-            fields = line.rstrip("\n").split("\t")
-            gene_symbol = fields[0]
-            gene_matrix_values = (
-                np.array(fields[1:]) == "1"
-            )  # Convert to the boolean array
-            gene_type_names = all_gene_type_names[gene_matrix_values]
-            gene_matrix_dict[gene_symbol] = set(gene_type_names)
+            _, gene_symbol, *gene_matrix_values = line.rstrip("\n").split("\t")
+            gene_types = all_gene_types[np.array(gene_matrix_values) == "1"]
+            result[gene_symbol] = set(gene_types)
 
-    return gene_matrix_dict
+    return result
