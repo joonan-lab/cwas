@@ -28,6 +28,7 @@ def test_parse_vcf_header_line():
         "FILTER",
         "INFO",
     ]
-    header_line = f"#'\t'.join(vcf_column_titles)"
-    assert parser._parse_vcf_header_line(header_line) == vcf_column_titles
+
+    header_line = "\t".join(vcf_column_titles)
+    assert parser._parse_vcf_header_line(f"#{header_line}") == vcf_column_titles
 
