@@ -30,13 +30,7 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
                 if line.startswith("##INFO=<ID=CSQ"):
                     csq_field_names = _parse_vcf_info_field(line)
                 elif line.startswith("##INFO=<ID=ANNOT"):
-                    annot_line = line.rstrip('">\n')
-                    annot_field_str_idx = re.search(r"Key=", annot_line).span()[
-                        1
-                    ]
-                    annot_field_names = annot_line[annot_field_str_idx:].split(
-                        "|"
-                    )
+                    annot_field_names = _parse_annot_field(line)
                 elif line.startswith("#CHROM"):
                     variant_col_names = line[1:].rstrip("\n").split("\t")
             else:  # Rows of variant information follow the comments.
@@ -64,6 +58,14 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     result = pd.concat([result, info_df], axis="columns")
 
     return result
+
+
+def _parse_annot_field(line):
+    annot_line = line.rstrip('">\n')
+    annot_field_str_idx = re.search(r"Key=", annot_line).span()[1]
+    annot_field_names = annot_line[annot_field_str_idx:].split("|")
+
+    return annot_field_names
 
 
 def _parse_vcf_info_field(line):
