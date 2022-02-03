@@ -1,4 +1,5 @@
 from cwas.core.categorization import parser
+from pandas import Series
 
 
 def test_parse_info_field():
@@ -32,3 +33,24 @@ def test_parse_vcf_header_line():
     header_line = "\t".join(vcf_column_titles)
     assert parser._parse_vcf_header_line(f"#{header_line}") == vcf_column_titles
 
+
+def test_parse_info_column():
+    info_column = Series(
+        [
+            "SAMPLE=A;BATCH=1;CSQ=1|2|3;ANNOT=7",
+            "SAMPLE=B;BATCH=1;CSQ=2|3|1;ANNOT=5",
+            "SAMPLE=C;BATCH=1;CSQ=3|2|1;ANNOT=3",
+            "SAMPLE=D;BATCH=1;CSQ=3|1|2;ANNOT=1",
+        ]
+    )
+    csq_field_names = ["CSQ1", "CSQ2", "CSQ3"]
+    annot_field_names = ["ANNOT1", "ANNOT2", "ANNOT3"]
+    info_df = parser._parse_info_column(
+        info_column, csq_field_names, annot_field_names
+    )
+    assert info_df["CSQ1"].to_list() == ["1", "2", "3", "3"]
+    assert info_df["CSQ2"].to_list() == ["2", "3", "2", "1"]
+    assert info_df["CSQ3"].to_list() == ["3", "1", "1", "2"]
+    assert info_df["ANNOT1"].to_list() == [1, 1, 1, 1]
+    assert info_df["ANNOT2"].to_list() == [1, 0, 1, 0]
+    assert info_df["ANNOT3"].to_list() == [1, 1, 0, 0]
