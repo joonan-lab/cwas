@@ -16,6 +16,9 @@ from cwas.utils.check import check_num_proc
 class Categorization(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
+        self._annotated_vcf = None
+        self._gene_matrix = None
+        self._category_domain = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -50,19 +53,29 @@ class Categorization(Runnable):
 
     @property
     def annotated_vcf(self) -> pd.DataFrame:
-        log.print_progress("Parse the annotated VCF")
-        return parse_annotated_vcf(Path(self.get_env("ANNOTATED_VCF")))
+        if self._annotated_vcf is None:
+            log.print_progress("Parse the annotated VCF")
+            self._annotated_vcf = parse_annotated_vcf(
+                Path(self.get_env("ANNOTATED_VCF"))
+            )
+        return self._annotated_vcf
 
     @property
     def gene_matrix(self) -> dict:
-        log.print_progress("Parse the gene matrix")
-        return parse_gene_matrix(Path(self.get_env("GENE_MATRIX")))
+        if self._gene_matrix is None:
+            log.print_progress("Parse the gene matrix")
+            self._gene_matrix = parse_gene_matrix(
+                Path(self.get_env("GENE_MATRIX"))
+            )
+        return self._gene_matrix
 
     @property
     def category_domain(self) -> dict:
-        log.print_progress("Load the category domain")
-        with Path(self.get_env("CATEGORY_DOMAIN")) as category_domain_file:
-            return yaml.safe_load(category_domain_file)
+        if self._category_domain is None:
+            log.print_progress("Load the category domain")
+            with Path(self.get_env("CATEGORY_DOMAIN")) as category_domain_file:
+                self._category_domain = yaml.safe_load(category_domain_file)
+        return self._category_domain
 
     def run(self):
         log.print_log("Notice", "Not implemented yet.")
