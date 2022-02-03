@@ -1,3 +1,5 @@
+from io import StringIO
+
 from cwas.core.categorization import parser
 from pandas import Series
 
@@ -54,3 +56,16 @@ def test_parse_info_column():
     assert info_df["ANNOT1"].to_list() == [1, 1, 1, 1]
     assert info_df["ANNOT2"].to_list() == [1, 0, 1, 0]
     assert info_df["ANNOT3"].to_list() == [1, 1, 0, 0]
+
+
+def test_parse_gene_matrix():
+    gene_matrix_lines = [
+        "\t".join(["gene_id", "gene_name", "asd1", "asd2", "asd3", "asd4"]),
+        "\t".join(["id1", "gene1", "1", "0", "1", "1"]),
+        "\t".join(["id2", "gene2", "0", "0", "1", "1"]),
+        "\t".join(["id3", "gene3", "0", "1", "1", "0"]),
+    ]
+    result = parser._parse_gene_matrix(StringIO("\n".join(gene_matrix_lines)))
+    assert result["gene1"] == {"asd1", "asd3", "asd4"}
+    assert result["gene2"] == {"asd3", "asd4"}
+    assert result["gene3"] == {"asd2", "asd3"}
