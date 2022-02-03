@@ -27,9 +27,7 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     with vcf_path.open("r") as vep_vcf_file:
         for line in vep_vcf_file:
             if line.startswith("#"):  # Comments
-                if line.startswith("#CHROM"):
-                    variant_col_names = line[1:].rstrip("\n").split("\t")
-                elif line.startswith("##INFO=<ID=CSQ"):
+                if line.startswith("##INFO=<ID=CSQ"):
                     csq_line = line.rstrip('">\n')
                     info_format_start_idx = re.search(
                         r"Format: ", csq_line
@@ -45,6 +43,8 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
                     annot_field_names = annot_line[annot_field_str_idx:].split(
                         "|"
                     )
+                elif line.startswith("#CHROM"):
+                    variant_col_names = line[1:].rstrip("\n").split("\t")
             else:  # Rows of variant information follow the comments.
                 assert variant_col_names, "The VCF does not have column names."
                 assert csq_field_names, "The VCF does not have CSQ information."
