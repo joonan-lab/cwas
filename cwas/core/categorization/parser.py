@@ -28,13 +28,7 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
         for line in vep_vcf_file:
             if line.startswith("#"):  # Comments
                 if line.startswith("##INFO=<ID=CSQ"):
-                    csq_line = line.rstrip('">\n')
-                    info_format_start_idx = re.search(
-                        r"Format: ", csq_line
-                    ).span()[1]
-                    csq_field_names = csq_line[info_format_start_idx:].split(
-                        "|"
-                    )
+                    csq_field_names = _parse_vcf_info_field(line)
                 elif line.startswith("##INFO=<ID=ANNOT"):
                     annot_line = line.rstrip('">\n')
                     annot_field_str_idx = re.search(r"Key=", annot_line).span()[
@@ -70,6 +64,14 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     result = pd.concat([result, info_df], axis="columns")
 
     return result
+
+
+def _parse_vcf_info_field(line):
+    csq_line = line.rstrip('">\n')
+    info_format_start_idx = re.search(r"Format: ", csq_line).span()[1]
+    csq_field_names = csq_line[info_format_start_idx:].split("|")
+
+    return csq_field_names
 
 
 def _parse_info_column(
