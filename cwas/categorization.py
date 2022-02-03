@@ -43,37 +43,25 @@ class Categorization(Runnable):
         check_num_proc(args.num_proc)
 
     @property
-    def annotated_vcf_path(self) -> Path:
-        return Path(self.get_env("ANNOTATED_VCF"))
-
-    @property
-    def gene_matrix(self) -> Path:
-        return Path(self.get_env("GENE_MATRIX"))
-
-    @property
-    def category_domain(self) -> Path:
-        return Path(self.get_env("CATEGORY_DOMAIN"))
-
-    @property
     def result_path(self) -> Path:
         return (
             Path(self.get_env("CWAS_WORKSPACE")) / "categorization_result.txt"
         )
 
     @property
-    def variant_df(self) -> pd.DataFrame:
+    def annotated_vcf(self) -> pd.DataFrame:
         log.print_progress("Parse the annotated VCF")
-        return parse_annotated_vcf(self.annotated_vcf_path)
+        return parse_annotated_vcf(Path(self.get_env("ANNOTATED_VCF")))
 
     @property
-    def gene_matrix_dict(self) -> dict:
+    def gene_matrix(self) -> dict:
         log.print_progress("Parse the gene matrix")
-        return parse_gene_matrix(self.gene_matrix)
+        return parse_gene_matrix(Path(self.get_env("GENE_MATRIX")))
 
     @property
-    def category_domain_dict(self) -> dict:
+    def category_domain(self) -> dict:
         log.print_progress("Load the category domain")
-        with self.category_domain as category_domain_file:
+        with Path(self.get_env("CATEGORY_DOMAIN")) as category_domain_file:
             return yaml.safe_load(category_domain_file)
 
     def run(self):
