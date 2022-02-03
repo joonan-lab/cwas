@@ -123,7 +123,7 @@ def int_to_bit_arr(n: int, bit_arr_len: int) -> np.ndarray:
 
     bit_arr = np.zeros(bit_arr_len)
 
-    for i in range(bit_arr_len - 1, -1, -1):
+    for i in range(bit_arr_len):
         bit = n % 2
         bit_arr[i] += bit
         n >>= 1
