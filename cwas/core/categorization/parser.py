@@ -32,7 +32,7 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
                 elif line.startswith("##INFO=<ID=ANNOT"):
                     annot_field_names = _parse_annot_field(line)
                 elif line.startswith("#CHROM"):
-                    variant_col_names = line[1:].rstrip("\n").split("\t")
+                    variant_col_names = _parse_vcf_header_line(line)
             else:  # Rows of variant information follow the comments.
                 assert variant_col_names, "The VCF does not have column names."
                 assert csq_field_names, "The VCF does not have CSQ information."
@@ -60,6 +60,14 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     return result
 
 
+def _parse_vcf_info_field(line):
+    csq_line = line.rstrip('">\n')
+    info_format_start_idx = re.search(r"Format: ", csq_line).span()[1]
+    csq_field_names = csq_line[info_format_start_idx:].split("|")
+
+    return csq_field_names
+
+
 def _parse_annot_field(line):
     annot_line = line.rstrip('">\n')
     annot_field_str_idx = re.search(r"Key=", annot_line).span()[1]
@@ -68,12 +76,9 @@ def _parse_annot_field(line):
     return annot_field_names
 
 
-def _parse_vcf_info_field(line):
-    csq_line = line.rstrip('">\n')
-    info_format_start_idx = re.search(r"Format: ", csq_line).span()[1]
-    csq_field_names = csq_line[info_format_start_idx:].split("|")
-
-    return csq_field_names
+def _parse_vcf_header_line(line):
+    variant_col_names = line[1:].rstrip("\n").split("\t")
+    return variant_col_names
 
 
 def _parse_info_column(
