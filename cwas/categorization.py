@@ -1,7 +1,14 @@
 import argparse
 from pathlib import Path
 
+import pandas as pd
+import yaml
+
 import cwas.utils.log as log
+from cwas.core.categorization.parser import (
+    parse_annotated_vcf,
+    parse_gene_matrix,
+)
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
 
@@ -52,6 +59,22 @@ class Categorization(Runnable):
         return (
             Path(self.get_env("CWAS_WORKSPACE")) / "categorization_result.txt"
         )
+
+    @property
+    def variant_df(self) -> pd.DataFrame:
+        log.print_progress("Parse the annotated VCF")
+        return parse_annotated_vcf(self.annotated_vcf_path)
+
+    @property
+    def gene_matrix_dict(self) -> dict:
+        log.print_progress("Parse the gene matrix")
+        return parse_gene_matrix(self.gene_matrix)
+
+    @property
+    def category_domain_dict(self) -> dict:
+        log.print_progress("Load the category domain")
+        with self.category_domain as category_domain_file:
+            return yaml.safe_load(category_domain_file)
 
     def run(self):
         log.print_log("Notice", "Not implemented yet.")
