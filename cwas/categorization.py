@@ -44,6 +44,10 @@ class Categorization(Runnable):
         return Path(self.get_env("GENE_MATRIX"))
 
     @property
+    def category_domain(self) -> Path:
+        return Path(self.get_env("CATEGORY_DOMAIN"))
+
+    @property
     def result_path(self) -> Path:
         return (
             Path(self.get_env("CWAS_WORKSPACE")) / "categorization_result.txt"
