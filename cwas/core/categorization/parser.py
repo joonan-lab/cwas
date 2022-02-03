@@ -4,6 +4,7 @@ categorization step. By parsing those files, these functions make the
 pandas.DataFrame objects that can be directly used in the categorization
 algorithm.
 """
+from io import TextIOWrapper
 import pathlib
 import re
 
@@ -146,15 +147,18 @@ def parse_gene_matrix(gene_matrix_path: pathlib.Path) -> dict:
     and a set of type names where the gene is associated,
     respectively.
     """
-    result = {}
-
     with gene_matrix_path.open("r") as gene_matrix_file:
-        header = gene_matrix_file.readline()
-        all_gene_types = np.array(header.rstrip("\n").split("\t")[2:])
+        return _parse_gene_matrix(gene_matrix_file)
 
-        for line in gene_matrix_file:
-            _, gene_symbol, *gene_matrix_values = line.rstrip("\n").split("\t")
-            gene_types = all_gene_types[np.array(gene_matrix_values) == "1"]
-            result[gene_symbol] = set(gene_types)
+
+def _parse_gene_matrix(gene_matrix_file: TextIOWrapper) -> dict:
+    result = dict()
+    header = gene_matrix_file.readline()
+    all_gene_types = np.array(header.rstrip("\n").split("\t")[2:])
+
+    for line in gene_matrix_file:
+        _, gene_symbol, *gene_matrix_values = line.rstrip("\n").split("\t")
+        gene_types = all_gene_types[np.array(gene_matrix_values) == "1"]
+        result[gene_symbol] = set(gene_types)
 
     return result
