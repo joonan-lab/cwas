@@ -81,6 +81,10 @@ class Categorization(Runnable):
         return self._category_domain
 
     @property
+    def categorizer(self) -> Categorizer:
+        return Categorizer(self.category_domain, self.gene_matrix)
+
+    @property
     def annotated_vcf_groupby_sample(self):
         if self._annotated_vcf_groupby_sample is None:
             self._annotated_vcf_groupby_sample = self.annotated_vcf.groupby(
@@ -105,9 +109,8 @@ class Categorization(Runnable):
         log.print_log("Notice", "Not implemented yet.")
 
     def categorize_vcf_for_each_sample(self):
-        categorizer = Categorizer(self.category_domain, self.gene_matrix)
         return [
-            categorizer.categorize_variant(sample_vcf)
+            self.categorizer.categorize_variant(sample_vcf)
             for sample_vcf in self.annotated_vcf_split_by_sample
         ]
 
