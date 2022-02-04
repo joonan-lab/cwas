@@ -33,13 +33,6 @@ class Categorizer:
         and return the dictionary that contains the distribution of the variants 
         for the combinations. These combinations are defined as CWAS categories.
         """
-        annot_terms_dict = {}
-        annot_term_idx_dict = {}
-
-        for annot_group, annot_terms in self._category_domain.items():
-            annot_terms_dict[annot_group] = annot_terms
-            annot_term_idx_dict[annot_group] = get_idx_dict(annot_terms)
-
         # For annotating each variant with multiple annotation terms
         # from each group efficiently, "Annotation integer" (annot_int) is used.
         # Annotation integer: A bitwise representation of the annotation
@@ -48,19 +41,23 @@ class Categorizer:
         # the annotation integer is 0b101, it means that
         # the variant is annotated as 'A' and 'B'.
         variant_type_annot_ints = annot_variant_type(
-            annotated_vcf, annot_term_idx_dict["variant_type"]
+            annotated_vcf, get_idx_dict(self._category_domains["variant_type"])
         )
         conservation_annot_ints = annot_conservation(
-            annotated_vcf, annot_term_idx_dict["conservation"]
+            annotated_vcf, get_idx_dict(self._category_domains["conservation"])
         )
         gene_list_annot_ints = annot_gene_list(
-            annotated_vcf, annot_term_idx_dict["gene_list"], self._gene_matrix
+            annotated_vcf,
+            get_idx_dict(self._category_domains["gene_list"]),
+            self._gene_matrix,
         )
         gencode_annot_ints = annot_gencode(
-            annotated_vcf, annot_term_idx_dict["gencode"], self._gene_matrix
+            annotated_vcf,
+            get_idx_dict(self._category_domains["gencode"]),
+            self._gene_matrix,
         )
         region_annot_ints = annot_region(
-            annotated_vcf, annot_term_idx_dict["region"]
+            annotated_vcf, get_idx_dict(self._category_domains["region"])
         )
 
         # Categorize by the annotation terms for each variant
@@ -80,19 +77,19 @@ class Categorizer:
             region_annot_ints,
         ):
             variant_type_annots = parse_annot_int(
-                variant_type_annot_int, annot_terms_dict["variant_type"]
+                variant_type_annot_int, self._category_domains["variant_type"]
             )
             conservation_annots = parse_annot_int(
-                conservation_annot_int, annot_terms_dict["conservation"]
+                conservation_annot_int, self._category_domains["conservation"]
             )
             gene_list_annots = parse_annot_int(
-                gene_list_annot_int, annot_terms_dict["gene_list"]
+                gene_list_annot_int, self._category_domains["gene_list"]
             )
             gencode_annots = parse_annot_int(
-                gencode_annot_int, annot_terms_dict["gencode"]
+                gencode_annot_int, self._category_domains["gencode"]
             )
             region_annots = parse_annot_int(
-                region_annot_int, annot_terms_dict["region"]
+                region_annot_int, self._category_domains["region"]
             )
 
             # Make combinations using the annotation terms
