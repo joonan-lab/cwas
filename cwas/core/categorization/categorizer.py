@@ -108,18 +108,8 @@ class Categorizer:
         return result
 
 
-def get_idx_dict(list_: list):
-    """ Return a dictionary 
-    which key and value are an item of the input list and its index, 
-    respectively. """
-    idx_dict = {}
-    idx = 0
-
-    for item in list_:
-        idx_dict[item] = idx
-        idx += 1
-
-    return idx_dict
+def get_idx_dict(list_: list) -> dict:
+    return {item: i for i, item in enumerate(list_)}
 
 
 # Functions for annotation of the variants
