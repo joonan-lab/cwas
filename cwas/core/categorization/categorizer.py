@@ -17,94 +17,109 @@ There are currently 5 groups of annotation terms.
 import numpy as np
 import pandas as pd
 
+
 # TODO: Improve the readability of this code
+class Categorizer:
+    def __init__(self, category_domain: dict, gene_matrix: dict) -> None:
+        self._category_domain = category_domain
+        self._gene_matrix = gene_matrix
+
+    def categorize_variant(self, annotated_vcf: pd.DataFrame):
+        """ Categorize the variants in the input data frame 
+        into the combinations of the annotation terms in the 5 groups
+        and return the dictionary that contains the distribution of the variants 
+        for the combinations. These combinations are defined as CWAS categories.
+        """
+        annot_terms_dict = {}
+        annot_term_idx_dict = {}
+
+        for annot_group in self._category_domain:
+            annot_terms = list(self._category_domain[annot_group].keys())
+            annot_terms_dict[annot_group] = annot_terms
+            annot_term_idx_dict[annot_group] = get_idx_dict(
+                annot_terms_dict[annot_group]
+            )
+
+        # For annotating each variant with multiple annotation terms
+        # from each group efficiently, "Annotation integer" (annot_int) is used.
+        # Annotation integer: A bitwise representation of the annotation
+        # of each variant where each bit means each annotation term
+        # e.g. If a list of annotation terms is ['A', 'B', 'C'] and
+        # the annotation integer is 0b101, it means that
+        # the variant is annotated as 'A' and 'B'.
+        var_type_annot_ints = annot_var_type(
+            annotated_vcf, annot_term_idx_dict["var_type"]
+        )
+        cons_annot_ints = annot_cons(annotated_vcf, annot_term_idx_dict["cons"])
+        gene_list_annot_ints = annot_gene_list(
+            annotated_vcf, annot_term_idx_dict["gene_list"], self._gene_matrix
+        )
+        effect_annot_ints = annot_effect(
+            annotated_vcf, annot_term_idx_dict["effect"], self._gene_matrix
+        )
+        region_annot_ints = annot_region(
+            annotated_vcf, annot_term_idx_dict["region"]
+        )
+
+        # Categorize by the annotation terms for each variant
+        result = {}
+
+        for (
+            var_type_annot_int,
+            cons_annot_int,
+            gene_list_annot_int,
+            effect_annot_int,
+            region_annot_int,
+        ) in zip(
+            var_type_annot_ints,
+            cons_annot_ints,
+            gene_list_annot_ints,
+            effect_annot_ints,
+            region_annot_ints,
+        ):
+            var_type_annots = parse_annot_int(
+                var_type_annot_int, annot_terms_dict["var_type"]
+            )
+            cons_annots = parse_annot_int(
+                cons_annot_int, annot_terms_dict["cons"]
+            )
+            gene_list_annots = parse_annot_int(
+                gene_list_annot_int, annot_terms_dict["gene_list"]
+            )
+            effect_annots = parse_annot_int(
+                effect_annot_int, annot_terms_dict["effect"]
+            )
+            region_annots = parse_annot_int(
+                region_annot_int, annot_terms_dict["region"]
+            )
+
+            # Make combinations using the annotation terms
+            for var_type_annot in var_type_annots:
+                for cons_annot in cons_annots:
+                    for gene_list_annot in gene_list_annots:
+                        for effect_annot in effect_annots:
+                            for region_annot in region_annots:
+                                cwas_cat = (
+                                    f'{self._category_domain["var_type"][var_type_annot]}'
+                                    f'_{self._category_domain["gene_list"][gene_list_annot]}'
+                                    f'_{self._category_domain["cons"][cons_annot]}'
+                                    f'_{self._category_domain["effect"][effect_annot]}'
+                                    f'_{self._category_domain["region"][region_annot]}'
+                                )
+
+                                if result.get(cwas_cat) is None:
+                                    result[cwas_cat] = 1
+                                else:
+                                    result[cwas_cat] += 1
+
+        return result
+
+
 def categorize_variant(
     variant_df: pd.DataFrame, category_dict: dict, gene_list_dict: dict
 ) -> dict:
-    """ Categorize the variants in the input data frame 
-    into the combinations of the annotation terms in the 5 groups
-    and return the dictionary that contains the distribution of the variants 
-    for the combinations. These combinations are defined as CWAS categories.
-    """
-    annot_terms_dict = {}
-    annot_term_idx_dict = {}
-
-    for annot_group in category_dict:
-        annot_terms = list(category_dict[annot_group].keys())
-        annot_terms_dict[annot_group] = annot_terms
-        annot_term_idx_dict[annot_group] = get_idx_dict(
-            annot_terms_dict[annot_group]
-        )
-
-    # For annotating each variant with multiple annotation terms
-    # from each group efficiently, "Annotation integer" (annot_int) is used.
-    # Annotation integer: A bitwise representation of the annotation
-    # of each variant where each bit means each annotation term
-    # e.g. If a list of annotation terms is ['A', 'B', 'C'] and
-    # the annotation integer is 0b101, it means that
-    # the variant is annotated as 'A' and 'B'.
-    var_type_annot_ints = annot_var_type(
-        variant_df, annot_term_idx_dict["var_type"]
-    )
-    cons_annot_ints = annot_cons(variant_df, annot_term_idx_dict["cons"])
-    gene_list_annot_ints = annot_gene_list(
-        variant_df, annot_term_idx_dict["gene_list"], gene_list_dict
-    )
-    effect_annot_ints = annot_effect(
-        variant_df, annot_term_idx_dict["effect"], gene_list_dict
-    )
-    region_annot_ints = annot_region(variant_df, annot_term_idx_dict["region"])
-
-    # Categorize by the annotation terms for each variant
-    cat_result_dict = {}
-
-    for (
-        var_type_annot_int,
-        cons_annot_int,
-        gene_list_annot_int,
-        effect_annot_int,
-        region_annot_int,
-    ) in zip(
-        var_type_annot_ints,
-        cons_annot_ints,
-        gene_list_annot_ints,
-        effect_annot_ints,
-        region_annot_ints,
-    ):
-        var_type_annots = parse_annot_int(
-            var_type_annot_int, annot_terms_dict["var_type"]
-        )
-        cons_annots = parse_annot_int(cons_annot_int, annot_terms_dict["cons"])
-        gene_list_annots = parse_annot_int(
-            gene_list_annot_int, annot_terms_dict["gene_list"]
-        )
-        effect_annots = parse_annot_int(
-            effect_annot_int, annot_terms_dict["effect"]
-        )
-        region_annots = parse_annot_int(
-            region_annot_int, annot_terms_dict["region"]
-        )
-
-        # Make combinations using the annotation terms
-        for var_type_annot in var_type_annots:
-            for cons_annot in cons_annots:
-                for gene_list_annot in gene_list_annots:
-                    for effect_annot in effect_annots:
-                        for region_annot in region_annots:
-                            cwas_cat = (
-                                f'{category_dict["var_type"][var_type_annot]}'
-                                f'_{category_dict["gene_list"][gene_list_annot]}'
-                                f'_{category_dict["cons"][cons_annot]}'
-                                f'_{category_dict["effect"][effect_annot]}'
-                                f'_{category_dict["region"][region_annot]}'
-                            )
-
-                            if cat_result_dict.get(cwas_cat) is None:
-                                cat_result_dict[cwas_cat] = 1
-                            else:
-                                cat_result_dict[cwas_cat] += 1
-
-    return cat_result_dict
+    categorizer = Categorizer(category_dict, gene_list_dict)
+    return categorizer.categorize_variant(variant_df)
 
 
 def get_idx_dict(list_: list):
