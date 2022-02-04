@@ -17,6 +17,8 @@ There are currently 5 groups of annotation terms.
 import numpy as np
 import pandas as pd
 
+from itertools import product
+from collections import defaultdict
 
 # TODO: Improve the readability of this code
 class Categorizer:
@@ -59,7 +61,7 @@ class Categorizer:
         )
 
         # Categorize by the annotation terms for each variant
-        result = {}
+        result = defaultdict(int)
 
         for (
             var_type_annot_int,
@@ -91,23 +93,15 @@ class Categorizer:
             )
 
             # Make combinations using the annotation terms
-            for var_type_annot in var_type_annots:
-                for cons_annot in cons_annots:
-                    for gene_list_annot in gene_list_annots:
-                        for effect_annot in effect_annots:
-                            for region_annot in region_annots:
-                                cwas_cat = (
-                                    f"{var_type_annot}"
-                                    f"_{gene_list_annot}"
-                                    f"_{cons_annot}"
-                                    f"_{effect_annot}"
-                                    f"_{region_annot}"
-                                )
-
-                                if result.get(cwas_cat) is None:
-                                    result[cwas_cat] = 1
-                                else:
-                                    result[cwas_cat] += 1
+            for combination in product(
+                var_type_annots,
+                gene_list_annots,
+                cons_annots,
+                effect_annots,
+                region_annots,
+            ):
+                cwas_category = "_".join(combination)
+                result[cwas_category] += 1
 
         return result
 
