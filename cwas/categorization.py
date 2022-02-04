@@ -19,6 +19,8 @@ class Categorization(Runnable):
         self._annotated_vcf = None
         self._gene_matrix = None
         self._category_domain = None
+        self._annotated_vcf_groupby_sample = None
+        self._sample_ids = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -77,21 +79,37 @@ class Categorization(Runnable):
                 self._category_domain = yaml.safe_load(category_domain_file)
         return self._category_domain
 
+    @property
+    def annotated_vcf_groupby_sample(self):
+        if self._annotated_vcf_groupby_sample is None:
+            self._annotated_vcf_groupby_sample = self.annotated_vcf.groupby(
+                "SAMPLE"
+            )
+        return self._annotated_vcf_groupby_sample
+
+    @property
+    def sample_ids(self) -> list:
+        if self._sample_ids is None:
+            self._sample_ids = list(self.annotated_vcf_groupby_sample.groups)
+        return self._sample_ids
+
+    @property
+    def annotated_vcf_split_by_sample(self) -> list:
+        return [
+            self.annotated_vcf_groupby_sample.get_group(sample_id)
+            for sample_id in self.sample_ids
+        ]
+
     def run(self):
         log.print_log("Notice", "Not implemented yet.")
 
     def categorize_vcf_for_each_sample(self):
         return [
             _categorize_variant(
-                vcf_for_sample, self.category_domain, self.gene_matrix
+                sample_vcf, self.category_domain, self.gene_matrix
             )
-            for vcf_for_sample in self.split_annotated_vcf_by_sample()
+            for sample_vcf in self.annotated_vcf_split_by_sample
         ]
-
-    def split_annotated_vcf_by_sample(self) -> list:
-        groupby_sample = self.annotated_vcf.groupby("SAMPLE")
-        sample_ids = list(groupby_sample.groups)
-        return [groupby_sample.get_group(sample_id) for sample_id in sample_ids]
 
     def update_env(self):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)
