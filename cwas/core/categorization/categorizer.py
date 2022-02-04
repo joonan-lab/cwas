@@ -115,13 +115,6 @@ class Categorizer:
         return result
 
 
-def categorize_variant(
-    variant_df: pd.DataFrame, category_dict: dict, gene_list_dict: dict
-) -> dict:
-    categorizer = Categorizer(category_dict, gene_list_dict)
-    return categorizer.categorize_variant(variant_df)
-
-
 def get_idx_dict(list_: list):
     """ Return a dictionary 
     which key and value are an item of the input list and its index, 
