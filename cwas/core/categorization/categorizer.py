@@ -19,6 +19,7 @@ import pandas as pd
 
 from itertools import product
 from collections import defaultdict
+from cwas.core.categorization.category import Category
 
 # TODO: Improve the readability of this code
 class Categorizer:
@@ -95,13 +96,12 @@ class Categorizer:
             # Make combinations using the annotation terms
             for combination in product(
                 var_type_annots,
-                gene_list_annots,
                 cons_annots,
+                gene_list_annots,
                 effect_annots,
                 region_annots,
             ):
-                cwas_category = "_".join(combination)
-                result[cwas_category] += 1
+                result[Category(*combination)] += 1
 
         return result
 
