@@ -9,7 +9,7 @@ from cwas.core.categorization.parser import (
     parse_annotated_vcf,
     parse_gene_matrix,
 )
-from cwas.core.categorization.categorizer import categorize_variant
+from cwas.core.categorization.categorizer import Categorizer
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
 
@@ -105,10 +105,9 @@ class Categorization(Runnable):
         log.print_log("Notice", "Not implemented yet.")
 
     def categorize_vcf_for_each_sample(self):
+        categorizer = Categorizer(self.category_domain, self.gene_matrix)
         return [
-            categorize_variant(
-                sample_vcf, self.category_domain, self.gene_matrix
-            )
+            categorizer.categorize_variant(sample_vcf)
             for sample_vcf in self.annotated_vcf_split_by_sample
         ]
 
