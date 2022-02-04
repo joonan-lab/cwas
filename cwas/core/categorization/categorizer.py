@@ -33,12 +33,9 @@ class Categorizer:
         annot_terms_dict = {}
         annot_term_idx_dict = {}
 
-        for annot_group in self._category_domain:
-            annot_terms = list(self._category_domain[annot_group].keys())
+        for annot_group, annot_terms in self._category_domain.items():
             annot_terms_dict[annot_group] = annot_terms
-            annot_term_idx_dict[annot_group] = get_idx_dict(
-                annot_terms_dict[annot_group]
-            )
+            annot_term_idx_dict[annot_group] = get_idx_dict(annot_terms)
 
         # For annotating each variant with multiple annotation terms
         # from each group efficiently, "Annotation integer" (annot_int) is used.
@@ -100,11 +97,11 @@ class Categorizer:
                         for effect_annot in effect_annots:
                             for region_annot in region_annots:
                                 cwas_cat = (
-                                    f'{self._category_domain["var_type"][var_type_annot]}'
-                                    f'_{self._category_domain["gene_list"][gene_list_annot]}'
-                                    f'_{self._category_domain["cons"][cons_annot]}'
-                                    f'_{self._category_domain["effect"][effect_annot]}'
-                                    f'_{self._category_domain["region"][region_annot]}'
+                                    f"{var_type_annot}"
+                                    f"_{gene_list_annot}"
+                                    f"_{cons_annot}"
+                                    f"_{effect_annot}"
+                                    f"_{region_annot}"
                                 )
 
                                 if result.get(cwas_cat) is None:
