@@ -51,9 +51,7 @@ class Categorizer:
         # e.g. If a list of annotation terms is ['A', 'B', 'C'] and
         # the annotation integer is 0b101, it means that
         # the variant is annotated as 'A' and 'B'.
-        variant_type_annot_ints = annot_variant_type(
-            annotated_vcf, get_idx_dict(self._category_domains["variant_type"])
-        )
+        variant_type_annot_ints = self.annotate_variant_type(annotated_vcf)
         conservation_annot_ints = annot_conservation(
             annotated_vcf, get_idx_dict(self._category_domains["conservation"])
         )
@@ -104,32 +102,29 @@ class Categorizer:
                 ),
             )
 
+    def annotate_variant_type(self, annotated_vcf: pd.DataFrame) -> list:
+        variant_type_annotation_idx = get_idx_dict(
+            self._category_domains["variant_type"]
+        )
+        refs = annotated_vcf["REF"].values
+        alts = annotated_vcf["ALT"].values
+
+        is_snv_arr = (
+            (np.vectorize(len)(refs) == 1) & (np.vectorize(len)(alts) == 1)
+        ).astype(np.int32)
+        annotation_int_conv = (
+            lambda is_snv: 2 ** variant_type_annotation_idx["SNV"]
+            if is_snv
+            else 2 ** variant_type_annotation_idx["Indel"]
+        )
+        annotation_ints = np.vectorize(annotation_int_conv)(is_snv_arr)
+        annotation_ints += 2 ** variant_type_annotation_idx["All"]
+
+        return annotation_ints
+
 
 def get_idx_dict(list_: list) -> dict:
     return {item: i for i, item in enumerate(list_)}
-
-
-# Functions for annotation of the variants
-# The functions below make an annotation integer for each variant.
-# Step 1: Annotate by the types (e.g. SNV) of variants
-def annot_variant_type(
-    variant_df: pd.DataFrame, variant_type_annot_idx_dict: dict
-):
-    refs = variant_df["REF"].values
-    alts = variant_df["ALT"].values
-
-    is_snv_arr = (
-        (np.vectorize(len)(refs) == 1) & (np.vectorize(len)(alts) == 1)
-    ).astype(np.int32)
-    annot_int_conv = (
-        lambda is_snv: 2 ** variant_type_annot_idx_dict["SNV"]
-        if is_snv
-        else 2 ** variant_type_annot_idx_dict["Indel"]
-    )
-    annot_ints = np.vectorize(annot_int_conv)(is_snv_arr)
-    annot_ints += 2 ** variant_type_annot_idx_dict["All"]
-
-    return annot_ints
 
 
 # Step 2: Annotate by conservationervation scores
