@@ -52,9 +52,7 @@ class Categorizer:
         # the annotation integer is 0b101, it means that
         # the variant is annotated as 'A' and 'B'.
         variant_type_annot_ints = self.annotate_variant_type(annotated_vcf)
-        conservation_annot_ints = annot_conservation(
-            annotated_vcf, get_idx_dict(self._category_domains["conservation"])
-        )
+        conservation_annot_ints = self.annotate_conservation(annotated_vcf)
         gene_list_annot_ints = annot_gene_list(
             annotated_vcf,
             get_idx_dict(self._category_domains["gene_list"]),
@@ -122,47 +120,46 @@ class Categorizer:
 
         return annotation_ints
 
+    def annotate_conservation(self, annotated_vcf: pd.DataFrame) -> list:
+        conservation_annotation_idx = get_idx_dict(
+            self._category_domains["conservation"]
+        )
+        phylop_conv_func = (
+            lambda x: -2.0 if x == "" else max(map(float, x.split("&")))
+        )
+        phast_conv_func = (
+            lambda x: 0.0 if x == "" else max(map(float, x.split("&")))
+        )
+
+        phylop_scores = np.vectorize(phylop_conv_func)(
+            annotated_vcf["phyloP46wayVt"].values
+        )
+        phast_scores = np.vectorize(phast_conv_func)(
+            annotated_vcf["phastCons46wayVt"].values
+        )
+
+        is_phylop_conservation_arr = (phylop_scores >= 2.0).astype(np.int32)
+        is_phast_conservation_arr = (phast_scores >= 0.2).astype(np.int32)
+
+        annotation_ints = np.vectorize(
+            lambda is_phylop_conservation: 2
+            ** conservation_annotation_idx["phyloP46wayVt"]
+            if is_phylop_conservation
+            else 0
+        )(is_phylop_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_phast_conservation: 2
+            ** conservation_annotation_idx["phastCons46wayVt"]
+            if is_phast_conservation
+            else 0
+        )(is_phast_conservation_arr)
+        annotation_ints += 2 ** conservation_annotation_idx["All"]
+
+        return annotation_ints
+
 
 def get_idx_dict(list_: list) -> dict:
     return {item: i for i, item in enumerate(list_)}
-
-
-# Step 2: Annotate by conservationervation scores
-def annot_conservation(
-    variant_df: pd.DataFrame, conservation_annot_idx_dict: dict
-):
-    phylop_conv_func = (
-        lambda x: -2.0 if x == "" else max(map(float, x.split("&")))
-    )
-    phast_conv_func = (
-        lambda x: 0.0 if x == "" else max(map(float, x.split("&")))
-    )
-
-    phylop_scores = np.vectorize(phylop_conv_func)(
-        variant_df["phyloP46wayVt"].values
-    )
-    phast_scores = np.vectorize(phast_conv_func)(
-        variant_df["phastCons46wayVt"].values
-    )
-
-    is_phylop_conservation_arr = (phylop_scores >= 2.0).astype(np.int32)
-    is_phast_conservation_arr = (phast_scores >= 0.2).astype(np.int32)
-
-    annot_ints = np.vectorize(
-        lambda is_phylop_conservation: 2
-        ** conservation_annot_idx_dict["phyloP46wayVt"]
-        if is_phylop_conservation
-        else 0
-    )(is_phylop_conservation_arr)
-    annot_ints += np.vectorize(
-        lambda is_phast_conservation: 2
-        ** conservation_annot_idx_dict["phastCons46wayVt"]
-        if is_phast_conservation
-        else 0
-    )(is_phast_conservation_arr)
-    annot_ints += 2 ** conservation_annot_idx_dict["All"]
-
-    return annot_ints
 
 
 # Step 3: Annotate by the names of the gene lists
