@@ -55,9 +55,7 @@ class Categorizer:
         conservation_annot_ints = self.annotate_conservation(annotated_vcf)
         gene_list_annot_ints = self.annotate_gene_list(annotated_vcf)
         gencode_annot_ints = self.annotate_gencode(annotated_vcf)
-        region_annot_ints = annot_region(
-            annotated_vcf, get_idx_dict(self._category_domains["region"])
-        )
+        region_annot_ints = self.annotate_region(annotated_vcf)
 
         for (
             variant_type_annot_int,
@@ -313,26 +311,29 @@ class Categorizer:
 
         return annotation_ints
 
+    def annotate_region(self, annotated_vcf: pd.DataFrame) -> list:
+        region_annotation_idx = get_idx_dict(self._category_domain["region"])
+        annotation_ints = np.zeros(len(annotated_vcf.index), dtype=int)
+
+        for region in region_annotation_idx:
+            if region == "Any":
+                continue
+
+            region_vals = annotated_vcf[region].values.astype(np.int32)
+            annotation_int_conv_func = (
+                lambda x: 2 ** region_annotation_idx[region] * x
+            )
+            annotation_ints += np.vectorize(annotation_int_conv_func)(
+                region_vals
+            )
+
+        annotation_ints += 2 ** region_annotation_idx["Any"]
+
+        return annotation_ints
+
 
 def get_idx_dict(list_: list) -> dict:
     return {item: i for i, item in enumerate(list_)}
-
-
-# Step 5: Annotate by the annotation terms of the regions where the variants are
-def annot_region(variant_df: pd.DataFrame, region_annot_idx_dict: dict):
-    annot_ints = np.zeros(len(variant_df.index), dtype=int)
-
-    for region in region_annot_idx_dict:
-        if region == "Any":
-            continue
-
-        region_vals = variant_df[region].values.astype(np.int32)
-        annot_int_conv_func = lambda x: 2 ** region_annot_idx_dict[region] * x
-        annot_ints += np.vectorize(annot_int_conv_func)(region_vals)
-
-    annot_ints += 2 ** region_annot_idx_dict["Any"]
-
-    return annot_ints
 
 
 def parse_annot_int(annot_int: int, all_annot_terms: list) -> list:
