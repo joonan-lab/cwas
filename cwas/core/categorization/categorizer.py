@@ -54,35 +54,37 @@ class Categorizer:
         the annotation integer is 0b1011, it means that
         the variant is annotated as 'A', 'B' and 'D'.
         """
-        variant_type_annot_ints = self.annotate_variant_type(annotated_vcf)
-        conservation_annot_ints = self.annotate_conservation(annotated_vcf)
-        gene_list_annot_ints = self.annotate_gene_list(annotated_vcf)
-        gencode_annot_ints = self.annotate_gencode(annotated_vcf)
-        region_annot_ints = self.annotate_region(annotated_vcf)
+        variant_type_annotation_ints = self.annotate_variant_type(annotated_vcf)
+        conservation_annotation_ints = self.annotate_conservation(annotated_vcf)
+        gene_list_annotation_ints = self.annotate_gene_list(annotated_vcf)
+        gencode_annotation_ints = self.annotate_gencode(annotated_vcf)
+        region_annotation_ints = self.annotate_region(annotated_vcf)
 
         for (
-            variant_type_annot_int,
-            conservation_annot_int,
-            gene_list_annot_int,
-            gencode_annot_int,
-            region_annot_int,
+            variant_type_annotation_int,
+            conservation_annotation_int,
+            gene_list_annotation_int,
+            gencode_annotation_int,
+            region_annotation_int,
         ) in zip(
-            variant_type_annot_ints,
-            conservation_annot_ints,
-            gene_list_annot_ints,
-            gencode_annot_ints,
-            region_annot_ints,
+            variant_type_annotation_ints,
+            conservation_annotation_ints,
+            gene_list_annotation_ints,
+            gencode_annotation_ints,
+            region_annotation_ints,
         ):
             yield (
                 self.parse_annotation_int(
-                    variant_type_annot_int, "variant_type",
+                    variant_type_annotation_int, "variant_type",
                 ),
                 self.parse_annotation_int(
-                    conservation_annot_int, "conservation",
+                    conservation_annotation_int, "conservation",
                 ),
-                self.parse_annotation_int(gene_list_annot_int, "gene_list"),
-                self.parse_annotation_int(gencode_annot_int, "gencode"),
-                self.parse_annotation_int(region_annot_int, "region"),
+                self.parse_annotation_int(
+                    gene_list_annotation_int, "gene_list"
+                ),
+                self.parse_annotation_int(gencode_annotation_int, "gencode"),
+                self.parse_annotation_int(region_annotation_int, "region"),
             )
 
     def annotate_variant_type(self, annotated_vcf: pd.DataFrame) -> list:
