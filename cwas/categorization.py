@@ -5,11 +5,11 @@ import pandas as pd
 import yaml
 
 import cwas.utils.log as log
+from cwas.core.categorization.categorizer import Categorizer
 from cwas.core.categorization.parser import (
     parse_annotated_vcf,
     parse_gene_matrix,
 )
-from cwas.core.categorization.categorizer import Categorizer
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
 
