@@ -53,11 +53,7 @@ class Categorizer:
         # the variant is annotated as 'A' and 'B'.
         variant_type_annot_ints = self.annotate_variant_type(annotated_vcf)
         conservation_annot_ints = self.annotate_conservation(annotated_vcf)
-        gene_list_annot_ints = annot_gene_list(
-            annotated_vcf,
-            get_idx_dict(self._category_domains["gene_list"]),
-            self._gene_matrix,
-        )
+        gene_list_annot_ints = self.annotate_gene_list(annotated_vcf)
         gencode_annot_ints = annot_gencode(
             annotated_vcf,
             get_idx_dict(self._category_domains["gencode"]),
@@ -157,50 +153,48 @@ class Categorizer:
 
         return annotation_ints
 
+    def annotate_gene_list(self, annotated_vcf: pd.DataFrame) -> list:
+        gene_list_annotation_idx = get_idx_dict(
+            self._category_domain["gene_list"]
+        )
+        gene_symbols = annotated_vcf["SYMBOL"].values
+        gene_nearests = annotated_vcf["NEAREST"].values
+        gencodes = annotated_vcf["Consequence"].values  # GENCODE annotations
+
+        annotation_int_list = []
+        annotation_int_dict = {}
+
+        for symbol, nearest, gencode in zip(
+            gene_symbols, gene_nearests, gencodes
+        ):
+            gene = (
+                nearest
+                if "downstream_gene_variant" in gencode
+                or "intergenic_variant" in gencode
+                else symbol
+            )
+            annotation_int = annotation_int_dict.get(gene, 0)
+
+            if annotation_int == 0:
+                gene_list_set = self._gene_matrix.get(gene, set())
+
+                if gene_list_set:
+                    for gene_cat in gene_list_annotation_idx:
+                        if gene_cat in gene_list_set:
+                            annotation_int += (
+                                2 ** gene_list_annotation_idx[gene_cat]
+                            )
+
+            annotation_int_list.append(annotation_int)
+
+        annotation_ints = np.asarray(annotation_int_list)
+        annotation_ints += 2 ** gene_list_annotation_idx["Any"]
+
+        return annotation_ints
+
 
 def get_idx_dict(list_: list) -> dict:
     return {item: i for i, item in enumerate(list_)}
-
-
-# Step 3: Annotate by the names of the gene lists
-#         where the variant-associated genes are involved
-def annot_gene_list(
-    variant_df: pd.DataFrame,
-    gene_annot_idx_dict: dict,
-    gene_list_set_dict: dict,
-):
-    gene_symbols = variant_df["SYMBOL"].values
-    gene_nearests = variant_df["NEAREST"].values
-    gencodes = variant_df["Consequence"].values  # GENCODE annotations
-
-    annot_int_list = []
-    annot_int_dict = (
-        {}
-    )  # Key: a gene symbol, Value: its category integer (For memorization)
-
-    for symbol, nearest, gencode in zip(gene_symbols, gene_nearests, gencodes):
-        gene = (
-            nearest
-            if "downstream_gene_variant" in gencode
-            or "intergenic_variant" in gencode
-            else symbol
-        )
-        annot_int = annot_int_dict.get(gene, 0)
-
-        if annot_int == 0:
-            gene_list_set = gene_list_set_dict.get(gene, set())
-
-            if gene_list_set:
-                for gene_cat in gene_annot_idx_dict:
-                    if gene_cat in gene_list_set:
-                        annot_int += 2 ** gene_annot_idx_dict[gene_cat]
-
-        annot_int_list.append(annot_int)
-
-    annot_ints = np.asarray(annot_int_list)
-    annot_ints += 2 ** gene_annot_idx_dict["Any"]
-
-    return annot_ints
 
 
 # Step 4: Annotate by the gencodes (GENCODE annotations)
