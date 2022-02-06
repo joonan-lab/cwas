@@ -95,7 +95,12 @@ class Categorization(Runnable):
 
     @property
     def categorizer(self) -> Categorizer:
-        return Categorizer(self.category_domain, self.gene_matrix)
+        categorizer = Categorizer(self.category_domain, self.gene_matrix)
+        categorizer.phastcons_cutoff = self.annotation_bw_cutoff[
+            "phastCons46way"
+        ]
+        categorizer.phylop_cutoff = self.annotation_bw_cutoff["phyloP46way"]
+        return categorizer
 
     @property
     def annotated_vcf_groupby_sample(self):
