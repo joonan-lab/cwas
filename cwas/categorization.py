@@ -20,6 +20,7 @@ class Categorization(Runnable):
         self._annotated_vcf = None
         self._gene_matrix = None
         self._category_domain = None
+        self._annotation_bw_cutoff = None
         self._annotated_vcf_groupby_sample = None
         self._sample_ids = None
 
@@ -79,6 +80,18 @@ class Categorization(Runnable):
             with Path(self.get_env("CATEGORY_DOMAIN")) as category_domain_file:
                 self._category_domain = yaml.safe_load(category_domain_file)
         return self._category_domain
+
+    @property
+    def annotation_bw_cutoff(self) -> dict:
+        if self._annotation_bw_cutoff is None:
+            log.print_progress("Load the annotation BigWig cutoff")
+            with Path(
+                self.get_env("ANNOTATION_BW_CUTOFF")
+            ) as annotation_bw_cutoff_file:
+                self._annotation_bw_cutoff = yaml.safe_load(
+                    annotation_bw_cutoff_file
+                )
+        return self._annotation_bw_cutoff
 
     @property
     def categorizer(self) -> Categorizer:
