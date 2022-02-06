@@ -14,12 +14,13 @@ There are currently 5 groups of annotation terms.
     5. Functional annotation categories (region)
 
 """
+from collections import defaultdict
+from itertools import product
+
 import numpy as np
 import pandas as pd
-
-from itertools import product
-from collections import defaultdict
 from cwas.core.categorization.category import Category
+from cwas.core.categorization.utils import extract_sublist_by_int, get_idx_dict
 
 
 class Categorizer:
@@ -331,21 +332,3 @@ class Categorizer:
         return extract_sublist_by_int(
             self._category_domain[annotation_term_type], annotation_int
         )
-
-
-def get_idx_dict(list_: list) -> dict:
-    return {item: i for i, item in enumerate(list_)}
-
-
-def extract_sublist_by_int(list_: list, n: int) -> list:
-    """Get a sublist from the input list by using the input integer"""
-    i = 0
-    result = []
-
-    while n != 0:
-        if n % 2 == 1:
-            result.append(list_[i])
-        n >>= 1
-        i += 1
-
-    return result
