@@ -328,20 +328,24 @@ class Categorizer:
         """ Parse the annotation integer and  
         choose the appropriate subset from the specific annotation terms.
         """
-        idx = 0
-        annotation_terms = []
-
-        while annotation_int != 0:
-            if annotation_int % 2 == 1:
-                annotation_terms.append(
-                    self._category_domain[annotation_term_type][idx]
-                )
-            annotation_int >>= 1
-            idx += 1
-
-        return annotation_terms
+        return extract_sublist_by_int(
+            self._category_domain[annotation_term_type], annotation_int
+        )
 
 
 def get_idx_dict(list_: list) -> dict:
     return {item: i for i, item in enumerate(list_)}
 
+
+def extract_sublist_by_int(list_: list, n: int) -> list:
+    """Get a sublist from the input list by using the input integer"""
+    i = 0
+    result = []
+
+    while n != 0:
+        if n % 2 == 1:
+            result.append(list_[i])
+        n >>= 1
+        i += 1
+
+    return result
