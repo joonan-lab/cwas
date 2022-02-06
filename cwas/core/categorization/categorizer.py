@@ -21,19 +21,13 @@ from itertools import product
 from collections import defaultdict
 from cwas.core.categorization.category import Category
 
-# TODO: Improve the readability of this code
+
 class Categorizer:
     def __init__(self, category_domain: dict, gene_matrix: dict) -> None:
         self._category_domain = category_domain
         self._gene_matrix = gene_matrix
 
     def categorize_variant(self, annotated_vcf: pd.DataFrame):
-        """ Categorize the variants in the input data frame 
-        into the combinations of the annotation terms in the 5 groups
-        and return the dictionary that contains the distribution of the variants 
-        for the combinations. These combinations are defined as CWAS categories.
-        """
-        # Categorize by the annotation terms for each variant
         result = defaultdict(int)
 
         for annotation_term_lists in self.annotate_each_variant(annotated_vcf):
