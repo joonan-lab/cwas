@@ -54,11 +54,7 @@ class Categorizer:
         variant_type_annot_ints = self.annotate_variant_type(annotated_vcf)
         conservation_annot_ints = self.annotate_conservation(annotated_vcf)
         gene_list_annot_ints = self.annotate_gene_list(annotated_vcf)
-        gencode_annot_ints = annot_gencode(
-            annotated_vcf,
-            get_idx_dict(self._category_domains["gencode"]),
-            self._gene_matrix,
-        )
+        gencode_annot_ints = self.annotate_gencode(annotated_vcf)
         region_annot_ints = annot_region(
             annotated_vcf, get_idx_dict(self._category_domains["region"])
         )
@@ -192,117 +188,134 @@ class Categorizer:
 
         return annotation_ints
 
+    def annotate_gencode(self, annotated_vcf: pd.DataFrame) -> list:
+        gencode_annotation_idx = get_idx_dict(self._category_domains["gencode"])
+        gene_symbols = annotated_vcf["SYMBOL"].values
+        gene_nearests = annotated_vcf["NEAREST"].values
+        gencodes = annotated_vcf["Consequence"].values
+        polyphens = annotated_vcf["PolyPhen"].values
+
+        annotation_int_list = []
+
+        for symbol, nearest, gencode, polyphen in zip(
+            gene_symbols, gene_nearests, gencodes, polyphens
+        ):
+            gene = (
+                nearest
+                if "downstream_gene_variant" in gencode
+                or "intergenic_variant" in gencode
+                else symbol
+            )
+            gene_cat_set = self._gene_matrix.get(gene, set())
+            annotation_int = 0
+            is_in_coding = False
+
+            if "geneSet_Protein_Coding" in gene_cat_set:
+                is_in_coding = True
+                annotation_int += 2 ** gencode_annotation_idx["CodingRegion"]
+
+                # Coding region
+                if (
+                    "stop_gained" in gencode
+                    or "splice_donor" in gencode
+                    or "splice_acceptor" in gencode
+                ):
+                    annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
+                elif (
+                    "frameshift_variant" in gencode
+                    or "transcript_amplification" in gencode
+                    or "transcript_ablation" in gencode
+                ):
+                    annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["FrameshiftRegion"]
+                    )
+                elif (
+                    "missense_variant" in gencode
+                    or "start_lost" in gencode
+                    or "stop_lost" in gencode
+                ):
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["MissenseRegion"]
+                    )
+
+                    if "probably_damaging" in polyphen:
+                        annotation_int += (
+                            2
+                            ** gencode_annotation_idx[
+                                "MissenseHVARDRegionSimple"
+                            ]
+                        )
+
+                elif (
+                    "inframe_deletion" in gencode
+                    or "inframe_insertion" in gencode
+                ):
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["InFrameRegion"]
+                    )
+                elif "synonymous_variant" in gencode:
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["SilentRegion"]
+                    )
+                elif (
+                    "stop_retained_variant" not in gencode
+                    and "incomplete_terminal_codon_variant" not in gencode
+                    and "protein_altering_variant" not in gencode
+                    and "coding_sequence_variant" not in gencode
+                ):
+                    # Noncoding
+                    annotation_int = 0
+                    is_in_coding = False
+
+            if not is_in_coding:
+                annotation_int += 2 ** gencode_annotation_idx["NoncodingRegion"]
+
+                if "_UTR_" in gencode:
+                    annotation_int += 2 ** gencode_annotation_idx["UTRsRegion"]
+                elif "upstream_gene_variant" in gencode:
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["PromoterRegion"]
+                    )
+                elif "intron_variant" in gencode:
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["IntronRegion"]
+                    )
+                elif "splice_region_variant" in gencode:
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["SpliceSiteNoncanonRegion"]
+                    )
+                elif (
+                    "downstream_gene_variant" in gencode
+                    or "intergenic_variant" in gencode
+                ):
+                    annotation_int += (
+                        2 ** gencode_annotation_idx["IntergenicRegion"]
+                    )
+                elif "geneSet_Protein_Coding" not in gene_cat_set:
+                    if "geneSet_Antisense" in gene_cat_set:
+                        annotation_int += (
+                            2 ** gencode_annotation_idx["AntisenseRegion"]
+                        )
+                    elif "geneSet_lincRNA" in gene_cat_set:
+                        annotation_int += (
+                            2 ** gencode_annotation_idx["lincRnaRegion"]
+                        )
+                    else:
+                        annotation_int += (
+                            2 ** gencode_annotation_idx["OtherTranscriptRegion"]
+                        )
+
+            annotation_int_list.append(annotation_int)
+
+        annotation_ints = np.asarray(annotation_int_list)
+        annotation_ints += 2 ** gencode_annotation_idx["Any"]
+
+        return annotation_ints
+
 
 def get_idx_dict(list_: list) -> dict:
     return {item: i for i, item in enumerate(list_)}
-
-
-# Step 4: Annotate by the gencodes (GENCODE annotations)
-def annot_gencode(
-    variant_df: pd.DataFrame,
-    gencode_annot_idx_dict: dict,
-    gene_list_set_dict: dict,
-):
-    gene_symbols = variant_df["SYMBOL"].values
-    gene_nearests = variant_df["NEAREST"].values
-    gencodes = variant_df["Consequence"].values
-    polyphens = variant_df["PolyPhen"].values
-
-    annot_int_list = []
-
-    for symbol, nearest, gencode, polyphen in zip(
-        gene_symbols, gene_nearests, gencodes, polyphens
-    ):
-        gene = (
-            nearest
-            if "downstream_gene_variant" in gencode
-            or "intergenic_variant" in gencode
-            else symbol
-        )
-        gene_cat_set = gene_list_set_dict.get(gene, set())
-        annot_int = 0
-        is_in_coding = False
-
-        if "geneSet_Protein_Coding" in gene_cat_set:
-            is_in_coding = True
-            annot_int += 2 ** gencode_annot_idx_dict["CodingRegion"]
-
-            # Coding region
-            if (
-                "stop_gained" in gencode
-                or "splice_donor" in gencode
-                or "splice_acceptor" in gencode
-            ):
-                annot_int += 2 ** gencode_annot_idx_dict["LoFRegion"]
-            elif (
-                "frameshift_variant" in gencode
-                or "transcript_amplification" in gencode
-                or "transcript_ablation" in gencode
-            ):
-                annot_int += 2 ** gencode_annot_idx_dict["LoFRegion"]
-                annot_int += 2 ** gencode_annot_idx_dict["FrameshiftRegion"]
-            elif (
-                "missense_variant" in gencode
-                or "start_lost" in gencode
-                or "stop_lost" in gencode
-            ):
-                annot_int += 2 ** gencode_annot_idx_dict["MissenseRegion"]
-
-                if "probably_damaging" in polyphen:
-                    annot_int += (
-                        2 ** gencode_annot_idx_dict["MissenseHVARDRegionSimple"]
-                    )
-
-            elif (
-                "inframe_deletion" in gencode or "inframe_insertion" in gencode
-            ):
-                annot_int += 2 ** gencode_annot_idx_dict["InFrameRegion"]
-            elif "synonymous_variant" in gencode:
-                annot_int += 2 ** gencode_annot_idx_dict["SilentRegion"]
-            elif (
-                "stop_retained_variant" not in gencode
-                and "incomplete_terminal_codon_variant" not in gencode
-                and "protein_altering_variant" not in gencode
-                and "coding_sequence_variant" not in gencode
-            ):
-                # Noncoding
-                annot_int = 0
-                is_in_coding = False
-
-        if not is_in_coding:
-            annot_int += 2 ** gencode_annot_idx_dict["NoncodingRegion"]
-
-            if "_UTR_" in gencode:
-                annot_int += 2 ** gencode_annot_idx_dict["UTRsRegion"]
-            elif "upstream_gene_variant" in gencode:
-                annot_int += 2 ** gencode_annot_idx_dict["PromoterRegion"]
-            elif "intron_variant" in gencode:
-                annot_int += 2 ** gencode_annot_idx_dict["IntronRegion"]
-            elif "splice_region_variant" in gencode:
-                annot_int += (
-                    2 ** gencode_annot_idx_dict["SpliceSiteNoncanonRegion"]
-                )
-            elif (
-                "downstream_gene_variant" in gencode
-                or "intergenic_variant" in gencode
-            ):
-                annot_int += 2 ** gencode_annot_idx_dict["IntergenicRegion"]
-            elif "geneSet_Protein_Coding" not in gene_cat_set:
-                if "geneSet_Antisense" in gene_cat_set:
-                    annot_int += 2 ** gencode_annot_idx_dict["AntisenseRegion"]
-                elif "geneSet_lincRNA" in gene_cat_set:
-                    annot_int += 2 ** gencode_annot_idx_dict["lincRnaRegion"]
-                else:
-                    annot_int += (
-                        2 ** gencode_annot_idx_dict["OtherTranscriptRegion"]
-                    )
-
-        annot_int_list.append(annot_int)
-
-    annot_ints = np.asarray(annot_int_list)
-    annot_ints += 2 ** gencode_annot_idx_dict["Any"]
-
-    return annot_ints
 
 
 # Step 5: Annotate by the annotation terms of the regions where the variants are
