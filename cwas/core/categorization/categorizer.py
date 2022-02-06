@@ -114,10 +114,10 @@ class Categorizer:
         )
 
         phylop_scores = np.vectorize(phylop_conv_func)(
-            annotated_vcf["phyloP46wayVt"].values
+            annotated_vcf["phyloP46way"].values
         )
         phast_scores = np.vectorize(phast_conv_func)(
-            annotated_vcf["phastCons46wayVt"].values
+            annotated_vcf["phastCons46way"].values
         )
 
         is_phylop_conservation_arr = (phylop_scores >= 2.0).astype(np.int32)
@@ -125,13 +125,13 @@ class Categorizer:
 
         annotation_ints = np.vectorize(
             lambda is_phylop_conservation: 2
-            ** conservation_annotation_idx["phyloP46wayVt"]
+            ** conservation_annotation_idx["phyloP46way"]
             if is_phylop_conservation
             else 0
         )(is_phylop_conservation_arr)
         annotation_ints += np.vectorize(
             lambda is_phast_conservation: 2
-            ** conservation_annotation_idx["phastCons46wayVt"]
+            ** conservation_annotation_idx["phastCons46way"]
             if is_phast_conservation
             else 0
         )(is_phast_conservation_arr)
