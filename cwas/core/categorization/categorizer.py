@@ -27,6 +27,26 @@ class Categorizer:
     def __init__(self, category_domain: dict, gene_matrix: dict) -> None:
         self._category_domain = category_domain
         self._gene_matrix = gene_matrix
+        self._default_phylop = -2.0
+        self._default_phastcons = 0.0
+        self._phylop_cutoff = 2.0
+        self._phastcons_cutoff = 0.2
+
+    @property
+    def phylop_cutoff(self):
+        return self._phylop_cutoff
+
+    @phylop_cutoff.setter
+    def phylop_cutoff(self, value):
+        self._phylop_cutoff = value
+
+    @property
+    def phastcons_cutoff(self):
+        return self._phastcons_cutoff
+
+    @phastcons_cutoff.setter
+    def phastcons_cutoff(self, value):
+        self._phastcons_cutoff = value
 
     def categorize_variant(self, annotated_vcf: pd.DataFrame):
         result = defaultdict(int)
@@ -107,10 +127,14 @@ class Categorizer:
             self._category_domains["conservation"]
         )
         phylop_conv_func = (
-            lambda x: -2.0 if x == "" else max(map(float, x.split("&")))
+            lambda x: self._default_phylop
+            if x == ""
+            else max(map(float, x.split("&")))
         )
         phast_conv_func = (
-            lambda x: 0.0 if x == "" else max(map(float, x.split("&")))
+            lambda x: self._default_phastcons
+            if x == ""
+            else max(map(float, x.split("&")))
         )
 
         phylop_scores = np.vectorize(phylop_conv_func)(
@@ -120,8 +144,12 @@ class Categorizer:
             annotated_vcf["phastCons46way"].values
         )
 
-        is_phylop_conservation_arr = (phylop_scores >= 2.0).astype(np.int32)
-        is_phast_conservation_arr = (phast_scores >= 0.2).astype(np.int32)
+        is_phylop_conservation_arr = (
+            phylop_scores >= self._phylop_cutoff
+        ).astype(np.int32)
+        is_phast_conservation_arr = (
+            phast_scores >= self._phastcons_cutoff
+        ).astype(np.int32)
 
         annotation_ints = np.vectorize(
             lambda is_phylop_conservation: 2
