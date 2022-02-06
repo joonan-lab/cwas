@@ -43,14 +43,17 @@ class Categorizer:
         return result
 
     def annotate_each_variant(self, annotated_vcf):
-        """Newly annotated each variant using CWAS annotation terms"""
-        # For annotating each variant with multiple annotation terms
-        # from each group efficiently, "Annotation integer" is used.
-        # Annotation integer: A bitwise representation of the annotation
-        # of each variant where each bit means each annotation term
-        # e.g. If a list of annotation terms is ['A', 'B', 'C'] and
-        # the annotation integer is 0b101, it means that
-        # the variant is annotated as 'A' and 'B'.
+        """Newly annotated each variant using CWAS annotation terms. 
+        In order to annotate each variant with multiple annotation terms
+        from each group efficiently, "Annotation integer" has defined.
+
+        Annotation integer: A bitwise representation of the annotation
+        of each variant where each bit means each annotation term
+
+        e.g. If the annotation terms is ['A', 'B', 'C', 'D'] and
+        the annotation integer is 0b1011, it means that
+        the variant is annotated as 'A', 'B' and 'D'.
+        """
         variant_type_annot_ints = self.annotate_variant_type(annotated_vcf)
         conservation_annot_ints = self.annotate_conservation(annotated_vcf)
         gene_list_annot_ints = self.annotate_gene_list(annotated_vcf)
