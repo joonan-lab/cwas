@@ -71,23 +71,15 @@ class Categorizer:
             region_annot_ints,
         ):
             yield (
-                parse_annot_int(
-                    variant_type_annot_int,
-                    self._category_domains["variant_type"],
+                self.parse_annotation_int(
+                    variant_type_annot_int, "variant_type",
                 ),
-                parse_annot_int(
-                    conservation_annot_int,
-                    self._category_domains["conservation"],
+                self.parse_annotation_int(
+                    conservation_annot_int, "conservation",
                 ),
-                parse_annot_int(
-                    gene_list_annot_int, self._category_domains["gene_list"]
-                ),
-                parse_annot_int(
-                    gencode_annot_int, self._category_domains["gencode"]
-                ),
-                parse_annot_int(
-                    region_annot_int, self._category_domains["region"]
-                ),
+                self.parse_annotation_int(gene_list_annot_int, "gene_list"),
+                self.parse_annotation_int(gencode_annot_int, "gencode"),
+                self.parse_annotation_int(region_annot_int, "region"),
             )
 
     def annotate_variant_type(self, annotated_vcf: pd.DataFrame) -> list:
@@ -331,23 +323,26 @@ class Categorizer:
 
         return annotation_ints
 
+    def parse_annotation_int(
+        self, annotation_int: int, annotation_term_type: str
+    ) -> list:
+        """ Parse the annotation integer and  
+        choose the appropriate subset from the specific annotation terms.
+        """
+        idx = 0
+        annotation_terms = []
+
+        while annotation_int != 0:
+            if annotation_int % 2 == 1:
+                annotation_terms.append(
+                    self._category_domain[annotation_term_type][idx]
+                )
+            annotation_int >>= 1
+            idx += 1
+
+        return annotation_terms
+
 
 def get_idx_dict(list_: list) -> dict:
     return {item: i for i, item in enumerate(list_)}
 
-
-def parse_annot_int(annot_int: int, all_annot_terms: list) -> list:
-    """ From the list of annotation terms, 
-    choose the appropriate subset by parsing the annotation integer.
-    """
-    annot_idx = 0
-    annot_terms = []
-
-    while annot_int != 0:
-        if annot_int % 2 == 1:
-            annot_terms.append(all_annot_terms[annot_idx])
-
-        annot_int >>= 1
-        annot_idx += 1
-
-    return annot_terms
