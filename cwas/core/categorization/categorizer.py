@@ -33,8 +33,19 @@ class Categorizer:
         and return the dictionary that contains the distribution of the variants 
         for the combinations. These combinations are defined as CWAS categories.
         """
+        # Categorize by the annotation terms for each variant
+        result = defaultdict(int)
+
+        for annotation_term_lists in self.annotate_each_variant(annotated_vcf):
+            for combination in product(*annotation_term_lists):
+                result[Category(*combination)] += 1
+
+        return result
+
+    def annotate_each_variant(self, annotated_vcf):
+        """Newly annotated each variant using CWAS annotation terms"""
         # For annotating each variant with multiple annotation terms
-        # from each group efficiently, "Annotation integer" (annot_int) is used.
+        # from each group efficiently, "Annotation integer" is used.
         # Annotation integer: A bitwise representation of the annotation
         # of each variant where each bit means each annotation term
         # e.g. If a list of annotation terms is ['A', 'B', 'C'] and
@@ -60,9 +71,6 @@ class Categorizer:
             annotated_vcf, get_idx_dict(self._category_domains["region"])
         )
 
-        # Categorize by the annotation terms for each variant
-        result = defaultdict(int)
-
         for (
             variant_type_annot_int,
             conservation_annot_int,
@@ -76,33 +84,25 @@ class Categorizer:
             gencode_annot_ints,
             region_annot_ints,
         ):
-            variant_type_annots = parse_annot_int(
-                variant_type_annot_int, self._category_domains["variant_type"]
+            yield (
+                parse_annot_int(
+                    variant_type_annot_int,
+                    self._category_domains["variant_type"],
+                ),
+                parse_annot_int(
+                    conservation_annot_int,
+                    self._category_domains["conservation"],
+                ),
+                parse_annot_int(
+                    gene_list_annot_int, self._category_domains["gene_list"]
+                ),
+                parse_annot_int(
+                    gencode_annot_int, self._category_domains["gencode"]
+                ),
+                parse_annot_int(
+                    region_annot_int, self._category_domains["region"]
+                ),
             )
-            conservation_annots = parse_annot_int(
-                conservation_annot_int, self._category_domains["conservation"]
-            )
-            gene_list_annots = parse_annot_int(
-                gene_list_annot_int, self._category_domains["gene_list"]
-            )
-            gencode_annots = parse_annot_int(
-                gencode_annot_int, self._category_domains["gencode"]
-            )
-            region_annots = parse_annot_int(
-                region_annot_int, self._category_domains["region"]
-            )
-
-            # Make combinations using the annotation terms
-            for combination in product(
-                variant_type_annots,
-                conservation_annots,
-                gene_list_annots,
-                gencode_annots,
-                region_annots,
-            ):
-                result[Category(*combination)] += 1
-
-        return result
 
 
 def get_idx_dict(list_: list) -> dict:
