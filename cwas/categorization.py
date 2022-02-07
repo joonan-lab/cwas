@@ -132,24 +132,26 @@ class Categorization(Runnable):
         self.categorize_vcf()
         self.save_result()
         self.update_env()
+        log.print_progress("Done")
 
     def categorize_vcf(self):
-        log.print_progress("Categorize variants of the annotated VCF")
-        self._result = pd.DataFrame(
-            self.categorize_vcf_for_each_sample()
-        ).fillna(0)
+        results_each_sample = self.categorize_vcf_for_each_sample()
+        log.print_progress("Organize the results")
+        self._result = pd.DataFrame(results_each_sample).fillna(0)
         self._result = self._result.astype(int)
         self._result["SAMPLE"] = self.sample_ids
         self._result.set_index("SAMPLE", inplace=True)
 
     def categorize_vcf_for_each_sample(self):
-        return [
-            self.categorizer.categorize_variant(sample_vcf)
-            for sample_vcf in self.annotated_vcf_split_by_sample
-        ]
+        result = []
+        for i, sample_vcf in enumerate(self.annotated_vcf_split_by_sample, 1):
+            if i % 100 == 0:
+                log.print_progress(f"Categorize variants of {i} samples")
+            result.append(self.categorizer.categorize_variant(sample_vcf))
+        return result
 
     def save_result(self):
-        log.print_progress(f"Save the result as the file {self.result_path}")
+        log.print_progress(f"Save the result to the file {self.result_path}")
         self._result.to_csv(self.result_path, sep="\t")
 
     def update_env(self):
