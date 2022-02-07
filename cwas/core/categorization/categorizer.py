@@ -93,10 +93,10 @@ class Categorizer:
                     variant_type_annotation_int, "variant_type",
                 ),
                 self.parse_annotation_int(
-                    conservation_annotation_int, "conservation",
+                    gene_list_annotation_int, "gene_list"
                 ),
                 self.parse_annotation_int(
-                    gene_list_annotation_int, "gene_list"
+                    conservation_annotation_int, "conservation",
                 ),
                 self.parse_annotation_int(gencode_annotation_int, "gencode"),
                 self.parse_annotation_int(region_annotation_int, "region"),
