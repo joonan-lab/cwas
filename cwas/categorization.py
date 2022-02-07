@@ -26,7 +26,10 @@ class Categorization(Runnable):
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(description=__doc__)
+        parser = argparse.ArgumentParser(
+            description="Arguments of CWAS categorization step",
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        )
         parser.add_argument(
             "-p",
             "--num_proc",
