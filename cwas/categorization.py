@@ -1,4 +1,6 @@
 import argparse
+from functools import reduce
+from itertools import product
 from pathlib import Path
 
 import pandas as pd
@@ -128,8 +130,43 @@ class Categorization(Runnable):
             for sample_id in self.sample_ids
         ]
 
+    @property
+    def redundant_categories(self) -> set:
+        log.print_progress("Generate a set of redundant categories")
+        redundant_category_table = pd.read_table(
+            self.get_env("REDUNDANT_CATEGORY")
+        )
+        return reduce(
+            lambda x, y: x.union(y),
+            [
+                self._parse_redundant_category_table_row(row)
+                for _, row in redundant_category_table.iterrows()
+            ],
+            set(),
+        )
+
+    def _parse_redundant_category_table_row(self, row: pd.Series) -> list:
+        annotation_term_lists = {}
+        for k, v in row.items():
+            if v == "*":
+                annotation_term_lists[k] = self._category_domain[k]
+            else:
+                annotation_term_lists[k] = [v]
+
+        return {
+            "_".join(combination)
+            for combination in product(
+                annotation_term_lists["variant_type"],
+                annotation_term_lists["gene_list"],
+                annotation_term_lists["conservation"],
+                annotation_term_lists["gencode"],
+                annotation_term_lists["region"],
+            )
+        }
+
     def run(self):
         self.categorize_vcf()
+        self.remove_redundant_category()
         self.save_result()
         self.update_env()
         log.print_progress("Done")
@@ -141,6 +178,19 @@ class Categorization(Runnable):
         self._result = self._result.astype(int)
         self._result["SAMPLE"] = self.sample_ids
         self._result.set_index("SAMPLE", inplace=True)
+
+    def remove_redundant_category(self):
+        log.print_progress("Remove redundant categories from the result")
+        self._result.drop(
+            self.redundant_categories,
+            axis="columns",
+            inplace=True,
+            errors="ignore",
+        )
+        log.print_progress(
+            f"{len(self._result.columns):,d} non-redundant categories "
+            f"have remained"
+        )
 
     def categorize_vcf_for_each_sample(self):
         result = []
