@@ -104,7 +104,7 @@ class Categorizer:
 
     def annotate_variant_type(self, annotated_vcf: pd.DataFrame) -> list:
         variant_type_annotation_idx = get_idx_dict(
-            self._category_domains["variant_type"]
+            self._category_domain["variant_type"]
         )
         refs = annotated_vcf["REF"].values
         alts = annotated_vcf["ALT"].values
@@ -124,7 +124,7 @@ class Categorizer:
 
     def annotate_conservation(self, annotated_vcf: pd.DataFrame) -> list:
         conservation_annotation_idx = get_idx_dict(
-            self._category_domains["conservation"]
+            self._category_domain["conservation"]
         )
         phylop_conv_func = (
             lambda x: self._default_phylop
@@ -207,7 +207,7 @@ class Categorizer:
         return annotation_ints
 
     def annotate_gencode(self, annotated_vcf: pd.DataFrame) -> list:
-        gencode_annotation_idx = get_idx_dict(self._category_domains["gencode"])
+        gencode_annotation_idx = get_idx_dict(self._category_domain["gencode"])
         gene_symbols = annotated_vcf["SYMBOL"].values
         gene_nearests = annotated_vcf["NEAREST"].values
         gencodes = annotated_vcf["Consequence"].values
