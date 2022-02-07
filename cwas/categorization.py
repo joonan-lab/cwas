@@ -80,7 +80,9 @@ class Categorization(Runnable):
     def category_domain(self) -> dict:
         if self._category_domain is None:
             log.print_progress("Load the category domain")
-            with Path(self.get_env("CATEGORY_DOMAIN")) as category_domain_file:
+            with Path(self.get_env("CATEGORY_DOMAIN")).open(
+                "r"
+            ) as category_domain_file:
                 self._category_domain = yaml.safe_load(category_domain_file)
         return self._category_domain
 
@@ -88,8 +90,8 @@ class Categorization(Runnable):
     def annotation_bw_cutoff(self) -> dict:
         if self._annotation_bw_cutoff is None:
             log.print_progress("Load the annotation BigWig cutoff")
-            with Path(
-                self.get_env("ANNOTATION_BW_CUTOFF")
+            with Path(self.get_env("ANNOTATION_BW_CUTOFF")).open(
+                "r"
             ) as annotation_bw_cutoff_file:
                 self._annotation_bw_cutoff = yaml.safe_load(
                     annotation_bw_cutoff_file
