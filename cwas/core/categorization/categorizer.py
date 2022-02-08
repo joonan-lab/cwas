@@ -224,11 +224,11 @@ class Categorizer:
                 or "intergenic_variant" in gencode
                 else symbol
             )
-            gene_cat_set = self._gene_matrix.get(gene, set())
+            gene_list_set = self._gene_matrix.get(gene, set())
             annotation_int = 0
             is_in_coding = False
 
-            if "geneSet_Protein_Coding" in gene_cat_set:
+            if "ProteinCoding" in gene_list_set:
                 is_in_coding = True
                 annotation_int += 2 ** gencode_annotation_idx["CodingRegion"]
 
@@ -310,12 +310,12 @@ class Categorizer:
                     annotation_int += (
                         2 ** gencode_annotation_idx["IntergenicRegion"]
                     )
-                elif "geneSet_Protein_Coding" not in gene_cat_set:
-                    if "geneSet_Antisense" in gene_cat_set:
+                elif "ProteinCoding" not in gene_list_set:
+                    if "Antisense" in gene_list_set:
                         annotation_int += (
                             2 ** gencode_annotation_idx["AntisenseRegion"]
                         )
-                    elif "geneSet_lincRNA" in gene_cat_set:
+                    elif "lincRNA" in gene_list_set:
                         annotation_int += (
                             2 ** gencode_annotation_idx["lincRnaRegion"]
                         )
