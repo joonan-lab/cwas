@@ -2,12 +2,18 @@ import argparse
 from abc import abstractmethod
 from pathlib import Path
 
+import pandas as pd
+
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
-from cwas.utils.log import print_arg, print_log
+from cwas.utils.log import print_arg, print_log, print_progress
 
 
 class BurdenTest(Runnable):
+    def __init__(self, args: argparse.Namespace):
+        super().__init__(args)
+        self._categorization_result = None
+
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         parser = argparse.ArgumentParser(
@@ -43,6 +49,15 @@ class BurdenTest(Runnable):
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
+
+    @property
+    def categorization_result(self) -> pd.DataFrame:
+        if self._categorization_result is None:
+            print_progress("Load the categorization result")
+            self._categorization_result = pd.read_table(
+                self.get_env("CATEGORIZATION_RESULT"), index_col="SAMPLE"
+            )
+        return self._categorization_result
 
     def run(self):
         print_log("Notice", "Not implemented yet.")
