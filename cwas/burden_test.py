@@ -49,4 +49,6 @@ class BurdenTest(Runnable):
 
     @abstractmethod
     def test(self):
-        pass
+        raise RuntimeError(
+            "This method cannot be called via the instance of BurdenTest."
+        )
