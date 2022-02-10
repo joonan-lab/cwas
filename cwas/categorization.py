@@ -73,7 +73,6 @@ class Categorization(Runnable):
     @property
     def gene_matrix(self) -> dict:
         if self._gene_matrix is None:
-            log.print_progress("Parse the gene matrix")
             self._gene_matrix = parse_gene_matrix(
                 Path(self.get_env("GENE_MATRIX"))
             )
@@ -82,7 +81,6 @@ class Categorization(Runnable):
     @property
     def category_domain(self) -> dict:
         if self._category_domain is None:
-            log.print_progress("Load the category domain")
             with Path(self.get_env("CATEGORY_DOMAIN")).open(
                 "r"
             ) as category_domain_file:
@@ -92,7 +90,6 @@ class Categorization(Runnable):
     @property
     def annotation_bw_cutoff(self) -> dict:
         if self._annotation_bw_cutoff is None:
-            log.print_progress("Load the annotation BigWig cutoff")
             with Path(self.get_env("ANNOTATION_BW_CUTOFF")).open(
                 "r"
             ) as annotation_bw_cutoff_file:
@@ -133,7 +130,6 @@ class Categorization(Runnable):
 
     @property
     def redundant_categories(self) -> set:
-        log.print_progress("Generate a set of redundant categories")
         redundant_category_table = pd.read_table(
             self.get_env("REDUNDANT_CATEGORY")
         )
@@ -189,8 +185,7 @@ class Categorization(Runnable):
             errors="ignore",
         )
         log.print_progress(
-            f"{len(self._result.columns):,d} non-redundant categories "
-            f"have remained"
+            f"{len(self._result.columns):,d} categories have remained."
         )
 
     def categorize_vcf_for_each_sample(self):
