@@ -13,6 +13,7 @@ class BurdenTest(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
         self._categorization_result = None
+        self._sample_info = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -58,6 +59,14 @@ class BurdenTest(Runnable):
                 self.get_env("CATEGORIZATION_RESULT"), index_col="SAMPLE"
             )
         return self._categorization_result
+
+    @property
+    def sample_info(self) -> pd.DataFrame:
+        if self._sample_info is None:
+            self._sample_info = pd.read_table(
+                self.sample_info_path, index_col="SAMPLE"
+            )
+        return self._sample_info
 
     def run(self):
         print_log("Notice", "Not implemented yet.")
