@@ -1,6 +1,8 @@
 import argparse
+import multiprocessing as mp
 from functools import reduce
 from itertools import product
+from math import ceil
 from pathlib import Path
 
 import pandas as pd
@@ -201,9 +203,14 @@ class Categorization(Runnable):
         return result
 
     def categorize_vcf_for_each_sample_with_mp(self):
-        raise NotImplementedError(
-            "Categorization with multiprocessing does not supported yet."
-        )
+        sample_vcfs = self.annotated_vcf_split_by_sample
+        with mp.Pool(self.num_proc) as pool:
+            log.print_progress(f"Categorize your input variants")
+            return pool.map(
+                self.categorizer.categorize_variant,
+                sample_vcfs,
+                chunksize=ceil(len(sample_vcfs) / self.num_proc),
+            )
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
