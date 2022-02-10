@@ -169,7 +169,11 @@ class Categorization(Runnable):
         log.print_progress("Done")
 
     def categorize_vcf(self):
-        results_each_sample = self.categorize_vcf_for_each_sample()
+        results_each_sample = (
+            self.categorize_vcf_for_each_sample()
+            if self.num_proc == 1
+            else self.categorize_vcf_for_each_sample_with_mp()
+        )
         log.print_progress("Organize the results")
         self._result = pd.DataFrame(results_each_sample).fillna(0)
         self._result = self._result.astype(int)
@@ -195,6 +199,11 @@ class Categorization(Runnable):
                 log.print_progress(f"Categorize variants of {i} samples")
             result.append(self.categorizer.categorize_variant(sample_vcf))
         return result
+
+    def categorize_vcf_for_each_sample_with_mp(self):
+        raise NotImplementedError(
+            "Categorization with multiprocessing does not supported yet."
+        )
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
