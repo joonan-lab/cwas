@@ -14,6 +14,7 @@ class BurdenTest(Runnable):
         super().__init__(args)
         self._categorization_result = None
         self._sample_info = None
+        self._adj_factor = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -67,6 +68,16 @@ class BurdenTest(Runnable):
                 self.sample_info_path, index_col="SAMPLE"
             )
         return self._sample_info
+
+    @property
+    def adj_factor(self) -> pd.DataFrame:
+        if self.adj_factor_path is None:
+            return None
+        if self._adj_factor is None:
+            self._adj_factor = pd.read_table(
+                self.adj_factor_path, index_col="SAMPLE"
+            )
+        return self._adj_factor
 
     def run(self):
         print_log("Notice", "Not implemented yet.")
