@@ -50,3 +50,7 @@ class Category:
             "gencode": self._gencode,
             "region": self._region,
         }
+
+    @staticmethod
+    def from_str(category_str):
+        return Category(*category_str.split("_"))
