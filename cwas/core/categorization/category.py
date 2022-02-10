@@ -9,6 +9,16 @@ class Category:
         self._region = region
 
     def __repr__(self):
+        return (
+            f"Category("
+            f'"{self._variant_type}", '
+            f'"{self._gene_list}", '
+            f'"{self._conservation}", '
+            f'"{self._gencode}", '
+            f'"{self._region}")'
+        )
+
+    def __str__(self):
         """This representation is from An et al., 2018"""
         return "_".join(
             [
