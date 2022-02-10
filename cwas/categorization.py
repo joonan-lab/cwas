@@ -136,13 +136,13 @@ class Categorization(Runnable):
         return reduce(
             lambda x, y: x.union(y),
             [
-                self._parse_redundant_category_table_row(row)
+                self._get_redundant_categories_from_row(row)
                 for _, row in redundant_category_table.iterrows()
             ],
             set(),
         )
 
-    def _parse_redundant_category_table_row(self, row: pd.Series) -> list:
+    def _get_redundant_categories_from_row(self, row: pd.Series) -> list:
         annotation_term_lists = {}
         for k, v in row.items():
             if v == "*":
