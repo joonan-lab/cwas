@@ -3,6 +3,7 @@ from scipy.stats import norm
 
 from cwas.burden_test import BurdenTest
 from cwas.core.burden_test.binomial import binom_one_tail, binom_two_tail
+from cwas.utils.log import print_progress
 
 
 class BinomialTest(BurdenTest):
@@ -11,6 +12,7 @@ class BinomialTest(BurdenTest):
         return (self.phenotypes == "case").sum() / len(self.phenotypes)
 
     def run_burden_test(self):
+        print_progress("Run binomial test")
         self._result["P"] = np.vectorize(binom_two_tail)(
             self.case_variant_cnt.round(),
             self.ctrl_variant_cnt.round(),

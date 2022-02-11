@@ -150,6 +150,7 @@ class BurdenTest(Runnable):
         self.update_env()
 
     def count_variant_for_each_category(self):
+        print_progress("Count the number of variants for each category")
         variant_cnt_arr = np.concatenate(
             [
                 self.case_variant_cnt[:, np.newaxis],
@@ -165,6 +166,7 @@ class BurdenTest(Runnable):
         self._result.index.name = "Category"
 
     def calculate_relative_risk(self):
+        print_progress("Calculate relative risks for each category")
         self._result["Relative_Risk"] = (
             self.case_variant_cnt / self.ctrl_variant_cnt
         )
