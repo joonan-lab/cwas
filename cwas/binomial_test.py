@@ -9,6 +9,11 @@ from cwas.core.burden_test.binomial import binom_one_tail, binom_two_tail
 
 
 class BinomialTest(BurdenTest):
+    @property
+    def binom_p(self) -> float:
+        phenotypes = self.sample_info["PHENOTYPE"].values
+        return (phenotypes == "case").sum() / len(phenotypes)
+
     def run_burden_test(self):
         # Count the number of de novo variants (DNV) for cases and controls
         cwas_cat_vals = self.categorization_result.values
@@ -33,13 +38,13 @@ class BinomialTest(BurdenTest):
         burden_df.index.name = "Category"
         burden_df["Relative_Risk"] = case_dnv_cnt / ctrl_dnv_cnt
         burden_df["P"] = np.vectorize(binom_two_tail)(
-            case_dnv_cnt.round(), ctrl_dnv_cnt.round(), 0.5
+            case_dnv_cnt.round(), ctrl_dnv_cnt.round(), self.binom_p
         )
 
         # Following metrics is for getting number of effective tests
         # Add a pseudo-count in order to avoid p-values of one
         burden_df["P_1side"] = np.vectorize(binom_one_tail)(
-            case_dnv_cnt.round() + 1, ctrl_dnv_cnt.round() + 1, 0.5
+            case_dnv_cnt.round() + 1, ctrl_dnv_cnt.round() + 1, self.binom_p
         )
         burden_df["Z_1side"] = norm.ppf(
             1 - burden_df["P_1side"].values

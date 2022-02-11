@@ -134,3 +134,21 @@ def test_run_burden_test(binomial_test):
         "Z_1side",
     ]
     assert list(binomial_test._result.columns.values) == expected_columns
+
+
+def test_binom_p(binomial_test):
+    samples = [
+        {"SAMPLE": "Sample1", "FAMILY": "F1", "PHENOTYPE": "case"},
+        {"SAMPLE": "Sample2", "FAMILY": "F1", "PHENOTYPE": "case"},
+        {"SAMPLE": "Sample3", "FAMILY": "F1", "PHENOTYPE": "case"},
+        {"SAMPLE": "Sample4", "FAMILY": "F1", "PHENOTYPE": "case"},
+        {"SAMPLE": "Sample5", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample6", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample7", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample8", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample9", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample10", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+    ]
+    binomial_test._sample_info = pd.DataFrame(samples).set_index("SAMPLE")
+    assert binomial_test.binom_p == 0.4  # A fraction of cases
+
