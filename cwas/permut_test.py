@@ -16,5 +16,5 @@ class PermutTest(BurdenTest):
     def _check_args_validity(args: argparse.Namespace):
         pass
 
-    def test(self):
+    def run_burden_test(self):
         pass

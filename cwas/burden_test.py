@@ -113,12 +113,12 @@ class BurdenTest(Runnable):
                 "not the same with the sample IDs "
                 "from the categorization result."
             )
-        self.test()
+        self.run_burden_test()
         self.save_result()
         self.update_env()
 
     @abstractmethod
-    def test(self):
+    def run_burden_test(self):
         raise RuntimeError(
             "This method cannot be called via the instance of BurdenTest."
         )
