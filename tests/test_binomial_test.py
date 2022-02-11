@@ -120,7 +120,17 @@ def test_run_with_inconsistent_sample(binomial_test_with_inconsistent_sample):
         binomial_test_with_inconsistent_sample.run()
 
 
-def test_run(binomial_test):
+def test_run_burden_test(binomial_test):
     binomial_test._adjust_categorization_result()
-    with pytest.raises(NotImplementedError):
-        binomial_test.run()
+    binomial_test.run_burden_test()
+    assert binomial_test._result is not None
+    assert binomial_test._result.index.name == "Category"
+    expected_columns = [
+        "Case_DNV_Count",
+        "Ctrl_DNV_Count",
+        "Relative_Risk",
+        "P",
+        "P_1side",
+        "Z_1side",
+    ]
+    assert list(binomial_test._result.columns.values) == expected_columns
