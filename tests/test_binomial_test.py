@@ -3,6 +3,16 @@ import pytest
 from cwas.binomial_test import BinomialTest
 
 
+class BinomialTestMock(BinomialTest):
+    """This class do not make outputs"""
+
+    def save_result(self):
+        pass
+
+    def update_env(self):
+        pass
+
+
 @pytest.fixture(scope="module")
 def sample_info_path(cwas_workspace):
     return cwas_workspace / "samples.txt"
@@ -85,7 +95,7 @@ def binomial_test(
     args, categorization_result, sample_info, adjustment_factor,
 ):
     # This is not an appropriate usage.
-    inst = BinomialTest.get_instance(args)
+    inst = BinomialTestMock.get_instance(args)
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info
     inst._adj_factor = adjustment_factor
@@ -100,7 +110,7 @@ def binomial_test_with_inconsistent_sample(
     adjustment_factor_other_sample,
 ):
     # This is not an appropriate usage.
-    inst = BinomialTest.get_instance(args)
+    inst = BinomialTestMock.get_instance(args)
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info_other_sample
     inst._adj_factor = adjustment_factor_other_sample
@@ -128,9 +138,9 @@ def test_run_with_inconsistent_sample(binomial_test_with_inconsistent_sample):
         binomial_test_with_inconsistent_sample.run()
 
 
-def test_run_burden_test(binomial_test):
+def test_run(binomial_test):
     binomial_test._adjust_categorization_result()
-    binomial_test.run_burden_test()
+    binomial_test.run()
     assert binomial_test._result is not None
     assert binomial_test._result.index.name == "Category"
     expected_columns = [
