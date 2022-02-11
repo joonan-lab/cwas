@@ -34,6 +34,8 @@ def categorization_result():
     results = [
         {"SAMPLE": "Sample1", "Category1": 5, "Category2": 4},
         {"SAMPLE": "Sample2", "Category1": 10, "Category2": 16},
+        {"SAMPLE": "Sample3", "Category1": 12, "Category2": 8},
+        {"SAMPLE": "Sample4", "Category1": 7, "Category2": 11},
     ]
     return pd.DataFrame(results).set_index("SAMPLE")
 
@@ -42,7 +44,9 @@ def categorization_result():
 def sample_info():
     samples = [
         {"SAMPLE": "Sample1", "FAMILY": "F1", "PHENOTYPE": "case"},
-        {"SAMPLE": "Sample2", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample2", "FAMILY": "F1", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample3", "FAMILY": "F2", "PHENOTYPE": "case"},
+        {"SAMPLE": "Sample4", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
     ]
     return pd.DataFrame(samples).set_index("SAMPLE")
 
@@ -52,6 +56,8 @@ def adjustment_factor():
     adj_factors = [
         {"SAMPLE": "Sample1", "AdjustFactor": 2.0},
         {"SAMPLE": "Sample2", "AdjustFactor": 0.5},
+        {"SAMPLE": "Sample3", "AdjustFactor": 0.25},
+        {"SAMPLE": "Sample4", "AdjustFactor": 1.0},
     ]
     return pd.DataFrame(adj_factors).set_index("SAMPLE")
 
@@ -106,6 +112,8 @@ def test_adjust_categorization_result(binomial_test):
     categorization_result = binomial_test.categorization_result
     assert categorization_result.loc["Sample1"].to_list() == [10, 8]
     assert categorization_result.loc["Sample2"].to_list() == [5, 8]
+    assert categorization_result.loc["Sample3"].to_list() == [3, 2]
+    assert categorization_result.loc["Sample4"].to_list() == [7, 11]
 
 
 def test_adjust_categorization_with_inconsistent_sample(
