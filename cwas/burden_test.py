@@ -144,9 +144,7 @@ class BurdenTest(Runnable):
                 "from the categorization result."
             )
         self.count_variant_for_each_category()
-        self._result["Relative_Risk"] = (
-            self.case_variant_cnt / self.ctrl_variant_cnt
-        )
+        self.calculate_relative_risk()
         self.run_burden_test()
         self.save_result()
         self.update_env()
@@ -165,6 +163,11 @@ class BurdenTest(Runnable):
             columns=["Case_DNV_Count", "Ctrl_DNV_Count"],
         )
         self._result.index.name = "Category"
+
+    def calculate_relative_risk(self):
+        self._result["Relative_Risk"] = (
+            self.case_variant_cnt / self.ctrl_variant_cnt
+        )
 
     @abstractmethod
     def run_burden_test(self):
