@@ -42,10 +42,10 @@ def setup_and_teardown(cwas_workspace, sample_info_path, adj_factor_path):
 @pytest.fixture
 def categorization_result():
     results = [
-        {"SAMPLE": "Sample1", "Category1": 5, "Category2": 4},
-        {"SAMPLE": "Sample2", "Category1": 10, "Category2": 16},
-        {"SAMPLE": "Sample3", "Category1": 12, "Category2": 8},
-        {"SAMPLE": "Sample4", "Category1": 7, "Category2": 11},
+        {"SAMPLE": "Sample1", "A_B_C_D_E": 5, "a_b_c_d_e": 4},
+        {"SAMPLE": "Sample2", "A_B_C_D_E": 10, "a_b_c_d_e": 16},
+        {"SAMPLE": "Sample3", "A_B_C_D_E": 12, "a_b_c_d_e": 8},
+        {"SAMPLE": "Sample4", "A_B_C_D_E": 7, "a_b_c_d_e": 11},
     ]
     return pd.DataFrame(results).set_index("SAMPLE")
 
@@ -144,6 +144,11 @@ def test_run(binomial_test):
     assert binomial_test._result is not None
     assert binomial_test._result.index.name == "Category"
     expected_columns = [
+        "variant_type",
+        "gene_list",
+        "conservation",
+        "gencode",
+        "region",
         "Case_DNV_Count",
         "Ctrl_DNV_Count",
         "Relative_Risk",

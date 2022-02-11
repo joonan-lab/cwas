@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from cwas.core.categorization.category import Category
 from cwas.core.common import cmp_two_arr
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
@@ -134,6 +135,16 @@ class BurdenTest(Runnable):
             ].sum(axis=0)
         return self._ctrl_variant_cnt
 
+    @property
+    def category_table(self) -> pd.DataFrame:
+        categories = [
+            Category.from_str(category_str).to_dict()
+            for category_str in self.categorization_result.columns.values
+        ]
+        return pd.DataFrame(
+            categories, index=self.categorization_result.columns.values
+        )
+
     def run(self):
         if not _contain_same_index(
             self.categorization_result, self.sample_info
@@ -146,6 +157,7 @@ class BurdenTest(Runnable):
         self.count_variant_for_each_category()
         self.calculate_relative_risk()
         self.run_burden_test()
+        self.concat_category_info()
         self.save_result()
         self.update_env()
 
@@ -163,7 +175,6 @@ class BurdenTest(Runnable):
             index=self.categorization_result.columns.values,
             columns=["Case_DNV_Count", "Ctrl_DNV_Count"],
         )
-        self._result.index.name = "Category"
 
     def calculate_relative_risk(self):
         print_progress("Calculate relative risks for each category")
@@ -176,6 +187,10 @@ class BurdenTest(Runnable):
         raise RuntimeError(
             "This method cannot be called via the instance of BurdenTest."
         )
+
+    def concat_category_info(self):
+        self._result = pd.concat([self.category_table, self._result], axis=1)
+        self._result.index.name = "Category"
 
     def save_result(self):
         print_progress(f"Save the result to the file {self.result_path}")
