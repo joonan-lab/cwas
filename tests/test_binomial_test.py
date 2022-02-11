@@ -145,18 +145,14 @@ def test_run_burden_test(binomial_test):
 
 
 def test_binom_p(binomial_test):
-    samples = [
-        {"SAMPLE": "Sample1", "FAMILY": "F1", "PHENOTYPE": "case"},
-        {"SAMPLE": "Sample2", "FAMILY": "F1", "PHENOTYPE": "case"},
-        {"SAMPLE": "Sample3", "FAMILY": "F1", "PHENOTYPE": "case"},
-        {"SAMPLE": "Sample4", "FAMILY": "F1", "PHENOTYPE": "case"},
-        {"SAMPLE": "Sample5", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample6", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample7", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample8", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample9", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample10", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
-    ]
-    binomial_test._sample_info = pd.DataFrame(samples).set_index("SAMPLE")
-    assert binomial_test.binom_p == 0.4  # A fraction of cases
+    assert binomial_test.binom_p == 0.5  # A fraction of cases
 
+
+def test_case_variant_cnt(binomial_test):
+    binomial_test._adjust_categorization_result()
+    assert list(binomial_test.case_variant_cnt) == [13, 10]
+
+
+def test_ctrl_variant_cnt(binomial_test):
+    binomial_test._adjust_categorization_result()
+    assert list(binomial_test.ctrl_variant_cnt) == [12, 19]
