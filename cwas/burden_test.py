@@ -2,6 +2,7 @@ import argparse
 from abc import abstractmethod
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from cwas.core.common import cmp_two_arr
@@ -17,6 +18,9 @@ class BurdenTest(Runnable):
         self._adj_factor = None
         self._categorization_result = None
         self._result = None
+        self._phenotypes = None
+        self._case_variant_cnt = None
+        self._ctrl_variant_cnt = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -103,6 +107,32 @@ class BurdenTest(Runnable):
         self._categorization_result = self._categorization_result.multiply(
             adj_factors, axis="index"
         )
+
+    @property
+    def phenotypes(self) -> np.ndarray:
+        if self._phenotypes is None:
+            self._phenotypes = np.vectorize(
+                lambda sample_id: self.sample_info.to_dict()["PHENOTYPE"][
+                    sample_id
+                ]
+            )(self.categorization_result.index.values)
+        return self._phenotypes
+
+    @property
+    def case_variant_cnt(self) -> np.ndarray:
+        if self._case_variant_cnt is None:
+            self._case_variant_cnt = self.categorization_result.values[
+                self.phenotypes == "case", :
+            ].sum(axis=0)
+        return self._case_variant_cnt
+
+    @property
+    def ctrl_variant_cnt(self) -> np.ndarray:
+        if self._ctrl_variant_cnt is None:
+            self._ctrl_variant_cnt = self.categorization_result.values[
+                self.phenotypes == "ctrl", :
+            ].sum(axis=0)
+        return self._ctrl_variant_cnt
 
     def run(self):
         if not _contain_same_index(

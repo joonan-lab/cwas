@@ -1,5 +1,3 @@
-import argparse
-
 import numpy as np
 import pandas as pd
 from scipy.stats import norm
@@ -9,38 +7,6 @@ from cwas.core.burden_test.binomial import binom_one_tail, binom_two_tail
 
 
 class BinomialTest(BurdenTest):
-    def __init__(self, args: argparse.Namespace):
-        super().__init__(args)
-        self._phenotypes = None
-        self._case_variant_cnt = None
-        self._ctrl_variant_cnt = None
-
-    @property
-    def phenotypes(self) -> np.ndarray:
-        if self._phenotypes is None:
-            self._phenotypes = np.vectorize(
-                lambda sample_id: self.sample_info.to_dict()["PHENOTYPE"][
-                    sample_id
-                ]
-            )(self.categorization_result.index.values)
-        return self._phenotypes
-
-    @property
-    def case_variant_cnt(self) -> np.ndarray:
-        if self._case_variant_cnt is None:
-            self._case_variant_cnt = self.categorization_result.values[
-                self.phenotypes == "case", :
-            ].sum(axis=0)
-        return self._case_variant_cnt
-
-    @property
-    def ctrl_variant_cnt(self) -> np.ndarray:
-        if self._ctrl_variant_cnt is None:
-            self._ctrl_variant_cnt = self.categorization_result.values[
-                self.phenotypes == "ctrl", :
-            ].sum(axis=0)
-        return self._ctrl_variant_cnt
-
     @property
     def binom_p(self) -> float:
         return (self.phenotypes == "case").sum() / len(self.phenotypes)
