@@ -12,24 +12,29 @@ class BinomialTest(BurdenTest):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
         self._case_variant_cnt = None
+        self._phenotypes = None
 
     @property
-    def case_variant_cnt(self) -> np.ndarray:
-        if self._case_variant_cnt is None:
-            phenotypes = np.vectorize(
+    def phenotypes(self) -> np.ndarray:
+        if self._phenotypes is None:
+            self._phenotypes = np.vectorize(
                 lambda sample_id: self.sample_info.to_dict()["PHENOTYPE"][
                     sample_id
                 ]
             )(self.categorization_result.index.values)
+        return self._phenotypes
+
+    @property
+    def case_variant_cnt(self) -> np.ndarray:
+        if self._case_variant_cnt is None:
             self._case_variant_cnt = self.categorization_result.values[
-                phenotypes == "case", :
+                self.phenotypes == "case", :
             ].sum(axis=0)
         return self._case_variant_cnt
 
     @property
     def binom_p(self) -> float:
-        phenotypes = self.sample_info["PHENOTYPE"].values
-        return (phenotypes == "case").sum() / len(phenotypes)
+        return (self.phenotypes == "case").sum() / len(self.phenotypes)
 
     def run_burden_test(self):
         # Count the number of de novo variants (DNV) for cases and controls
