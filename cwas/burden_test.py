@@ -143,6 +143,15 @@ class BurdenTest(Runnable):
                 "not the same with the sample IDs "
                 "from the categorization result."
             )
+        self.count_variant_for_each_category()
+        self._result["Relative_Risk"] = (
+            self.case_variant_cnt / self.ctrl_variant_cnt
+        )
+        self.run_burden_test()
+        self.save_result()
+        self.update_env()
+
+    def count_variant_for_each_category(self):
         variant_cnt_arr = np.concatenate(
             [
                 self.case_variant_cnt[:, np.newaxis],
@@ -150,19 +159,12 @@ class BurdenTest(Runnable):
             ],
             axis=1,
         )
-
         self._result = pd.DataFrame(
             variant_cnt_arr,
             index=self.categorization_result.columns.values,
             columns=["Case_DNV_Count", "Ctrl_DNV_Count"],
         )
         self._result.index.name = "Category"
-        self._result["Relative_Risk"] = (
-            self.case_variant_cnt / self.ctrl_variant_cnt
-        )
-        self.run_burden_test()
-        self.save_result()
-        self.update_env()
 
     @abstractmethod
     def run_burden_test(self):
