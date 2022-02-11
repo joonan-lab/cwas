@@ -7,7 +7,7 @@ import pandas as pd
 from cwas.core.common import cmp_two_arr
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
-from cwas.utils.log import print_arg, print_log, print_progress
+from cwas.utils.log import print_arg, print_progress
 
 
 class BurdenTest(Runnable):
@@ -16,6 +16,7 @@ class BurdenTest(Runnable):
         self._sample_info = None
         self._adj_factor = None
         self._categorization_result = None
+        self._result = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -52,6 +53,10 @@ class BurdenTest(Runnable):
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
+
+    @property
+    def result_path(self) -> Path:
+        return Path(self.get_env("CWAS_WORKSPACE")) / "burden_test_result.txt"
 
     @property
     def sample_info(self) -> pd.DataFrame:
@@ -100,13 +105,31 @@ class BurdenTest(Runnable):
         )
 
     def run(self):
-        print_log("Notice", "Not implemented yet.")
+        if not _contain_same_index(
+            self.categorization_result, self.sample_info
+        ):
+            raise ValueError(
+                "The sample IDs from the sample information are "
+                "not the same with the sample IDs "
+                "from the categorization result."
+            )
+        self.test()
+        self.save_result()
+        self.update_env()
 
     @abstractmethod
     def test(self):
         raise RuntimeError(
             "This method cannot be called via the instance of BurdenTest."
         )
+
+    def save_result(self):
+        print_progress(f"Save the result to the file {self.result_path}")
+        self._result.to_csv(self.result_path, sep="\t")
+
+    def update_env(self):
+        self.set_env("BURDEN_TEST_RESULT", self.result_path)
+        self.save_env()
 
 
 def _contain_same_index(table1: pd.DataFrame, table2: pd.DataFrame) -> bool:
