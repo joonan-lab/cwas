@@ -46,8 +46,7 @@ class BinomialTest(BurdenTest):
         return (self.phenotypes == "case").sum() / len(self.phenotypes)
 
     def run_burden_test(self):
-        # Count the number of de novo variants (DNV) for cases and controls
-        dnv_cnt_arr = np.concatenate(
+        variant_cnt_arr = np.concatenate(
             [
                 self.case_variant_cnt[:, np.newaxis],
                 self.ctrl_variant_cnt[:, np.newaxis],
@@ -55,31 +54,25 @@ class BinomialTest(BurdenTest):
             axis=1,
         )
 
-        # Make a DataFrame for the results of binomial tests
-        burden_df = pd.DataFrame(
-            dnv_cnt_arr,
+        self._result = pd.DataFrame(
+            variant_cnt_arr,
             index=self.categorization_result.columns.values,
             columns=["Case_DNV_Count", "Ctrl_DNV_Count"],
         )
-        burden_df.index.name = "Category"
-        burden_df["Relative_Risk"] = (
+        self._result.index.name = "Category"
+        self._result["Relative_Risk"] = (
             self.case_variant_cnt / self.ctrl_variant_cnt
         )
-        burden_df["P"] = np.vectorize(binom_two_tail)(
+        self._result["P"] = np.vectorize(binom_two_tail)(
             self.case_variant_cnt.round(),
             self.ctrl_variant_cnt.round(),
             self.binom_p,
         )
 
-        # Following metrics is for getting number of effective tests
-        # Add a pseudo-count in order to avoid p-values of one
-        burden_df["P_1side"] = np.vectorize(binom_one_tail)(
+        # Add the pseudocount(1) in order to avoid p-values of one
+        self._result["P_1side"] = np.vectorize(binom_one_tail)(
             self.case_variant_cnt.round() + 1,
             self.ctrl_variant_cnt.round() + 1,
             self.binom_p,
         )
-        burden_df["Z_1side"] = norm.ppf(
-            1 - burden_df["P_1side"].values
-        )  # P-value -> Z-score
-
-        self._result = burden_df
+        self._result["Z_1side"] = norm.ppf(1 - self._result["P_1side"].values)
