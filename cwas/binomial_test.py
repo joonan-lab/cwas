@@ -22,9 +22,8 @@ class BinomialTest(BurdenTest):
         sample_types = np.vectorize(
             lambda sample_id: sample_info_dict["PHENOTYPE"][sample_id]
         )(sample_ids)
-        case_dnv_cnt, ctrl_dnv_cnt = cnt_case_ctrl_dnv(
-            cwas_cat_vals, sample_types
-        )
+        case_dnv_cnt = get_case_variant_cnt(cwas_cat_vals, sample_types)
+        ctrl_dnv_cnt = get_ctrl_variant_cnt(cwas_cat_vals, sample_types)
         dnv_cnt_arr = np.concatenate(
             [case_dnv_cnt[:, np.newaxis], ctrl_dnv_cnt[:, np.newaxis]], axis=1
         )
@@ -53,13 +52,13 @@ class BinomialTest(BurdenTest):
         self._result = burden_df
 
 
-def cnt_case_ctrl_dnv(
-    sample_cat_vals: np.ndarray, sample_types: np.ndarray
-) -> Tuple[float, float]:
-    """ Count the number of the de novo variants for each phenotype, case and control.
-    """
-    are_case = sample_types == "case"
-    case_dnv_cnt = sample_cat_vals[are_case, :].sum(axis=0)
-    ctrl_dnv_cnt = sample_cat_vals[~are_case, :].sum(axis=0)
+def get_case_variant_cnt(
+    categorization_result_values: np.ndarray, sample_types: np.ndarray
+) -> np.ndarray:
+    return categorization_result_values[sample_types == "case", :].sum(axis=0)
 
-    return case_dnv_cnt, ctrl_dnv_cnt
+
+def get_ctrl_variant_cnt(
+    categorization_result_values: np.ndarray, sample_types: np.ndarray
+) -> np.ndarray:
+    return categorization_result_values[sample_types == "ctrl", :].sum(axis=0)
