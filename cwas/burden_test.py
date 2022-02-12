@@ -61,7 +61,11 @@ class BurdenTest(Runnable):
 
     @property
     def result_path(self) -> Path:
-        return Path(self.get_env("CWAS_WORKSPACE")) / "burden_test_result.txt"
+        return Path(
+            self.get_env("ANNOTATED_VCF").replace(
+                "annotated.vcf", "burden_test.txt"
+            )
+        )
 
     @property
     def sample_info(self) -> pd.DataFrame:

@@ -59,8 +59,10 @@ class Categorization(Runnable):
 
     @property
     def result_path(self) -> Path:
-        return (
-            Path(self.get_env("CWAS_WORKSPACE")) / "categorization_result.txt"
+        return Path(
+            self.get_env("ANNOTATED_VCF").replace(
+                "annotated.vcf", "categorization_result.txt"
+            )
         )
 
     @property
