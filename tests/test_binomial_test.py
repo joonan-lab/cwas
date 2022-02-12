@@ -156,7 +156,12 @@ def test_run(binomial_test):
         "P_1side",
         "Z_1side",
     ]
+    expected_index = [
+        "A_B_C_D_E",
+        "a_b_c_d_e",
+    ]
     assert list(binomial_test._result.columns.values) == expected_columns
+    assert list(binomial_test._result.index.values) == expected_index
 
 
 def test_binom_p(binomial_test):
