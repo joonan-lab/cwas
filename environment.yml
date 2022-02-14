@@ -1,4 +1,4 @@
-name: cwas-1.0.0
+name: cwas
 channels:
   - bioconda
   - conda-forge
@@ -77,4 +77,3 @@ dependencies:
   - zlib=1.2.11=h4dc903c_4
   - pip:
     - pysam==0.18.0
-prefix: /Users/mwjeong/anaconda3/envs/cwas-1.0.0
