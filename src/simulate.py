@@ -277,6 +277,7 @@ def make_rand_mut_file(output_path: str, fam_to_label_cnt: dict, fam_to_sample_s
 def make_random_mutation(label: int, sample_ids: list, fasta_file_dict: dict,
                          chrom_probs: np.ndarray, chrom_sizes: np.ndarray) -> dict:
     """ Generate and return a random mutation in the VCF format """
+    np.random.seed()
     sample_id = np.random.choice(sample_ids)
     ref = None
     alt = None
