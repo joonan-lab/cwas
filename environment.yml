@@ -13,3 +13,8 @@ dependencies:
   - pyyaml
   - python-dotenv
   - pytest
+  - perl
+  - perl-dbi
+  - perl-dbd-mysql
+  - perl-set-intervaltree
+  - perl-bio-bigfile
