@@ -1,7 +1,7 @@
 """
 Create configuration files for CWAS
 """
-from __future__ import annotations
+from pathlib import Path
 
 import yaml
 from cwas.core.configuration.settings import (
@@ -13,7 +13,7 @@ from cwas.utils.log import print_err
 
 
 def create_annotation_key(
-    out_file_path: pathlib.Path, annotation_dir: pathlib.Path, file_type: str
+    out_file_path: Path, annotation_dir: Path, file_type: str
 ):
     assert file_type == "bed" or file_type == "bw"
 
@@ -30,9 +30,7 @@ def create_annotation_key(
 
 
 def split_annotation_key(
-    bed_key_path: pathlib.Path,
-    bw_key_path: pathlib.Path,
-    annotation_key_path: pathlib.Path,
+    bed_key_path: Path, bw_key_path: Path, annotation_key_path: Path,
 ):
     """Split the input annotation key configuration file"""
     annotation_key_dict = _load_yaml_file(annotation_key_path)
@@ -51,9 +49,7 @@ def split_annotation_key(
 
 
 def create_bw_cutoff_list(
-    bw_cutoff_list: pathlib.Path,
-    bw_key_list: pathlib.Path,
-    user_def_cutoff_list: pathlib.Pathlib = None,
+    bw_cutoff_list: Path, bw_key_list: Path, user_def_cutoff_list: Path = None,
 ):
     """ All the arguments must be in a proper YAML format."""
     default_cutoff = 0.0
@@ -75,10 +71,10 @@ def create_bw_cutoff_list(
 
 
 def create_category_domain_list(
-    domain_list_path: pathlib.Path,
-    bed_key_path: pathlib.Path,
-    bw_key_path: pathlib.Path,
-    gene_mat_path: pathlib.Path,
+    domain_list_path: Path,
+    bed_key_path: Path,
+    bw_key_path: Path,
+    gene_mat_path: Path,
 ):
     bed_key_dict = _load_yaml_file(bed_key_path)
     region_domains = bed_key_dict.values()
@@ -99,7 +95,7 @@ def create_category_domain_list(
     _save_as_yaml(domain_list_path, domains)
 
 
-def create_redundant_category_table(category_table_path: pathlib.Path):
+def create_redundant_category_table(category_table_path: Path):
     domain_types = get_domain_types()
     table_row_template = {domain_type: "*" for domain_type in domain_types}
 
@@ -118,7 +114,7 @@ def create_redundant_category_table(category_table_path: pathlib.Path):
                 )
 
 
-def _load_yaml_file(yaml_file_path: pathlib.Path):
+def _load_yaml_file(yaml_file_path: Path):
     try:
         with yaml_file_path.open("r") as in_yaml_f:
             yaml_data = yaml.safe_load(in_yaml_f)
@@ -128,6 +124,6 @@ def _load_yaml_file(yaml_file_path: pathlib.Path):
     return yaml_data
 
 
-def _save_as_yaml(yaml_file_path: pathlib.Path, data):
+def _save_as_yaml(yaml_file_path: Path, data):
     with yaml_file_path.open("w") as out_yaml_f:
         yaml.safe_dump(data, out_yaml_f)

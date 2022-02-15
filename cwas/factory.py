@@ -2,9 +2,9 @@
 Factory method for Runnable
 Ref: https://realpython.com/python-import/
 """
-from __future__ import annotations
-
 import importlib
+
+from cwas.runnable import Runnable
 
 
 def make_class_name(module_name: str) -> str:
