@@ -64,7 +64,7 @@ def annotate(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str):
                         stop_bed_iter = True
                         break
 
-                # 2. Continuously iterate over the list BED coordinates and check
+                # 2. Continuously iterate over the BED coordinates and check
                 if not stop_bed_iter:
                     bed = next(bed_iter, None)
 
