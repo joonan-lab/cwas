@@ -207,7 +207,7 @@ class Categorization(Runnable):
     def categorize_vcf_for_each_sample_with_mp(self):
         sample_vcfs = self.annotated_vcf_split_by_sample
         with mp.Pool(self.num_proc) as pool:
-            log.print_progress(f"Categorize your input variants")
+            log.print_progress("Categorize your input variants")
             return pool.map(
                 self.categorizer.categorize_variant,
                 sample_vcfs,

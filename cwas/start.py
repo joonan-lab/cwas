@@ -87,6 +87,6 @@ class Start(Runnable):
         return config
 
     def _find_vep_path(self) -> Optional[str]:
-        log.print_progress(f"Find pre-installed VEP")
+        log.print_progress("Find pre-installed VEP")
         vep = shutil.which("vep")
         return vep
