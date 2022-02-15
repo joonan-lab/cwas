@@ -20,7 +20,7 @@ def merge_bed_files(
     num_proc: int = 1,
     force_overwrite: int = 0,
 ):
-    """ Merge all information of coordinates from all the BED files 
+    """ Merge all information of coordinates from all the BED files
     into one file.
 
     For example, assume that following three coordinates exist
@@ -40,9 +40,9 @@ def merge_bed_files(
     The annotation information for each coordinate will be represented
     as an annotation integer, which is a one-hot encoding of annotation
     information. In this case, A and C are represented as a least significant
-    bit and a most significant bit, respectively. 
+    bit and a most significant bit, respectively.
 
-    For example, if all the BED files are A, B, and C, 
+    For example, if all the BED files are A, B, and C,
     then an annotation integer of the second coordinate above is 3(b'011).
 
     So here is a final result.

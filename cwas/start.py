@@ -90,4 +90,3 @@ class Start(Runnable):
         log.print_progress(f"Find pre-installed VEP")
         vep = shutil.which("vep")
         return vep
-

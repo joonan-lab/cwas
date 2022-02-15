@@ -1,7 +1,7 @@
 """
-Module for the categorization of the variants into CWAS categories and 
+Module for the categorization of the variants into CWAS categories and
 counting the number of variants in each category.
-CWAS category is a combination of annotation terms 
+CWAS category is a combination of annotation terms
 from each of annotation groups.
 
 There are currently 5 groups of annotation terms.
@@ -58,7 +58,7 @@ class Categorizer:
         return result
 
     def annotate_each_variant(self, annotated_vcf):
-        """Newly annotated each variant using CWAS annotation terms. 
+        """Newly annotated each variant using CWAS annotation terms.
         In order to annotate each variant with multiple annotation terms
         from each group efficiently, "Annotation integer" has defined.
 
@@ -354,7 +354,7 @@ class Categorizer:
     def parse_annotation_int(
         self, annotation_int: int, annotation_term_type: str
     ) -> list:
-        """ Parse the annotation integer and  
+        """ Parse the annotation integer and
         choose the appropriate subset from the specific annotation terms.
         """
         return extract_sublist_by_int(

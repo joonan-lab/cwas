@@ -86,7 +86,7 @@ class VepCmdGenerator:
 
     @property
     def cmd_option_pick_one_gene_isoform(self) -> list:
-        """Return options in order to pick a gene isoform 
+        """Return options in order to pick a gene isoform
         with most severe consequence"""
         return [
             "--per_gene",

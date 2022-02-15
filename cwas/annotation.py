@@ -1,8 +1,8 @@
 """
 CWAS Annotation Step
 
-This step annotate user's VCF file using annotation data specified 
-in the CWAS configuration step. This step mainly uses 
+This step annotate user's VCF file using annotation data specified
+in the CWAS configuration step. This step mainly uses
 Variant Effect Predictor (VEP) to annotate user's VCF file.
 """
 import argparse

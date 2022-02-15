@@ -33,7 +33,7 @@ class Configuration(Runnable):
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
-        """This argparse is only supposed to print help 
+        """This argparse is only supposed to print help
         in order to explain what each configuration means.
         """
         parser = argparse.ArgumentParser(
