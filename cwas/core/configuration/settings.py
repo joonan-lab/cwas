@@ -8,9 +8,9 @@ from copy import deepcopy
 # 'gene_list' domains are added by gene matrix.
 # 'region' domains are added by BED file keys.
 _default_domains = {
-    "variant_type": ["All", "SNV", "Indel",],
-    "conservation": ["All",],
-    "gene_list": ["Any",],
+    "variant_type": ["All", "SNV", "Indel"],
+    "conservation": ["All"],
+    "gene_list": ["Any"],
     "gencode": [  # GENCODE annotation categories
         "Any",
         "CodingRegion",
@@ -30,7 +30,7 @@ _default_domains = {
         "lincRnaRegion",
         "OtherTranscriptRegion",
     ],
-    "region": ["Any",],  # Custom annotation categories
+    "region": ["Any"],  # Custom annotation categories
 }
 
 _domain_types = list(_default_domains.keys())
