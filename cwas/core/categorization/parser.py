@@ -13,6 +13,7 @@ import pandas as pd
 from cwas.core.common import int_to_bit_arr
 from cwas.utils.log import print_err
 
+
 # TODO: Make the code much clearer
 def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     """ Parse a Variant Calling File (VCF) that includes Variant Effect
