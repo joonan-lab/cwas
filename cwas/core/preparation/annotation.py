@@ -89,7 +89,7 @@ def merge_bed_files(
             )
             pool.close()
             pool.join()
-    except:
+    except Exception:
         log.print_err(
             "Merging BED files has failed because some error occurred."
         )
@@ -129,7 +129,7 @@ def merge_bed_files_by_chrom(
     try:
         log.print_progress(f"Merge BED files for {chrom}")
         _merge_bed_files(out_merge_bed, chrom, bed_file_paths)
-    except:
+    except Exception:
         log.print_err(
             f"Some error occurred during merging BED files for {chrom}."
         )

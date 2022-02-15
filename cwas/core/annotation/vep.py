@@ -18,7 +18,7 @@ class VepCmdGenerator:
             check_is_file(self._vep_path)
         except ValueError:
             raise ValueError(f"Invalid VEP path: {self._vep_path}")
-        except:
+        except Exception:
             raise
 
     def _check_input_vcf_path(self):
@@ -26,7 +26,7 @@ class VepCmdGenerator:
             check_is_file(self._input_vcf_path)
         except ValueError:
             raise ValueError(f"Invalid VCF path: {self._input_vcf_path}")
-        except:
+        except Exception:
             raise
 
     def add_bw_custom_annotation(self, bw_path: str, annotation_key: str):
