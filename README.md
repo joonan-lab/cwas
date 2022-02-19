@@ -61,6 +61,8 @@ chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;B
   - A value in the _AdjustFactor_ must be a float.
 - The values in the _SAMPLE_ must be matched with the sample IDs of variants in the input VCF file.
 
+You can get the examples of the above data requirements from **[joonan-lab/cwas-input-example](https://github.com/joonan-lab/cwas-input-example)**
+
 #### 4. CWAS annotation files
 
 You can install those file from this repository: **[joonan-lab/cwas-dataset](https://github.com/joonan-lab/cwas-dataset)**
