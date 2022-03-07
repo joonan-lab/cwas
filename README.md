@@ -83,7 +83,7 @@ git clone https://github.com/mwjjeong/cwas.git
 cd cwas
 conda env create -f environment.yml -n cwas
 conda activate cwas
-python setup install
+python setup.py install
 ```
 
 In addition, you must install _[Variant Effect Predictor (VEP)](https://www.ensembl.org/vep)_.
