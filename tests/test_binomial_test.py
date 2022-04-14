@@ -197,8 +197,8 @@ def test_ctrl_variant_cnt(binomial_test):
 def test_calculate_relative_risk(binomial_test):
     binomial_test._adjust_categorization_result()
     binomial_test.run()
-    expected_relative_risk1 = 13 / 19  # A_B_C_D_E
-    expected_relative_risk2 = 10 / 24  # a_b_c_d_e
+    expected_relative_risk1 = (13 / 2) / (19 / 4)  # A_B_C_D_E
+    expected_relative_risk2 = (10 / 2) / (24 / 4)  # a_b_c_d_e
     assert binomial_test._result["Relative_Risk"].to_list() == [
         expected_relative_risk1,
         expected_relative_risk2,

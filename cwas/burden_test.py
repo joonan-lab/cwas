@@ -190,8 +190,10 @@ class BurdenTest(Runnable):
 
     def calculate_relative_risk(self):
         print_progress("Calculate relative risks for each category")
+        normalized_case_variant_cnt = self.case_variant_cnt / self.case_cnt
+        normalized_ctrl_variant_cnt = self.ctrl_variant_cnt / self.ctrl_cnt
         self._result["Relative_Risk"] = (
-            self.case_variant_cnt / self.ctrl_variant_cnt
+            normalized_case_variant_cnt / normalized_ctrl_variant_cnt
         )
 
     @abstractmethod
