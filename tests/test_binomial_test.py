@@ -168,6 +168,14 @@ def test_binom_p(binomial_test):
     assert binomial_test.binom_p == 0.5  # A fraction of cases
 
 
+def test_case_cnt(binomial_test):
+    assert binomial_test.case_cnt == 2
+
+
+def test_ctrl_cnt(binomial_test):
+    assert binomial_test.ctrl_cnt == 2
+
+
 def test_case_variant_cnt(binomial_test):
     binomial_test._adjust_categorization_result()
     assert list(binomial_test.case_variant_cnt) == [13, 10]

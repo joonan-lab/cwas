@@ -124,6 +124,14 @@ class BurdenTest(Runnable):
         return self._phenotypes
 
     @property
+    def case_cnt(self) -> int:
+        return (self.phenotypes == "case").sum()
+
+    @property
+    def ctrl_cnt(self) -> int:
+        return (self.phenotypes == "ctrl").sum()
+
+    @property
     def case_variant_cnt(self) -> np.ndarray:
         if self._case_variant_cnt is None:
             self._case_variant_cnt = self.categorization_result.values[
