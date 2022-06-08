@@ -196,15 +196,21 @@ After running this, you will get...
 ...
 ```
 
-#### 6. Burden Test (Binomial Test)
+#### 6. Burden Test (Binomial Test, Fisher's Exact Test)
 
 This step runs category-based burden tests using the categorization result. A type of this burden test is binomial test. Run this command.
 
 ```bash
-cwas binomial_test -s /path/to/your/samples [-a /path/to/your/adj_factors]
+cwas binomial_test -s /path/to/your/samples [-a /path/to/your/adj_factors] [-n]
 ```
 
-`[]` means that this is optional. If `-a` option does not specified, this step will bypass the adjustment step.
+`[]` means that this is optional. If `-a` option does not specified, this step will bypass the adjustment step. If `-n` option is provided, the number of samples with variants in each category is used for burden test instead of the number of variants.
+
+```bash
+cwas fisher_exact_test -s /path/to/your/samples [-a /path/to/your/adj_factors] -n
+```
+
+Fisher's exact test is available only for `-n` option.
 
 After running this, you will get...
 
