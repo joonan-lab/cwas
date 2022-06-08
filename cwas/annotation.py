@@ -60,7 +60,7 @@ class Annotation(Runnable):
     def vep_output_vcf_path(self):
         return (
             f"{self.get_env('CWAS_WORKSPACE')}/"
-            f"{self.vcf_path.name.replace('.vcf', '.vep.vcf')}"
+            f"{self.vcf_path.name.replace('.vcf', '.vep.vcf').replace('.bgz', '').replace('.gz', '')}" # A compressed VCF is compatible with VEP
         )
 
     @property
@@ -71,7 +71,7 @@ class Annotation(Runnable):
     def annotated_vcf_path(self):
         return (
             f"{self.get_env('CWAS_WORKSPACE')}/"
-            f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf')}"
+            f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf').replace('.bgz', '').replace('.gz', '')}"
         )
 
     @property
