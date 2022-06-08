@@ -29,6 +29,14 @@ class Categorizer:
         self._gene_matrix = gene_matrix
         self._default_phylop = -2.0
         self._default_phastcons = 0.0
+        # self._default_jarvis09 = 0.0
+        self._default_jarvis099 = 0.0
+        # self._default_jarvis0999 = 0.0
+        self._default_constraintZ4 = -10.0
+        self._jarvis09_cutoff = 0.9
+        self._jarvis099_cutoff = 0.99
+        self._jarvis0999_cutoff = 0.999
+        self._constraintZ4_cutoff = 4.0
         self._phylop_cutoff = 2.0
         self._phastcons_cutoff = 0.2
 
@@ -48,6 +56,38 @@ class Categorizer:
     def phastcons_cutoff(self, value):
         self._phastcons_cutoff = value
 
+    # @property
+    # def jarvis09_cutoff(self):
+    #     return self._jarvis09_cutoff
+
+    # @jarvis09_cutoff.setter
+    # def jarvis09_cutoff(self, value):
+    #     self._jarvis09_cutoff = value
+
+    @property
+    def jarvis099_cutoff(self):
+        return self._jarvis099_cutoff
+
+    @jarvis099_cutoff.setter
+    def jarvis099_cutoff(self, value):
+        self._jarvis099_cutoff = value
+
+    # @property
+    # def jarvis0999_cutoff(self):
+    #     return self._jarvis0999_cutoff
+
+    # @jarvis0999_cutoff.setter
+    # def jarvis0999_cutoff(self, value):
+    #     self._jarvis0999_cutoff = value
+
+    @property
+    def constraintZ4_cutoff(self):
+        return self._constraintZ4_cutoff
+
+    @constraintZ4_cutoff.setter
+    def constraintZ4_cutoff(self, value):
+        self._constraintZ4_cutoff = value
+        
     def categorize_variant(self, annotated_vcf: pd.DataFrame):
         result = defaultdict(int)
 
@@ -136,21 +176,63 @@ class Categorizer:
             if x == ""
             else max(map(float, x.split("&")))
         )
-
+        # jarvis09_conv_func = (
+        #     lambda x: self._default_jarvis09
+        #     if x == ""
+        #     else max(map(float, x.split("&")))
+        # )
+        jarvis099_conv_func = (
+            lambda x: self._default_jarvis099
+            if x == ""
+            else max(map(float, x.split("&")))
+        )
+        # jarvis0999_conv_func = (
+        #     lambda x: self._default_jarvis0999
+        #     if x == ""
+        #     else max(map(float, x.split("&")))
+        # )
+        ConstraintZ4_conv_func = (
+            lambda x: self._default_constraintZ4
+            if x == ""
+            else max(map(float, x.split("&")))
+        )
         phylop_scores = np.vectorize(phylop_conv_func)(
             annotated_vcf["phyloP46way"].values
         )
         phast_scores = np.vectorize(phast_conv_func)(
             annotated_vcf["phastCons46way"].values
         )
-
+        # jarvis09_scores = np.vectorize(jarvis09_conv_func)(
+        #     annotated_vcf["JARVIS09"].values
+        # )
+        jarvis099_scores = np.vectorize(jarvis099_conv_func)(
+            annotated_vcf["JARVIS099"].values
+        )
+        # jarvis0999_scores = np.vectorize(jarvis0999_conv_func)(
+        #     annotated_vcf["JARVIS0999"].values
+        # )
+        ConstraintZ4_scores = np.vectorize(ConstraintZ4_conv_func)(
+            annotated_vcf["ConstraintZ4"].values
+        )
         is_phylop_conservation_arr = (
             phylop_scores >= self._phylop_cutoff
         ).astype(np.int32)
         is_phast_conservation_arr = (
             phast_scores >= self._phastcons_cutoff
         ).astype(np.int32)
-
+        # is_jarvis09_conservation_arr = (
+        #     jarvis09_scores >= self._jarvis09_cutoff
+        # ).astype(np.int32)
+        is_jarvis099_conservation_arr = (
+            jarvis099_scores >= self._jarvis099_cutoff
+        ).astype(np.int32)
+        # is_jarvis0999_conservation_arr = (
+        #     jarvis0999_scores >= self._jarvis0999_cutoff
+        # ).astype(np.int32)
+        is_ConstraintZ4_conservation_arr = (
+            ConstraintZ4_scores >= self._constraintZ4_cutoff
+        ).astype(np.int32)
+        
         annotation_ints = np.vectorize(
             lambda is_phylop_conservation: 2
             ** conservation_annotation_idx["phyloP46way"]
@@ -163,6 +245,30 @@ class Categorizer:
             if is_phast_conservation
             else 0
         )(is_phast_conservation_arr)
+        # annotation_ints += np.vectorize(
+        #     lambda is_jarvis09_conservation: 2
+        #     ** conservation_annotation_idx["JARVIS09"]
+        #     if is_jarvis09_conservation
+        #     else 0
+        # )(is_jarvis09_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_jarvis099_conservation: 2
+            ** conservation_annotation_idx["JARVIS099"]
+            if is_jarvis099_conservation
+            else 0
+        )(is_jarvis099_conservation_arr)
+        # annotation_ints += np.vectorize(
+        #     lambda is_jarvis0999_conservation: 2
+        #     ** conservation_annotation_idx["JARVIS0999"]
+        #     if is_jarvis0999_conservation
+        #     else 0
+        # )(is_jarvis0999_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_ConstraintZ4_conservation: 2
+            ** conservation_annotation_idx["ConstraintZ4"]
+            if is_ConstraintZ4_conservation
+            else 0
+        )(is_ConstraintZ4_conservation_arr)
         annotation_ints += 2 ** conservation_annotation_idx["All"]
 
         return annotation_ints
