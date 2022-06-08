@@ -109,6 +109,10 @@ class Categorization(Runnable):
             "phastCons46way"
         ]
         categorizer.phylop_cutoff = self.annotation_bw_cutoff["phyloP46way"]
+        # categorizer.jarvis09_cutoff = self.annotation_bw_cutoff["JARVIS09"]
+        categorizer.jarvis099_cutoff = self.annotation_bw_cutoff["JARVIS099"]
+        # categorizer.jarvis0999_cutoff = self.annotation_bw_cutoff["JARVIS0999"]
+        categorizer.constraintZ4_cutoff = self.annotation_bw_cutoff["ConstraintZ4"]
         return categorizer
 
     @property
