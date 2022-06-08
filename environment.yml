@@ -8,7 +8,7 @@ dependencies:
   - numpy
   - pandas
   - scipy
-  - pysam
+  - pysam=0.18.0
   - tabix
   - pyyaml
   - python-dotenv
