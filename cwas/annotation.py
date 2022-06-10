@@ -13,7 +13,7 @@ import yaml
 from cwas.core.annotation.bed import annotate as _annotate_using_bed
 from cwas.core.annotation.vep import VepCmdGenerator
 from cwas.runnable import Runnable
-from cwas.utils.check import check_is_file
+from cwas.utils.check import check_is_file, check_num_proc
 from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
@@ -36,6 +36,15 @@ class Annotation(Runnable):
             type=Path,
             help="Target VCF file",
         )
+        parser.add_argument(
+            "-f",
+            "--fork",
+            dest="num_proc",
+            required=False,
+            type=int,
+            help="Number of worker processes used to fork when running VEP",
+            default=1,
+        )
         return parser
 
     @staticmethod
@@ -45,6 +54,7 @@ class Annotation(Runnable):
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.vcf_path)
+        check_num_proc(args.num_proc)
 
     @property
     def vep_cmd(self):
@@ -52,6 +62,7 @@ class Annotation(Runnable):
             self.get_env("VEP"), str(self.vcf_path)
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
+        vep_cmd_generator.set_num_proc(self.num_proc)
         for bw_path, annotation_key in self.bw_custom_annotations:
             vep_cmd_generator.add_bw_custom_annotation(bw_path, annotation_key)
         return vep_cmd_generator.cmd

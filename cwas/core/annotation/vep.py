@@ -12,6 +12,7 @@ class VepCmdGenerator:
         self._check_input_vcf_path()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".vep.vcf")
         self._bw_custom_annotations = []
+        self._num_proc = 1
 
     def _check_vep_path(self):
         try:
@@ -33,6 +34,9 @@ class VepCmdGenerator:
         check_is_file(bw_path)
         self._bw_custom_annotations.append((bw_path, annotation_key))
 
+    def set_num_proc(self, num_proc: int):
+        self._num_proc = num_proc
+        
     @property
     def vep_path(self) -> str:
         return self._vep_path
@@ -66,6 +70,7 @@ class VepCmdGenerator:
         result += self.cmd_option_pick_one_gene_isoform
         result += self.cmd_option_pick_nearest_gene
         result += self.cmd_option_bw_custom_annotations
+        result += self.cmd_option_fork
         return result
 
     @property
@@ -111,3 +116,8 @@ class VepCmdGenerator:
             ]
 
         return result
+
+    @property
+    def cmd_option_fork(self) -> list:
+        """Return options in order to use forking"""
+        return ["--fork", str(self._num_proc)]
