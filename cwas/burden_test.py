@@ -63,7 +63,7 @@ class BurdenTest(Runnable):
     def _print_args(args: argparse.Namespace):
         print_arg("Sample information file", args.sample_info_path)
         print_arg("Adjustment factor list", args.adj_factor_path)
-        print_arg("If the number of carrier is used for burden test or not", args.use_n_carrier_per_category)
+        print_arg("If the number of carriers is used for burden test or not", args.use_n_carrier_per_category)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
