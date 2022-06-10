@@ -165,10 +165,10 @@ After running this, Merged BED file and its index will be generated in your CWAS
 This step annotate your VCF file using _VEP_. Run this command.
 
 ```bash
-cwas annotation -v /path/to/your/vcf -f num_proc
+cwas annotation -v /path/to/your/vcf -f 4
 ```
 
-`-f` option means the number of threads to use for forking in VEP. Ensembl VEP team recommends using 4 forks.
+`4` means the number of threads to use for forking in VEP.
 
 Here is the result file.
 
