@@ -1,6 +1,6 @@
 # Category-wide association study (CWAS)
 
-![Python Package using Conda](https://github.com/mwjjeong/cwas/actions/workflows/python-package-conda.yml/badge.svg)
+![CWAS CI Workflow](https://github.com/mwjjeong/cwas/actions/workflows/ci.yml/badge.svg)
 
 **CWAS (Category-Wide Association Study)** is a data analytic tool to perform stringent association tests to find non-coding loci associated with autism spectrum disorder (ASD). CWAS runs category-based burden tests using de novo variants from whole genome sequencing data and diverse annotation data sets.
 
