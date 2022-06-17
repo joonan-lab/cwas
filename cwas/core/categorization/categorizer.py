@@ -395,8 +395,10 @@ class Categorizer:
             if not is_in_coding:
                 annotation_int += 2 ** gencode_annotation_idx["NoncodingRegion"]
 
-                if "_UTR_" in gencode:
-                    annotation_int += 2 ** gencode_annotation_idx["UTRsRegion"]
+                if "5_prime_UTR_variant" in gencode:
+                    annotation_int += 2 ** gencode_annotation_idx["5PrimeUTRsRegion"]
+                elif "3_prime_UTR_variant" in gencode:
+                    annotation_int += 2 ** gencode_annotation_idx["3PrimeUTRsRegion"]
                 elif "upstream_gene_variant" in gencode:
                     annotation_int += (
                         2 ** gencode_annotation_idx["PromoterRegion"]
