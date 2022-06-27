@@ -53,6 +53,14 @@ class Preparation(Runnable):
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
 
+    @property
+    def num_proc(self):
+        return self.args.num_proc
+
+    @property
+    def force_overwrite(self):
+        return bool(self.args.force_overwrite)
+
     def run(self):
         self._load_env()
         bed_gz_path, bed_idx_path = self._prepare_annotation()
@@ -73,7 +81,9 @@ class Preparation(Runnable):
             )
 
     def _prepare_annotation(self) -> Tuple[Path, Path]:
-        log.print_progress("Data preprocessing to prepare CWAS annotation step")
+        log.print_progress(
+            "Data preprocessing to prepare CWAS annotation step"
+        )
 
         with self.bed_key_list_path.open() as bed_key_list_file:
             bed_key_list = yaml.safe_load(bed_key_list_file)
@@ -94,7 +104,9 @@ class Preparation(Runnable):
             self.force_overwrite,
         )
         log.print_progress("Compress your BED file.")
-        bed_gz_path = compress_using_bgzip(merge_bed_path, self.force_overwrite)
+        bed_gz_path = compress_using_bgzip(
+            merge_bed_path, self.force_overwrite
+        )
 
         log.print_progress("Make an index of your BED file.")
         bed_idx_path = index_using_tabix(bed_gz_path, self.force_overwrite)

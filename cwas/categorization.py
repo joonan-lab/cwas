@@ -58,6 +58,10 @@ class Categorization(Runnable):
         check_num_proc(args.num_proc)
 
     @property
+    def num_proc(self):
+        return self.args.num_proc
+
+    @property
     def result_path(self) -> Path:
         return Path(
             self.get_env("ANNOTATED_VCF").replace(

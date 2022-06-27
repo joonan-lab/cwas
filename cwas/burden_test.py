@@ -1,6 +1,7 @@
 import argparse
 from abc import abstractmethod
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -58,6 +59,18 @@ class BurdenTest(Runnable):
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
+
+    @property
+    def sample_info_path(self) -> Path:
+        return self.args.sample_info_path.resolve()
+
+    @property
+    def adj_factor_path(self) -> Optional[Path]:
+        return (
+            self.args.adj_factor_path.resolve()
+            if self.args.adj_factor_path
+            else None
+        )
 
     @property
     def result_path(self) -> Path:

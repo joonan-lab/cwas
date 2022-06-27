@@ -34,6 +34,10 @@ class Start(Runnable):
     def _print_args(args: argparse.Namespace):
         log.print_arg("CWAS Workspace", args.workspace)
 
+    @property
+    def workspace(self):
+        return self.args.workspace.resolve()
+
     def run(self):
         if self.workspace.is_dir():
             log.print_warn(
