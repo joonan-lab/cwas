@@ -51,13 +51,7 @@ class TestRunnable(unittest.TestCase):
 
         argv = ["-d", str(test_dir), "-f", str(test_file), "-n", str(randint)]
         inst = RunnableMock.get_instance(argv)
-
-        assert hasattr(inst, "test_dir")
-        assert hasattr(inst, "test_file")
-        assert hasattr(inst, "test_int")
-        assert isinstance(getattr(inst, "test_dir"), pathlib.Path)
-        assert isinstance(getattr(inst, "test_file"), pathlib.Path)
-        assert getattr(inst, "test_int") == randint
+        assert hasattr(inst, "args")
 
         # Teardown
         test_file.unlink()

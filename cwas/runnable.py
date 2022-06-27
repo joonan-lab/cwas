@@ -9,14 +9,9 @@ from cwas.env import Env
 
 
 class Runnable(ABC):
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: Optional[argparse.Namespace] = None):
         self.env = Env()
-        arg_dict = vars(args)
-        for arg in arg_dict:
-            arg_val = arg_dict.get(arg)
-            if isinstance(arg_val, Path):
-                arg_val = arg_val.resolve()
-            setattr(self, arg, arg_val)
+        self._args = args
 
     @classmethod
     def get_instance(cls, argv: list = []) -> Runnable:
@@ -25,6 +20,10 @@ class Runnable(ABC):
         cls._print_args(args)
         cls._check_args_validity(args)
         return cls(args)
+
+    @property
+    def args(self) -> Optional[argparse.Namespace]:
+        return argparse.Namespace(**vars(self._args)) if self._args else None
 
     def set_env_path(self, path: Path):
         self.env.set_path(path)
