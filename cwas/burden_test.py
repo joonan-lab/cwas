@@ -14,7 +14,7 @@ from cwas.utils.log import print_arg, print_progress
 
 
 class BurdenTest(Runnable):
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: Optional[argparse.Namespace] = None):
         super().__init__(args)
         self._sample_info = None
         self._adj_factor = None
@@ -90,9 +90,7 @@ class BurdenTest(Runnable):
 
     @property
     def adj_factor(self) -> pd.DataFrame:
-        if self.adj_factor_path is None:
-            return None
-        if self._adj_factor is None:
+        if self._adj_factor is None and self.adj_factor_path:
             self._adj_factor = pd.read_table(
                 self.adj_factor_path, index_col="SAMPLE"
             )
