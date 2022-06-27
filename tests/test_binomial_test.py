@@ -13,32 +13,6 @@ class BinomialTestMock(BinomialTest):
         pass
 
 
-@pytest.fixture(scope="module")
-def sample_info_path(cwas_workspace):
-    return cwas_workspace / "samples.txt"
-
-
-@pytest.fixture(scope="module")
-def adj_factor_path(cwas_workspace):
-    return cwas_workspace / "adj_factors.txt"
-
-
-@pytest.fixture(scope="module")
-def args(sample_info_path, adj_factor_path):
-    return ["-s", str(sample_info_path), "-a", str(adj_factor_path)]
-
-
-@pytest.fixture(scope="module", autouse=True)
-def setup_and_teardown(cwas_workspace, sample_info_path, adj_factor_path):
-    cwas_workspace.mkdir()
-    sample_info_path.touch()
-    adj_factor_path.touch()
-    yield
-    sample_info_path.unlink()
-    adj_factor_path.unlink()
-    cwas_workspace.rmdir()
-
-
 @pytest.fixture
 def categorization_result():
     results = [
@@ -98,10 +72,10 @@ def adjustment_factor_other_sample():
 
 @pytest.fixture
 def binomial_test(
-    args, categorization_result, sample_info, adjustment_factor,
+    categorization_result, sample_info, adjustment_factor,
 ):
     # This is not an appropriate usage.
-    inst = BinomialTestMock.get_instance(args)
+    inst = BinomialTestMock()
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info
     inst._adj_factor = adjustment_factor
@@ -110,13 +84,12 @@ def binomial_test(
 
 @pytest.fixture
 def binomial_test_with_inconsistent_sample(
-    args,
     categorization_result,
     sample_info_other_sample,
     adjustment_factor_other_sample,
 ):
     # This is not an appropriate usage.
-    inst = BinomialTestMock.get_instance(args)
+    inst = BinomialTestMock()
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info_other_sample
     inst._adj_factor = adjustment_factor_other_sample
