@@ -92,7 +92,7 @@ class VepCmdGenerator:
             "--per_gene",
             "--pick",
             "--pick_order",
-            "canonical,appris,tsl,biotype,ccds,rank,length",
+            "rank,canonical,appris,tsl,biotype,ccds,length",
         ]
 
     @property
