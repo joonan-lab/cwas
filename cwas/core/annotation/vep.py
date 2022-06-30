@@ -2,7 +2,7 @@
 Command line generator for Variant Effect Predictor (VEP)
 """
 from cwas.utils.check import check_is_file
-
+import os
 
 class VepCmdGenerator:
     def __init__(self, vep_path: str, input_vcf_path: str) -> None:
@@ -71,6 +71,7 @@ class VepCmdGenerator:
     @property
     def cmd_option_basic(self) -> list:
         """Return basic options (no plugins) of VEP"""
+        home_d = os.path.expanduser('~')
         return [
             "--assembly",
             "GRCh38",
@@ -80,8 +81,19 @@ class VepCmdGenerator:
             "vcf",
             "--vcf",
             "--no_stats",
-            "--polyphen",
-            "p",
+            "--plugin",
+            ''.join(['LoF,conservation_file:', home_d,
+                '/.vep/loftee.sql,loftee_path:', home_d,
+                '/.vep/Plugins/loftee,human_ancestor_fa:', home_d,
+                '/.vep/human_ancestor.fa.gz,gerp_bigwig:', home_d,
+                "/.vep/gerp_conservation_scores.homo_sapiens.GRCh38.bw"]),
+            "--dir_plugins",
+            ''.join([home_d, "/.vep/Plugins/loftee"]),
+            "--plugin",
+            ''.join(["MPC,", home_d,
+                "/.vep/fordist_constraint_official_mpc_values_grch38.txt.gz"]),
+            #"--polyphen",
+            #"p",
         ]
 
     @property
