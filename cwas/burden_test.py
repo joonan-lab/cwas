@@ -31,6 +31,14 @@ class BurdenTest(Runnable):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
         parser.add_argument(
+            "-i",
+            "--input_file",
+            dest="cat_path",
+            required=True,
+            type=Path,
+            help="Categorized file",
+        )
+        parser.add_argument(
             "-s",
             "--sample_info",
             dest="sample_info_path",
@@ -51,11 +59,13 @@ class BurdenTest(Runnable):
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
+        print_arg("Categorized file", args.cat_path)
         print_arg("Sample information file", args.sample_info_path)
         print_arg("Adjustment factor list", args.adj_factor_path)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
+        check_is_file(args.cat_path)
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
@@ -75,9 +85,8 @@ class BurdenTest(Runnable):
     @property
     def result_path(self) -> Path:
         return Path(
-            self.get_env("ANNOTATED_VCF").replace(
-                "annotated.vcf", "burden_test.txt"
-            )
+            f"{self.get_env('BURDEN_TEST_OUTPUT_DIR')}/"
+            f"{self.cat_path.name.replace('categorization_result.txt', 'burden_test.txt')}"
         )
 
     @property
@@ -101,7 +110,7 @@ class BurdenTest(Runnable):
         if self._categorization_result is None:
             print_progress("Load the categorization result")
             self._categorization_result = pd.read_table(
-                self.get_env("CATEGORIZATION_RESULT"), index_col="SAMPLE"
+                self.cat_path, index_col="SAMPLE"
             )
             if self.adj_factor is not None:
                 self._adjust_categorization_result()

@@ -63,7 +63,7 @@ class Annotation(Runnable):
     @property
     def vep_output_vcf_path(self):
         return (
-            f"{self.get_env('CWAS_WORKSPACE')}/"
+            f"{self.get_env('ANNOTATED_VCF_OUTPUT_DIR')}/"
             f"{self.vcf_path.name.replace('.vcf', '.vep.vcf')}"
         )
 
@@ -74,7 +74,7 @@ class Annotation(Runnable):
     @property
     def annotated_vcf_path(self):
         return (
-            f"{self.get_env('CWAS_WORKSPACE')}/"
+            f"{self.get_env('ANNOTATED_VCF_OUTPUT_DIR')}/"
             f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf')}"
         )
 
