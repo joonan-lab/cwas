@@ -17,6 +17,7 @@ from cwas.core.categorization.parser import (
 )
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
+from cwas.utils.check import check_is_file
 
 
 class Categorization(Runnable):
@@ -36,6 +37,14 @@ class Categorization(Runnable):
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
         parser.add_argument(
+            "-i",
+            "--input_file",
+            dest="input_path",
+            required=True,
+            type=Path,
+            help="Annotated VCF file",
+        )
+        parser.add_argument(
             "-p",
             "--num_proc",
             dest="num_proc",
@@ -52,21 +61,18 @@ class Categorization(Runnable):
             "No. worker processes for the categorization",
             f"{args.num_proc: ,d}",
         )
+        log.print_arg("Annotated VCF file", args.input_path)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
-
-    @property
-    def num_proc(self):
-        return self.args.num_proc
+        check_is_file(args.input_path)
 
     @property
     def result_path(self) -> Path:
         return Path(
-            self.get_env("ANNOTATED_VCF").replace(
-                "annotated.vcf", "categorization_result.txt"
-            )
+            f"{self.get_env('CATEGORIZATION_OUTPUT_DIR')}/"
+            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
         )
 
     @property
@@ -74,7 +80,7 @@ class Categorization(Runnable):
         if self._annotated_vcf is None:
             log.print_progress("Parse the annotated VCF")
             self._annotated_vcf = parse_annotated_vcf(
-                Path(self.get_env("ANNOTATED_VCF"))
+                Path(self.input_path)
             )
         return self._annotated_vcf
 

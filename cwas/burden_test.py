@@ -1,7 +1,6 @@
 import argparse
 from abc import abstractmethod
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -14,7 +13,7 @@ from cwas.utils.log import print_arg, print_progress
 
 
 class BurdenTest(Runnable):
-    def __init__(self, args: Optional[argparse.Namespace] = None):
+    def __init__(self, args: argparse.Namespace):
         super().__init__(args)
         self._sample_info = None
         self._adj_factor = None
@@ -29,6 +28,14 @@ class BurdenTest(Runnable):
         parser = argparse.ArgumentParser(
             description="Arguments of Burden Tests",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        )
+        parser.add_argument(
+            "-i",
+            "--input_file",
+            dest="cat_path",
+            required=True,
+            type=Path,
+            help="Categorized file",
         )
         parser.add_argument(
             "-s",
@@ -51,33 +58,22 @@ class BurdenTest(Runnable):
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
+        print_arg("Categorized file", args.cat_path)
         print_arg("Sample information file", args.sample_info_path)
         print_arg("Adjustment factor list", args.adj_factor_path)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
+        check_is_file(args.cat_path)
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
 
     @property
-    def sample_info_path(self) -> Path:
-        return self.args.sample_info_path.resolve()
-
-    @property
-    def adj_factor_path(self) -> Optional[Path]:
-        return (
-            self.args.adj_factor_path.resolve()
-            if self.args.adj_factor_path
-            else None
-        )
-
-    @property
     def result_path(self) -> Path:
         return Path(
-            self.get_env("ANNOTATED_VCF").replace(
-                "annotated.vcf", "burden_test.txt"
-            )
+            f"{self.get_env('BURDEN_TEST_OUTPUT_DIR')}/"
+            f"{self.cat_path.name.replace('categorization_result.txt', 'burden_test.txt')}"
         )
 
     @property
@@ -90,7 +86,9 @@ class BurdenTest(Runnable):
 
     @property
     def adj_factor(self) -> pd.DataFrame:
-        if self._adj_factor is None and self.adj_factor_path:
+        if self.adj_factor_path is None:
+            return None
+        if self._adj_factor is None:
             self._adj_factor = pd.read_table(
                 self.adj_factor_path, index_col="SAMPLE"
             )
@@ -101,7 +99,7 @@ class BurdenTest(Runnable):
         if self._categorization_result is None:
             print_progress("Load the categorization result")
             self._categorization_result = pd.read_table(
-                self.get_env("CATEGORIZATION_RESULT"), index_col="SAMPLE"
+                self.cat_path, index_col="SAMPLE"
             )
             if self.adj_factor is not None:
                 self._adjust_categorization_result()

@@ -47,10 +47,6 @@ class Annotation(Runnable):
         check_is_file(args.vcf_path)
 
     @property
-    def vcf_path(self):
-        return self.args.vcf_path.resolve()
-
-    @property
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
             self.get_env("VEP"), str(self.vcf_path)
@@ -63,7 +59,7 @@ class Annotation(Runnable):
     @property
     def vep_output_vcf_path(self):
         return (
-            f"{self.get_env('CWAS_WORKSPACE')}/"
+            f"{self.get_env('ANNOTATED_VCF_OUTPUT_DIR')}/"
             f"{self.vcf_path.name.replace('.vcf', '.vep.vcf')}"
         )
 
@@ -74,7 +70,7 @@ class Annotation(Runnable):
     @property
     def annotated_vcf_path(self):
         return (
-            f"{self.get_env('CWAS_WORKSPACE')}/"
+            f"{self.get_env('ANNOTATED_VCF_OUTPUT_DIR')}/"
             f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf')}"
         )
 
