@@ -31,6 +31,16 @@ class Categorizer:
         self._default_phastcons = 0.0
         self._phylop_cutoff = 2.0
         self._phastcons_cutoff = 0.2
+	self._default_jarvis099 = 0.0
+        self._default_constraintZ4 = 0.0
+        self._jarvis099_cutoff = 0.99
+        self._constraintZ4_cutoff = 4.0
+        self._default_Splice02max = 0.0
+        self._default_Splice05max = 0.0
+        self._default_Splice08max = 0.0
+        self._Splice02max_cutoff = 0.2
+        self._Splice05max_cutoff = 0.5
+        self._Splice08max_cutoff = 0.8
 
     @property
     def phylop_cutoff(self):
@@ -47,6 +57,46 @@ class Categorizer:
     @phastcons_cutoff.setter
     def phastcons_cutoff(self, value):
         self._phastcons_cutoff = value
+
+    @property
+    def jarvis099_cutoff(self):
+        return self._jarvis099_cutoff
+
+    @jarvis099_cutoff.setter
+    def jarvis099_cutoff(self, value):
+        self._jarvis099_cutoff = value
+
+    @property
+    def constraintZ4_cutoff(self):
+        return self._constraintZ4_cutoff
+
+    @constraintZ4_cutoff.setter
+    def constraintZ4_cutoff(self, value):
+        self._constraintZ4_cutoff = value
+
+    @property
+    def Splice02max_cutoff(self):
+        return self._Splice02max_cutoff
+
+    @Splice02max_cutoff.setter
+    def Splice02max_cutoff(self, value):
+        self._Splice02max_cutoff = value
+
+    @property
+    def Splice05max_cutoff(self):
+        return self._Splice05max_cutoff
+
+    @Splice05max_cutoff.setter
+    def Splice05max_cutoff(self, value):
+        self._Splice05max_cutoff = value
+
+    @property
+    def Splice08max_cutoff(self):
+        return self._Splice08max_cutoff
+
+    @Splice08max_cutoff.setter
+    def Splice08max_cutoff(self, value):
+        self._Splice08max_cutoff = value
 
     def categorize_variant(self, annotated_vcf: pd.DataFrame):
         result = defaultdict(int)
@@ -136,6 +186,31 @@ class Categorizer:
             if x == ""
             else max(map(float, x.split("&")))
         )
+        jarvis099_conv_func = (
+            lambda x: self._default_jarvis099
+            if x == ""
+            else max(map(float, x.split("&")))
+        )
+        ConstraintZ4_conv_func = (
+            lambda x: self._default_constraintZ4
+            if x == ""
+            else max(map(float, x.split("&")))
+        )
+        Splice02max_conv_func = (
+            lambda x: self._default_Splice02max
+            if x == ""
+            else max(map(float, x.split("&")))
+        )
+        Splice05max_conv_func = (
+            lambda x: self._default_Splice05max
+            if x == ""
+            else max(map(float, x.split("&")))
+        )
+        Splice08max_conv_func = (
+            lambda x: self._default_Splice08max
+            if x == ""
+            else max(map(float, x.split("&")))
+        )
 
         phylop_scores = np.vectorize(phylop_conv_func)(
             annotated_vcf["phyloP46way"].values
@@ -143,12 +218,42 @@ class Categorizer:
         phast_scores = np.vectorize(phast_conv_func)(
             annotated_vcf["phastCons46way"].values
         )
+        jarvis099_scores = np.vectorize(jarvis099_conv_func)(
+            annotated_vcf["JARVIS099"].values
+        )
+        ConstraintZ4_scores = np.vectorize(ConstraintZ4_conv_func)(
+            annotated_vcf["ConstraintZ4"].values
+        )
+        Splice02max_scores = np.vectorize(Splice02max_conv_func)(
+            annotated_vcf["Splice02max"].values
+        )
+        Splice05max_scores = np.vectorize(Splice05max_conv_func)(
+            annotated_vcf["Splice05max"].values
+        )
+        Splice08max_scores = np.vectorize(Splice08max_conv_func)(
+            annotated_vcf["Splice08max"].values
+        )
 
         is_phylop_conservation_arr = (
             phylop_scores >= self._phylop_cutoff
         ).astype(np.int32)
         is_phast_conservation_arr = (
             phast_scores >= self._phastcons_cutoff
+        ).astype(np.int32)
+        is_jarvis099_conservation_arr = (
+            jarvis099_scores >= self._jarvis099_cutoff
+        ).astype(np.int32)
+        is_ConstraintZ4_conservation_arr = (
+            ConstraintZ4_scores >= self._constraintZ4_cutoff
+        ).astype(np.int32)
+        is_Splice02max_conservation_arr = (
+            Splice02max_scores >= self._Splice02max_cutoff
+        ).astype(np.int32)
+        is_Splice05max_conservation_arr = (
+            Splice05max_scores >= self._Splice05max_cutoff
+        ).astype(np.int32)
+        is_Splice08max_conservation_arr = (
+            Splice08max_scores >= self._Splice08max_cutoff
         ).astype(np.int32)
 
         annotation_ints = np.vectorize(
@@ -163,6 +268,37 @@ class Categorizer:
             if is_phast_conservation
             else 0
         )(is_phast_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_jarvis099_conservation: 2
+            ** conservation_annotation_idx["JARVIS099"]
+            if is_jarvis099_conservation
+            else 0
+        )(is_jarvis099_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_ConstraintZ4_conservation: 2
+            ** conservation_annotation_idx["ConstraintZ4"]
+            if is_ConstraintZ4_conservation
+            else 0
+        )(is_ConstraintZ4_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_Splice02max_conservation: 2
+            ** conservation_annotation_idx["Splice02max"]
+            if is_Splice02max_conservation
+            else 0
+        )(is_Splice02max_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_Splice05max_conservation: 2
+            ** conservation_annotation_idx["Splice05max"]
+            if is_Splice05max_conservation
+            else 0
+        )(is_Splice05max_conservation_arr)
+        annotation_ints += np.vectorize(
+            lambda is_Splice08max_conservation: 2
+            ** conservation_annotation_idx["Splice08max"]
+            if is_Splice08max_conservation
+            else 0
+        )(is_Splice08max_conservation_arr)
+
         annotation_ints += 2 ** conservation_annotation_idx["All"]
 
         return annotation_ints
