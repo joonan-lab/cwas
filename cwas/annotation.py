@@ -47,6 +47,10 @@ class Annotation(Runnable):
         check_is_file(args.vcf_path)
 
     @property
+    def vcf_path(self):
+        return self.args.vcf_path.resolve()
+
+    @property
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
             self.get_env("VEP"), str(self.vcf_path)

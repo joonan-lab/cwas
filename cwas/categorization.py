@@ -69,6 +69,10 @@ class Categorization(Runnable):
         check_is_file(args.input_path)
 
     @property
+    def num_proc(self):
+        return self.args.num_proc
+
+    @property
     def result_path(self) -> Path:
         return Path(
             f"{self.get_env('CATEGORIZATION_OUTPUT_DIR')}/"

@@ -1,6 +1,7 @@
 import argparse
 from abc import abstractmethod
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -13,7 +14,7 @@ from cwas.utils.log import print_arg, print_progress
 
 
 class BurdenTest(Runnable):
-    def __init__(self, args: argparse.Namespace):
+    def __init__(self, args: Optional[argparse.Namespace] = None):
         super().__init__(args)
         self._sample_info = None
         self._adj_factor = None
@@ -70,6 +71,18 @@ class BurdenTest(Runnable):
             check_is_file(args.adj_factor_path)
 
     @property
+    def sample_info_path(self) -> Path:
+        return self.args.sample_info_path.resolve()
+
+    @property
+    def adj_factor_path(self) -> Optional[Path]:
+        return (
+            self.args.adj_factor_path.resolve()
+            if self.args.adj_factor_path
+            else None
+        )
+
+    @property
     def result_path(self) -> Path:
         return Path(
             f"{self.get_env('BURDEN_TEST_OUTPUT_DIR')}/"
@@ -86,9 +99,7 @@ class BurdenTest(Runnable):
 
     @property
     def adj_factor(self) -> pd.DataFrame:
-        if self.adj_factor_path is None:
-            return None
-        if self._adj_factor is None:
+        if self._adj_factor is None and self.adj_factor_path:
             self._adj_factor = pd.read_table(
                 self.adj_factor_path, index_col="SAMPLE"
             )
