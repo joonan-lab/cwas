@@ -53,7 +53,7 @@ class Annotation(Runnable):
     @property
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
-            self.get_env("VEP"), str(self.vcf_path)
+            self.get_env("VEP"), self.get_env("VEP_RESOURCE_DIR"), str(self.vcf_path)
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
         for bw_path, annotation_key in self.bw_custom_annotations:

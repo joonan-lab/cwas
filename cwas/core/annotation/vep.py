@@ -2,12 +2,15 @@
 Command line generator for Variant Effect Predictor (VEP)
 """
 from cwas.utils.check import check_is_file
+from cwas.utils.check import check_is_dir
 
 
 class VepCmdGenerator:
-    def __init__(self, vep_path: str, input_vcf_path: str) -> None:
+    def __init__(self, vep_path: str, vep_resource_dir_path: str, input_vcf_path: str) -> None:
         self._vep_path = vep_path
+        self._vep_resource_dir_path = vep_resource_dir_path
         self._check_vep_path()
+        self._check_vep_resource_dir_path()
         self._input_vcf_path = input_vcf_path
         self._check_input_vcf_path()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".vep.vcf")
@@ -18,6 +21,14 @@ class VepCmdGenerator:
             check_is_file(self._vep_path)
         except ValueError:
             raise ValueError(f"Invalid VEP path: {self._vep_path}")
+        except Exception:
+            raise
+
+    def _check_vep_resource_dir_path(self):
+        try:
+            check_is_dir(self._vep_resource_dir_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP resource directory path: {self._vep_resource_dir_path}")
         except Exception:
             raise
 
@@ -36,6 +47,10 @@ class VepCmdGenerator:
     @property
     def vep_path(self) -> str:
         return self._vep_path
+
+    @property
+    def vep_resource_dir_path(self) -> str:
+        return self._vep_resource_dir_path
 
     @property
     def input_vcf_path(self) -> str:
@@ -80,8 +95,17 @@ class VepCmdGenerator:
             "vcf",
             "--vcf",
             "--no_stats",
-            "--polyphen",
-            "p",
+            "--plugin",
+            ''.join(['LoF,conservation_file:', self._vep_resource_dir_path,
+                     '/loftee.sql,loftee_path:', self._vep_resource_dir_path,
+                     '/Plugins/loftee,human_ancestor_fa:', self._vep_resource_dir_path,
+                     '/human_ancestor.fa.gz,gerp_bigwig:', self._vep_resource_dir_path,
+                     '/gerp_conservation_scores.homo_sapiens.GRCh38.bw']),
+            "--dir_plugins",
+            ''.join([self._vep_resource_dir_path, "/Plugins/loftee"]),
+            "--plugin",
+            ''.join(["MPC,", self._vep_resource_dir_path,
+                     '/fordist_constraint_official_mpc_values_grch38.txt.gz']),
         ]
 
     @property

@@ -84,6 +84,14 @@ class Configuration(Runnable):
             type=Path,
             help="Path to Variant Effect Predictor (VEP)",
         )
+        parser.add_argument(
+            "-vrd",
+            "--vep_resource_dir",
+            dest="vep_resource_dir",
+            required=False,
+            type=Path,
+            help="Path to your VEP resource directory",
+        )
         return parser
 
     def run(self):
@@ -101,6 +109,7 @@ class Configuration(Runnable):
         self.data_dir = Path(user_config.get("ANNOTATION_DATA_DIR"))
         self.gene_matrix = Path(user_config.get("GENE_MATRIX"))
         self.vep = Path(user_config.get("VEP"))
+        self.vep_resource_dir = Path(user_config.get("VEP_RESOURCE_DIR"))
 
         annot_key_conf = user_config.get("ANNOTATION_KEY_CONFIG")
         bw_cutoff_conf = user_config.get("BIGWIG_CUTOFF_CONFIG")
@@ -131,6 +140,7 @@ class Configuration(Runnable):
     def _check_attr_from_user_config(self):
         check.check_is_file(self.user_config)
         check.check_is_dir(self.data_dir)
+        check.check_is_dir(self.vep_resource_dir)
         check.check_is_file(self.gene_matrix)
         if self.annot_key_conf is not None:
             check.check_is_file(self.annot_key_conf)
@@ -220,6 +230,7 @@ class Configuration(Runnable):
     def _set_env(self):
         log.print_progress("Set CWAS environment variables")
         self.set_env("VEP", getattr(self, "vep"))
+        self.set_env("VEP_RESOURCE_DIR", getattr(self, "vep_resource_dir"))
         self.set_env("ANNOTATION_DATA", self.data_dir_symlink)
         self.set_env("GENE_MATRIX", self.gene_matrix_symlink)
         self.set_env("ANNOTATION_BED_KEY", self.bed_key_list)
