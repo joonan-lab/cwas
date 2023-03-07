@@ -19,6 +19,65 @@ def start() -> argparse.ArgumentParser:
     )
     return result
 
+def configuration() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments for CWAS Configuration",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = Path.home() / ".cwas"
+    result.add_argument(
+        "-d",
+        "--annotation_data_dir",
+        dest="data_dir",
+        required=False,
+        type=Path,
+        help="Path to your annotation data directory",
+    )
+    result.add_argument(
+        "-m",
+        "--gene_matrix",
+        dest="gene_matrix",
+        required=False,
+        type=Path,
+        help="Path to your gene matrix",
+    )
+    result.add_argument(
+        "-a",
+        "--annotation_key_config",
+        dest="annot_key_conf",
+        required=False,
+        type=Path,
+        help="Path to a configuration file (.yaml) that "
+        "specifies the annotation key of each "
+        "annotation data file",
+    )
+    result.add_argument(
+        "-b",
+        "--bigwig_cutoff_config",
+        dest="bw_cutoff_conf",
+        required=False,
+        type=Path,
+        help="Path to a configuration file (.yaml) that "
+        "specifies the annotation cutoff of "
+        "each BigWig file",
+    )
+    result.add_argument(
+        "-v",
+        "--vep",
+        dest="vep",
+        required=False,
+        type=Path,
+        help="Path to Variant Effect Predictor (VEP)",
+    )
+    result.add_argument(
+        "-vrd",
+        "--vep_resource_dir",
+        dest="vep_resource_dir",
+        required=False,
+        type=Path,
+        help="Path to your VEP resource directory",
+    )
+    return result
 
 def preparation() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
@@ -51,6 +110,7 @@ def annotation() -> argparse.ArgumentParser:
         description="Arguments of CWAS annotation step",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    default_workspace = Path.home() / ".cwas"
     result.add_argument(
         "-v",
         "--vcf_file",
@@ -58,6 +118,15 @@ def annotation() -> argparse.ArgumentParser:
         required=True,
         type=Path,
         help="Target VCF file",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
     )
     return result
 
@@ -67,6 +136,7 @@ def categorization() -> argparse.ArgumentParser:
         description="Arguments of CWAS categorization step",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    default_workspace = Path.home() / ".cwas"
     result.add_argument(
         "-i",
         "--input_file",
@@ -74,6 +144,15 @@ def categorization() -> argparse.ArgumentParser:
         required=True,
         type=Path,
         help="Annotated VCF file",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
     )
     result.add_argument(
         "-p",
@@ -92,6 +171,7 @@ def binomial_test() -> argparse.ArgumentParser:
         description="Arguments of Burden Tests",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    default_workspace = Path.home() / ".cwas"
     result.add_argument(
         "-i",
         "--input_file",
@@ -99,6 +179,15 @@ def binomial_test() -> argparse.ArgumentParser:
         required=True,
         type=Path,
         help="Categorized file",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
     )
     result.add_argument(
         "-s",
