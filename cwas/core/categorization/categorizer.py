@@ -211,12 +211,14 @@ class Categorizer:
         gene_symbols = annotated_vcf["SYMBOL"].values
         gene_nearests = annotated_vcf["NEAREST"].values
         gencodes = annotated_vcf["Consequence"].values
-        polyphens = annotated_vcf["PolyPhen"].values
+        lofs = annotated_vcf["LoF"].values
+        lof_flags = annotated_vcf["LoF_flags"].values
+        mpcs = annotated_vcf["MPC"].values
 
         annotation_int_list = []
 
-        for symbol, nearest, gencode, polyphen in zip(
-            gene_symbols, gene_nearests, gencodes, polyphens
+        for symbol, nearest, gencode, lof, lof_flag, mpc in zip(
+            gene_symbols, gene_nearests, gencodes, lofs, lof_flags, mpcs
         ):
             gene = (
                 nearest
@@ -233,16 +235,20 @@ class Categorizer:
                 annotation_int += 2 ** gencode_annotation_idx["CodingRegion"]
 
                 # Coding region
-                if (
+                if ((
                     "stop_gained" in gencode
                     or "splice_donor" in gencode
                     or "splice_acceptor" in gencode
+                )
+                and (lof == "HC")
+                and ((lof_flag=='SINGLE_EXON') or (lof_flag==""))
                 ):
                     annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
-                elif (
+                elif ((
                     "frameshift_variant" in gencode
-                    or "transcript_amplification" in gencode
-                    or "transcript_ablation" in gencode
+                )
+                and (lof == "HC")
+                and ((lof_flag=='SINGLE_EXON') or (lof_flag==""))
                 ):
                     annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
                     annotation_int += (
@@ -250,6 +256,7 @@ class Categorizer:
                     )
                 elif (
                     "missense_variant" in gencode
+                    or "protein_altering_variant" in gencode
                     or "start_lost" in gencode
                     or "stop_lost" in gencode
                 ):
@@ -257,12 +264,12 @@ class Categorizer:
                         2 ** gencode_annotation_idx["MissenseRegion"]
                     )
 
-                    if "probably_damaging" in polyphen:
+                    if ((len(mpc)!=0)
+                        and (mpc!='NA')
+                        and (float(mpc)>=2)
+                    ):
                         annotation_int += (
-                            2
-                            ** gencode_annotation_idx[
-                                "MissenseHVARDRegionSimple"
-                            ]
+                            2 ** gencode_annotation_idx["DamagingMissenseRegion"]
                         )
 
                 elif (
@@ -289,10 +296,8 @@ class Categorizer:
             if not is_in_coding:
                 annotation_int += 2 ** gencode_annotation_idx["NoncodingRegion"]
 
-                if "5_prime_UTR_variant" in gencode:
-                    annotation_int += 2 ** gencode_annotation_idx["5PrimeUTRsRegion"]
-                elif "3_prime_UTR_variant" in gencode:
-                    annotation_int += 2 ** gencode_annotation_idx["3PrimeUTRsRegion"]
+                if "_UTR_" in gencode:
+                    annotation_int += 2 ** gencode_annotation_idx["UTRsRegion"]
                 elif "upstream_gene_variant" in gencode:
                     annotation_int += (
                         2 ** gencode_annotation_idx["PromoterRegion"]
@@ -313,11 +318,7 @@ class Categorizer:
                         2 ** gencode_annotation_idx["IntergenicRegion"]
                     )
                 elif "ProteinCoding" not in gene_list_set:
-                    if "Antisense" in gene_list_set:
-                        annotation_int += (
-                            2 ** gencode_annotation_idx["AntisenseRegion"]
-                        )
-                    elif "lincRNA" in gene_list_set:
+                    if "lincRNA" in gene_list_set:
                         annotation_int += (
                             2 ** gencode_annotation_idx["lincRnaRegion"]
                         )
