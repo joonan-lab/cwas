@@ -38,7 +38,7 @@ class BurdenTest(Runnable):
             dest="cat_path",
             required=True,
             type=Path,
-            help="Categorized file",
+            help="Categorized file (gzipped)",
         )
         parser.add_argument(
             "-o_dir",
@@ -131,7 +131,7 @@ class BurdenTest(Runnable):
         if self._categorization_result is None:
             print_progress("Load the categorization result")
             self._categorization_result = pd.read_table(
-                self.cat_path, index_col="SAMPLE"
+                self.cat_path, index_col="SAMPLE", compression='gzip'
             )
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
