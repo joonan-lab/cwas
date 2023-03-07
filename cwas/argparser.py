@@ -207,3 +207,87 @@ def binomial_test() -> argparse.ArgumentParser:
         help="File listing adjustment factors of each sample",
     )
     return result
+
+
+def permutation_test() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of Burden Tests",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = Path.home() / ".cwas"
+    result.add_argument(
+        "-i",
+        "--input_file",
+        dest="cat_path",
+        required=True,
+        type=Path,
+        help="Categorized file (gzipped)",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        "-s",
+        "--sample_info",
+        dest="sample_info_path",
+        required=True,
+        type=Path,
+        help="File listing information of your samples",
+    )
+    result.add_argument(
+        "-a",
+        "--adjustment_factor",
+        dest="adj_factor_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="File listing adjustment factors of each sample",
+    )
+    result.add_argument(
+        "-n",
+        "--num_perm",
+        dest="num_perm",
+        default=10000,
+        type=int,
+        help="The number of label-swapping permutations",
+    )
+    result.add_argument(
+        "-p",
+        "--num_proc",
+        dest="num_proc",
+        required=False,
+        type=int,
+        help="Number of worker processes for the categorization",
+        default=1,
+    )
+    result.add_argument(
+        "-b",
+        "--burden_shift",
+        dest="burden_shift",
+        required=False,
+        action="store_true",
+        help="Generate a file of binomial p-values for each burden-shifted data",
+        )
+    result.add_argument(
+        "-rr",
+        "--perm_rr",
+        dest="save_perm_rr",
+        required=False,
+        action="store_true",
+        help="Generate a file of relative risks (RRs) for each burden-shifted data",
+    )
+    result.add_argument(
+        "-u",
+        "--use_n_carrier",
+        dest="use_n_carrier",
+        required=False,
+        action="store_true",
+        help="Use the number of samples with variants in each category for burden test instead of the number of variants",
+    )
+    return result
