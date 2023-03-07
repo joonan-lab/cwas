@@ -84,6 +84,10 @@ class BurdenTest(Runnable):
             check_is_file(args.adj_factor_path)
 
     @property
+    def cat_path(self) -> Path:
+        return self.args.cat_path.resolve()
+
+    @property
     def output_dir_path(self) -> Path:
         return self.args.output_dir_path.resolve()
 
