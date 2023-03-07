@@ -85,6 +85,10 @@ class Categorization(Runnable):
         return self.args.num_proc
 
     @property
+    def input_path(self):
+        return self.args.input_path.resolve()
+
+    @property
     def output_dir_path(self):
         return self.args.output_dir_path.resolve()
 
