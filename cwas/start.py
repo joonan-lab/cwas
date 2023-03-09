@@ -82,7 +82,11 @@ class Start(Runnable):
             "ANNOTATION_KEY_CONFIG": "",
             "BIGWIG_CUTOFF_CONFIG": "",
             "VEP": "",
-            "VEP_RESOURCE_DIR": "",
+            "VEP_CONSERVATION_FILE": "",
+            "VEP_LOFTEE": "",
+            "VEP_HUMAN_ANCESTOR_FA": "",
+            "VEP_GERP_BIGWIG": "",
+            "VEP_MPC": "",
         }
 
         installed_vep = self._find_vep_path()
