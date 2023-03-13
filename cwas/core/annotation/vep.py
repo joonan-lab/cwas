@@ -157,7 +157,7 @@ class VepCmdGenerator:
             ''.join(['LoF,conservation_file:', self._vep_conservation_path,
                      ',loftee_path:', self._vep_loftee_path,
                      ',human_ancestor_fa:', self._vep_human_ancestor_fa_path,
-                     '/human_ancestor.fa.gz,gerp_bigwig:', self._vep_gerp_bw_path]),
+                     ',gerp_bigwig:', self._vep_gerp_bw_path]),
             "--dir_plugins",
             self._vep_loftee_path,
             "--plugin",
