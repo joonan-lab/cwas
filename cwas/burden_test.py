@@ -10,6 +10,7 @@ from cwas.core.categorization.category import Category
 from cwas.core.common import cmp_two_arr
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
+from cwas.utils.check import check_is_dir
 from cwas.utils.log import print_arg, print_progress
 
 
@@ -30,13 +31,23 @@ class BurdenTest(Runnable):
             description="Arguments of Burden Tests",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
+        default_workspace = Path.home() / ".cwas"
         parser.add_argument(
             "-i",
             "--input_file",
             dest="cat_path",
             required=True,
             type=Path,
-            help="Categorized file",
+            help="Categorized file (gzipped)",
+        )
+        parser.add_argument(
+            "-o_dir",
+            "--output_directory",
+            dest="output_dir_path",
+            required=False,
+            default=default_workspace,
+            type=Path,
+            help="Directory where output file will be saved",
         )
         parser.add_argument(
             "-s",
@@ -60,15 +71,25 @@ class BurdenTest(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Categorized file", args.cat_path)
+        print_arg("Output directory", args.output_dir_path)
         print_arg("Sample information file", args.sample_info_path)
         print_arg("Adjustment factor list", args.adj_factor_path)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.cat_path)
+        check_is_dir(args.output_dir_path)
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
+
+    @property
+    def cat_path(self) -> Path:
+        return self.args.cat_path.resolve()
+
+    @property
+    def output_dir_path(self) -> Path:
+        return self.args.output_dir_path.resolve()
 
     @property
     def sample_info_path(self) -> Path:
@@ -85,7 +106,7 @@ class BurdenTest(Runnable):
     @property
     def result_path(self) -> Path:
         return Path(
-            f"{self.get_env('BURDEN_TEST_OUTPUT_DIR')}/"
+            f"{self.output_dir_path}/"
             f"{self.cat_path.name.replace('categorization_result.txt', 'burden_test.txt')}"
         )
 
@@ -110,7 +131,7 @@ class BurdenTest(Runnable):
         if self._categorization_result is None:
             print_progress("Load the categorization result")
             self._categorization_result = pd.read_table(
-                self.cat_path, index_col="SAMPLE"
+                self.cat_path, index_col="SAMPLE", compression='gzip'
             )
             if self.adj_factor is not None:
                 self._adjust_categorization_result()

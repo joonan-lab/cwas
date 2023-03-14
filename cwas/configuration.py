@@ -84,6 +84,46 @@ class Configuration(Runnable):
             type=Path,
             help="Path to Variant Effect Predictor (VEP)",
         )
+        parser.add_argument(
+            "-vconv",
+            "--vep_conservation",
+            dest="vep_conservation",
+            required=False,
+            type=Path,
+            help="Path to your VEP resource (conservation file)",
+        )
+        parser.add_argument(
+            "-vlof",
+            "--vep_loftee",
+            dest="vep_loftee",
+            required=False,
+            type=Path,
+            help="Path to your VEP resource (loftee directory)",
+        )
+        parser.add_argument(
+            "-vha",
+            "--vep_human_ancestor_fa",
+            dest="vep_human_ancestor_fa",
+            required=False,
+            type=Path,
+            help="Path to your VEP resource (human ancestor)",
+        )
+        parser.add_argument(
+            "-vgerp",
+            "--vep_gerp_bw",
+            dest="vep_gerp_bw",
+            required=False,
+            type=Path,
+            help="Path to your VEP resource (gerp bigwig)",
+        )
+        parser.add_argument(
+            "-vmpc",
+            "--vep_mpc",
+            dest="vep_mpc",
+            required=False,
+            type=Path,
+            help="Path to your VEP resource (MPC)",
+        )
         return parser
 
     def run(self):
@@ -101,6 +141,11 @@ class Configuration(Runnable):
         self.data_dir = Path(user_config.get("ANNOTATION_DATA_DIR"))
         self.gene_matrix = Path(user_config.get("GENE_MATRIX"))
         self.vep = Path(user_config.get("VEP"))
+        self.vep_conservation = Path(user_config.get("VEP_CONSERVATION_FILE"))
+        self.vep_loftee = Path(user_config.get("VEP_LOFTEE"))
+        self.vep_human_ancestor_fa = Path(user_config.get("VEP_HUMAN_ANCESTOR_FA"))
+        self.vep_gerp_bw = Path(user_config.get("VEP_GERP_BIGWIG"))
+        self.vep_mpc = Path(user_config.get("VEP_MPC"))
 
         annot_key_conf = user_config.get("ANNOTATION_KEY_CONFIG")
         bw_cutoff_conf = user_config.get("BIGWIG_CUTOFF_CONFIG")
@@ -131,6 +176,11 @@ class Configuration(Runnable):
     def _check_attr_from_user_config(self):
         check.check_is_file(self.user_config)
         check.check_is_dir(self.data_dir)
+        check.check_is_file(self.vep_conservation)
+        check.check_is_dir(self.vep_loftee)
+        check.check_is_file(self.vep_human_ancestor_fa)
+        check.check_is_file(self.vep_gerp_bw)
+        check.check_is_file(self.vep_mpc)
         check.check_is_file(self.gene_matrix)
         if self.annot_key_conf is not None:
             check.check_is_file(self.annot_key_conf)
@@ -220,6 +270,11 @@ class Configuration(Runnable):
     def _set_env(self):
         log.print_progress("Set CWAS environment variables")
         self.set_env("VEP", getattr(self, "vep"))
+        self.set_env("VEP_CONSERVATION_FILE", getattr(self, "vep_conservation"))
+        self.set_env("VEP_LOFTEE", getattr(self, "vep_loftee"))
+        self.set_env("VEP_HUMAN_ANCESTOR_FA", getattr(self, "vep_human_ancestor_fa"))
+        self.set_env("VEP_GERP_BIGWIG", getattr(self, "vep_gerp_bw"))
+        self.set_env("VEP_MPC", getattr(self, "vep_mpc"))
         self.set_env("ANNOTATION_DATA", self.data_dir_symlink)
         self.set_env("GENE_MATRIX", self.gene_matrix_symlink)
         self.set_env("ANNOTATION_BED_KEY", self.bed_key_list)

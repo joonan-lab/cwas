@@ -2,12 +2,25 @@
 Command line generator for Variant Effect Predictor (VEP)
 """
 from cwas.utils.check import check_is_file
+from cwas.utils.check import check_is_dir
 
 
 class VepCmdGenerator:
-    def __init__(self, vep_path: str, input_vcf_path: str) -> None:
+    def __init__(self, vep_path: str,
+                 vep_conservation_path: str, vep_loftee_path: str, vep_human_ancestor_fa_path: str, vep_gerp_bw_path: str, vep_mpc_path: str,
+                 input_vcf_path: str) -> None:
         self._vep_path = vep_path
+        self._vep_conservation_path = vep_conservation_path
+        self._vep_loftee_path = vep_loftee_path
+        self._vep_human_ancestor_fa_path = vep_human_ancestor_fa_path
+        self._vep_gerp_bw_path = vep_gerp_bw_path
+        self._vep_mpc_path = vep_mpc_path
         self._check_vep_path()
+        self._check_vep_conservation_path()
+        self._check_vep_loftee_path()
+        self._check_vep_human_ancestor_fa_path()
+        self._check_vep_gerp_bw_path()
+        self._check_vep_mpc_path()
         self._input_vcf_path = input_vcf_path
         self._check_input_vcf_path()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".vep.vcf")
@@ -18,6 +31,46 @@ class VepCmdGenerator:
             check_is_file(self._vep_path)
         except ValueError:
             raise ValueError(f"Invalid VEP path: {self._vep_path}")
+        except Exception:
+            raise
+
+    def _check_vep_conservation_path(self):
+        try:
+            check_is_file(self._vep_conservation_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP resource path (conservation file): {self._vep_conservation_path}")
+        except Exception:
+            raise
+
+    def _check_vep_loftee_path(self):
+        try:
+            check_is_dir(self._vep_loftee_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP resource path (loftee directory): {self._vep_loftee_path}")
+        except Exception:
+            raise
+
+    def _check_vep_human_ancestor_fa_path(self):
+        try:
+            check_is_file(self._vep_human_ancestor_fa_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP resource path (human ancestor): {self._vep_human_ancestor_fa_path}")
+        except Exception:
+            raise
+
+    def _check_vep_gerp_bw_path(self):
+        try:
+            check_is_file(self._vep_gerp_bw_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP resource path (gerp bigwig): {self._vep_gerp_bw_path}")
+        except Exception:
+            raise
+
+    def _check_vep_mpc_path(self):
+        try:
+            check_is_file(self._vep_mpc_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP resource path (MPC): {self._vep_mpc_path}")
         except Exception:
             raise
 
@@ -36,6 +89,26 @@ class VepCmdGenerator:
     @property
     def vep_path(self) -> str:
         return self._vep_path
+
+    @property
+    def vep_conservation_path(self) -> str:
+        return self._vep_conservation_path
+
+    @property
+    def vep_loftee_path(self) -> str:
+        return self._vep_loftee_path
+
+    @property
+    def vep_human_ancestor_fa_path(self) -> str:
+        return self._vep_human_ancestor_fa_path
+
+    @property
+    def vep_gerp_bw_path(self) -> str:
+        return self._vep_gerp_bw_path
+
+    @property
+    def vep_mpc_path(self) -> str:
+        return self._vep_mpc_path
 
     @property
     def input_vcf_path(self) -> str:
@@ -80,8 +153,15 @@ class VepCmdGenerator:
             "vcf",
             "--vcf",
             "--no_stats",
-            "--polyphen",
-            "p",
+            "--plugin",
+            ''.join(['LoF,conservation_file:', self._vep_conservation_path,
+                     ',loftee_path:', self._vep_loftee_path,
+                     ',human_ancestor_fa:', self._vep_human_ancestor_fa_path,
+                     ',gerp_bigwig:', self._vep_gerp_bw_path]),
+            "--dir_plugins",
+            self._vep_loftee_path,
+            "--plugin",
+            ''.join(["MPC,", self._vep_mpc_path]),
         ]
 
     @property

@@ -14,6 +14,7 @@ from cwas.core.annotation.bed import annotate as _annotate_using_bed
 from cwas.core.annotation.vep import VepCmdGenerator
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
+from cwas.utils.check import check_is_dir
 from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
@@ -28,6 +29,7 @@ class Annotation(Runnable):
             description="Arguments of CWAS annotation step",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
+        default_workspace = Path.home() / ".cwas"
         parser.add_argument(
             "-v",
             "--vcf_file",
@@ -36,24 +38,41 @@ class Annotation(Runnable):
             type=Path,
             help="Target VCF file",
         )
+        parser.add_argument(
+            "-o_dir",
+            "--output_directory",
+            dest="output_dir_path",
+            required=False,
+            default=default_workspace,
+            type=Path,
+            help="Directory where output file will be saved",
+        )
         return parser
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Target VCF file", args.vcf_path)
+        print_arg("Target VCF file", args.output_dir_path)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.vcf_path)
+        check_is_dir(args.output_dir_path)
 
     @property
     def vcf_path(self):
         return self.args.vcf_path.resolve()
 
     @property
+    def output_dir_path(self):
+        return self.args.output_dir_path.resolve()
+
+    @property
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
-            self.get_env("VEP"), str(self.vcf_path)
+            self.get_env("VEP"),
+            self.get_env("VEP_CONSERVATION_FILE"), self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
+            str(self.vcf_path)
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
         for bw_path, annotation_key in self.bw_custom_annotations:
@@ -63,7 +82,7 @@ class Annotation(Runnable):
     @property
     def vep_output_vcf_path(self):
         return (
-            f"{self.get_env('ANNOTATED_VCF_OUTPUT_DIR')}/"
+            f"{self.output_dir_path}/"
             f"{self.vcf_path.name.replace('.vcf', '.vep.vcf')}"
         )
 
@@ -74,7 +93,7 @@ class Annotation(Runnable):
     @property
     def annotated_vcf_path(self):
         return (
-            f"{self.get_env('ANNOTATED_VCF_OUTPUT_DIR')}/"
+            f"{self.output_dir_path}/"
             f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf')}"
         )
 

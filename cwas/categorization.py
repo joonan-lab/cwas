@@ -18,6 +18,7 @@ from cwas.core.categorization.parser import (
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
 from cwas.utils.check import check_is_file
+from cwas.utils.check import check_is_dir
 
 
 class Categorization(Runnable):
@@ -36,6 +37,7 @@ class Categorization(Runnable):
             description="Arguments of CWAS categorization step",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
+        default_workspace = Path.home() / ".cwas"
         parser.add_argument(
             "-i",
             "--input_file",
@@ -43,6 +45,15 @@ class Categorization(Runnable):
             required=True,
             type=Path,
             help="Annotated VCF file",
+        )
+        parser.add_argument(
+            "-o_dir",
+            "--output_directory",
+            dest="output_dir_path",
+            required=False,
+            default=default_workspace,
+            type=Path,
+            help="Directory where output file will be saved",
         )
         parser.add_argument(
             "-p",
@@ -67,16 +78,25 @@ class Categorization(Runnable):
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
         check_is_file(args.input_path)
+        check_is_dir(args.output_dir_path)
 
     @property
     def num_proc(self):
         return self.args.num_proc
 
     @property
+    def input_path(self):
+        return self.args.input_path.resolve()
+
+    @property
+    def output_dir_path(self):
+        return self.args.output_dir_path.resolve()
+
+    @property
     def result_path(self) -> Path:
         return Path(
-            f"{self.get_env('CATEGORIZATION_OUTPUT_DIR')}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt.gz')}"
         )
 
     @property
