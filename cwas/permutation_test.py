@@ -92,7 +92,7 @@ class PermutationTest(BurdenTest):
     def perm_rrs_path(self) -> Path:
         if self._perm_rrs_path is None:
             self._perm_rrs_path = Path(
-                str(self.categorization_result_path).replace(
+                str(self.args.cat_path.name).replace(
                     '.categorization_result.txt', '.permutation_RRs.txt'
                 )
             )
