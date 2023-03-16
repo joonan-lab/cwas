@@ -58,6 +58,7 @@ _redundant_domain_pairs = {
         ("Any", "MissenseRegion"),
         ("Any", "SilentRegion"),
         ("Any", "lincRnaRegion"),
+        ("lincRNA", "Any")
     },
 }
 
