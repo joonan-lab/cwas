@@ -96,9 +96,23 @@ class Annotation(Runnable):
         )
 
     def run(self):
+        self.annotate_using_vep()
         self.process_vep_vcf()
         self.annotate_using_bed()
         self.update_env()
+
+    def annotate_using_vep(self):
+        print_progress("Annotation via VEP")
+        if (
+            Path(self.vep_output_vcf_path).is_file()
+            or Path(self.vep_output_vcf_gz_path).is_file()
+        ):
+            print_log(
+                "NOTICE",
+                "You have already done the VEP annotations.",
+                True,
+            )
+            return
 
         vep_bin, *vep_args = self.vep_cmd
         CmdExecutor(vep_bin, vep_args).execute_raising_err()
