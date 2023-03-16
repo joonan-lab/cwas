@@ -80,7 +80,6 @@ class Start(Runnable):
             "ANNOTATION_DATA_DIR": "",
             "GENE_MATRIX": "",
             "ANNOTATION_KEY_CONFIG": "",
-            "BIGWIG_CUTOFF_CONFIG": "",
             "VEP": "",
             "VEP_CONSERVATION_FILE": "",
             "VEP_LOFTEE": "",

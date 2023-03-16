@@ -52,16 +52,6 @@ def configuration() -> argparse.ArgumentParser:
         "annotation data file",
     )
     result.add_argument(
-        "-b",
-        "--bigwig_cutoff_config",
-        dest="bw_cutoff_conf",
-        required=False,
-        type=Path,
-        help="Path to a configuration file (.yaml) that "
-        "specifies the annotation cutoff of "
-        "each BigWig file",
-    )
-    result.add_argument(
         "-v",
         "--vep",
         dest="vep",
