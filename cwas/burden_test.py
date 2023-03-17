@@ -24,6 +24,8 @@ class BurdenTest(Runnable):
         self._phenotypes = None
         self._case_variant_cnt = None
         self._ctrl_variant_cnt = None
+        self._case_carrier_cnt = None
+        self._ctrl_carrier_cnt = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -66,6 +68,15 @@ class BurdenTest(Runnable):
             type=Path,
             help="File listing adjustment factors of each sample",
         )
+        parser.add_argument(
+            "-u",
+            "--use_n_carrier",
+            dest="use_n_carrier",
+            required=False,
+            default=False,
+            action="store_true",
+            help="Use the number of samples with variants in each category for burden test instead of the number of variants",
+        )
         return parser
 
     @staticmethod
@@ -74,6 +85,7 @@ class BurdenTest(Runnable):
         print_arg("Output directory", args.output_dir_path)
         print_arg("Sample information file", args.sample_info_path)
         print_arg("Adjustment factor list", args.adj_factor_path)
+        print_arg("If the number of carrier is used for burden test or not", args.use_n_carrier)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -189,6 +201,26 @@ class BurdenTest(Runnable):
         return self._ctrl_variant_cnt
 
     @property
+    def case_carrier_cnt(self) -> np.ndarray:
+        if self._case_carrier_cnt is None:
+            var_counts = self.categorization_result.values
+            is_carrier = np.where(var_counts > 0, 1, 0)
+            self._case_carrier_cnt = is_carrier[
+                self.phenotypes == "case", :
+            ].sum(axis=0)
+        return self._case_carrier_cnt
+
+    @property
+    def ctrl_carrier_cnt(self) -> np.ndarray:
+        if self._ctrl_carrier_cnt is None:
+            var_counts = self.categorization_result.values
+            is_carrier = np.where(var_counts > 0, 1, 0)
+            self._ctrl_carrier_cnt = is_carrier[
+                self.phenotypes == "ctrl", :
+            ].sum(axis=0)
+        return self._ctrl_carrier_cnt
+
+    @property
     def category_table(self) -> pd.DataFrame:
         categories = [
             Category.from_str(category_str).to_dict()
@@ -207,8 +239,12 @@ class BurdenTest(Runnable):
                 "not the same with the sample IDs "
                 "from the categorization result."
             )
-        self.count_variant_for_each_category()
-        self.calculate_relative_risk()
+        if self.use_n_carrier:
+            self.count_carrier_for_each_category()
+            self.calculate_relative_risk_with_n_carrier()
+        else:
+            self.count_variant_for_each_category()
+            self.calculate_relative_risk()        
         self.run_burden_test()
         self.concat_category_info()
         self.save_result()
@@ -229,12 +265,35 @@ class BurdenTest(Runnable):
             columns=["Case_DNV_Count", "Ctrl_DNV_Count"],
         )
 
+    def count_carrier_for_each_category(self):
+        print_progress("Count the number of carriers in each category")
+        carrier_cnt_arr = np.concatenate(
+            [
+                self.case_carrier_cnt[:, np.newaxis],
+                self.ctrl_carrier_cnt[:, np.newaxis],
+            ],
+            axis=1,
+        )
+        self._result = pd.DataFrame(
+            carrier_cnt_arr,
+            index=self.categorization_result.columns.values,
+            columns=["Case_Carrier_Count", "Ctrl_Carrier_Count"],
+        )
+
     def calculate_relative_risk(self):
         print_progress("Calculate relative risks for each category")
         normalized_case_variant_cnt = self.case_variant_cnt / self.case_cnt
         normalized_ctrl_variant_cnt = self.ctrl_variant_cnt / self.ctrl_cnt
         self._result["Relative_Risk"] = (
             normalized_case_variant_cnt / normalized_ctrl_variant_cnt
+        )
+
+    def calculate_relative_risk_with_n_carrier(self):
+        print_progress("Calculate relative risks for each category")
+        case_carrier_rate = self.case_carrier_cnt / self.case_cnt
+        ctrl_carrier_rate = self.ctrl_carrier_cnt / self.ctrl_cnt
+        self._result["Relative_Risk"] = (
+            case_carrier_rate / ctrl_carrier_rate
         )
 
     @abstractmethod
