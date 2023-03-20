@@ -245,6 +245,10 @@ class Categorizer:
                     and "incomplete_terminal_codon_variant" not in gencode
                     and "protein_altering_variant" not in gencode
                     and "coding_sequence_variant" not in gencode
+                    and "stop_gained" not in gencode
+                    and "splice_donor" not in gencode
+                    and "splice_acceptor" not in gencode
+                    and "frameshift_variant" not in gencode
                 ):
                     # Noncoding
                     annotation_int = 0
