@@ -139,6 +139,10 @@ class BurdenTest(Runnable):
         return self._adj_factor
 
     @property
+    def use_n_carrier(self) -> bool:
+        return self.args.use_n_carrier
+
+    @property
     def categorization_result(self) -> pd.DataFrame:
         if self._categorization_result is None:
             print_progress("Load the categorization result")
