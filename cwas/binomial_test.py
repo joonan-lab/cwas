@@ -13,7 +13,7 @@ class BinomialTest(BurdenTest):
 
     def run_burden_test(self):
         print_progress("Run binomial test")
-        if self.use_n_carrier_per_category:
+        if self.use_n_carrier:
             n1 = self.case_carrier_cnt
             n2 = self.ctrl_carrier_cnt
         else:
