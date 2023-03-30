@@ -22,6 +22,16 @@ class PermutationTest(BurdenTest):
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         parser = super(PermutationTest, PermutationTest)._create_arg_parser()
+        default_workspace = Path.home() / ".cwas"
+        parser.add_argument(
+            "-o_dir",
+            "--output_directory",
+            dest="output_dir_path",
+            required=False,
+            default=default_workspace,
+            type=Path,
+            help="Directory where output file will be saved",
+        )
         parser.add_argument(
             "-n",
             "--num_perm",
@@ -82,13 +92,24 @@ class PermutationTest(BurdenTest):
         check_num_proc(args.num_proc)
     
     @property
+    def cat_path(self) -> Path:
+        return self.args.cat_path.resolve()
+
+    @property
+    def output_dir_path(self) -> Path:
+        return self.args.output_dir_path.resolve()
+
+    @property
     def result_path(self) -> Path:
         self._result_path = Path(
-            str(self.args.cat_path.name).replace(
-                '.categorization_result.txt', '.permutation_test.txt'
-            )
+            f"{self.output_dir_path}/"
+            f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_test.txt')}"
         )
         return self._result_path
+
+    @property
+    def result_path(self) -> Path:
+        return 
     
     @property
     def perm_rrs_path(self) -> Path:
