@@ -6,6 +6,9 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
+from cwas.runnable import Runnable
+import dotenv
+
 from cwas.burden_test import BurdenTest
 from cwas.utils.log import print_progress, print_arg
 from cwas.utils.check import check_num_proc
@@ -22,7 +25,7 @@ class PermutationTest(BurdenTest):
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         parser = super(PermutationTest, PermutationTest)._create_arg_parser()
-        default_workspace = Path.home() / ".cwas"
+        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
         parser.add_argument(
             "-o_dir",
             "--output_directory",
@@ -106,10 +109,6 @@ class PermutationTest(BurdenTest):
             f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_test.txt')}"
         )
         return self._result_path
-
-    @property
-    def result_path(self) -> Path:
-        return 
     
     @property
     def perm_rrs_path(self) -> Path:

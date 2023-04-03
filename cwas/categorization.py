@@ -20,6 +20,8 @@ from cwas.utils.check import check_num_proc
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 
+import dotenv
+
 
 class Categorization(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -36,7 +38,9 @@ class Categorization(Runnable):
             description="Arguments of CWAS categorization step",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
-        default_workspace = Path.home() / ".cwas"
+        
+        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+        
         parser.add_argument(
             "-i",
             "--input_file",

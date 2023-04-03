@@ -18,6 +18,8 @@ from cwas.utils.check import check_is_dir
 from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
+import dotenv
+
 
 class Annotation(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -29,7 +31,7 @@ class Annotation(Runnable):
             description="Arguments of CWAS annotation step",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
-        default_workspace = Path.home() / ".cwas"
+        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
         parser.add_argument(
             "-v",
             "--vcf_file",

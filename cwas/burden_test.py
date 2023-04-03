@@ -13,6 +13,8 @@ from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 from cwas.utils.log import print_arg, print_progress
 
+import dotenv
+
 
 class BurdenTest(Runnable):
     def __init__(self, args: Optional[argparse.Namespace] = None):
@@ -33,7 +35,7 @@ class BurdenTest(Runnable):
             description="Arguments of Burden Tests",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
-        default_workspace = Path.home() / ".cwas"
+        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
         parser.add_argument(
             "-i",
             "--input_file",

@@ -1,6 +1,8 @@
 import argparse
 from pathlib import Path
 
+import dotenv
+
 
 def start() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
@@ -24,7 +26,6 @@ def configuration() -> argparse.ArgumentParser:
         description="Arguments for CWAS Configuration",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
     result.add_argument(
         "-d",
         "--annotation_data_dir",
@@ -100,7 +101,7 @@ def annotation() -> argparse.ArgumentParser:
         description="Arguments of CWAS annotation step",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-v",
         "--vcf_file",
@@ -126,7 +127,7 @@ def categorization() -> argparse.ArgumentParser:
         description="Arguments of CWAS categorization step",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-i",
         "--input_file",
@@ -161,7 +162,7 @@ def binomial_test() -> argparse.ArgumentParser:
         description="Arguments of Burden Tests",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-i",
         "--input_file",
@@ -212,7 +213,7 @@ def permutation_test() -> argparse.ArgumentParser:
         description="Arguments of Burden Tests",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-i",
         "--input_file",
