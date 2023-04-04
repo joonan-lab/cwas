@@ -6,6 +6,9 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 
+from cwas.runnable import Runnable
+import dotenv
+
 from cwas.burden_test import BurdenTest
 from cwas.utils.log import print_progress, print_arg
 from cwas.utils.check import check_num_proc
@@ -22,6 +25,16 @@ class PermutationTest(BurdenTest):
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
         parser = super(PermutationTest, PermutationTest)._create_arg_parser()
+        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+        parser.add_argument(
+            "-o_dir",
+            "--output_directory",
+            dest="output_dir_path",
+            required=False,
+            default=default_workspace,
+            type=Path,
+            help="Directory where output file will be saved",
+        )
         parser.add_argument(
             "-n",
             "--num_perm",
@@ -60,6 +73,7 @@ class PermutationTest(BurdenTest):
             "--use_n_carrier",
             dest="use_n_carrier",
             required=False,
+            default=False,
             action="store_true",
             help="Use the number of samples with variants in each category for burden test instead of the number of variants",
         )
@@ -71,6 +85,7 @@ class PermutationTest(BurdenTest):
         super(PermutationTest, PermutationTest)._print_args(args)
         print_arg(f"Number of permutations", args.num_perm)
         print_arg(f"Number of processes", args.num_proc)
+        print_arg("If the number of carrier is used for burden test or not", args.use_n_carrier)
         print_arg(f"Generate binomial p values for burden-shifted data", args.burden_shift)
         print_arg(f"Generate relative risks (RRs) for burden-shifted data", args.save_perm_rr)
 
@@ -80,11 +95,18 @@ class PermutationTest(BurdenTest):
         check_num_proc(args.num_proc)
     
     @property
+    def cat_path(self) -> Path:
+        return self.args.cat_path.resolve()
+
+    @property
+    def output_dir_path(self) -> Path:
+        return self.args.output_dir_path.resolve()
+
+    @property
     def result_path(self) -> Path:
         self._result_path = Path(
-            str(self.args.cat_path.name).replace(
-                '.categorization_result.txt', '.permutation_test.txt'
-            )
+            f"{self.output_dir_path}/"
+            f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_test.txt')}"
         )
         return self._result_path
     
@@ -92,7 +114,7 @@ class PermutationTest(BurdenTest):
     def perm_rrs_path(self) -> Path:
         if self._perm_rrs_path is None:
             self._perm_rrs_path = Path(
-                str(self.categorization_result_path).replace(
+                str(self.args.cat_path.name).replace(
                     '.categorization_result.txt', '.permutation_RRs.txt'
                 )
             )

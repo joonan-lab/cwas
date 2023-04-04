@@ -27,26 +27,6 @@ class Categorizer:
     def __init__(self, category_domain: dict, gene_matrix: dict) -> None:
         self._category_domain = category_domain
         self._gene_matrix = gene_matrix
-        self._default_phylop = -2.0
-        self._default_phastcons = 0.0
-        self._phylop_cutoff = 2.0
-        self._phastcons_cutoff = 0.2
-
-    @property
-    def phylop_cutoff(self):
-        return self._phylop_cutoff
-
-    @phylop_cutoff.setter
-    def phylop_cutoff(self, value):
-        self._phylop_cutoff = value
-
-    @property
-    def phastcons_cutoff(self):
-        return self._phastcons_cutoff
-
-    @phastcons_cutoff.setter
-    def phastcons_cutoff(self, value):
-        self._phastcons_cutoff = value
 
     def categorize_variant(self, annotated_vcf: pd.DataFrame):
         result = defaultdict(int)
@@ -126,43 +106,20 @@ class Categorizer:
         conservation_annotation_idx = get_idx_dict(
             self._category_domain["conservation"]
         )
-        phylop_conv_func = (
-            lambda x: self._default_phylop
-            if x == ""
-            else max(map(float, x.split("&")))
-        )
-        phast_conv_func = (
-            lambda x: self._default_phastcons
-            if x == ""
-            else max(map(float, x.split("&")))
-        )
+        annotation_ints = np.zeros(len(annotated_vcf.index), dtype=int)
 
-        phylop_scores = np.vectorize(phylop_conv_func)(
-            annotated_vcf["phyloP46way"].values
-        )
-        phast_scores = np.vectorize(phast_conv_func)(
-            annotated_vcf["phastCons46way"].values
-        )
+        for score in conservation_annotation_idx:
+            if score == "All":
+                continue
 
-        is_phylop_conservation_arr = (
-            phylop_scores >= self._phylop_cutoff
-        ).astype(np.int32)
-        is_phast_conservation_arr = (
-            phast_scores >= self._phastcons_cutoff
-        ).astype(np.int32)
+            score_vals = annotated_vcf[score].values.astype(np.int32)
+            annotation_int_conv_func = (
+                lambda x: 2 ** conservation_annotation_idx[score] * x
+            )
+            annotation_ints += np.vectorize(annotation_int_conv_func)(
+                score_vals
+            )
 
-        annotation_ints = np.vectorize(
-            lambda is_phylop_conservation: 2
-            ** conservation_annotation_idx["phyloP46way"]
-            if is_phylop_conservation
-            else 0
-        )(is_phylop_conservation_arr)
-        annotation_ints += np.vectorize(
-            lambda is_phast_conservation: 2
-            ** conservation_annotation_idx["phastCons46way"]
-            if is_phast_conservation
-            else 0
-        )(is_phast_conservation_arr)
         annotation_ints += 2 ** conservation_annotation_idx["All"]
 
         return annotation_ints
@@ -288,6 +245,10 @@ class Categorizer:
                     and "incomplete_terminal_codon_variant" not in gencode
                     and "protein_altering_variant" not in gencode
                     and "coding_sequence_variant" not in gencode
+                    and "stop_gained" not in gencode
+                    and "splice_donor" not in gencode
+                    and "splice_acceptor" not in gencode
+                    and "frameshift_variant" not in gencode
                 ):
                     # Noncoding
                     annotation_int = 0

@@ -1,6 +1,8 @@
 import argparse
 from pathlib import Path
 
+import dotenv
+
 
 def start() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
@@ -24,7 +26,6 @@ def configuration() -> argparse.ArgumentParser:
         description="Arguments for CWAS Configuration",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
     result.add_argument(
         "-d",
         "--annotation_data_dir",
@@ -50,16 +51,6 @@ def configuration() -> argparse.ArgumentParser:
         help="Path to a configuration file (.yaml) that "
         "specifies the annotation key of each "
         "annotation data file",
-    )
-    result.add_argument(
-        "-b",
-        "--bigwig_cutoff_config",
-        dest="bw_cutoff_conf",
-        required=False,
-        type=Path,
-        help="Path to a configuration file (.yaml) that "
-        "specifies the annotation cutoff of "
-        "each BigWig file",
     )
     result.add_argument(
         "-v",
@@ -110,7 +101,7 @@ def annotation() -> argparse.ArgumentParser:
         description="Arguments of CWAS annotation step",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-v",
         "--vcf_file",
@@ -136,7 +127,7 @@ def categorization() -> argparse.ArgumentParser:
         description="Arguments of CWAS categorization step",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-i",
         "--input_file",
@@ -171,7 +162,7 @@ def binomial_test() -> argparse.ArgumentParser:
         description="Arguments of Burden Tests",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-i",
         "--input_file",
@@ -206,6 +197,14 @@ def binomial_test() -> argparse.ArgumentParser:
         type=Path,
         help="File listing adjustment factors of each sample",
     )
+    result.add_argument(
+        "-u",
+        "--use_n_carrier",
+        dest="use_n_carrier",
+        required=False,
+        action="store_true",
+        help="Use the number of samples with variants in each category for burden test instead of the number of variants",
+    )
     return result
 
 
@@ -214,7 +213,7 @@ def permutation_test() -> argparse.ArgumentParser:
         description="Arguments of Burden Tests",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    default_workspace = Path.home() / ".cwas"
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-i",
         "--input_file",

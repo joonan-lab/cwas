@@ -15,9 +15,7 @@ class Configuration(Runnable):
         self.user_config = self.workspace / "configuration.txt"
         self.data_dir_symlink = self.workspace / "annotation-data"
         self.gene_matrix_symlink = self.workspace / "gene_matrix.txt"
-        self.bed_key_list = self.workspace / "annotation_key_bed.yaml"
-        self.bw_key_list = self.workspace / "annotation_key_bw.yaml"
-        self.bw_cutoff_list = self.workspace / "annotation_cutoff_bw.yaml"
+        self.bed_key_list_symlink = self.workspace / "annotation_keys.yaml"
         self.category_domain_list = self.workspace / "category_domain.yaml"
         self.redundant_category_table = (
             self.workspace / "redundant_category.txt"
@@ -65,16 +63,6 @@ class Configuration(Runnable):
             help="Path to a configuration file (.yaml) that "
             "specifies the annotation key of each "
             "annotation data file",
-        )
-        parser.add_argument(
-            "-b",
-            "--bigwig_cutoff_config",
-            dest="bw_cutoff_conf",
-            required=False,
-            type=Path,
-            help="Path to a configuration file (.yaml) that "
-            "specifies the annotation cutoff of "
-            "each BigWig file",
         )
         parser.add_argument(
             "-v",
@@ -131,8 +119,7 @@ class Configuration(Runnable):
         self._check_attr_from_user_config()
         self._create_data_dir_symlink()
         self._create_gene_matrix_symlink()
-        self._create_annotation_key_list()
-        self._create_bw_cutoff_list()
+        self._create_bed_key_list_symlink()
         self._create_category_info()
         self._set_env()
 
@@ -148,12 +135,8 @@ class Configuration(Runnable):
         self.vep_mpc = Path(user_config.get("VEP_MPC"))
 
         annot_key_conf = user_config.get("ANNOTATION_KEY_CONFIG")
-        bw_cutoff_conf = user_config.get("BIGWIG_CUTOFF_CONFIG")
         self.annot_key_conf = (
             None if not annot_key_conf else Path(annot_key_conf)
-        )
-        self.bw_cutoff_conf = (
-            None if not bw_cutoff_conf else Path(bw_cutoff_conf)
         )
 
     def _load_configuration(self) -> dict:
@@ -184,8 +167,7 @@ class Configuration(Runnable):
         check.check_is_file(self.gene_matrix)
         if self.annot_key_conf is not None:
             check.check_is_file(self.annot_key_conf)
-        if self.bw_cutoff_conf is not None:
-            check.check_is_file(self.bw_cutoff_conf)
+        
 
         if self.vep is not None and shutil.which(self.vep) is None:
             raise ValueError(f'"{self.vep} is not an executable."')
@@ -219,39 +201,26 @@ class Configuration(Runnable):
                 f'"{gene_matrix_symlink}" already exists so skip '
                 f"creating the symbolic link"
             )
-
-    def _create_annotation_key_list(self):
-        bed_key_list = getattr(self, "bed_key_list")
-        bw_key_list = getattr(self, "bw_key_list")
-        log.print_progress(
-            f"Create annotation key lists "
-            f'"{bed_key_list}" and "{bw_key_list}"'
-        )
-        data_dir = getattr(self, "data_dir_symlink")
+            
+    def _create_bed_key_list_symlink(self):
         annot_key_conf = getattr(self, "annot_key_conf")
-
-        if annot_key_conf is None:
-            create.create_annotation_key(bed_key_list, data_dir, "bed")
-            create.create_annotation_key(bw_key_list, data_dir, "bw")
-        else:
-            create.split_annotation_key(
-                bed_key_list, bw_key_list, annot_key_conf
-            )
-
-    def _create_bw_cutoff_list(self):
-        bw_cutoff_list = getattr(self, "bw_cutoff_list")
-        bw_key_list = getattr(self, "bw_key_list")
-        bw_cutoff_conf = getattr(self, "bw_cutoff_conf")  # User-defined
-        log.print_progress(f'Create BigWig cufoff list "{bw_cutoff_list}"')
-        create.create_bw_cutoff_list(
-            bw_cutoff_list, bw_key_list, bw_cutoff_conf
+        bed_key_list_symlink = getattr(self, "bed_key_list_symlink")
+        log.print_progress(
+            f"Create a symlink to your annotation key list " f'"{bed_key_list_symlink}"'
         )
+
+        try:
+            bed_key_list_symlink.symlink_to(annot_key_conf)
+        except FileExistsError:
+            log.print_warn(
+                f'"{bed_key_list_symlink}" already exists so skip '
+                f"creating the symbolic link"
+            )
 
     def _create_category_info(self):
         """ Create a list of category domains and a redundant category table"""
         domain_list = getattr(self, "category_domain_list")
-        bed_key_list = getattr(self, "bed_key_list")
-        bw_key_list = getattr(self, "bw_key_list")
+        annot_key_conf = getattr(self, "annot_key_conf")
         gene_matrix = getattr(self, "gene_matrix")
         redundant_category_table = getattr(self, "redundant_category_table")
 
@@ -259,7 +228,7 @@ class Configuration(Runnable):
             f"Create a CWAS category domain list " f'"{domain_list}"'
         )
         create.create_category_domain_list(
-            domain_list, bed_key_list, bw_key_list, gene_matrix
+            domain_list, annot_key_conf, gene_matrix
         )
         log.print_progress(
             f"Create a redundant category table "
@@ -277,9 +246,7 @@ class Configuration(Runnable):
         self.set_env("VEP_MPC", getattr(self, "vep_mpc"))
         self.set_env("ANNOTATION_DATA", self.data_dir_symlink)
         self.set_env("GENE_MATRIX", self.gene_matrix_symlink)
-        self.set_env("ANNOTATION_BED_KEY", self.bed_key_list)
-        self.set_env("ANNOTATION_BW_KEY", self.bw_key_list)
-        self.set_env("ANNOTATION_BW_CUTOFF", self.bw_cutoff_list)
+        self.set_env("ANNOTATION_BED_KEY", self.bed_key_list_symlink)
         self.set_env("CATEGORY_DOMAIN", self.category_domain_list)
         self.set_env("REDUNDANT_CATEGORY", self.redundant_category_table)
         self.save_env()

@@ -87,6 +87,9 @@ class Preparation(Runnable):
 
         with self.bed_key_list_path.open() as bed_key_list_file:
             bed_key_list = yaml.safe_load(bed_key_list_file)
+        
+        # Merge two dictionaries
+        bed_key_list = bed_key_list['functional_score'] | bed_key_list['functional_annotation']
 
         bed_file_and_keys = []
         for bed_filename, bed_key in bed_key_list.items():

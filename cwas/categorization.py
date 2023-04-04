@@ -20,6 +20,8 @@ from cwas.utils.check import check_num_proc
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 
+import dotenv
+
 
 class Categorization(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -27,7 +29,6 @@ class Categorization(Runnable):
         self._annotated_vcf = None
         self._gene_matrix = None
         self._category_domain = None
-        self._annotation_bw_cutoff = None
         self._annotated_vcf_groupby_sample = None
         self._sample_ids = None
 
@@ -37,7 +38,9 @@ class Categorization(Runnable):
             description="Arguments of CWAS categorization step",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
-        default_workspace = Path.home() / ".cwas"
+        
+        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+        
         parser.add_argument(
             "-i",
             "--input_file",
@@ -126,23 +129,8 @@ class Categorization(Runnable):
         return self._category_domain
 
     @property
-    def annotation_bw_cutoff(self) -> dict:
-        if self._annotation_bw_cutoff is None:
-            with Path(self.get_env("ANNOTATION_BW_CUTOFF")).open(
-                "r"
-            ) as annotation_bw_cutoff_file:
-                self._annotation_bw_cutoff = yaml.safe_load(
-                    annotation_bw_cutoff_file
-                )
-        return self._annotation_bw_cutoff
-
-    @property
     def categorizer(self) -> Categorizer:
         categorizer = Categorizer(self.category_domain, self.gene_matrix)
-        categorizer.phastcons_cutoff = self.annotation_bw_cutoff[
-            "phastCons46way"
-        ]
-        categorizer.phylop_cutoff = self.annotation_bw_cutoff["phyloP46way"]
         return categorizer
 
     @property
