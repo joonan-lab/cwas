@@ -114,9 +114,8 @@ class PermutationTest(BurdenTest):
     def perm_rrs_path(self) -> Path:
         if self._perm_rrs_path is None:
             self._perm_rrs_path = Path(
-                str(self.args.cat_path.name).replace(
-                    '.categorization_result.txt', '.permutation_RRs.txt'
-                )
+                f"{self.output_dir_path}/"
+                f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_RRs.txt')}"
             )
         return self._perm_rrs_path
     
@@ -124,9 +123,8 @@ class PermutationTest(BurdenTest):
     def binom_pvals_path(self) -> Path:
         if self._binom_pvals_path is None:
             self._binom_pvals_path = Path(
-                str(self.args.cat_path.name).replace(
-                    '.categorization_result.txt', '.binom_pvals.txt'
-                )
+                f"{self.output_dir_path}/"
+                f"{self.cat_path.name.replace('categorization_result.txt', 'binom_pvals.txt')}"
             )
         return self._binom_pvals_path
     
