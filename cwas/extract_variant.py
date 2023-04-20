@@ -24,6 +24,9 @@ class ExtractVariant(Runnable):
         super().__init__(args)
         self._annotated_vcf = None
         self._gene_matrix = None
+        self._tag = None
+        self._category_set_path = None
+        self._category_set = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -51,12 +54,41 @@ class ExtractVariant(Runnable):
             type=Path,
             help="Directory where output file will be saved",
         )
+        parser.add_argument(
+            "-t",
+            "--tag",
+            dest="tag",
+            required=False,
+            default=None,
+            type=str,
+            help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz)",
+        )
+        parser.add_argument(
+            "-c",
+            "--category_set_path",
+            dest="category_set_path",
+            required=False,
+            default=None,
+            type=Path,
+            help="Path to a text file containing categories for extracting variants",
+        )
+        parser.add_argument(
+            "-ai",
+            "--annotation_info",
+            dest="annotation_info",
+            required=False,
+            default=False,
+            action="store_true",
+            help="Save with annotation information attached (such as gene list, functional annotations, etc)",
+        )
         return parser
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.input_path)
         check_is_dir(args.output_dir_path)
+        if args.category_set_path :
+            check_is_file(args.category_set_path)
 
     @property
     def input_path(self):
@@ -65,6 +97,14 @@ class ExtractVariant(Runnable):
     @property
     def output_dir_path(self):
         return self.args.output_dir_path.resolve()
+
+    @property
+    def annotation_info(self) -> bool:
+        return self.args.annotation_info
+
+    @property
+    def tag(self) -> str:
+        return self.args.tag
 
     @property
     def annotated_vcf(self) -> pd.DataFrame:
@@ -82,16 +122,35 @@ class ExtractVariant(Runnable):
             # Keep the last gene in duplicates
             self._gene_matrix = self._gene_matrix[~self._gene_matrix.duplicated(subset=['gene_name'], keep='last')]
         return self._gene_matrix
+
+    @property
+    def category_set_path(self) -> Optional[Path]:
+        return (
+            self.args.category_set_path.resolve()
+            if self.args.category_set_path
+            else None
+        )
+    @property
+    def category_set(self) -> pd.DataFrame:
+        if self._category_set is None and self.category_set_path:
+            self._category_set = pd.read_csv(self.category_set_path, sep='\t')
+        return self._category_set
     
     @property
     def result_path(self) -> Path:
+        if self.tag is None:
+            save_name = 'extracted_variants.txt.gz'
+        else:
+            save_name = '.'.join([self.tag, 'extracted_variants.txt.gz'])
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'extracted_variants.txt.gz')}"
+            f"{self.input_path.name.replace('annotated.vcf', save_name)}"
         )
     
     def annotate_variants(self):
         print_progress("Annotate variants with annotation dataset")
+        self.annotated_vcf['CLASS'] = np.where(self.annotated_vcf['REF'].str.len() > 1, 'Deletion',
+                                               np.where((self.annotated_vcf['REF'].str.len() == 1) & (self.annotated_vcf['ALT'].str.len() == 1), 'SNV', 'Insertion'))
         self.annotated_vcf['DEF.GENE'] = self.annotated_vcf.apply(lambda x: x['NEAREST']
                                                                     if "downstream_gene_variant" in x['Consequence']
                                                                     or "intergenic_variant" in x['Consequence']
@@ -197,6 +256,39 @@ class ExtractVariant(Runnable):
                                                   (merged_df['ProteinCoding'] == 0),
                                                   1, 0)
         self._result = merged_df
+
+    def allocate_variants(self, category: pd.DataFrame):
+        if category['variant_type'] == 'All':
+            filtered_result = self._result[self._result['CLASS'].isin(['SNV', 'Deletion', 'Insertion'])]
+        elif category['variant_type'] == 'SNV':
+            filtered_result = self._result.query('CLASS == "SNV"')
+        else:
+            filtered_result = self._result[self._result['CLASS'].isin(['Deletion', 'Insertion'])]
+
+        if category['gene_list'] != 'Any':
+            filtered_result = filtered_result[filtered_result[category['gene_list']] == 1]
+        if category['conservation'] != 'All':
+            filtered_result = filtered_result[filtered_result[category['conservation']] == 1]
+        if category['gencode'] != 'Any':
+            filtered_result = filtered_result[filtered_result['_'.join(['is', category['gencode']])] == 1]
+        if category['region'] != 'Any':
+            filtered_result = filtered_result[filtered_result[category['region']] == 1]
+        filtered_result['CATEGORY'] = category['Category']
+    
+        return(filtered_result)
+
+    def filter_variants(self):
+        print_progress(f"Filter variants in {self.category_set.shape[0]} categories")
+        self.category_set[['variant_type', 'gene_list', 'conservation', 'gencode', 'region']] = self.category_set['Category'].str.split('_', expand=True)
+        # Filter variants by categories and concatenate them vertically
+        self._result = pd.concat(self.category_set.apply(lambda x: self.allocate_variants(category = x), axis=1).tolist(), axis=0)
+    
+    def remove_annotation_info(self):
+        print_progress("No annotation information attached")
+        if self.category_set_path :
+            self._result = self._result.loc[:, ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'SAMPLE', 'CATEGORY']]
+        else :
+            self._result = self._result.loc[:, ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'SAMPLE']]
     
     def save_result(self):
         print_progress(f"Save the result to the file {self.result_path}")
@@ -204,6 +296,12 @@ class ExtractVariant(Runnable):
     
     def run(self):
         self.annotate_variants()
+        if self.category_set_path :
+            self.filter_variants()
+        if self.annotation_info is None :
+            self.remove_annotation_info()
+        else:
+            print_progress("Annotation information attached")
         self.save_result()
         print_progress("Done")
         
