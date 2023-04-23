@@ -290,3 +290,55 @@ def permutation_test() -> argparse.ArgumentParser:
         help="Use the number of samples with variants in each category for burden test instead of the number of variants",
     )
     return result
+
+def extract_variant() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of Burden Tests",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    result.add_argument(
+        "-i",
+        "--input_file",
+        dest="input_path",
+        required=True,
+        type=Path,
+        help="Annotated VCF file",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        "-t",
+        "--tag",
+        dest="tag",
+        required=False,
+        default=None,
+        type=str,
+        help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz)",
+    )
+    result.add_argument(
+        "-c",
+        "--category_set_path",
+        dest="category_set_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file containing categories for extracting variants",
+    )
+    result.add_argument(
+        "-ai",
+        "--annotation_info",
+        dest="annotation_info",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Save with annotation information attached (such as gene list, functional annotations, etc)",
+    )    
+    return result
