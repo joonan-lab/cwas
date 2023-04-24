@@ -18,3 +18,6 @@ dependencies:
   - perl-dbd-mysql
   - perl-set-intervaltree
   - perl-bio-bigfile
+  - perl-dbd-sqlite
+  - perl-db
+  - perl-bio-db-hts
