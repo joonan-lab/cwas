@@ -293,7 +293,7 @@ def permutation_test() -> argparse.ArgumentParser:
 
 def extract_variant() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
-        description="Arguments of Burden Tests",
+        description="Arguments of Variant Extraction",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
