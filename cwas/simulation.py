@@ -22,6 +22,11 @@ class Simulation(Runnable):
         self._sample_info = None
         self._fam_to_label_cnt = None
         self._fam_to_sample_set = None
+        self._filepath_dict = None
+        self._chrom_size_df = None
+        self._fa_file_dict = None
+        self._rand_mut_paths = None
+        self._resume = None
     
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -43,6 +48,11 @@ class Simulation(Runnable):
                             help='Number of simulations to generate random mutations', default=1)
         parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
                             help='Number of processes for this script (only necessary for split VCF files)', default=1)
+        parser.add_argument(
+            "-r", "--resume",
+            dest="resume", required=False, default=False, action="store_true",
+            help="Resume the simulation from the last step. Assume some generated output files are not truncated.",
+        )
         
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -97,6 +107,12 @@ class Simulation(Runnable):
     @property
     def num_proc(self) -> int:
         return self.args.num_proc
+
+    @property
+    def resume(self) -> bool:
+        if self._resume is None:
+            self._resume = self.args.resume
+        return self._resume
 
     @property
     def adj_factor_path(self) -> Optional[Path]:
