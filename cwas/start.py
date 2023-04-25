@@ -80,6 +80,8 @@ class Start(Runnable):
             "ANNOTATION_DATA_DIR": "",
             "GENE_MATRIX": "",
             "ANNOTATION_KEY_CONFIG": "",
+            "SIMULATION_DATA_DIR": "",
+            "SIMULATION_PATHS": "",
             "VEP": "",
             "VEP_CACHE_DIR": "",
             "VEP_CONSERVATION_FILE": "",
