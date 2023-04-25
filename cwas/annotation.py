@@ -73,7 +73,7 @@ class Annotation(Runnable):
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
             self.get_env("VEP"),
-            self.get_env("VEP_CONSERVATION_FILE"), self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
+            self.get_env("VEP_CACHE_DIR"), self.get_env("VEP_CONSERVATION_FILE"), self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
             str(self.vcf_path)
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path

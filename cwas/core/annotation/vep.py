@@ -7,15 +7,17 @@ from cwas.utils.check import check_is_dir
 
 class VepCmdGenerator:
     def __init__(self, vep_path: str,
-                 vep_conservation_path: str, vep_loftee_path: str, vep_human_ancestor_fa_path: str, vep_gerp_bw_path: str, vep_mpc_path: str,
+                 vep_cache_dir_path: str, vep_conservation_path: str, vep_loftee_path: str, vep_human_ancestor_fa_path: str, vep_gerp_bw_path: str, vep_mpc_path: str,
                  input_vcf_path: str) -> None:
         self._vep_path = vep_path
+        self._vep_cache_dir_path = vep_cache_dir_path
         self._vep_conservation_path = vep_conservation_path
         self._vep_loftee_path = vep_loftee_path
         self._vep_human_ancestor_fa_path = vep_human_ancestor_fa_path
         self._vep_gerp_bw_path = vep_gerp_bw_path
         self._vep_mpc_path = vep_mpc_path
         self._check_vep_path()
+        self._check_vep_cache_dir_path()
         self._check_vep_conservation_path()
         self._check_vep_loftee_path()
         self._check_vep_human_ancestor_fa_path()
@@ -30,6 +32,14 @@ class VepCmdGenerator:
             check_is_file(self._vep_path)
         except ValueError:
             raise ValueError(f"Invalid VEP path: {self._vep_path}")
+        except Exception:
+            raise
+
+    def _check_vep_cache_dir_path(self):
+        try:
+            check_is_dir(self._vep_cache_dir_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP resource path (cache directory): {self._vep_cache_dir_path}")
         except Exception:
             raise
 
@@ -84,6 +94,10 @@ class VepCmdGenerator:
     @property
     def vep_path(self) -> str:
         return self._vep_path
+
+    @property
+    def vep_cache_dir_path(self) -> str:
+        return self._vep_cache_dir_path
 
     @property
     def vep_conservation_path(self) -> str:
@@ -142,6 +156,8 @@ class VepCmdGenerator:
             "--assembly",
             "GRCh38",
             "--offline",
+            "--dir_cache",
+            self._vep_cache_dir_path,
             "--force_overwrite",
             "--format",
             "vcf",

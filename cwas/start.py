@@ -81,6 +81,7 @@ class Start(Runnable):
             "GENE_MATRIX": "",
             "ANNOTATION_KEY_CONFIG": "",
             "VEP": "",
+            "VEP_CACHE_DIR": "",
             "VEP_CONSERVATION_FILE": "",
             "VEP_LOFTEE": "",
             "VEP_HUMAN_ANCESTOR_FA": "",
