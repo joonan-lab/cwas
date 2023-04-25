@@ -47,3 +47,17 @@ def check_num_proc(num_proc: int):
             f"Your number of worker processes '{num_proc}' exceeds the "
             f"number of available CPUs in your computer ({max_num_proc})."
         )
+
+def check_same_n_lines(file_paths: list, gzip_file: bool = False):
+    n_lines_set = set()
+    for file_path in file_paths:
+        f = gzip.open(file_path, "r") if gzip_file else open(file_path, "r")
+        for count, _ in enumerate(f):
+                pass
+        f.close()
+        n_lines_set.add(count)
+    if len(n_lines_set) > 1:
+        raise ValueError(
+            f"Some files in the previous step have different number of lines. "
+            f"Check the files first."
+        )

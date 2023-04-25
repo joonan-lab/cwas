@@ -61,7 +61,6 @@ class Simulation(Runnable):
         log.print_arg("Output directory", args.out_dir)
         log.print_arg("Output tag (prefix of output files)", args.out_tag)
         log.print_arg("Number of simulations", args.num_sim)
-        log.print_arg("File listing adjustment factors of each sample", args.adj_factor_path)
         log.print_arg(
             "No. worker processes for simulations",
             f"{args.num_proc: ,d}",
@@ -73,8 +72,6 @@ class Simulation(Runnable):
         check_num_proc(args.num_proc)
         if args.in_vcf_path:
             check_is_file(args.in_vcf_path)
-        if args.adj_factor_path is not None:
-            check_is_file(args.adj_factor_path)
             
     @property
     def in_vcf_path(self) -> Path:
@@ -93,7 +90,7 @@ class Simulation(Runnable):
         return (
             self.args.out_dir.resolve()
             if self.args.out_dir
-            else self.workspace / "random-mutations"
+            else Path('/'.join([self.get_env("CWAS_WORKSPACE"), "random-mutations"]))
         )
 
     @property
@@ -113,14 +110,6 @@ class Simulation(Runnable):
         if self._resume is None:
             self._resume = self.args.resume
         return self._resume
-
-    @property
-    def adj_factor_path(self) -> Optional[Path]:
-        return (
-            self.args.adj_factor_path.resolve()
-            if self.args.adj_factor_path
-            else None
-        )
         
     @property
     def in_vcf(self) -> pd.DataFrame:
