@@ -66,6 +66,7 @@ class Annotation(Runnable):
         print_arg("Target VCF file", args.vcf_path)
         print_arg("Number of cores", args.n_cores)
         print_arg("Target VCF file", args.output_dir_path)
+        print_arg("Number of cores", args.n_cores)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -77,6 +78,10 @@ class Annotation(Runnable):
     def vcf_path(self):
         return self.args.vcf_path.resolve()
     
+    @property
+    def n_cores(self):
+        return self.args.n_cores
+
     @property
     def n_cores(self):
         return self.args.n_cores
