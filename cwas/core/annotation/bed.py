@@ -1,6 +1,7 @@
 from collections import deque
 
 import pysam
+import gzip
 
 
 # TODO: Make this code much clearer
@@ -9,7 +10,7 @@ def annotate(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str):
 
     with pysam.TabixFile(in_vcf_gz_path) as in_vcf_file, pysam.TabixFile(
         annot_bed_path
-    ) as annot_bed_file, open(out_vcf_path, "w") as out_vcf_file:
+    ) as annot_bed_file, gzip.open(out_vcf_path, "wb") as out_vcf_file:
         # Make and write headers
         vcf_headers = in_vcf_file.header
         annot_key_str = annot_bed_file.header[0].split("=")[1]
@@ -21,7 +22,7 @@ def annotate(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str):
         )  # Swap
 
         for vcf_header in vcf_headers:
-            print(vcf_header, file=out_vcf_file)
+            out_vcf_file.write((vcf_header + '\n').encode())
 
         # Annotate by the input BED file
         for chrom in chroms:
@@ -81,5 +82,5 @@ def annotate(in_vcf_gz_path: str, out_vcf_path: str, annot_bed_path: str):
 
                         bed = next(bed_iter, None)
 
-                print(str(variant) + f";ANNOT={annot_int}", file=out_vcf_file)
+                out_vcf_file.write((str(variant) + f";ANNOT={annot_int}" + "\n").encode())
                 variant = next(var_iter, None)
