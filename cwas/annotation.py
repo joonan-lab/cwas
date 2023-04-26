@@ -15,6 +15,7 @@ from cwas.core.annotation.vep import VepCmdGenerator
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
+from cwas.utils.check import check_num_proc
 from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
@@ -41,6 +42,15 @@ class Annotation(Runnable):
             help="Target VCF file",
         )
         parser.add_argument(
+            "-n",
+            "--num_cores",
+            dest="n_cores",
+            required=False,
+            default=1,
+            type=int,
+            help="Number of cores used for annotation processes (default: 1)",
+        )
+        parser.add_argument(
             "-o_dir",
             "--output_directory",
             dest="output_dir_path",
@@ -54,16 +64,22 @@ class Annotation(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Target VCF file", args.vcf_path)
+        print_arg("Number of cores", args.n_cores)
         print_arg("Target VCF file", args.output_dir_path)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.vcf_path)
         check_is_dir(args.output_dir_path)
+        check_num_proc(args.n_cores)
 
     @property
     def vcf_path(self):
         return self.args.vcf_path.resolve()
+    
+    @property
+    def n_cores(self):
+        return self.args.n_cores
 
     @property
     def output_dir_path(self):
@@ -74,7 +90,7 @@ class Annotation(Runnable):
         vep_cmd_generator = VepCmdGenerator(
             self.get_env("VEP"),
             self.get_env("VEP_CACHE_DIR"), self.get_env("VEP_CONSERVATION_FILE"), self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
-            str(self.vcf_path)
+            str(self.vcf_path), str(self.n_cores),
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
         return vep_cmd_generator.cmd

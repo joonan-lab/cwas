@@ -3,21 +3,22 @@ Command line generator for Variant Effect Predictor (VEP)
 """
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
+from cwas.utils.check import check_num_proc
 
 
 class VepCmdGenerator:
     def __init__(self, vep_path: str,
-                 vep_cache_dir_path: str, vep_conservation_path: str, vep_loftee_path: str, vep_human_ancestor_fa_path: str, vep_gerp_bw_path: str, vep_mpc_path: str,
-                 input_vcf_path: str) -> None:
+                 vep_cache_path: str, vep_conservation_path: str, vep_loftee_path: str, vep_human_ancestor_fa_path: str, vep_gerp_bw_path: str, vep_mpc_path: str,
+                 input_vcf_path: str, num_proc: str) -> None:
         self._vep_path = vep_path
-        self._vep_cache_dir_path = vep_cache_dir_path
+        self._vep_cache_path = vep_cache_path
         self._vep_conservation_path = vep_conservation_path
         self._vep_loftee_path = vep_loftee_path
         self._vep_human_ancestor_fa_path = vep_human_ancestor_fa_path
         self._vep_gerp_bw_path = vep_gerp_bw_path
         self._vep_mpc_path = vep_mpc_path
         self._check_vep_path()
-        self._check_vep_cache_dir_path()
+        self._check_vep_cache_path()
         self._check_vep_conservation_path()
         self._check_vep_loftee_path()
         self._check_vep_human_ancestor_fa_path()
@@ -26,20 +27,14 @@ class VepCmdGenerator:
         self._input_vcf_path = input_vcf_path
         self._check_input_vcf_path()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".vep.vcf")
+        self._num_proc = num_proc
+        self._check_input_num_proc()
 
     def _check_vep_path(self):
         try:
             check_is_file(self._vep_path)
         except ValueError:
             raise ValueError(f"Invalid VEP path: {self._vep_path}")
-        except Exception:
-            raise
-
-    def _check_vep_cache_dir_path(self):
-        try:
-            check_is_dir(self._vep_cache_dir_path)
-        except ValueError:
-            raise ValueError(f"Invalid VEP resource path (cache directory): {self._vep_cache_dir_path}")
         except Exception:
             raise
 
@@ -83,6 +78,14 @@ class VepCmdGenerator:
         except Exception:
             raise
 
+    def _check_vep_cache_path(self):
+        try:
+            check_is_dir(self._vep_cache_path)
+        except ValueError:
+            raise ValueError(f"Invalid VEP cache path : {self._vep_cache_path}")
+        except Exception:
+            raise
+
     def _check_input_vcf_path(self):
         try:
             check_is_file(self._input_vcf_path)
@@ -90,14 +93,18 @@ class VepCmdGenerator:
             raise ValueError(f"Invalid VCF path: {self._input_vcf_path}")
         except Exception:
             raise
+        
+    def _check_input_num_proc(self):
+        try:
+            check_num_proc(int(self._num_proc))
+        except ValueError:
+            raise ValueError(f"Invalid number of cores: {self._num_proc}")
+        except Exception:
+            raise
 
     @property
     def vep_path(self) -> str:
         return self._vep_path
-
-    @property
-    def vep_cache_dir_path(self) -> str:
-        return self._vep_cache_dir_path
 
     @property
     def vep_conservation_path(self) -> str:
@@ -120,6 +127,10 @@ class VepCmdGenerator:
         return self._vep_mpc_path
 
     @property
+    def vep_cache_path(self) -> str:
+        return self._vep_cache_path
+
+    @property
     def input_vcf_path(self) -> str:
         return self._input_vcf_path
 
@@ -130,6 +141,10 @@ class VepCmdGenerator:
     @output_vcf_path.setter
     def output_vcf_path(self, arg: str):
         self._output_vcf_path = arg
+
+    @property
+    def num_proc(self) -> str:
+        return self._num_proc
 
     @property
     def cmd_str(self) -> str:
@@ -143,6 +158,8 @@ class VepCmdGenerator:
             self._input_vcf_path,
             "-o",
             self._output_vcf_path,
+            "--fork",
+            self._num_proc,
         ]
         result += self.cmd_option_basic
         result += self.cmd_option_pick_one_gene_isoform
@@ -156,8 +173,9 @@ class VepCmdGenerator:
             "--assembly",
             "GRCh38",
             "--offline",
+            "--cache",
             "--dir_cache",
-            self._vep_cache_dir_path,
+            self._vep_cache_path,
             "--force_overwrite",
             "--format",
             "vcf",
@@ -189,4 +207,3 @@ class VepCmdGenerator:
     def cmd_option_pick_nearest_gene(self) -> list:
         """Return options in order to pick the nearest gene"""
         return ["--distance", "2000", "--nearest", "symbol", "--symbol"]
-
