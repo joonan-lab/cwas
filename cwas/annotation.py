@@ -64,8 +64,7 @@ class Annotation(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Target VCF file", args.vcf_path)
-        print_arg("Number of cores", args.n_cores)
-        print_arg("Target VCF file", args.output_dir_path)
+        print_arg("Output directory", args.output_dir_path)
         print_arg("Number of cores", args.n_cores)
 
     @staticmethod
@@ -155,11 +154,23 @@ class Annotation(Runnable):
                 True,
             )
             return
-        _annotate_using_bed(
+        
+        annotate_vcf = _annotate_using_bed(
             self.vep_output_vcf_gz_path,
             self.annotated_vcf_path,
             self.get_env("MERGED_BED"),
+            self.n_cores,
         )
+
+        annotate_vcf.bed_custom_annotate()
+        '''
+        _annotate_using_bed.bed_custom_annotate(
+            self.vep_output_vcf_gz_path,
+            self.annotated_vcf_path,
+            self.get_env("MERGED_BED"),
+            self.n_cores,
+        )
+        '''
 
     def update_env(self):
         self.set_env("ANNOTATED_VCF", self.annotated_vcf_path)
