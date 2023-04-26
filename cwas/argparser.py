@@ -111,6 +111,15 @@ def annotation() -> argparse.ArgumentParser:
         help="Target VCF file",
     )
     result.add_argument(
+        "-n",
+        "--num_cores",
+        dest="n_cores",
+        required=False,
+        default=1,
+        type=int,
+        help="Number of cores used for annotation processes (default: 1)",
+    )
+    result.add_argument(
         "-o_dir",
         "--output_directory",
         dest="output_dir_path",
