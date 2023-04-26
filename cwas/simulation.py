@@ -198,7 +198,7 @@ class Simulation(Runnable):
 
             for chrom in unq_chroms:
                 fa_file_path = self.filepath_dict[f'{chrom}']
-                fa_file_dict[chrom] = FastaFile(fa_file_path)
+                fa_file_dict[chrom] = FastaFile(str(fa_file_path))
         
             self._fa_file_dict = fa_file_dict
             
