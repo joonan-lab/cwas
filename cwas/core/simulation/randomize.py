@@ -1,3 +1,5 @@
+import numpy as np
+
 def label_variant(ref: str, alt: str) -> int:
     """ Return an integer according to the type of the input small variant
 
