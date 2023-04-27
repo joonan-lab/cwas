@@ -43,7 +43,6 @@ class Multiprocessing(Runnable):
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_dir(args.in_dir_path)
-        check_is_file(args.sample_info_path)
         check_num_proc(args.num_mp) # multitply?
         check_num_proc(args.num_proc)
         if args.step == 'binomial_test':
