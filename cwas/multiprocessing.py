@@ -28,12 +28,12 @@ class Multiprocessing(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg(f"CWAS step:", str(args.step))
-        log.print_arg("Input directory", args.in_vcf_path if args.in_vcf_path else "Not specified: $ANNOTATED_VCF will be used")
+        log.print_arg("Input directory", args.in_dir_path)
         if args.step == 'binomial_test':
             log.print_arg("Sample information file", args.sample_info_path)
             if args.adj_file_path :
                 log.print_arg("Adjust factor file", args.adj_file_path)
-        log.print_arg("Output directory", args.out_dir)
+        log.print_arg("Output directory", args.output_dir_path)
         log.print_arg("Number of simulations", args.num_sim)
         log.print_arg(
             "No. worker processes for this step",
