@@ -421,7 +421,7 @@ def simulation() -> argparse.ArgumentParser:
     )
     return result
 
-def simulation() -> argparse.ArgumentParser:
+def multiprocessing() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Arguments of CWAS multiprocessing",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
