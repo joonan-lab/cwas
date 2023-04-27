@@ -429,8 +429,6 @@ def multiprocessing() -> argparse.ArgumentParser:
     
     def add_common_args(subparser: argparse.ArgumentParser):
         """ Add common arguments to the subparser """
-        subparser.add_argument('-cs', '--cwas_step', dest='cwas_step', required=True, type=str, default='all',
-                            help='CWAS process for multiprocessing', choices=['all', 'annotation', 'categorizatoin', 'binomial_test'])
         subparser.add_argument('-i', '--input_dir', dest='in_dir_path', required=True, type=Path,
                             help='Path to the input directory')
         subparser.add_argument(
@@ -449,7 +447,9 @@ def multiprocessing() -> argparse.ArgumentParser:
             help="Resume the simulation from the last step. Assume some generated output files are not truncated.",
         )
         
-    subparsers = result.add_subparsers(description='A name of a step of CWAS {annotation, categorization, binomial_test}',
+    subparsers = result.add_subparsers(description='CWAS process for multiprocessing '
+                                       '{all, annotation, categorizatoin, binomial_test}',
+                                       required=True, type=str, default='all',
                                        dest='step')
     parser_annot = subparsers.add_parser(
         'annotation',
