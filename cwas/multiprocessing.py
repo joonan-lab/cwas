@@ -65,9 +65,9 @@ class Multiprocessing(Runnable):
         else:
             if self.args.step == 'annotation':
                 dir_name = 'vep'
-            if self.args.step == 'annotation':
+            if self.args.step == 'categorization':
                 dir_name = 'cat'
-            if self.args.step == 'annotation':
+            if self.args.step == 'binomial_test':
                 dir_name = 'burden'
             return(
                 Path('/'.join([self.get_env("CWAS_WORKSPACE"), '_'.join(["random-mutations", dir_name])]))
@@ -306,19 +306,22 @@ class Multiprocessing(Runnable):
         tester.save_result()
     
     def run(self):
-        if self.cwas_process == 'annotation':
+        if self.step == 'annotation':
             self.multi_annotate()
         if self.cws_process == 'categorization':
             self.multi_categorize()
-        if self.cwas_process == 'binomial_test':
+        if self.step == 'binomial_test':
             self.multi_binomial_test()
-        if self.cwas_process == 'all':
+        if self.step == 'all':
+            self.step = 'annotation'
             self.multi_annotate()
             self.in_dir = self.out_dir
             self.out_dir = Path('/'.join([self.out_dir.parent, "random-mutations_cat"]))
+            self.step = 'categorization'
             self.multi_categorize()
             self.in_dir = self.out_dir
             self.out_dir = Path('/'.join([self.out_dir.parent, "random-mutations_burden"]))
+            self.step = 'binomial_test'
             self.multi_binomial_test()
         log.print_progress("Done")
     
