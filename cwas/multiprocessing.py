@@ -2,6 +2,7 @@ import yaml, os, gzip, sys, argparse
 import multiprocessing as mp
 from functools import partial
 import re
+from glob import glob
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -92,32 +93,32 @@ class Multiprocessing(Runnable):
     @property
     def rand_mut_paths(self) -> list:
         if self._rand_mut_paths is None:
-            self._rand_mut_paths = sorted(self.in_dir.glob(f'{self.in_dir}/*.vcf.gz'))
+            self._rand_mut_paths = sorted(glob(f'{self.in_dir}/*.vcf.gz'))
         return self._rand_mut_paths
 
     @property
     def annot_vcf_paths(self) -> list:
         if self._annot_vcf_paths is None:
-            self._annot_vcf_paths = sorted(self.in_dir.glob(f'{self.in_dir}/*.annotated.vcf.gz'))
+            self._annot_vcf_paths = sorted(glob(f'{self.in_dir}/*.annotated.vcf.gz'))
         return self._annot_vcf_paths
 
     @property
     def cat_result_paths(self) -> list:
         if self._cat_result_paths is None:
-            self._cat_result_paths = sorted(self.in_dir.glob(f'{self.in_dir}/*.categorization_result.txt.gz'))
+            self._cat_result_paths = sorted(glob(f'{self.in_dir}/*.categorization_result.txt.gz'))
         return self._cat_result_paths
     
     @property
     def burden_test_paths(self) -> list:
         if self._burden_test_paths is None:
-            self._burden_test_paths = sorted(self.in_dir.glob(f'{self.in_dir}/*.burden_test.txt.gz'))
+            self._burden_test_paths = sorted(glob(f'{self.in_dir}/*.burden_test.txt.gz'))
         return self._burden_test_paths
 
     @property
     def num_sim(self) -> int:
         if self._num_sim is None:
             if self.step == 'annotation':
-                self._num_sim = len(sorted(self.in_dir.glob(f'{self.in_dir}/*.vcf.gz')))
+                self._num_sim = len(sorted(glob(f'{self.in_dir}/*.vcf.gz')))
             if self.step == 'categorization':
                 self._num_sim = len(self.annot_vcf_paths)
             if self.step == 'binomial_test':
@@ -127,7 +128,7 @@ class Multiprocessing(Runnable):
     def multi_annotate(self):
         """Annotation for random mutations """
         log.print_progress(self.multi_annotate.__doc__)
-        pre_files = sorted(self.out_dir.glob(f'{self.out_dir}/*.annotated.vcf.gz'))
+        pre_files = sorted(glob(f'{self.out_dir}/*.annotated.vcf.gz'))
         if len(pre_files) == 0:
             target_inputs = self.rand_mut_paths
         elif len(pre_files) == self.num_sim:
@@ -182,7 +183,7 @@ class Multiprocessing(Runnable):
     def multi_categorize(self):
         """Categorize random mutations """
         log.print_progress(self.multi_categorize.__doc__)
-        pre_files = sorted(self.out_dir.glob(f'{self.out_dir}/*.categorization_result.txt.gz'))
+        pre_files = sorted(glob(f'{self.out_dir}/*.categorization_result.txt.gz'))
         if len(pre_files) == 0:
             target_inputs = self.annot_vcf_paths
         elif len(pre_files) == self.num_sim:
@@ -238,7 +239,7 @@ class Multiprocessing(Runnable):
     def multi_binomial_test(self):
         """Burden tests for random mutations """
         log.print_progress(self.multi_binomial_test.__doc__)
-        pre_files = self.burden_test_paths
+        pre_files = sorted(glob(f'{self.out_dir}/*.burden_test.txt.gz'))
         if len(pre_files) == 0:
             target_inputs = self.cat_result_paths
         elif len(pre_files) == self.num_sim:
