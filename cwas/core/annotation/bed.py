@@ -26,9 +26,6 @@ class annotate:
         return self._n_cores
 
     def bed_custom_annotate(self):
-        chroms = [f"chr{n}" for n in range(1, 23)]
-        p = mp.Pool(self._n_cores)
-
         with pysam.TabixFile(self.in_vcf_gz_path) as in_vcf_file, pysam.TabixFile(
             self.annot_bed_path
         ) as annot_bed_file, open(self.out_vcf_path, "w") as out_vcf_file:
@@ -45,8 +42,13 @@ class annotate:
             # Write VCF header
             out_vcf_file.write("\n".join(vcf_headers))
 
-            # Annotate by the input BED file    
-            annot_vcf = p.map(self.chr_annotate, chroms)
+            # Annotate by the input BED file
+            vcf_chroms = in_vcf_file.contigs
+            self._n_cores = self._n_cores if len(vcf_chroms) > self._n_cores else len(vcf_chroms)
+
+            p = mp.Pool(self._n_cores)
+
+            annot_vcf = p.map(self.chr_annotate, vcf_chroms)
             annot_vcf = itertools.chain.from_iterable(annot_vcf)
             
             p.close()
