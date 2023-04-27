@@ -27,7 +27,7 @@ class Multiprocessing(Runnable):
     
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        log.print_arg(f"CWAS step: {args.step}")
+        log.print_arg(f"CWAS step:", str(args.step))
         log.print_arg("Input directory", args.in_vcf_path if args.in_vcf_path else "Not specified: $ANNOTATED_VCF will be used")
         if args.step == 'binomial_test':
             log.print_arg("Sample information file", args.sample_info_path)
