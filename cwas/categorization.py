@@ -33,43 +33,6 @@ class Categorization(Runnable):
         self._sample_ids = None
 
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of CWAS categorization step",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        
-        parser.add_argument(
-            "-i",
-            "--input_file",
-            dest="input_path",
-            required=True,
-            type=Path,
-            help="Annotated VCF file",
-        )
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        parser.add_argument(
-            "-p",
-            "--num_proc",
-            dest="num_proc",
-            required=False,
-            type=int,
-            help="Number of worker processes for the categorization",
-            default=1,
-        )
-        return parser
-
-    @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg(
             "No. worker processes for the categorization",

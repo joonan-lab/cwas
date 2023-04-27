@@ -111,13 +111,13 @@ def annotation() -> argparse.ArgumentParser:
         help="Target VCF file",
     )
     result.add_argument(
-        "-n",
-        "--num_cores",
-        dest="n_cores",
+        "-p",
+        "--num_proc",
+        dest="num_proc",
         required=False,
-        default=1,
         type=int,
-        help="Number of cores used for annotation processes (default: 1)",
+        help="Number of worker processes for the categorization (default: 1)",
+        default=1,
     )
     result.add_argument(
         "-o_dir",

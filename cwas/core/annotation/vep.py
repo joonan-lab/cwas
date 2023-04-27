@@ -102,14 +102,6 @@ class VepCmdGenerator:
         except Exception:
             raise
 
-    def _check_input_num_proc(self):
-        try:
-            check_num_proc(int(self._num_proc))
-        except ValueError:
-            raise ValueError(f"Invalid number of cores: {self._num_proc}")
-        except Exception:
-            raise
-
     @property
     def vep_path(self) -> str:
         return self._vep_path
