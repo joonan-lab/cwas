@@ -449,7 +449,7 @@ def multiprocessing() -> argparse.ArgumentParser:
         
     subparsers = result.add_subparsers(description='CWAS process for multiprocessing '
                                        '{all, annotation, categorizatoin, binomial_test}',
-                                       required=True, type=str, default='all',
+                                       required=True, default='all',
                                        dest='step')
     parser_annot = subparsers.add_parser(
         'annotation',
