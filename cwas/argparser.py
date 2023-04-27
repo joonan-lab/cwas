@@ -461,7 +461,7 @@ def multiprocessing() -> argparse.ArgumentParser:
                                help='File listing sample IDs with their families and sample_types (case or ctrl)')
     parser_all.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
                                help='File that contains adjustment factors for No. DNVs of each sample', default='')
-    parser_annot.add_argument(
+    parser_all.add_argument(
         "-p",
         "--num_proc",
         dest="num_proc",
