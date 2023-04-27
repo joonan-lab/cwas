@@ -420,3 +420,87 @@ def simulation() -> argparse.ArgumentParser:
         help="Resume the simulation from the last step. Assume some generated output files are not truncated."
     )
     return result
+
+def simulation() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of CWAS multiprocessing",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    
+    def add_common_args(subparser: argparse.ArgumentParser):
+        """ Add common arguments to the subparser """
+        subparser.add_argument('-cs', '--cwas_step', dest='cwas_step', required=True, type=str, default='all',
+                            help='CWAS process for multiprocessing', choices=['all', 'annotation', 'categorizatoin', 'binomial_test'])
+        subparser.add_argument('-i', '--input_dir', dest='in_dir_path', required=True, type=Path,
+                            help='Path to the input directory')
+        subparser.add_argument(
+            "-o_dir",
+            "--output_directory",
+            dest="output_dir_path",
+            required=False,
+            type=Path,
+            help="Directory where output file will be saved (default : $CWAS_WORKSPACE/random-mutation_{{args.step}})",
+        )
+        subparser.add_argument('-mp', '--num_mp', dest='num_mp', required=False, type=int,
+                            help='Number of concurrent processes for CWAS multiprocessing', default=1)
+        subparser.add_argument(
+            "-r", "--resume",
+            dest="resume", required=False, default=False, action="store_true",
+            help="Resume the simulation from the last step. Assume some generated output files are not truncated.",
+        )
+        
+    subparsers = result.add_subparsers(description='A name of a step of CWAS {annotation, categorization, binomial_test}',
+                                       dest='step')
+    parser_annot = subparsers.add_parser(
+        'annotation',
+        description='Multiprocessing variant annotation in CWAS',
+        help='Multiprocessing variant annotation in CWAS (arg "annotation -h" for usage)'
+    )
+    parser_annot.add_argument(
+        "-p",
+        "--num_proc",
+        dest="num_proc",
+        required=False,
+        type=int,
+        help="Number of worker processes for the annotation (default: 1)",
+        default=1,
+    )
+    add_common_args(parser_annot)
+        
+    parser_cat = subparsers.add_parser(
+        'categorization',
+        description='Multiprocessing variant categorization in CWAS',
+        help='Multiprocessing variant categorization in CWAS (arg "categorization -h" for usage)'
+    )
+    parser_cat.add_argument(
+        "-p",
+        "--num_proc",
+        dest="num_proc",
+        required=False,
+        type=int,
+        help="Number of worker processes for the categorization (default: 1)",
+        default=1,
+    )
+    add_common_args(parser_cat)
+
+    parser_burden = subparsers.add_parser(
+        'binomial_test',
+        description='Multiprocessing burden binomial tests in CWAS',
+        help='Multiprocessing burden binomial tests in CWAS (arg "binomial_test -h" for usage)'
+    )
+    parser_burden.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                               help='File listing sample IDs with their families and sample_types (case or ctrl)')
+    parser_burden.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
+                               help='File that contains adjustment factors for No. DNVs of each sample', default='')
+    parser_burden.add_argument(
+        "-u",
+        "--use_n_carrier",
+        dest="use_n_carrier",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Use the number of samples with variants in each category for burden test instead of the number of variants",
+    )
+    add_common_args(parser_burden)
+    
+    return result
