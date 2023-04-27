@@ -34,7 +34,6 @@ class Multiprocessing(Runnable):
             if args.adj_file_path :
                 log.print_arg("Adjust factor file", args.adj_file_path)
         log.print_arg("Output directory", args.output_dir_path)
-        log.print_arg("Number of simulations", args.num_sim)
         log.print_arg(
             "No. worker processes for this step",
             f"{args.num_mp: ,d}",
@@ -307,12 +306,16 @@ class Multiprocessing(Runnable):
     
     def run(self):
         if self.step == 'annotation':
+            log.print_arg("Number of simulations", self.num_sim)
             self.multi_annotate()
         if self.cws_process == 'categorization':
+            log.print_arg("Number of simulations", self.num_sim)
             self.multi_categorize()
         if self.step == 'binomial_test':
+            log.print_arg("Number of simulations", self.num_sim)
             self.multi_binomial_test()
         if self.step == 'all':
+            log.print_arg("Number of simulations", self.num_sim)
             self.step = 'annotation'
             self.multi_annotate()
             self.in_dir = self.out_dir
