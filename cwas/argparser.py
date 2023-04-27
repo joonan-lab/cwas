@@ -449,13 +449,18 @@ def multiprocessing() -> argparse.ArgumentParser:
         
     subparsers = result.add_subparsers(description='CWAS process for multiprocessing '
                                        '{all, annotation, categorizatoin, binomial_test}',
-                                       required=True, default='all',
                                        dest='step')
-    parser_annot = subparsers.add_parser(
-        'annotation',
-        description='Multiprocessing variant annotation in CWAS',
-        help='Multiprocessing variant annotation in CWAS (arg "annotation -h" for usage)'
+
+    parser_all = subparsers.add_parser(
+        'all',
+        description='Multiprocessing all processes in CWAS',
+        help='Multiprocessing all processes in CWAS (arg "all -h" for usage)'
     )
+    add_common_args(parser_all) 
+    parser_all.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
+                               help='File listing sample IDs with their families and sample_types (case or ctrl)')
+    parser_all.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
+                               help='File that contains adjustment factors for No. DNVs of each sample', default='')
     parser_annot.add_argument(
         "-p",
         "--num_proc",
@@ -465,13 +470,38 @@ def multiprocessing() -> argparse.ArgumentParser:
         help="Number of worker processes for the annotation (default: 1)",
         default=1,
     )
+    parser_all.add_argument(
+        "-u",
+        "--use_n_carrier",
+        dest="use_n_carrier",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Use the number of samples with variants in each category for burden test instead of the number of variants",
+    )   
+    
+    parser_annot = subparsers.add_parser(
+        'annotation',
+        description='Multiprocessing variant annotation in CWAS',
+        help='Multiprocessing variant annotation in CWAS (arg "annotation -h" for usage)'
+    )
     add_common_args(parser_annot)
+    parser_annot.add_argument(
+        "-p",
+        "--num_proc",
+        dest="num_proc",
+        required=False,
+        type=int,
+        help="Number of worker processes for the annotation (default: 1)",
+        default=1,
+    )
         
     parser_cat = subparsers.add_parser(
         'categorization',
         description='Multiprocessing variant categorization in CWAS',
         help='Multiprocessing variant categorization in CWAS (arg "categorization -h" for usage)'
     )
+    add_common_args(parser_cat)
     parser_cat.add_argument(
         "-p",
         "--num_proc",
@@ -481,13 +511,13 @@ def multiprocessing() -> argparse.ArgumentParser:
         help="Number of worker processes for the categorization (default: 1)",
         default=1,
     )
-    add_common_args(parser_cat)
 
     parser_burden = subparsers.add_parser(
         'binomial_test',
         description='Multiprocessing burden binomial tests in CWAS',
         help='Multiprocessing burden binomial tests in CWAS (arg "binomial_test -h" for usage)'
     )
+    add_common_args(parser_burden)
     parser_burden.add_argument('-s', '--sample_file', dest='sample_file_path', required=True, type=str,
                                help='File listing sample IDs with their families and sample_types (case or ctrl)')
     parser_burden.add_argument('-a', '--adj_file', dest='adj_file_path', required=False, type=str,
@@ -501,6 +531,5 @@ def multiprocessing() -> argparse.ArgumentParser:
         action="store_true",
         help="Use the number of samples with variants in each category for burden test instead of the number of variants",
     )
-    add_common_args(parser_burden)
     
     return result
