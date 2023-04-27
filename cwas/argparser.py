@@ -374,7 +374,7 @@ def simulation() -> argparse.ArgumentParser:
         help='File listing sample IDs with their families and sample_types (case or ctrl)'
     )
     result.add_argument(
-        '-o',
+        '-o_dir',
         '--out_dir',
         dest='out_dir',
         required=False,

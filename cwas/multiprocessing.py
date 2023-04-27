@@ -175,7 +175,7 @@ class Multiprocessing(Runnable):
 
     @staticmethod
     def _annotate_one(rand_mut_path: Path, num_proc: int, out_dir: Path):
-        annotator = Annotation.get_instance(['-v', str(rand_mut_path), '-p', str(num_proc), '-o', str(out_dir)])
+        annotator = Annotation.get_instance(['-v', str(rand_mut_path), '-p', str(num_proc), '-o_dir', str(out_dir)])
         annotator.vep_output_vcf_path = str(rand_mut_path).replace('.vcf.gz', '.vep.vcf')
         annotator.annotate_using_bigwig()
         annotator.process_vep_vcf()
@@ -230,7 +230,7 @@ class Multiprocessing(Runnable):
 
     @staticmethod
     def _categorize_one(annot_vcf_path: Path, num_proc: int, out_dir: Path):
-        categorizer = Categorization.get_instance(['-i', str(annot_vcf_path), '-p', str(num_proc), '-o', str(out_dir)])
+        categorizer = Categorization.get_instance(['-i', str(annot_vcf_path), '-p', str(num_proc), '-o_dir', str(out_dir)])
         categorizer.annotated_vcf = parse_annotated_vcf(annot_vcf_path)
         categorizer.result_path = Path(str(annot_vcf_path).replace('.annotated.vcf.gz', '.categorization_result.txt.gz'))
         categorizer.categorize_vcf()
@@ -286,7 +286,7 @@ class Multiprocessing(Runnable):
 
     @staticmethod
     def _burden_test(cat_result_path: Path, sample_info_path: Path, out_dir: Path, adj_factor_path: Optional[Path], use_n_carrier: bool):
-        argv = ['-i', str(cat_result_path), '-s', str(sample_info_path), '-o', str(out_dir)]
+        argv = ['-i', str(cat_result_path), '-s', str(sample_info_path), '-o_dir', str(out_dir)]
         if adj_factor_path is not None:
             argv.extend(['-a', str(adj_factor_path)])
         if use_n_carrier:
