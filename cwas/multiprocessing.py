@@ -6,6 +6,7 @@ from glob import glob
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from cwas.argparser import annotation
 from cwas.annotation import Annotation
 from cwas.categorization import Categorization
 from cwas.binomial_test import BinomialTest
@@ -160,7 +161,7 @@ class Multiprocessing(Runnable):
                                        num_proc=self.num_proc,
                                        out_dir = self.out_dir)
         
-        if self.num_proc == 1:
+        if self.num_mp == 1:
             for rand_mut_path in tqdm(target_inputs):
                 _annotate_one_partial(
                     rand_mut_path,
@@ -168,14 +169,17 @@ class Multiprocessing(Runnable):
         else:
             def mute():
                 sys.stderr = open(os.devnull, 'w')
-            with mp.Pool(self.num_proc, initializer=mute) as pool:
+            with mp.Pool(self.num_mp, initializer=mute) as pool:
                 for _ in tqdm(pool.imap_unordered(_annotate_one_partial, target_inputs), total=len(target_inputs)):
                     pass
 
     @staticmethod
     def _annotate_one(rand_mut_path: Path, num_proc: int, out_dir: Path):
-        annotator = Annotation.get_instance(['-v', str(rand_mut_path), '-p', str(num_proc), '-o_dir', str(out_dir)])
-        annotator.vep_output_vcf_path = str(rand_mut_path).replace('.vcf.gz', '.vep.vcf')
+        arg_parser = Annotation._create_arg_parser()  # create the arg parser
+        args = arg_parser.parse_args(['-v', str(rand_mut_path), '-p', str(num_proc), '-o_dir', str(out_dir)])  # parse the args
+        annotator = Annotation(args)  # create an instance of the Annotation class using the parsed args
+        #annotator = Annotation.get_instance().annotation().parse_args(['-v', str(rand_mut_path), '-p', str(num_proc), '-o_dir', str(out_dir)])
+        #annotator.vep_output_vcf_path = str(rand_mut_path).replace('.vcf.gz', '.vep.vcf')
         annotator.annotate_using_vep()
         annotator.process_vep_vcf()
         annotator.annotate_using_bed()
@@ -215,7 +219,7 @@ class Multiprocessing(Runnable):
                                        num_proc=self.num_proc,
                                        out_dir = self.out_dir)
         
-        if self.num_proc == 1:
+        if self.num_mp == 1:
             for annot_vcf_path in tqdm(target_inputs):
                 _categorize_one_partial(
                     annot_vcf_path,
@@ -223,7 +227,7 @@ class Multiprocessing(Runnable):
         else:
             def mute():
                 sys.stderr = open(os.devnull, 'w')
-            with mp.Pool(self.num_proc, initializer=mute) as pool:
+            with mp.Pool(self.num_mp, initializer=mute) as pool:
                 for _ in tqdm(pool.imap_unordered(_categorize_one_partial, target_inputs), total=len(target_inputs)):
                     pass
 
@@ -270,7 +274,7 @@ class Multiprocessing(Runnable):
                                        adj_factor_path=self.adj_factor_path,
                                        out_dir = self.out_dir)
         
-        if self.num_proc == 1:
+        if self.num_mp == 1:
             for cat_result_path in target_inputs:
                 _burden_test_partial(
                     cat_result_path,
@@ -278,7 +282,7 @@ class Multiprocessing(Runnable):
         else:
             def mute():
                 sys.stderr = open(os.devnull, 'w')
-            with mp.Pool(self.num_proc, initializer=mute) as pool:
+            with mp.Pool(self.num_mp, initializer=mute) as pool:
                 for _ in tqdm(pool.imap_unordered(_burden_test_partial, target_inputs), total=len(target_inputs)):
                     pass
 

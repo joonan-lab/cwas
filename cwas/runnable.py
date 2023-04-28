@@ -19,8 +19,6 @@ class Runnable(ABC):
     def get_instance(cls, argv: list = []) -> Runnable:
         arg_parser = cls._create_arg_parser()
         args = arg_parser.parse_args(argv)
-        cls._print_args(args)
-        cls._check_args_validity(args)
         return cls(args)
 
     @property
