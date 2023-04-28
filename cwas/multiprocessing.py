@@ -157,26 +157,24 @@ class Multiprocessing(Runnable):
                 " Check and remove the files to rerun this step."
             )
 
-        _annotate_one_partial = partial(self._annotate_one, 
-                                       num_proc=self.num_proc,
-                                       out_dir = self.out_dir)
+        #_annotate_one_partial = partial(self._annotate_one, 
+        #                               num_proc=self.num_proc,
+        #                               out_dir = self.out_dir)
         
         if self.num_mp == 1:
             for rand_mut_path in tqdm(target_inputs):
-                _annotate_one_partial(
-                    rand_mut_path,
-                )
+                self._annotate_one(rand_mut_path)
         else:
             def mute():
-                sys.stderr = open(os.devnull, 'w')
+                sys.stderr = open(os.devnull, 'w')  
             with mp.Pool(self.num_mp, initializer=mute) as pool:
-                for _ in tqdm(pool.imap_unordered(_annotate_one_partial, target_inputs), total=len(target_inputs)):
+                for _ in tqdm(pool.imap_unordered(self._annotate_one, target_inputs), total=len(target_inputs)):
                     pass
 
     @staticmethod
-    def _annotate_one(rand_mut_path: Path, num_proc: int, out_dir: Path):
+    def _annotate_one(rand_mut_path: Path):
         arg_parser = Annotation._create_arg_parser()  # create the arg parser
-        args = arg_parser.parse_args(['-v', str(rand_mut_path), '-p', str(num_proc), '-o_dir', str(out_dir)])  # parse the args
+        args = arg_parser.parse_args(['-v', str(rand_mut_path)])  # parse the args
         annotator = Annotation(args)  # create an instance of the Annotation class using the parsed args
         #annotator = Annotation.get_instance().annotation().parse_args(['-v', str(rand_mut_path), '-p', str(num_proc), '-o_dir', str(out_dir)])
         #annotator.vep_output_vcf_path = str(rand_mut_path).replace('.vcf.gz', '.vep.vcf')
