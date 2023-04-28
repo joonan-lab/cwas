@@ -176,7 +176,7 @@ class Multiprocessing(Runnable):
     def _annotate_one(rand_mut_path: Path, num_proc: int, out_dir: Path):
         annotator = Annotation.get_instance(['-v', str(rand_mut_path), '-p', str(num_proc), '-o_dir', str(out_dir)])
         annotator.vep_output_vcf_path = str(rand_mut_path).replace('.vcf.gz', '.vep.vcf')
-        annotator.annotate_using_bigwig()
+        annotator.annotate_using_vep()
         annotator.process_vep_vcf()
         annotator.annotate_using_bed()
 
