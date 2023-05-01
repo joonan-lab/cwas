@@ -101,10 +101,16 @@ class Annotation(Runnable):
 
     @property
     def vep_output_vcf_path(self):
-        return (
-            f"{self.output_dir_path}/"
-            f"{self.vcf_path.name.replace('.vcf', '.vep.vcf')}"
-        )
+        if self.vcf_path.suffix == '.gz':
+            return Path(
+                f"{self.output_dir_path}/"
+                f"{self.vcf_path.stem.replace('.vcf', '.vep.vcf')}"
+            )
+        else:
+            return Path(
+                f"{self.output_dir_path}/"
+                f"{self.vcf_path.name.replace('.vcf', '.vep.vcf')}"
+            )
 
     @property
     def vep_output_vcf_gz_path(self):

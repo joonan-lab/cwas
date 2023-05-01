@@ -97,9 +97,11 @@ class Categorization(Runnable):
 
     @property
     def result_path(self) -> Path:
+        suffix = '.gz' if self.input_path.suffix == '.gz' else ''
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt.gz')}"
+            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
+            f"{suffix}"
         )
 
     @property
