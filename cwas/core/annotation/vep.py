@@ -15,71 +15,32 @@ class VepCmdGenerator:
         self._vep_human_ancestor_fa_path = vep_human_ancestor_fa_path
         self._vep_gerp_bw_path = vep_gerp_bw_path
         self._vep_mpc_path = vep_mpc_path
-        self._check_vep_path()
-        self._check_vep_conservation_path()
-        self._check_vep_loftee_path()
-        self._check_vep_human_ancestor_fa_path()
-        self._check_vep_gerp_bw_path()
-        self._check_vep_mpc_path()
         self._input_vcf_path = input_vcf_path
-        self._check_input_vcf_path()
+        self._check_validity()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".vep.vcf")
-
-    def _check_vep_path(self):
+        self._num_proc = 1
+        
+    @staticmethod
+    def _check_path(path: str, message: str, is_dir: bool = False):
         try:
-            check_is_file(self._vep_path)
+            if is_dir:
+                check_is_dir(path)
+            else:
+                check_is_file(path)
         except ValueError:
-            raise ValueError(f"Invalid VEP path: {self._vep_path}")
+            raise ValueError(f"{message}: {path}")
         except Exception:
             raise
 
-    def _check_vep_conservation_path(self):
-        try:
-            check_is_file(self._vep_conservation_path)
-        except ValueError:
-            raise ValueError(f"Invalid VEP resource path (conservation file): {self._vep_conservation_path}")
-        except Exception:
-            raise
-
-    def _check_vep_loftee_path(self):
-        try:
-            check_is_dir(self._vep_loftee_path)
-        except ValueError:
-            raise ValueError(f"Invalid VEP resource path (loftee directory): {self._vep_loftee_path}")
-        except Exception:
-            raise
-
-    def _check_vep_human_ancestor_fa_path(self):
-        try:
-            check_is_file(self._vep_human_ancestor_fa_path)
-        except ValueError:
-            raise ValueError(f"Invalid VEP resource path (human ancestor): {self._vep_human_ancestor_fa_path}")
-        except Exception:
-            raise
-
-    def _check_vep_gerp_bw_path(self):
-        try:
-            check_is_file(self._vep_gerp_bw_path)
-        except ValueError:
-            raise ValueError(f"Invalid VEP resource path (gerp bigwig): {self._vep_gerp_bw_path}")
-        except Exception:
-            raise
-
-    def _check_vep_mpc_path(self):
-        try:
-            check_is_file(self._vep_mpc_path)
-        except ValueError:
-            raise ValueError(f"Invalid VEP resource path (MPC): {self._vep_mpc_path}")
-        except Exception:
-            raise
-
-    def _check_input_vcf_path(self):
-        try:
-            check_is_file(self._input_vcf_path)
-        except ValueError:
-            raise ValueError(f"Invalid VCF path: {self._input_vcf_path}")
-        except Exception:
-            raise
+    def _check_validity(self):
+        self._check_path(self._vep_path, "Invalid VEP path")
+        self._check_path(self._vep_conservation_path, "Invalid VEP resource path (conservation file)")
+        self._check_path(self._vep_loftee_path, "Invalid VEP resource path (loftee directory)", is_dir=True)
+        self._check_path(self._vep_human_ancestor_fa_path, "Invalid VEP resource path (human ancestor fasta file)")
+        self._check_path(self._vep_gerp_bw_path, "Invalid VEP resource path (gerp bigwig file)")
+        self._check_path(self._vep_mis_db_path, "Invalid VEP resource path (missense database file)")
+        self._check_path(self._input_vcf_path, "Invalid input VCF path")
+        self._check_path(self._vep_cache_dir_path, "Invalid VEP cache directory path", is_dir=True)
 
     @property
     def vep_path(self) -> str:
