@@ -12,14 +12,8 @@ class Runnable(ABC):
     def __init__(self, args: Optional[argparse.Namespace] = None):
         self.env = Env()
         self._args = args
-
-    @classmethod
-    def get_instance(cls, argv: list = []) -> Runnable:
-        arg_parser = cls._create_arg_parser()
-        args = arg_parser.parse_args(argv)
-        cls._print_args(args)
-        cls._check_args_validity(args)
-        return cls(args)
+        self._print_args(args)
+        self._check_args_validity(args)
 
     @property
     def args(self) -> Optional[argparse.Namespace]:

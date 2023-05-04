@@ -111,6 +111,15 @@ def annotation() -> argparse.ArgumentParser:
         help="Target VCF file",
     )
     result.add_argument(
+        "-n",
+        "--num_cores",
+        dest="n_cores",
+        required=False,
+        default=1,
+        type=int,
+        help="Number of cores used for annotation processes (default: 1)",
+    )
+    result.add_argument(
         "-o_dir",
         "--output_directory",
         dest="output_dir_path",
@@ -288,5 +297,126 @@ def permutation_test() -> argparse.ArgumentParser:
         required=False,
         action="store_true",
         help="Use the number of samples with variants in each category for burden test instead of the number of variants",
+    )
+    return result
+
+def extract_variant() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of Variant Extraction",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    result.add_argument(
+        "-i",
+        "--input_file",
+        dest="input_path",
+        required=True,
+        type=Path,
+        help="Annotated VCF file",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        "-t",
+        "--tag",
+        dest="tag",
+        required=False,
+        default=None,
+        type=str,
+        help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz)",
+    )
+    result.add_argument(
+        "-c",
+        "--category_set_path",
+        dest="category_set_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file containing categories for extracting variants",
+    )
+    result.add_argument(
+        "-ai",
+        "--annotation_info",
+        dest="annotation_info",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Save with annotation information attached (such as gene list, functional annotations, etc)",
+    )    
+    return result
+
+def simulation() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of random variant generation",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    result.add_argument(
+        '-i', '--in_vcf',
+        dest='in_vcf_path',
+        required=True,
+        type=Path,
+        help='Input VCF file which is referred to generate random mutations'
+    )
+    result.add_argument(
+        '-s',
+        '--sample_info',
+        dest='sample_info_path',
+        required=True,
+        type=Path,
+        help='File listing sample IDs with their families and sample_types (case or ctrl)'
+    )
+    result.add_argument(
+        '-o',
+        '--out_dir',
+        dest='out_dir',
+        required=False,
+        type=Path,
+        help='Directory of outputs that lists random mutations. '
+        'The number of outputs will be the same with the number of simulations. '
+        '(default: $CWAS_WORKSPACE/random-mutation)'
+    )
+    result.add_argument(
+        '-t',
+        '--out_tag',
+        dest='out_tag',
+        required=False,
+        type=str,
+        help='Prefix of output files. Each output file name will start with this tag.',
+        default='rand_mut'
+    )
+    result.add_argument(
+        '-n',
+        '--num_sim',
+        dest='num_sim',
+        required=False,
+        type=int,
+        help='Number of simulations to generate random mutations',
+        default=1
+    )
+    result.add_argument(
+        '-p',
+        '--num_proc',
+        dest='num_proc',
+        required=False,
+        type=int,
+        help='Number of processes for this script (only necessary for split VCF files)',
+        default=1
+    )
+    result.add_argument(
+        "-r",
+        "--resume",
+        dest="resume",
+        required=False,
+        default=False,
+        action="store_true",
+        help="Resume the simulation from the last step. Assume some generated output files are not truncated."
     )
     return result
