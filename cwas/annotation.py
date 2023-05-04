@@ -82,10 +82,6 @@ class Annotation(Runnable):
         return self.args.n_cores
 
     @property
-    def n_cores(self):
-        return self.args.n_cores
-
-    @property
     def output_dir_path(self):
         return self.args.output_dir_path.resolve()
 
@@ -93,7 +89,9 @@ class Annotation(Runnable):
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
             self.get_env("VEP"),
-            self.get_env("VEP_CACHE_DIR"), self.get_env("VEP_CONSERVATION_FILE"), self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
+            self.get_env("VEP_CACHE_DIR"), self.get_env("VEP_CONSERVATION_FILE"), 
+            self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), 
+            self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
             str(self.vcf_path), str(self.n_cores),
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
@@ -169,14 +167,6 @@ class Annotation(Runnable):
         )
 
         annotate_vcf.bed_custom_annotate()
-        '''
-        _annotate_using_bed.bed_custom_annotate(
-            self.vep_output_vcf_gz_path,
-            self.annotated_vcf_path,
-            self.get_env("MERGED_BED"),
-            self.n_cores,
-        )
-        '''
 
     def update_env(self):
         self.set_env("ANNOTATED_VCF", self.annotated_vcf_path)
