@@ -23,7 +23,7 @@ CWAS-Plus workflow
 
 .. figure:: ../images/CWAS_workflow.jpg
    :alt: CWAS-Plus workflow
-   :width: 400px
+   :width: 90%
    :align: center
 
 
