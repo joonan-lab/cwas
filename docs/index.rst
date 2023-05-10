@@ -43,6 +43,7 @@ CWAS-Plus workflow
    :maxdepth: 1
    :caption: CWAS-Plus datasets
 
+   dataset/overview_dataset.rst
    dataset/genelist.rst
    dataset/functional_annotations.rst
    dataset/functional_scores.rst
