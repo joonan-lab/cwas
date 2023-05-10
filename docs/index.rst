@@ -7,9 +7,9 @@
 Welcome to CWAS-Plus's documentation!
 =====================================
 
-CWAS (Category-Wide Association Study) is a data analytic tool to perform stringent association tests to find non-coding loci associated with autism spectrum disorder (ASD). CWAS runs category-based burden tests using de novo variants from whole genome sequencing data and diverse annotation data sets.
+CWAS-Plus (Category-Wide Association Study) is a data analysis tool designed to conduct rigorous association tests for discovering noncoding associations in complex genomic disorders. It runs category-based burden tests using variants from whole-genome sequencing data and various annotation datasets. CWAS-Plus provides a user-friendly interface for efficient hypothesis testing and has promising implications for uncovering the pathophysiology of various genomic disorders.
 
-CWAS was used in the following papers.
+Here is ther reference papers:
 
 * `An analytical framework for whole genome sequence association studies and its implications for autism spectrum disorder <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5961723/>`_ (Werling et al., 2018)
 * `Genome-wide de novo risk score implicates promoter variation in autism spectrum disorder <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6432922/>`_ (An et al., 2018)
@@ -25,6 +25,8 @@ CWAS-Plus workflow
    :alt: CWAS-Plus workflow
    :width: 90%
    :align: center
+
+   **A.** Overall workflow of CWAS-Plus. Variants extracted from whole-genome sequencing data of samples (Sample WGS) and random variants are used as inputs. The color of the circles next to the box indicates which input each process uses (light blue, Sample WGS; yellow, Random variants). Three steps inside blue box refers to the final outputs obtained from CWAS-Plus. **B-I**. Graphic descriptions of each process in CWAS-Plus. Red (case) and blue (control) indicate the phenotype. H. The network inside the purple circle shows an example of a subset of a network in a magnified scale. The color indicates the direction of burden in each category (red, case burden; blue, control burden). **I**. The color of the clusters indicates the scale of z-score, which represent the significance and the relative risk of the cluster. Darker red refers to higher case burden.
 
 
 .. toctree::
