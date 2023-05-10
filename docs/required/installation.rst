@@ -1,0 +1,92 @@
+=============
+Installation
+=============
+
+
+--------------------
+Requirements
+--------------------
+
+For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Effect Predictor (VEP) and (2) download a few databases for annotation.
+
+1. Required installations
+
+- **Conda** : CWAS-Plus is installed in a conda environment, so conda should be installed.
+- **VEP** : After creating a conda environment for CWAS-Plus, VEP should be installed. If VEP is installed through conda, the users need to install VEP in the same environment with CWAS-Plus.
+
+2. VEP resources
+
+- **MPC plugin** : MPC will be used to classify damaging missense variants.
+
+  .. code-block:: solidity
+    
+    vep_install -a p -g MPC
+    
+    
+- **loftee plugin** : loftee will be used to classify protein-truncating variants. Be aware of which branch you are cloning.
+
+  .. code-block:: solidity
+    
+    cd /home/cwas_testing/.vep/Plugins
+    git clone -b grch38 https://github.com/konradjk/loftee.git
+    
+    
+- **gerp bigwig** : This file will be used for loftee plugin.
+
+  .. code-block:: solidity
+
+    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/gerp_conservation_scores.homo_sapiens.GRCh38.bw
+
+    
+- **Human ancestor fasta** : This file will be used for loftee plugin.
+
+  .. code-block:: solidity
+    
+    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/human_ancestor.fa.gz
+    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/human_ancestor.fa.gz.fai
+    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/human_ancestor.fa.gz.gzi
+
+
+    
+- **Conservation file** : This file will be used for loftee plugin.
+
+  .. code-block:: solidity
+    
+    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/loftee.sql.gz
+    gunzip -k loftee.sql.gz
+
+
+
+--------------------
+Install CWAS-Plus
+--------------------
+
+
+To install CWAS-Plus, git clone the repository from github or download the package. Create a conda environment with installing required packages in the environment.
+
+
+.. code-block:: solidity
+    
+    git clone https://github.com/joonan-lab/cwas.git
+    cd cwas
+    conda env create -f environment.yml -n cwas
+    conda activate cwas
+
+
+After activating the conda environment, install CWAS-Plus. Type the command below inside the cwas directory. Use ``-f`` option when overwriting the package.
+
+.. code-block:: solidity
+    
+    python setup.py install
+
+
+To start CWAS-Plus, type the command below. This will create a workspace (``.cwas``) for CWAS-Plus in home directory. You can specify the directory that will be used as a working directory. As a default, ``$HOME/.cwas`` will be set. If you have a pre-installed VEP, this process will find it automatically and type it to the configuration file.
+
+- -w : Path to the CWAS working directory. All default CWAS processes will save their output here if no specific output directory is given. By default, the directory is set to ``$HOME/.cwas``.
+
+.. code-block:: solidity
+
+    cwas start -w .cwas_wd
+
+
+
