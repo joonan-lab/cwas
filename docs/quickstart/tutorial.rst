@@ -21,7 +21,7 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
     python setup.py install
     cwas start -w .cwas_wd
 
-2. Configuration
+2. :ref:`Configuration <configuration>`
 
   Inside the CWAS working directory, there is a configuration file (``configuration.txt``). Fill in the file with paths of the required tools and data.
 
@@ -31,7 +31,7 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
 
     cwas configuration
 
-3. Prepare annotation datasets
+3. :ref:`Prepare annotation datasets <data-prep-label>`
 
   Gather and merge functional annotations and scores into a single bed file.
 
@@ -39,7 +39,7 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
 
     cwas preparation -p 8
 
-4. Annotation
+4. :ref:`Annotation <annotation>`
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
 
@@ -47,15 +47,15 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
 
     cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -n 8
 
-5. Categorization
+5. :ref:`Categorization <categorization>`
 
-  Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>` in :doc:`../dataset/overview_dataset.rst`.
+  Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>`.
 
   .. code-block:: solidity
 
     cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8
 
-6. Burden test
+6. :ref:`Burden test <burdentest>`
 
   Calculate the burden of each category by comparing the number of variants per case and control. Two types of tests are used for p-value calculation: binomial test and permutation test.
    
