@@ -6,7 +6,7 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
 
 
 
-1. :ref:`Install CWAS-Plus <installation>` in :doc:`../required/installation.rst`
+1. :ref:`Install CWAS-Plus <installation>`
 
   The users can install CWAS-Plus through Github. Create a conda environment and install the package.
   
