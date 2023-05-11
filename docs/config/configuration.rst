@@ -1,3 +1,5 @@
+.. _configuration:
+
 ====================
 Configuration
 ====================
@@ -30,6 +32,8 @@ After filling the configuration file, type the below command for configuration. 
 
 After configuration, a file ``.cwas_env`` that contains environmental variables for CWAS-Plus will be created in the home directory.
 
+
+.. _data-prep-label:
 
 ------------------
 Data preparation
