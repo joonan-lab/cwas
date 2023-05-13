@@ -101,6 +101,7 @@ class ConcatZscore(Runnable):
             if self.args.category_set_path
             else None
         )
+
     @property
     def category_set(self) -> pd.DataFrame:
         if self._category_set is None and self.category_set_path:

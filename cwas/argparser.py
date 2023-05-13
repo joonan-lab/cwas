@@ -492,7 +492,7 @@ def effective_num_test() -> argparse.ArgumentParser:
     result.add_argument(
         "-i",
         "--input_file",
-        dest="input_path",
+        dest="zscore_df_path",
         required=True,
         type=Path,
         help="Path to the concatenated z-scores",
@@ -513,7 +513,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=str,
-        help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz)",
+        help="Tag used for the name of the output files (e.g., corr_mat_<tag>.pickle)",
     )
     result.add_argument(
         "-c",
@@ -522,6 +522,14 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=Path,
-        help="Path to a text file containing categories for extracting variants",
+        help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used.",
+    )
+    result.add_argument(
+        "-ef",
+        "--eff_num_test",
+        dest="eff_num_test",
+        required=False,
+        action="store_true",
+        help="Calculate the effective number of tests",
     )
     return result
