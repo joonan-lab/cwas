@@ -29,32 +29,6 @@ class Simulation(Runnable):
         self._resume = None
     
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of CWAS simulation step",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        parser.add_argument('-i', '--in_vcf', dest='in_vcf_path', required=True, type=Path,
-                            help='Input VCF file which is referred to generate random mutations')
-        parser.add_argument('-s', '--sample_info', dest='sample_info_path', required=True, type=Path,
-                            help='File listing sample IDs with their families and sample_types (case or ctrl)')
-        parser.add_argument('-o', '--out_dir', dest='out_dir', required=False, type=Path,
-                            help='Directory of outputs that lists random mutations. '
-                                'The number of outputs will be the same with the number of simulations. '
-                                '(default: $CWAS_WORKSPACE/random-mutation)')
-        parser.add_argument('-t', '--out_tag', dest='out_tag', required=False, type=str,
-                            help='Prefix of output files. Each output file name will start with this tag.', default='rand_mut')
-        parser.add_argument('-n', '--num_sim', dest='num_sim', required=False, type=int,
-                            help='Number of simulations to generate random mutations', default=1)
-        parser.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                            help='Number of processes for this script (only necessary for split VCF files)', default=1)
-        parser.add_argument(
-            "-r", "--resume",
-            dest="resume", required=False, default=False, action="store_true",
-            help="Resume the simulation from the last step. Assume some generated output files are not truncated.",
-        )
-        
-    @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg("Input VCF file", args.in_vcf_path if args.in_vcf_path else "Not specified: $ANNOTATED_VCF will be used")
         log.print_arg("Sample information file", args.sample_info_path)
