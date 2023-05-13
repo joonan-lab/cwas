@@ -1,4 +1,5 @@
-import argparse, os, sys, gzip, glob
+import argparse, os, sys, gzip
+from glob import glob
 import multiprocessing as mp
 from pathlib import Path
 import numpy as np
@@ -49,7 +50,7 @@ class ConcatZscore(Runnable):
     @property
     def in_dir(self) -> Path:
         return (
-            self.args.in_dir_path.resolve()
+            self.args.input_dir_path.resolve()
         )
 
     @property
