@@ -14,8 +14,7 @@ from cwas.runnable import Runnable
 from cwas.utils.log import print_arg, print_log, print_progress
 from cwas.core.categorization.parser import (
     parse_annotated_vcf)
-from cwas.utils.check import check_is_file
-from cwas.utils.check import check_is_dir
+from cwas.utils.check import check_is_file, check_is_dir
 
 import dotenv
 
@@ -27,61 +26,6 @@ class ExtractVariant(Runnable):
         self._tag = None
         self._category_set_path = None
         self._category_set = None
-
-    @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of CWAS variant extraction step",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        
-        parser.add_argument(
-            "-i",
-            "--input_file",
-            dest="input_path",
-            required=True,
-            type=Path,
-            help="Annotated VCF file",
-        )
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        parser.add_argument(
-            "-t",
-            "--tag",
-            dest="tag",
-            required=False,
-            default=None,
-            type=str,
-            help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz)",
-        )
-        parser.add_argument(
-            "-c",
-            "--category_set_path",
-            dest="category_set_path",
-            required=False,
-            default=None,
-            type=Path,
-            help="Path to a text file containing categories for extracting variants",
-        )
-        parser.add_argument(
-            "-ai",
-            "--annotation_info",
-            dest="annotation_info",
-            required=False,
-            default=False,
-            action="store_true",
-            help="Save with annotation information attached (such as gene list, functional annotations, etc)",
-        )
-        return parser
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):

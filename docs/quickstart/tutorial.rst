@@ -72,4 +72,31 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
         cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
 
 
+7. :ref:`Generate random variant sets<simulation>`
+
+  .. code-block:: solidity
+
+    cwas simulation -i INPUT.annotated.vcf -s SAMPLE_LIST.txt -n 10000 -p 8
+
+
+8. Multiprocessing
+
+  Apply CWAS-Plus to generated random variant sets by multiprocessing.
+
+
+9.  :ref:`Calculate the number of effective tests <effnumtest>`
+
+  :ref:`Concatenate z-scores<concatzscores>` from burden test results of random variant sets.
+
+  .. code-block:: solidity
+
+    cwas concat_zscore -i_dir INPUT_DIR -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -c CATEGORY_SET.txt -p 8
+
+  From z-scores, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
+
+  .. code-block:: solidity
+
+    cwas effective_num_test -i INPUT.zscores.txt.gz -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
+
+
 

@@ -27,7 +27,7 @@ CWAS-Plus workflow
    :width: 90%
    :align: center
 
-   **A.** Overall workflow of CWAS-Plus. Variants extracted from whole-genome sequencing data of samples (Sample WGS) and random variants are used as inputs. The color of the circles next to the box indicates which input each process uses (light blue, Sample WGS; yellow, Random variants). Three steps inside blue box refers to the final outputs obtained from CWAS-Plus. **B-I**. Graphic descriptions of each process in CWAS-Plus. Red (case) and blue (control) indicate the phenotype. H. The network inside the purple circle shows an example of a subset of a network in a magnified scale. The color indicates the direction of burden in each category (red, case burden; blue, control burden). **I**. The color of the clusters indicates the scale of z-score, which represent the significance and the relative risk of the cluster. Darker red refers to higher case burden.
+   **A.** Overall workflow of CWAS-Plus. Variants extracted from whole genome sequencing data of samples (Sample WGS) and random variants are used as inputs. The color of the circles next to the box indicates which input each process uses (blue, Sample WGS; brown, Random variant sets). The three steps inside the black box refer to the final outputs obtained from CWAS-Plus. **B-I.** Graphic descriptions of each process in CWAS-Plus. Red (case) and blue (control) indicate the phenotype. **H.** The network inside the purple circle shows an example of a subset of a network in a magnified scale. The color indicates the direction of the burden in each category (red, case burden; blue, control burden). **I.** The color of the clusters indicates the scale of the z-score, which represents the significance and the relative risk of the cluster. Darker red refers to the higher case burden. And the size of the circle indicates the number of categories inside the cluster.
 
 
 .. toctree::
@@ -65,11 +65,13 @@ CWAS-Plus workflow
    steps/categorization.rst
    steps/burden.rst
    steps/generation_randomset.rst
+   steps/effective_num_test.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: Other useful commands
 
+   utils/concat_zscores.rst
    utils/extract_variants.rst
 
 .. toctree::
