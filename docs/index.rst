@@ -65,11 +65,13 @@ CWAS-Plus workflow
    steps/categorization.rst
    steps/burden.rst
    steps/generation_randomset.rst
+   steps/effective_num_test.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: Other useful commands
 
+   utils/concat_zscores.rst
    utils/extract_variants.rst
 
 .. toctree::

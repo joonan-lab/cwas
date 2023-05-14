@@ -1,3 +1,5 @@
+.. _simulation:
+
 ===============================
 Generation of random variants
 ===============================
