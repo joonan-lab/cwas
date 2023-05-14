@@ -191,7 +191,7 @@ class EffectiveNumTest(Runnable):
             print_progress("Calculating the eigenvalues of the negative laplacian matrix")
             eig_vals, eig_vecs = np.linalg.eig(neg_lap)
             print_progress("Writing the eigenvalues to file")
-            pickle.dump(eig_vals, open(self.eig_val_pat, 'wb'), protocol=5)
+            pickle.dump(eig_vals, open(self.eig_val_path, 'wb'), protocol=5)
             if save_vecs:
                 print_progress("Writing the eigenvectors to file")
                 pd.DataFrame(eig_vecs.real, index=filtered_combs).to_csv(self.eig_vec_path, sep='\t', index=True, header=False)
