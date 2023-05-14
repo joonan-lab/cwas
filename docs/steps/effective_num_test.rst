@@ -27,6 +27,10 @@ The parameters of the command are as below:
 
 - -ef, --eff_num_test : Calculate the effective number of tests. By default, false.
 
+
+
 .. code-block:: solidity
 
     cwas effective_num_test -i INPUT.zscores.txt.gz -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
+
+

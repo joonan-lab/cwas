@@ -26,7 +26,9 @@ The parameters of the command are as below:
 
 - -p , --num_proc : Number of worker processes that will be used for the concatenation process. By default, 1.
 
-.. code-block:: solidity
 
+
+.. code-block:: solidity
+  
     cwas concat_zscore -i_dir INPUT_DIR -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -c CATEGORY_SET.txt -p 8
 
