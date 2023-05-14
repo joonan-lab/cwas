@@ -18,7 +18,7 @@ class EffectiveNumTest(Runnable):
         self._category_set = None
         self._tag = None
         self._num_sim = None
-        self.eff_num_test = None
+        self.eff_num_test_value = None
         
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -140,7 +140,7 @@ class EffectiveNumTest(Runnable):
         
         print_log("RESULT", f"The number of effective tests is {eff_num_test}.", False)
         
-        self.eff_num_test = eff_num_test
+        self.eff_num_test_value = eff_num_test
         
     def eign_decomposition(self, save_vecs: bool = True):
         print_progress(f"Calculate eign values")      
@@ -199,7 +199,7 @@ class EffectiveNumTest(Runnable):
                 
                 
     def update_env(self):
-        self.set_env("N_EFFECTIVE_TEST", self.eff_num_test)
+        self.set_env("N_EFFECTIVE_TEST", self.eff_num_test_value)
         self.save_env()
     
     
