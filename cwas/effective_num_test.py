@@ -18,6 +18,7 @@ class EffectiveNumTest(Runnable):
         self._category_set = None
         self._tag = None
         self._num_sim = None
+        self.eff_num_test = None
         
     @staticmethod
     def _print_args(args: argparse.Namespace):
