@@ -169,6 +169,7 @@ class EffectiveNumTest(Runnable):
                         corr_mat[i, i] = 1.0
                 np.nan_to_num(corr_mat, copy=False)
                 
+            corr_mat = pd.DataFrame(corr_mat, columns=filtered_zscore_df.columns)
             print_progress("Writing the correlation matrix to file")
             pickle.dump(corr_mat, open(self.corr_mat_path, 'wb'), protocol=5)
         else:
