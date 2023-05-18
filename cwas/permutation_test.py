@@ -82,16 +82,15 @@ class PermutationTest(BurdenTest):
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        super(PermutationTest, PermutationTest)._print_args(args)
+        super()._print_args(args)
         print_arg(f"Number of permutations", args.num_perm)
         print_arg(f"Number of processes", args.num_proc)
-        print_arg("If the number of carrier is used for burden test or not", args.use_n_carrier)
         print_arg(f"Generate binomial p values for burden-shifted data", args.burden_shift)
         print_arg(f"Generate relative risks (RRs) for burden-shifted data", args.save_perm_rr)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        super(PermutationTest, PermutationTest)._check_args_validity(args)
+        super()._check_args_validity(args)
         check_num_proc(args.num_proc)
     
     @property
