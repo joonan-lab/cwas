@@ -37,6 +37,16 @@ class Categorizer:
 
         return result
 
+    def get_intersection(self, annotated_vcf: pd.DataFrame):
+        result = defaultdict(lambda: defaultdict(int))
+
+        for annotation_term_lists in self.annotate_each_variant(annotated_vcf):
+            for combination in product(*annotation_term_lists):
+                for combination2 in product(*annotation_term_lists):
+                    result[Category(*combination)][Category(*combination2)] += 1
+
+        return result
+
     def annotate_each_variant(self, annotated_vcf):
         """Newly annotated each variant using CWAS annotation terms.
         In order to annotate each variant with multiple annotation terms
