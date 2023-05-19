@@ -269,13 +269,13 @@ class Categorization(Runnable):
         self._covariance_matrix = intersection_matrix/sqrt_diag_vec[:, np.newaxis]/sqrt_diag_vec
 
     def get_intersection_matrix_with_mp(self):
-        ## use only half of the cores to avoid memory error
-        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//2)
+        ## use only one third of the cores to avoid memory error
+        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 
                                            categories=self._result.columns)
         
-        with mp.Pool(self.num_proc//2) as pool:
+        with mp.Pool(self.num_proc//3) as pool:
             return sum(pool.map(
                 _get_intersection_matrix,
                 split_vcfs
