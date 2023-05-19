@@ -18,7 +18,6 @@ class RiskScore(Runnable):
         self._sample_info = None
         self._categorization_result = None
         self._adj_factor = None
-        self._target_combinations = None
         self._datasets = None
         self._covariates = None
         self._test_covariates = None
@@ -34,11 +33,6 @@ class RiskScore(Runnable):
             args.categorization_result_path
                 if args.categorization_result_path
                 else "Not specified: $CATEGORIZATION_RESULT will be used")
-        log.print_arg(
-            "Categorization result file for test set", 
-            args.test_categorization_result_path
-                if args.test_categorization_result_path
-                else "Not specified. One categorization result file will be used both for training and testing")
         log.print_arg("Sample information file", args.sample_info_path)
         log.print_arg("Adjustment factor list", args.adj_factor_path)
         log.print_arg("If the number of carriers is used for calculating R2 or not", args.use_n_carrier)
@@ -67,12 +61,10 @@ class RiskScore(Runnable):
         check_num_proc(args.num_proc)
         if args.categorization_result_path:
             check_is_file(args.categorization_result_path)
-        if args.test_categorization_result_path:
-            check_is_file(args.test_categorization_result_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
-        if args.target_categories_path is not None:
-            check_is_file(args.target_categories_path)
+        if args.category_set_path is not None:
+            check_is_file(args.category_set_path)
     
     @property
     def categorization_result_path(self) -> Path:
@@ -80,14 +72,6 @@ class RiskScore(Runnable):
             self.args.categorization_result_path.resolve()
             if self.args.categorization_result_path 
             else Path(self.get_env("CATEGORIZATION_RESULT"))
-        )
-
-    @property
-    def test_categorization_result_path(self) -> Optional[Path]:
-        return (
-            self.args.test_categorization_result_path.resolve()
-            if self.args.test_categorization_result_path
-            else None
         )
 
     @property
@@ -99,12 +83,18 @@ class RiskScore(Runnable):
         )
 
     @property
-    def target_categories_path(self) -> Optional[Path]:
+    def category_set_path(self) -> Optional[Path]:
         return (
-            self.args.target_categories_path.resolve()
-            if self.args.target_categories_path
+            self.args.category_set_path.resolve()
+            if self.args.category_set_path
             else None
         )
+
+    @property
+    def category_set(self) -> pd.DataFrame:
+        if self._category_set is None and self.category_set_path:
+            self._category_set = pd.read_csv(self.category_set_path, sep='\t')
+        return self._category_set
 
     @property
     def sample_info_path(self) -> Path:
@@ -148,7 +138,7 @@ class RiskScore(Runnable):
             self._sample_info = pd.read_table(
                 self.sample_info_path, index_col="SAMPLE"
             )
-            if (self.test_categorization_result_path is None) & ("SET" not in self._sample_info.columns):
+            if ("SET" not in self._sample_info.columns):
                 log.print_log("LOG", 
                               "No 'SET' column in sample information file. "
                               "Training and test sets will be assigned randomly.")
@@ -171,13 +161,6 @@ class RiskScore(Runnable):
             self._categorization_result = pd.read_table(
                 self.categorization_result_path, index_col="SAMPLE"
             )
-            if self.test_categorization_result_path is not None:
-                test_cat_result = pd.read_table(
-                    self.test_categorization_result_path, index_col="SAMPLE"
-                )
-                self._categorization_result = pd.concat([self._categorization_result, test_cat_result]).fillna(0)
-                if "SET" not in self.sample_info.columns:
-                    self._sample_info["SET"] = np.where(self.sample_info.columns.isin(test_cat_result.columns), "test", "training")
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
             if self.use_n_carrier:
@@ -297,15 +280,19 @@ class RiskScore(Runnable):
         else:
             response, test_response = self.response, self.test_response
 
-        for cat in self.target_combinations.keys():
+        if self.categorization_result_path is None:
+            filtered_combs = self.covariates.columns
+        else:
+            filtered_combs = self.category_set["Category"]
+        for cat in filtered_combs:
             ctrl_var_counts = pd.concat(
-                [self.covariates[self.target_combinations[cat]][~response],
-                 self.test_covariates[self.target_combinations[cat]][~test_response]],
+                [self.covariates[filtered_combs[cat]][~response],
+                 self.test_covariates[filtered_combs[cat]][~test_response]],
             ).sum()
             rare_idx = (ctrl_var_counts < self.ctrl_thres).values
             log.print_progress(f"# of rare categories for {cat} (Seed: {seed}): {rare_idx.sum()}")
-            cov = self.covariates[self.target_combinations[cat]].iloc[:, rare_idx]
-            test_cov = self.test_covariates[self.target_combinations[cat]].iloc[:, rare_idx]
+            cov = self.covariates[filtered_combs[cat]].iloc[:, rare_idx]
+            test_cov = self.test_covariates[filtered_combs[cat]].iloc[:, rare_idx]
             if cov.shape[1] == 0:
                 log.print_warn(f"There are no rare categories for {cat} (Seed: {seed}).")
                 continue
@@ -378,7 +365,7 @@ class RiskScore(Runnable):
                 {seed: self._result_dict[cat][seed][3][choose_idx]
                  for seed in self._result_dict[cat].keys()},
                 orient="index",
-                columns=self.target_combinations[cat][choose_idx]
+                columns=filtered_combs[cat][choose_idx]
             )
             coef_df.to_csv(
                 str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_coef_{cat}_thres_{self.ctrl_thres}.txt'),

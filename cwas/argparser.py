@@ -492,10 +492,20 @@ def effective_num_test() -> argparse.ArgumentParser:
     result.add_argument(
         "-i",
         "--input_file",
-        dest="zscore_df_path",
+        dest="input_path",
         required=True,
         type=Path,
-        help="Path to the concatenated z-scores",
+        help="Path to the input file. The input should be a matrix of z-scores or covariances.",
+    )
+    result.add_argument(
+        "-if",
+        "--input_format",
+        dest = "input_format",
+        required=False,
+        choices=["zscore", "covariance"],
+        default="zscore",
+        type=str,
+        help = "Specify the format of the input file. If not specified, zscore will be used as default.\n\tzscore: a marix of concatenated z-scores.\n\tcovariance: a matrix of covariances between categories."
     )
     result.add_argument(
         "-o_dir",
@@ -505,6 +515,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         default=default_workspace,
         type=Path,
         help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        "-s",
+        "--sample_info",
+        dest="sample_info_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="File listing information of your samples. Only needed with input format (-if) 'intersection'.",
     )
     result.add_argument(
         "-t",
@@ -534,7 +553,6 @@ def effective_num_test() -> argparse.ArgumentParser:
     )
     return result
 
-
 def risk_score() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Arguments of risk score analysis",
@@ -548,14 +566,6 @@ def risk_score() -> argparse.ArgumentParser:
         type=Path,
         help="The path of the categorization result file",
     )
-    result.add_argument(
-        "--test_categorization_result",
-        dest="test_categorization_result_path",
-        required=False,
-        type=Path,
-        help="The path of another categorization result file for test set. "
-             "If not specified, one categorization result file will be used both for training and testing.",
-    )
     result.add_argument('-s', '--sample_info', dest='sample_info_path', required=True, type=Path,
                         help='File listing sample IDs with their families and sample_types (case or ctrl). '
                              'If test categorization result is not available, "SET" column is used for dividing training and test set.')
@@ -568,12 +578,13 @@ def risk_score() -> argparse.ArgumentParser:
         help="File listing adjustment factors of each sample",
     )
     result.add_argument(
-        "-g",
-        "--target",
-        dest="target_categories_path", required=False, default=None, type=Path,
-        help="File listing target categories used for the risk score calculation.\n"
-             "You can combine category sets for two or more terms using '|'.\n"
-             "If not specified, all categories will be used.",
+        "-c",
+        "--category_set_path",
+        dest="category_set_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file containing categories for risk score analysis. If not specified, all categories will be used.",
     )
     result.add_argument(
         "-u",

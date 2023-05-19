@@ -37,14 +37,43 @@ class EffectiveNumTest(Runnable):
             check_is_file(args.category_set_path)
 
     @property
-    def zscore_df_path(self) -> Path:
-        return self.args.zscore_df_path.resolve()
+    def input_format(self) -> str:
+        return self.args.input_format
+
+    @property
+    def input_path(self) -> Path:
+        return self.args.input_path.resolve()
     
     @property
     def zscore_df(self) -> pd.DataFrame:
-        if self._zscore_df is None:
-            self._zscore_df = pd.read_table(self.zscore_df_path, index_col='Simulation')
-        return self._zscore_df    
+        if self.input_format == 'zscore':
+            self._zscore_df = pd.read_table(self.input_path, index_col='Simulation')
+        return self._zscore_df
+    
+    @property
+    def intersection_mat(self) -> pd.DataFrame:
+        if self.input_format == 'covariance':
+            with self.input_path.open('rb') as f:
+                self._intersection_mat = pickle.load(f)
+        return self._intersection_mat
+
+    @property
+    def sample_info_path(self) -> Path:
+        return self.args.sample_info_path.resolve()
+
+    @property
+    def sample_info(self) -> pd.DataFrame:
+        if self._sample_info is None:
+            self._sample_info = pd.read_table(
+                self.sample_info_path, index_col="SAMPLE"
+            )
+        return self._sample_info
+
+    @property
+    def binom_p(self) -> float:
+        if self._binom_p is None:
+            self._binom_p = (self.sample_info["PHENOTYPE"] == "case").sum() / np.isin(self.sample_info["PHENOTYPE"], ["case", "ctrl"]).sum()
+        return self._binom_p
 
     @property
     def num_sim(self) -> int:
@@ -74,27 +103,38 @@ class EffectiveNumTest(Runnable):
         return self.args.tag
 
     @property
-    def corr_mat_path(self) -> Path:
+    def covariance_mat_path(self) -> Path:
+        replace_term = '.zscores.txt.gz' if self.input_format == 'zscore' else '.intersection_matrix.pkl'
         return Path(
-            str(self.zscore_df_path).replace('.zscores.txt.gz', f'.corr_mat_{self.tag}.pickle')
+            str(self.input_path).replace(replace_term, f'.cov_mat_{self.tag}.pickle')
+        )
+
+    @property
+    def corr_mat_path(self) -> Path:
+        replace_term = '.zscores.txt.gz' if self.input_format == 'zscore' else '.intersection_matrix.pkl'
+        return Path(
+            str(self.input_path).replace(replace_term, f'.corr_mat_{self.tag}.pickle')
         )
 
     @property
     def neg_lap_path(self) -> Path:
+        replace_term = '.zscores.txt.gz' if self.input_format == 'zscore' else '.intersection_matrix.pkl'
         return Path(
-            str(self.zscore_df_path).replace('.zscores.txt.gz', f'.neg_lap_{self.tag}.pickle')
+            str(self.input_path).replace(replace_term, f'.neg_lap_{self.tag}.pickle')
         )
 
     @property
     def eig_val_path(self) -> Path:
+        replace_term = '.zscores.txt.gz' if self.input_format == 'zscore' else '.intersection_matrix.pkl'
         return Path(
-            str(self.zscore_df_path).replace('.zscores.txt.gz', f'.eig_vals_{self.tag}.pickle')
+            str(self.input_path).replace(replace_term, f'.eig_vals_{self.tag}.pickle')
         )
 
     @property
     def eig_vec_path(self) -> Path:
+        replace_term = '.zscores.txt.gz' if self.input_format == 'zscore' else '.intersection_matrix.pkl'
         return Path(
-            str(self.zscore_df_path).replace('.zscores', f'.eig_vecs_{self.tag}')
+            str(self.input_path).replace(replace_term, f'.eig_vecs_{self.tag}.txt.gz')
         )
 
     def run(self):
@@ -152,33 +192,42 @@ class EffectiveNumTest(Runnable):
             else:
                 filtered_combs = self.zscore_df.columns
         
-        if not os.path.isfile(self.corr_mat_path):
-            filtered_zscore_df = self.zscore_df[filtered_combs]
+        if self.input_format == 'zscore':
+            if not os.path.isfile(self.corr_mat_path):
+                filtered_zscore_df = self.zscore_df[filtered_combs]
 
-            # Convert infinite Z to finite Z
-            if (np.isinf(filtered_zscore_df).any().sum()>0):
-                print_warn("The z-score matrix contains infinite Z. Infinite Z will be replaced with finite Z.")
-                for_inf_z = norm.ppf(1 - 0.9999999999999999)
-                filtered_zscore_df = filtered_zscore_df.replace([-np.inf], for_inf_z)            
+                # Convert infinite Z to finite Z
+                if (np.isinf(filtered_zscore_df).any().sum()>0):
+                    print_warn("The z-score matrix contains infinite Z. Infinite Z will be replaced with finite Z.")
+                    for_inf_z = norm.ppf(1 - 0.9999999999999999)
+                    filtered_zscore_df = filtered_zscore_df.replace([-np.inf], for_inf_z)            
+
+                corr_mat = np.corrcoef(filtered_zscore_df.values.T)
+                if np.isnan(corr_mat).any():
+                    print_warn("The correlation matrix contains NaN. NaN will be replaced with 0,1.")
+                    for i in range(corr_mat.shape[0]):
+                        if np.isnan(corr_mat[i, i]):
+                            corr_mat[i, i] = 1.0
+                    np.nan_to_num(corr_mat, copy=False)
+
+                corr_mat2 = pd.DataFrame(corr_mat, columns=filtered_zscore_df.columns, index=filtered_zscore_df.columns)
+                print_progress("Writing the correlation matrix to file")
+                pickle.dump(corr_mat2, open(self.corr_mat_path, 'wb'), protocol=5)
+            else:
+                with self.corr_mat_path.open('rb') as f:
+                    corr_mat = pickle.load(f)
+        elif self.input_format == 'covariance':
+            covariance_mat = self.intersection_mat.mul((self.binom_p)*(1-self.binom_p))
+            print_progress("Writing the covariance matrix to file")
+            pickle.dump(covariance_mat, open(self.covariance_mat_path, 'wb'), protocol=5)
             
-            corr_mat = np.corrcoef(filtered_zscore_df.values.T)
-            if np.isnan(corr_mat).any():
-                print_warn("The correlation matrix contains NaN. NaN will be replaced with 0,1.")
-                for i in range(corr_mat.shape[0]):
-                    if np.isnan(corr_mat[i, i]):
-                        corr_mat[i, i] = 1.0
-                np.nan_to_num(corr_mat, copy=False)
-                
-            corr_mat2 = pd.DataFrame(corr_mat, columns=filtered_zscore_df.columns, index=filtered_zscore_df.columns)
-            print_progress("Writing the correlation matrix to file")
-            pickle.dump(corr_mat2, open(self.corr_mat_path, 'wb'), protocol=5)
-        else:
-            with self.corr_mat_path.open('rb') as f:
-                corr_mat = pickle.load(f)
 
         if not os.path.isfile(self.neg_lap_path):
             print_progress("Generating the negative laplacian matrix")
-            neg_lap = np.abs(corr_mat)
+            if self.input_format == 'zscores':
+                neg_lap = np.abs(corr_mat)
+            elif self.input_format == 'covariance':
+                neg_lap = np.abs(covariance_mat)
             degrees = np.sum(neg_lap, axis=0)
             for i in tqdm(range(neg_lap.shape[0])):
                 neg_lap[i, :] = neg_lap[i, :] / np.sqrt(degrees)
