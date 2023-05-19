@@ -6,9 +6,7 @@ from math import ceil
 from pathlib import Path
 
 import pandas as pd
-import numpy as np
-import yaml, pickle
-from functools import partial
+import yaml
 
 import cwas.utils.log as log
 from cwas.core.categorization.categorizer import Categorizer
@@ -33,7 +31,6 @@ class Categorization(Runnable):
         self._category_domain = None
         self._annotated_vcf_groupby_sample = None
         self._sample_ids = None
-        self._intersection_matrix = None
 
     @staticmethod
     def _create_arg_parser() -> argparse.ArgumentParser:
@@ -79,7 +76,6 @@ class Categorization(Runnable):
             f"{args.num_proc: ,d}",
         )
         log.print_arg("Annotated VCF file", args.input_path)
-        log.print_arg("Genereate an variant intersection matrix", args.generate_matrix)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -100,23 +96,12 @@ class Categorization(Runnable):
         return self.args.output_dir_path.resolve()
 
     @property
-    def generate_matrix(self):
-        return self.args.generate_matrix
-
-    @property
     def result_path(self) -> Path:
         suffix = '.gz' if self.input_path.suffix == '.gz' else ''
         return Path(
             f"{self.output_dir_path}/"
             f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
             f"{suffix}"
-        )
-
-    @property
-    def matrix_path(self) -> Path:
-        return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'intersection_matrix.pkl')}"
         )
 
     @property
@@ -207,7 +192,6 @@ class Categorization(Runnable):
     def run(self):
         self.categorize_vcf()
         self.remove_redundant_category()
-        self.generate_intersection_matrix()
         self.save_result()
         self.update_env()
         log.print_progress("Done")
@@ -254,44 +238,9 @@ class Categorization(Runnable):
                 chunksize=ceil(len(sample_vcfs) / self.num_proc),
             )
 
-    def generate_intersection_matrix(self):
-        if not self.generate_matrix:
-            return
-
-        log.print_progress("Get intersection matrix between categories")
-        self._intersection_matrix = (
-            self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
-            if self.num_proc == 1
-            else self.get_intersection_matrix_with_mp()
-        )
-
-    def get_intersection_matrix_with_mp(self):
-        ## use only half of the cores to avoid memory error
-        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//2)
-        _get_intersection_matrix = partial(self.get_intersection_matrix,
-                                           categorizer=self.categorizer, 
-                                           categories=self._result.columns)
-        
-        with mp.Pool(self.num_proc//2) as pool:
-            return sum(pool.map(
-                _get_intersection_matrix,
-                split_vcfs
-            ))
-
-    @staticmethod
-    def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
-        return pd.DataFrame(
-            categorizer.get_intersection(annotated_vcf), 
-            index=categories, 
-            columns=categories
-        ).fillna(0).astype(int)
-
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
         self._result.to_csv(self.result_path, sep="\t")
-        if self._intersection_matrix is not None:
-            log.print_progress("Save the intersection matrix to file")
-            pickle.dump(self._intersection_matrix, open(self.matrix_path, 'wb'), protocol=5)
 
     def update_env(self):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)
