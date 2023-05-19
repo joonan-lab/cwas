@@ -533,3 +533,79 @@ def effective_num_test() -> argparse.ArgumentParser:
         help="Calculate the effective number of tests",
     )
     return result
+
+
+def risk_score() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of risk score analysis",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    result.add_argument(
+        "-i",
+        "--input_file",
+        dest="categorization_result_path",
+        required=False,
+        type=Path,
+        help="The path of the categorization result file",
+    )
+    result.add_argument(
+        "--test_categorization_result",
+        dest="test_categorization_result_path",
+        required=False,
+        type=Path,
+        help="The path of another categorization result file for test set. "
+             "If not specified, one categorization result file will be used both for training and testing.",
+    )
+    result.add_argument('-s', '--sample_info', dest='sample_info_path', required=True, type=Path,
+                        help='File listing sample IDs with their families and sample_types (case or ctrl). '
+                             'If test categorization result is not available, "SET" column is used for dividing training and test set.')
+    result.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
+                        help='Number of processes for this script (only necessary for split VCF files) '
+                            '(Default: 1)', default=1)
+    result.add_argument(
+        "-a", "--adjustment_factor",
+        dest="adj_factor_path", required=False, default=None, type=Path,
+        help="File listing adjustment factors of each sample",
+    )
+    result.add_argument(
+        "-g",
+        "--target",
+        dest="target_categories_path", required=False, default=None, type=Path,
+        help="File listing target categories used for the risk score calculation.\n"
+             "You can combine category sets for two or more terms using '|'.\n"
+             "If not specified, all categories will be used.",
+    )
+    result.add_argument(
+        "-u",
+        "--use_n_carrier",
+        dest="use_n_carrier",
+        action="store_true",
+        help="Use the number of samples with variants in each category for calculating R2 instead of the number of variants",
+    )
+    result.add_argument(
+        "-t", "--threshold",
+        dest="ctrl_thres", required=False, default=3, type=int,
+        help="The number of variants in controls (or the number of control carriers) used to select effective categories",
+    )
+    result.add_argument(
+        "-f", "--fold",
+        dest="fold", required=False, default=5, type=int,
+        help="Specify the number of folds in a `(Stratified)KFold`",
+    )
+    result.add_argument(
+        "-l", "--logistic",
+        dest="logistic", action="store_true",
+        help="Make a logistic model with L1 penalty",
+    )
+    result.add_argument(
+        "-n", "--n_permute",
+        dest="n_permute", required=False, default=1000, type=int,
+        help="The number of permutations used to calculate the p-value",
+    )
+    result.add_argument(
+        "--predict_only",
+        dest="predict_only", action="store_true",
+        help="Only predict the risk score. Skip the permutation test.",
+    )
+    return result
+
