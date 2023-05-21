@@ -163,6 +163,14 @@ def categorization() -> argparse.ArgumentParser:
         help="Number of worker processes for the categorization",
         default=1,
     )
+    result.add_argument(
+        "-m",
+        "--matrix",
+        dest="generate_matrix",
+        required=False,
+        action="store_true",
+        help="Generate a covariance matrix",
+    )
     return result
 
 
