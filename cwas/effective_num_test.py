@@ -55,20 +55,20 @@ class EffectiveNumTest(Runnable):
     
     @property
     def zscore_df(self) -> pd.DataFrame:
-        if self._zscore_df is None:
+        if self._zscore_df is None and self.input_format == 'zscores':
             self._zscore_df = pd.read_table(self.input_path, index_col='Simulation')
         return self._zscore_df
 
     @property
     def intersection_matrix(self) -> pd.DataFrame:
-        if self._intersection_matrix is None:
+        if self._intersection_matrix is None and self.input_format == 'inter':
             with self.input_path.open('rb') as f:
                 self._intersection_matrix = pickle.load(f)
         return self._intersection_matrix
 
     @property
     def correlation_matrix(self) -> pd.DataFrame:
-        if self._correlation_matrix is None:
+        if self._correlation_matrix is None and self.input_format == 'corr':
             with self.input_path.open('rb') as f:
                 self._correlation_matrix = pickle.load(f)
         return self._correlation_matrix
