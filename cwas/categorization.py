@@ -33,44 +33,8 @@ class Categorization(Runnable):
         self._category_domain = None
         self._annotated_vcf_groupby_sample = None
         self._sample_ids = None
-        self._covariance_matrix = None
-
-    @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of CWAS categorization step",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        
-        parser.add_argument(
-            "-i",
-            "--input_file",
-            dest="input_path",
-            required=True,
-            type=Path,
-            help="Annotated VCF file",
-        )
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        parser.add_argument(
-            "-p",
-            "--num_proc",
-            dest="num_proc",
-            required=False,
-            type=int,
-            help="Number of worker processes for the categorization",
-            default=1,
-        )
-        return parser
+        self._correlation_matrix = None
+        self._intersection_matrix = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -79,7 +43,8 @@ class Categorization(Runnable):
             f"{args.num_proc: ,d}",
         )
         log.print_arg("Annotated VCF file", args.input_path)
-        log.print_arg("Genereate a covariance matrix", args.generate_matrix)
+        log.print_arg("Genereate a correlation matrix", args.generate_matrix)
+        log.print_arg("Genereate an intersection matrix", args.generate_intersection_matrix)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -104,6 +69,10 @@ class Categorization(Runnable):
         return self.args.generate_matrix
 
     @property
+    def generate_intersection_matrix(self):
+        return self.args.generate_intersection_matrix
+
+    @property
     def result_path(self) -> Path:
         suffix = '.gz' if self.input_path.suffix == '.gz' else ''
         return Path(
@@ -116,7 +85,14 @@ class Categorization(Runnable):
     def matrix_path(self) -> Path:
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'covariance_matrix.pkl')}"
+            f"{self.input_path.name.replace('annotated.vcf', 'correlation_matrix.pkl')}"
+        )
+
+    @property
+    def intersection_matrix_path(self) -> Path:
+        return Path(
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace('annotated.vcf', 'intersection_matrix.pkl')}"
         )
 
     @property
@@ -207,7 +183,7 @@ class Categorization(Runnable):
     def run(self):
         self.categorize_vcf()
         self.remove_redundant_category()
-        self.generate_covariance_matrix()
+        self.generate_correlation_matrix()
         self.save_result()
         self.update_env()
         log.print_progress("Done")
@@ -254,7 +230,7 @@ class Categorization(Runnable):
                 chunksize=ceil(len(sample_vcfs) / self.num_proc),
             )
 
-    def generate_covariance_matrix(self):
+    def generate_correlation_matrix(self):
         if not self.generate_matrix:
             return
 
@@ -265,8 +241,10 @@ class Categorization(Runnable):
             else self.get_intersection_matrix_with_mp()
         )
         sqrt_diag_vec = np.sqrt(np.diag(intersection_matrix))
-        log.print_progress("Calculate a covariance matrix")
-        self._covariance_matrix = intersection_matrix/sqrt_diag_vec[:, np.newaxis]/sqrt_diag_vec
+        log.print_progress("Calculate a correlation matrix")
+        if self.generate_intersection_matrix is not None:
+            self._intersection_matrix = intersection_matrix
+        self._correlation_matrix = intersection_matrix/sqrt_diag_vec[:, np.newaxis]/sqrt_diag_vec
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
@@ -292,9 +270,12 @@ class Categorization(Runnable):
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
         self._result.to_csv(self.result_path, sep="\t")
-        if self._covariance_matrix is not None:
-            log.print_progress("Save the covariance matrix to file")
-            pickle.dump(self._covariance_matrix, open(self.matrix_path, 'wb'), protocol=5)
+        if self._intersection_matrix is not None:
+            log.print_progress("Save the intersection matrix to file")
+            pickle.dump(self._intersection_matrix, open(self.matrix_path, 'wb'), protocol=5)
+        if self._correlation_matrix is not None:
+            log.print_progress("Save the correlation matrix to file")
+            pickle.dump(self._correlation_matrix, open(self.matrix_path, 'wb'), protocol=5)
 
     def update_env(self):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)

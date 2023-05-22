@@ -169,7 +169,15 @@ def categorization() -> argparse.ArgumentParser:
         dest="generate_matrix",
         required=False,
         action="store_true",
-        help="Generate a covariance matrix",
+        help="Generate a correlation matrix",
+    )
+    result.add_argument(
+        "-im",
+        "--intersection_matrix",
+        dest="generate_intersection_matrix",
+        required=False,
+        action="store_true",
+        help="Generate a matrix of numbers of shared variants between categories",
     )
     return result
 
