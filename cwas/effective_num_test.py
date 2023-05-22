@@ -94,12 +94,7 @@ class EffectiveNumTest(Runnable):
     @property
     def num_sim(self) -> int:
         if self._num_sim is None:
-            if self.input_format == 'corr':
-                self._num_sim = self.correlation_matrix.shape[0]
-            elif self.input_format == 'inter':
-                self._num_sim = self.intersection_matrix.shape[0]
-            elif self.input_format == 'zscores':
-                self._num_sim = self.zscore_df.shape[0]
+            self._num_sim = self.args.num_sim
             return self._num_sim
 
     @property
@@ -126,11 +121,11 @@ class EffectiveNumTest(Runnable):
     @property
     def replace_term(self) -> str:
         if self._replace_term is None:
-            if '.zscores.txt.gz' in self.input_path:
+            if '.zscores.txt.gz' in str(self.input_path):
                 self._replace_term = '.zscores.txt.gz'
-            elif 'correlation_matrix.pkl' in self.input_path:
+            elif 'correlation_matrix.pkl' in str(self.input_path):
                 self._replace_term = '.correlation_matrix.pkl'
-            elif 'intersection_matrix.pkl' in self.input_path:
+            elif 'intersection_matrix.pkl' in str(self.input_path):
                 self._replace_term = '.intersection_matrix.pkl'
         return self._replace_term
 
@@ -250,7 +245,10 @@ class EffectiveNumTest(Runnable):
 
         if not os.path.isfile(self.neg_lap_path):
             print_progress("Generating the negative laplacian matrix")
-            neg_lap = np.abs(intermediate_mat)
+            if self.input_format == 'zscores':
+                neg_lap = np.abs(intermediate_mat)
+            else:
+                neg_lap = np.abs(intermediate_mat.values)
             degrees = np.sum(neg_lap, axis=0)
             for i in tqdm(range(neg_lap.shape[0])):
                 neg_lap[i, :] = neg_lap[i, :] / np.sqrt(degrees)

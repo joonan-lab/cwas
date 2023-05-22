@@ -525,6 +525,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         help="Directory where output file will be saved",
     )
     result.add_argument(
+        '-n',
+        '--num_sim',
+        dest='num_sim',
+        required=False,
+        type=int,
+        help='Number of eigen values to use',
+        default=10000
+    )
+    result.add_argument(
         "-s",
         "--sample_info",
         dest="sample_info_path",
