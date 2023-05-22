@@ -94,7 +94,12 @@ class EffectiveNumTest(Runnable):
     @property
     def num_sim(self) -> int:
         if self._num_sim is None:
-            self._num_sim = self.zscore_df.shape[0]
+            if self.input_format == 'corr':
+                self._num_sim = self.correlation_matrix.shape[0]
+            elif self.input_format == 'inter':
+                self._num_sim = self.intersection_matrix.shape[0]
+            elif self.input_format == 'zscores':
+                self._num_sim = self.zscore_df.shape[0]
             return self._num_sim
 
     @property
