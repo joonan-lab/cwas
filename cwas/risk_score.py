@@ -25,6 +25,7 @@ class RiskScore(Runnable):
         self._test_response = None
         self._result_dict = defaultdict(dict)
         self._permutation_dict = defaultdict(dict)
+        self._filtered_combs = None
     
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -91,6 +92,10 @@ class RiskScore(Runnable):
         )
 
     @property
+    def out_dir(self) -> Path:
+        return(self.args.output_dir_path.resolve())
+
+    @property
     def category_set(self) -> pd.DataFrame:
         if self._category_set is None and self.category_set_path:
             self._category_set = pd.read_csv(self.category_set_path, sep='\t')
@@ -107,6 +112,13 @@ class RiskScore(Runnable):
     @property
     def num_proc(self) -> int:
         return self.args.num_proc
+
+    @property
+    def filtered_combs(self) -> list:
+        if self.categorization_result_path is None:
+            self._filtered_combs = [col for col in self.categorization_result.columns if col != 'SAMPLE']
+        else:
+            self._filtered_combs = self.category_set["Category"]
 
     @property
     def fold(self) -> int:
@@ -236,12 +248,14 @@ class RiskScore(Runnable):
     @property
     def result_path(self) -> Path:
         return Path(
+            f"{self.out_dir}/" +
             str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_results_thres_{self.ctrl_thres}.txt')
         )
 
     @property
     def null_model_path(self) -> Path:
         return Path(
+            f"{self.out_dir}/" +
             str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_null_models_thres_{self.ctrl_thres}.txt')
         )
 
@@ -281,18 +295,18 @@ class RiskScore(Runnable):
             response, test_response = self.response, self.test_response
 
         if self.categorization_result_path is None:
-            filtered_combs = self.covariates.columns
+            self.filtered_combs = self.covariates.columns
         else:
-            filtered_combs = self.category_set["Category"]
-        for cat in filtered_combs:
+            self.filtered_combs = self.category_set["Category"]
+        for cat in self.filtered_combs:
             ctrl_var_counts = pd.concat(
-                [self.covariates[filtered_combs[cat]][~response],
-                 self.test_covariates[filtered_combs[cat]][~test_response]],
+                [self.covariates[self.filtered_combs[cat]][~response],
+                 self.test_covariates[self.filtered_combs[cat]][~test_response]],
             ).sum()
             rare_idx = (ctrl_var_counts < self.ctrl_thres).values
             log.print_progress(f"# of rare categories for {cat} (Seed: {seed}): {rare_idx.sum()}")
-            cov = self.covariates[filtered_combs[cat]].iloc[:, rare_idx]
-            test_cov = self.test_covariates[filtered_combs[cat]].iloc[:, rare_idx]
+            cov = self.covariates[self.filtered_combs[cat]].iloc[:, rare_idx]
+            test_cov = self.test_covariates[self.filtered_combs[cat]].iloc[:, rare_idx]
             if cov.shape[1] == 0:
                 log.print_warn(f"There are no rare categories for {cat} (Seed: {seed}).")
                 continue
@@ -365,7 +379,7 @@ class RiskScore(Runnable):
                 {seed: self._result_dict[cat][seed][3][choose_idx]
                  for seed in self._result_dict[cat].keys()},
                 orient="index",
-                columns=filtered_combs[cat][choose_idx]
+                columns=self.filtered_combs[cat][choose_idx]
             )
             coef_df.to_csv(
                 str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_coef_{cat}_thres_{self.ctrl_thres}.txt'),

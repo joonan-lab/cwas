@@ -558,6 +558,7 @@ def risk_score() -> argparse.ArgumentParser:
         description="Arguments of risk score analysis",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
     result.add_argument(
         "-i",
         "--input_file",
@@ -565,6 +566,15 @@ def risk_score() -> argparse.ArgumentParser:
         required=False,
         type=Path,
         help="The path of the categorization result file",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
     )
     result.add_argument('-s', '--sample_info', dest='sample_info_path', required=True, type=Path,
                         help='File listing sample IDs with their families and sample_types (case or ctrl). '
