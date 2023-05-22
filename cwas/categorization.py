@@ -43,8 +43,7 @@ class Categorization(Runnable):
             f"{args.num_proc: ,d}",
         )
         log.print_arg("Annotated VCF file", args.input_path)
-        log.print_arg("Genereate a correlation matrix", args.generate_matrix)
-        log.print_arg("Genereate an intersection matrix", args.generate_intersection_matrix)
+        log.print_arg("Genereate a correlation matrix and an intersection matrix", args.generate_matrix)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -67,10 +66,6 @@ class Categorization(Runnable):
     @property
     def generate_matrix(self):
         return self.args.generate_matrix
-
-    @property
-    def generate_intersection_matrix(self):
-        return self.args.generate_intersection_matrix
 
     @property
     def result_path(self) -> Path:
@@ -242,8 +237,7 @@ class Categorization(Runnable):
         )
         sqrt_diag_vec = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")
-        if self.generate_intersection_matrix is not None:
-            self._intersection_matrix = intersection_matrix
+        self._intersection_matrix = intersection_matrix
         self._correlation_matrix = intersection_matrix/sqrt_diag_vec[:, np.newaxis]/sqrt_diag_vec
 
     def get_intersection_matrix_with_mp(self):
@@ -270,10 +264,9 @@ class Categorization(Runnable):
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
         self._result.to_csv(self.result_path, sep="\t")
-        if self._intersection_matrix is not None:
-            log.print_progress("Save the intersection matrix to file")
-            pickle.dump(self._intersection_matrix, open(self.matrix_path, 'wb'), protocol=5)
         if self._correlation_matrix is not None:
+            log.print_progress("Save the intersection matrix to file")
+            pickle.dump(self._intersection_matrix, open(self.intersection_matrix_path, 'wb'), protocol=5)
             log.print_progress("Save the correlation matrix to file")
             pickle.dump(self._correlation_matrix, open(self.matrix_path, 'wb'), protocol=5)
 
