@@ -137,25 +137,29 @@ class EffectiveNumTest(Runnable):
     @property
     def corr_mat_path(self) -> Path:
         return Path(
-            str(self.input_path).replace(self.replace_term, f'.correlation_matrix_{self.tag}.pickle')
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace(self.replace_term, '.correlation_matrix_{self.tag}.pickle')}"
         )
-
+        
     @property
     def neg_lap_path(self) -> Path:
         return Path(
-            str(self.input_path).replace(self.replace_term, f'.neg_lap_{self.tag}.pickle')
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace(self.replace_term, '.neg_lap_{self.tag}.pickle')}"
         )
 
     @property
     def eig_val_path(self) -> Path:
         return Path(
-            str(self.input_path).replace(self.replace_term, f'.eig_vals_{self.tag}.pickle')
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace(self.replace_term, '.eig_vals_{self.tag}.pickle')}"
         )
 
     @property
     def eig_vec_path(self) -> Path:
         return Path(
-            str(self.input_path).replace(self.replace_term, f'.eig_vecs_{self.tag}.txt.gz')
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace(self.replace_term, '.eig_vecs_{self.tag}.pickle')}"
         )
 
     def run(self):
