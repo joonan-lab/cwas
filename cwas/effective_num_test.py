@@ -208,20 +208,20 @@ class EffectiveNumTest(Runnable):
             filtered_combs = self.category_set["Category"]
         else:
             if self.input_format == 'corr':
-                filtered_combs = self.correlation_matrix.columns
+                filtered_combs = self.correlation_matrix.columns.tolist()
             elif self.input_format == 'inter':
-                filtered_combs = self.intersection_matrix.columns
+                filtered_combs = self.intersection_matrix.columns.tolist()
             elif self.input_format == 'zscores':
                 if self.zscore_df.columns[0] == 'Simulation':
-                    filtered_combs = self.zscore_df.columns[1:]
+                    filtered_combs = self.zscore_df.columns[1:].tolist()
                 else:
-                    filtered_combs = self.zscore_df.columns
+                    filtered_combs = self.zscore_df.columns.tolist()
 
         if self.input_format == 'corr':
-            intermediate_mat = self.correlation_matrix[filtered_combs]
+            intermediate_mat = self.correlation_matrix.loc[filtered_combs,filtered_combs]
         elif self.input_format == 'inter':
             print_progress("Generating a covariance matrix")
-            intermediate_mat = self.intersection_matrix[filtered_combs]
+            intermediate_mat = self.intersection_matrix.loc[filtered_combs,filtered_combs]
             intermediate_mat = intermediate_mat.mul((self.binom_p)*(1-self.binom_p))
         elif self.input_format == 'zscores':
             if not os.path.isfile(self.corr_mat_path):
