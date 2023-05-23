@@ -150,7 +150,7 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_vec_path(self) -> Path:
         return Path(
-            str(self.input_path).replace(self.replace_term, f'.eig_vecs_{self.tag}')
+            str(self.input_path).replace(self.replace_term, f'.eig_vecs_{self.tag}.txt.gz')
         )
 
     def run(self):
