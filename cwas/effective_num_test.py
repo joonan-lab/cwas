@@ -51,6 +51,10 @@ class EffectiveNumTest(Runnable):
         return self.args.input_path.resolve()
 
     @property
+    def output_dir_path(self) -> Path:
+        return(self.args.output_dir_path.resolve())
+
+    @property
     def input_format(self) -> str:
         return self.args.input_format
     
