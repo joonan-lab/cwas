@@ -204,9 +204,9 @@ class EffectiveNumTest(Runnable):
             filtered_combs = self.category_set["Category"]
         else:
             if self.input_format == 'corr':
-                self.correlation_matrix.columns
+                filtered_combs = self.correlation_matrix.columns
             elif self.input_format == 'inter':
-                self.intersection_matrix.columns
+                filtered_combs = self.intersection_matrix.columns
             elif self.input_format == 'zscores':
                 if self.zscore_df.columns[0] == 'Simulation':
                     filtered_combs = self.zscore_df.columns[1:]
