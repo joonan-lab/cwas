@@ -23,6 +23,7 @@ class EffectiveNumTest(Runnable):
         self.eff_num_test_value = None
         self._replace_term = None
         self._binom_p = None
+        self._sample_info = None
         
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -78,7 +79,7 @@ class EffectiveNumTest(Runnable):
         return self._correlation_matrix
 
     @property
-    def sample_info_path(self) -> Path:
+    def sample_info_path(self) -> Optional[Path]:
         return self.args.sample_info_path.resolve()
 
     @property
