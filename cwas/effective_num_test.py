@@ -64,6 +64,8 @@ class EffectiveNumTest(Runnable):
         if self._intersection_matrix is None and self.input_format == 'inter':
             with self.input_path.open('rb') as f:
                 self._intersection_matrix = pickle.load(f)
+            self._intersection_matrix.index = list(map(str, self._intersection_matrix.index.tolist()))
+            self._intersection_matrix.columns = list(map(str, self._intersection_matrix.columns.tolist()))
         return self._intersection_matrix
 
     @property
@@ -71,6 +73,8 @@ class EffectiveNumTest(Runnable):
         if self._correlation_matrix is None and self.input_format == 'corr':
             with self.input_path.open('rb') as f:
                 self._correlation_matrix = pickle.load(f)
+            self._correlation_matrix.index = list(map(str, self._correlation_matrix.index.tolist()))
+            self._correlation_matrix.columns = list(map(str, self._correlation_matrix.columns.tolist()))
         return self._correlation_matrix
 
     @property
