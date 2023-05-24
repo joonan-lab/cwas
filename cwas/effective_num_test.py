@@ -173,9 +173,9 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_vec_path(self) -> Path:
         if self.tag is None:
-            save_name = '.eig_vecs.pickle'
+            save_name = '.eig_vecs.txt.gz'
         else:
-            save_name = '.'.join(['.eig_vecs', self.tag, 'pickle'])
+            save_name = '.'.join(['.eig_vecs', self.tag, 'txt.gz'])
         return Path(
             f"{self.output_dir_path}/" +
             f"{self.input_path.name.replace(self.replace_term, save_name)}"
