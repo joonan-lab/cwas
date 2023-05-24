@@ -18,7 +18,6 @@ class EffectiveNumTest(Runnable):
         self._correlation_matrix = None
         self._category_set_path = None
         self._category_set = None
-        self._tag = None
         self._num_sim = None
         self.eff_num_test_value = None
         self._replace_term = None
@@ -140,30 +139,46 @@ class EffectiveNumTest(Runnable):
 
     @property
     def corr_mat_path(self) -> Path:
+        if self.tag is None:
+            save_name = '.correlation_matrix.pickle'
+        else:
+            save_name = '.'.join(['.correlation_matrix', self.tag, 'pickle'])
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace(self.replace_term, '.correlation_matrix_{self.tag}.pickle')}"
+            f"{self.output_dir_path}/" +
+            f"{self.input_path.name.replace(self.replace_term, save_name)}"
         )
         
     @property
     def neg_lap_path(self) -> Path:
+        if self.tag is None:
+            save_name = '.neg_lap.pickle'
+        else:
+            save_name = '.'.join(['.neg_lap', self.tag, 'pickle'])
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace(self.replace_term, '.neg_lap_{self.tag}.pickle')}"
+            f"{self.output_dir_path}/" +
+            f"{self.input_path.name.replace(self.replace_term, save_name)}"
         )
 
     @property
     def eig_val_path(self) -> Path:
+        if self.tag is None:
+            save_name = '.eig_vals.pickle'
+        else:
+            save_name = '.'.join(['.eig_vals', self.tag, 'pickle'])
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace(self.replace_term, '.eig_vals_{self.tag}.pickle')}"
+            f"{self.output_dir_path}/" +
+            f"{self.input_path.name.replace(self.replace_term, save_name)}"
         )
 
     @property
     def eig_vec_path(self) -> Path:
+        if self.tag is None:
+            save_name = '.eig_vecs.pickle'
+        else:
+            save_name = '.'.join(['.eig_vecs', self.tag, 'pickle'])
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace(self.replace_term, '.eig_vecs_{self.tag}.pickle')}"
+            f"{self.output_dir_path}/" +
+            f"{self.input_path.name.replace(self.replace_term, save_name)}"
         )
 
     def run(self):
