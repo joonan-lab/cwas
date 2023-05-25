@@ -135,6 +135,8 @@ class EffectiveNumTest(Runnable):
                 self._replace_term = '.correlation_matrix.pkl'
             elif 'intersection_matrix.pkl' in str(self.input_path):
                 self._replace_term = '.intersection_matrix.pkl'
+            else:
+                self._replace_term = '.txt.gz'
         return self._replace_term
 
     @property
