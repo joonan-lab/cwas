@@ -82,7 +82,7 @@ class PermutationTest(BurdenTest):
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        super()._print_args(args)
+        super(PermutationTest, PermutationTest)._print_args(args)
         print_arg(f"Number of permutations", args.num_perm)
         print_arg(f"Number of processes", args.num_proc)
         print_arg(f"Generate binomial p values for burden-shifted data", args.burden_shift)
@@ -90,7 +90,7 @@ class PermutationTest(BurdenTest):
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        super()._check_args_validity(args)
+        super(PermutationTest, PermutationTest)._check_args_validity(args)
         check_num_proc(args.num_proc)
     
     @property
