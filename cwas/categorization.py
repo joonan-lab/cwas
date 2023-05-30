@@ -165,7 +165,7 @@ class Categorization(Runnable):
                 annotation_term_lists[k] = [v]
 
         return {
-            Category(*combination)
+            "_".join(combination)
             for combination in product(
                 annotation_term_lists["variant_type"],
                 annotation_term_lists["gene_list"],
