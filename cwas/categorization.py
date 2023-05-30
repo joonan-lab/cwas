@@ -12,7 +12,6 @@ from functools import partial
 
 import cwas.utils.log as log
 from cwas.core.categorization.categorizer import Categorizer
-from cwas.core.categorization.category import Category
 from cwas.core.categorization.parser import (
     parse_annotated_vcf,
     parse_gene_matrix,
@@ -165,7 +164,7 @@ class Categorization(Runnable):
                 annotation_term_lists[k] = [v]
 
         return {
-            Category(*combination)
+            "_".join(combination)
             for combination in product(
                 annotation_term_lists["variant_type"],
                 annotation_term_lists["gene_list"],
@@ -242,12 +241,12 @@ class Categorization(Runnable):
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
-        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3)
+        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 
                                            categories=self._result.columns)
         
-        with mp.Pool(self.num_proc//3) as pool:
+        with mp.Pool(self.num_proc//3 + 1) as pool:
             return sum(pool.map(
                 _get_intersection_matrix,
                 split_vcfs
