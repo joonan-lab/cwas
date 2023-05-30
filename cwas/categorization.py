@@ -12,7 +12,6 @@ from functools import partial
 
 import cwas.utils.log as log
 from cwas.core.categorization.categorizer import Categorizer
-from cwas.core.categorization.category import Category
 from cwas.core.categorization.parser import (
     parse_annotated_vcf,
     parse_gene_matrix,
