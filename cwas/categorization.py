@@ -242,12 +242,12 @@ class Categorization(Runnable):
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
-        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3)
+        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 
                                            categories=self._result.columns)
         
-        with mp.Pool(self.num_proc//3) as pool:
+        with mp.Pool(self.num_proc//3 + 1) as pool:
             return sum(pool.map(
                 _get_intersection_matrix,
                 split_vcfs
