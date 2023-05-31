@@ -14,9 +14,9 @@ Binomial test
 
 For binomial tests, two types of tests are used: two-sided binomial tests and one-sided binomial tests with an alternative hypothesis of "greater".
 
-- -i, --input_file : Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
-- -o_dir, --output_directory : Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
-- -s, --sample_info : Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
+- -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+- -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+- -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
 
   +----------+--------+-----------+
   |  SAMPLE  | FAMILY | PHENOTYPE |
@@ -30,7 +30,7 @@ For binomial tests, two types of tests are used: two-sided binomial tests and on
   | 11002.s1 | 11002  |   ctrl    |
   +----------+--------+-----------+
 
-- -a, --adjustment_factor : Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
+- -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
 
   +----------+--------------+
   | SAMPLE   | AdjustFactor |
@@ -44,7 +44,7 @@ For binomial tests, two types of tests are used: two-sided binomial tests and on
   | 11002.s1 | 1.113        |
   +----------+--------------+
 
-- -u, --use_n_carrier : Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+- -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 
 .. code-block:: solidity
 
@@ -66,15 +66,15 @@ In another example, when permutated 10,000 times, category **B** with relative r
 
 The parameters of the command are as below:
 
-- -i, --input_file : Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
-- -o_dir, --output_directory : Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
-- -s, --sample_info : Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
-- -a, --adjustment_factor : Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
-- -n, --num_perm : Number of permutations for label-swapping. By default, 10000.
-- -p, --num_proc : Number of worker processes that will be used for the permutation process. By default, 1.
-- -b, --burden_shift : Generates an output file containing binomial p-values for each label-swapped permutation. By default, False.
-- -rr, --perm_rr : Generates an output file containing relative risks for each label-swapped permutation. By default, False.
-- -u, --use_n_carrier : Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+- -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+- -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+- -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
+- -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
+- -n, --num_perm: Number of permutations for label-swapping. By default, 10000.
+- -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
+- -b, --burden_shift: Generates an output file containing binomial p-values for each label-swapped permutation. By default, False.
+- -rr, --perm_rr: Generates an output file containing relative risks for each label-swapped permutation. By default, False.
+- -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 
 .. code-block:: solidity
 

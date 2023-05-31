@@ -12,19 +12,19 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
 
 **1. Required installations**
 
-- **Conda** : CWAS-Plus is installed in a conda environment, so conda should be installed.
-- **VEP** : After creating a conda environment for CWAS-Plus, VEP should be installed. If VEP is installed through conda, the users need to install VEP in the same environment with CWAS-Plus.
+- **Conda**: CWAS-Plus is installed in a conda environment, so conda should be installed.
+- **VEP**: After creating a conda environment for CWAS-Plus, VEP should be installed. If VEP is installed through conda, the users need to install VEP in the same environment with CWAS-Plus.
 
 **2. VEP resources**
 
-- **MPC plugin** : MPC will be used to classify damaging missense variants.
+- **MPC plugin**: MPC will be used to classify damaging missense variants.
 
   .. code-block:: solidity
     
     vep_install -a p -g MPC
     
     
-- **loftee plugin** : loftee will be used to classify protein-truncating variants. Be aware of which branch you are cloning.
+- **loftee plugin**: loftee will be used to classify protein-truncating variants. Be aware of which branch you are cloning.
 
   .. code-block:: solidity
     
@@ -32,14 +32,14 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
     git clone -b grch38 https://github.com/konradjk/loftee.git
     
     
-- **gerp bigwig** : This file will be used for loftee plugin.
+- **gerp bigwig**: This file will be used for loftee plugin.
 
   .. code-block:: solidity
 
     wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/gerp_conservation_scores.homo_sapiens.GRCh38.bw
 
     
-- **Human ancestor fasta** : This file will be used for loftee plugin.
+- **Human ancestor fasta**: This file will be used for loftee plugin.
 
   .. code-block:: solidity
     
@@ -49,7 +49,7 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
 
 
     
-- **Conservation file** : This file will be used for loftee plugin.
+- **Conservation file**: This file will be used for loftee plugin.
 
   .. code-block:: solidity
     
@@ -83,7 +83,7 @@ After activating the conda environment, install CWAS-Plus. Type the command belo
 
 To start CWAS-Plus, type the command below. This will create a workspace (``.cwas``) for CWAS-Plus in home directory. You can specify the directory that will be used as a working directory. As a default, ``$HOME/.cwas`` will be set. If you have a pre-installed VEP, this process will find it automatically and type it to the configuration file.
 
-- -w : Path to the CWAS working directory. All default CWAS processes will save their output here if no specific output directory is given. By default, the directory is set to ``$HOME/.cwas``.
+- -w: Path to the CWAS working directory. All default CWAS processes will save their output here if no specific output directory is given. By default, the directory is set to ``$HOME/.cwas``.
 
 .. code-block:: solidity
 
