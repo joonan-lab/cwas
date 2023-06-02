@@ -68,6 +68,30 @@ def configuration() -> argparse.ArgumentParser:
         type=Path,
         help="Path to your VEP resource directory",
     )
+    parser.add_argument(
+        "-vmdb",
+        "--vep_mis_db",
+        dest="vep_mis_db",
+        required=False,
+        type=Path,
+        help="Path to your VCF file (database for predicting damaging missense mutations)",
+    )
+    parser.add_argument(
+        "-vmk",
+        "--vep_mis_info_key",
+        dest="vep_mis_info_key",
+        required=False,
+        type=Path,
+        help="VCF info field key name in  database",
+    )
+    parser.add_argument(
+        "-vmt",
+        "--vep_mis_thres",
+        dest="vep_mis_thres",
+        required=False,
+        type=float,
+        help="Threshold of score from database for predicting damaging missense mutations",
+    )
     return result
 
 def preparation() -> argparse.ArgumentParser:

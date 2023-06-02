@@ -88,7 +88,9 @@ class Start(Runnable):
             "VEP_LOFTEE": "",
             "VEP_HUMAN_ANCESTOR_FA": "",
             "VEP_GERP_BIGWIG": "",
-            "VEP_MPC": "",
+            "VEP_MIS_DB": "",
+            "VEP_MIS_INFO_KEY": "",
+            "VEP_MIS_THRES": "",
         }
 
         installed_vep = self._find_vep_path()

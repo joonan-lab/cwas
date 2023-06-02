@@ -24,9 +24,11 @@ from cwas.core.categorization.utils import extract_sublist_by_int, get_idx_dict
 
 
 class Categorizer:
-    def __init__(self, category_domain: dict, gene_matrix: dict) -> None:
+    def __init__(self, category_domain: dict, gene_matrix: dict, mis_info_key: str, mis_thres: float) -> None:
         self._category_domain = category_domain
         self._gene_matrix = gene_matrix
+        self._mis_info_key = mis_info_key
+        self._mis_thres = mis_thres
 
     def categorize_variant(self, annotated_vcf: pd.DataFrame):
         result = defaultdict(int)
@@ -180,12 +182,12 @@ class Categorizer:
         gencodes = annotated_vcf["Consequence"].values
         lofs = annotated_vcf["LoF"].values
         lof_flags = annotated_vcf["LoF_flags"].values
-        mpcs = annotated_vcf["MPC"].values
+        mis_scores = annotated_vcf["MisDb_" + self._mis_info_key].values
 
         annotation_int_list = []
 
-        for symbol, nearest, gencode, lof, lof_flag, mpc in zip(
-            gene_symbols, gene_nearests, gencodes, lofs, lof_flags, mpcs
+        for symbol, nearest, gencode, lof, lof_flag, mis_score in zip(
+            gene_symbols, gene_nearests, gencodes, lofs, lof_flags, mis_scores
         ):
             gene = (
                 nearest
@@ -231,13 +233,16 @@ class Categorizer:
                         2 ** gencode_annotation_idx["MissenseRegion"]
                     )
 
-                    if ((len(mpc)!=0)
-                        and (mpc!='NA')
-                        and (float(mpc)>=2)
-                    ):
-                        annotation_int += (
-                            2 ** gencode_annotation_idx["DamagingMissenseRegion"]
-                        )
+                    if ((len(mis_score)!=0)
+                        and (mis_score!='NA')):
+                        if '&' in mis_score:
+                            mis_score = max([float(i) for i in mis_score.split('&')])
+                        else:
+                            mis_score = float(mis_score)
+                        if mis_score >= self._mis_thres:
+                            annotation_int += (
+                                2 ** gencode_annotation_idx["DamagingMissenseRegion"]
+                            )
 
                 elif (
                     "inframe_deletion" in gencode

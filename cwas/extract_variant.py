@@ -51,6 +51,14 @@ class ExtractVariant(Runnable):
         return self.args.tag
 
     @property
+    def mis_info_key(self) -> str:
+        return self.get_env("VEP_MIS_INFO_KEY")
+
+    @property
+    def mis_thres(self) -> float:
+        return float(self.get_env("VEP_MIS_THRES"))
+
+    @property
     def annotated_vcf(self) -> pd.DataFrame:
         if self._annotated_vcf is None:
             print_progress("Parse the annotated VCF")
@@ -130,7 +138,7 @@ class ExtractVariant(Runnable):
         merged_df['is_MissenseRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
         merged_df['is_MissenseRegion'] = np.where((merged_df['is_CodingRegion'] == 1) & (merged_df['is_LoFRegion'] == 0), merged_df['is_MissenseRegion'], 0)
         ## Damaging missense
-        merged_df['is_DamagingMissenseRegion'] = np.where((merged_df['is_MissenseRegion'] == 1) & (pd.to_numeric(merged_df['MPC'], errors='coerce').fillna(0) >= 2), 1, 0)
+        merged_df['is_DamagingMissenseRegion'] = np.where((merged_df['is_MissenseRegion'] == 1) & (pd.to_numeric(merged_df["MisDb_" + self.mis_info_key], errors='coerce').fillna(0) >= self.mis_thres), 1, 0)
         # Define the list of string patterns to search for
         patterns = ['inframe_deletion', 'inframe_insertion']
         merged_df['is_InFrameRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)

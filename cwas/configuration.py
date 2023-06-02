@@ -162,7 +162,9 @@ class Configuration(Runnable):
         self.vep_loftee = Path(user_config.get("VEP_LOFTEE"))
         self.vep_human_ancestor_fa = Path(user_config.get("VEP_HUMAN_ANCESTOR_FA"))
         self.vep_gerp_bw = Path(user_config.get("VEP_GERP_BIGWIG"))
-        self.vep_mpc = Path(user_config.get("VEP_MPC"))
+        self.vep_mis_db = Path(user_config.get("VEP_MIS_DB"))
+        self.vep_mis_info_key = user_config.get("VEP_MIS_INFO_KEY")
+        self.vep_mis_thres = Path(user_config.get("VEP_MIS_THRES"))
 
         annot_key_conf = user_config.get("ANNOTATION_KEY_CONFIG")
         self.annot_key_conf = (
@@ -196,7 +198,7 @@ class Configuration(Runnable):
         check.check_is_dir(self.vep_loftee)
         check.check_is_file(self.vep_human_ancestor_fa)
         check.check_is_file(self.vep_gerp_bw)
-        check.check_is_file(self.vep_mpc)
+        check.check_is_file(self.vep_mis_db)
         check.check_is_file(self.gene_matrix)
         if self.annot_key_conf is not None:
             check.check_is_file(self.annot_key_conf)
@@ -279,7 +281,9 @@ class Configuration(Runnable):
         self.set_env("VEP_LOFTEE", getattr(self, "vep_loftee"))
         self.set_env("VEP_HUMAN_ANCESTOR_FA", getattr(self, "vep_human_ancestor_fa"))
         self.set_env("VEP_GERP_BIGWIG", getattr(self, "vep_gerp_bw"))
-        self.set_env("VEP_MPC", getattr(self, "vep_mpc"))
+        self.set_env("VEP_MIS_DB", getattr(self, "vep_mis_db"))
+        self.set_env("VEP_MIS_INFO_KEY", getattr(self, "vep_mis_info_key"))
+        self.set_env("VEP_MIS_THRES", getattr(self, "vep_mis_thres"))
         self.set_env("ANNOTATION_DATA", self.data_dir_symlink)
         self.set_env("GENE_MATRIX", self.gene_matrix_symlink)
         self.set_env("ANNOTATION_BED_KEY", self.bed_key_list_symlink)
