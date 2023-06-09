@@ -116,7 +116,7 @@ class Annotation(Runnable):
             vep_bin, _, _, _, _, *vep_args = self.vep_cmd
             
             print_progress("For multiprocessing, the input VCF should be indexed")
-            chroms = self.fetch_chromosomes(self.vcf_path)
+            chroms = self.fetch_chromosomes()
             
             multi_inputs = []
             args_list = []
@@ -155,12 +155,12 @@ class Annotation(Runnable):
     def execute_CMD_mp(self, bin: str, args: list = [], multi_input: Optional[str] = None):
         return CmdExecutor(bin, args, multi_input).execute_raising_err()
     
-    def fetch_chromosomes(self, vcf_file):
+    def fetch_chromosomes(self):
         chromosomes = ['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY']
         chr_list = []
         for chromosome in chromosomes:
             try:
-                vcf_reader = vcf.Reader(filename=vcf_file)
+                vcf_reader = vcf.Reader(filename=self.vcf_path)
                 variants = vcf_reader.fetch(chromosome)
                 next(variants)  # Attempt to fetch the first variant
                 chr_list.append(chromosome)
