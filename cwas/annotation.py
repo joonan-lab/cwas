@@ -117,7 +117,6 @@ class Annotation(Runnable):
             
             print_progress("For multiprocessing, the input VCF should be indexed")
             
-            print_progress(self.vcf_path)
             chroms = self.fetch_chromosomes()
             
             multi_inputs = []
@@ -162,9 +161,8 @@ class Annotation(Runnable):
         chr_list = []
         for chromosome in chromosomes:
             try:
-                vcf_reader = vcf.Reader(filename=self.vcf_path)
-                variants = vcf_reader.fetch(chromosome)
-                next(variants)  # Attempt to fetch the first variant
+                vcf_reader = vcf.Reader(filename=str(self.vcf_path))
+                vcf_reader.fetch(chromosome)
                 chr_list.append(chromosome)
             except StopIteration:
                 pass
