@@ -43,7 +43,7 @@ class VepCmdGenerator:
          self._check_path(self._vep_human_ancestor_fa_path, "Invalid VEP resource path (human ancestor fasta file)")
          self._check_path(self._vep_gerp_bw_path, "Invalid VEP resource path (gerp bigwig file)")
          self._check_path(self._vep_mpc_path, "Invalid VEP resource path (MPC database file)")
-         self._check_path(self._input_vcf_path, "Invalid input VCF path")
+         #self._check_path(self._input_vcf_path, "Invalid input VCF path")
          self._check_path(self._vep_cache_path, "Invalid VEP cache directory path", is_dir=True)
 
     @property
@@ -102,8 +102,6 @@ class VepCmdGenerator:
             self.input_vcf_path,
             "-o",
             self.output_vcf_path,
-            "--fork",
-            self.num_proc,
         ]
         result += self.cmd_option_basic
         result += self.cmd_option_pick_one_gene_isoform
