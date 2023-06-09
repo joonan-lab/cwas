@@ -133,14 +133,13 @@ class Annotation(Runnable):
             
             num_processes = self.num_proc if self.num_proc < len(chroms) else len(chroms)
             
-            _run_multiple_vep = partial(self.execute_CMD_mp,
-                                        bin=vep_bin)            
+            print_progress(str(vep_bin))
             
             # Create a multiprocessing pool
             pool = mp.Pool(processes=num_processes)
-
-            # Use starmap to pass args_list and multi_inputs
-            pool.starmap(_run_multiple_vep, zip(args_list, multi_inputs))
+            
+            # Use starmap to pass args_list and multi_inputs (To keep vep_bin as the first element, the code will repeat it during mapping)
+            pool.starmap(self.execute_CMD_mp, zip([vep_bin for _ in range(len(chroms))], args_list, multi_inputs))
 
             # Close the pool and wait for all processes to finish
             pool.close()
