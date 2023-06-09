@@ -10,7 +10,7 @@ import cwas.utils.log as log
 
 
 class CmdExecutor:
-    def __init__(self, bin: str, args: list = []):
+    def __init__(self, bin: str, args: list = [], multi_input: Optional[str] = None):
         def resolve_bin(bin: str) -> Optional[str]:
             if Path(bin).resolve().is_file():
                 return str(Path(bin).resolve())
@@ -20,6 +20,7 @@ class CmdExecutor:
         if self._bin_path is None:
             raise FileNotFoundError(f"Failed to find the binary '{bin}'")
         self._args = list(args)
+        self._multi_input = multi_input if multi_input is not None else None
 
     @property
     def bin_path(self):
@@ -27,7 +28,10 @@ class CmdExecutor:
 
     @property
     def cmd(self) -> list:
-        return [self._bin_path, *self._args]
+        if self._multi_input is None:
+            return [self._bin_path, *self._args]
+        else:
+            return [self._multi_input, self._bin_path, *self._args]
 
     def execute(self) -> int:
         log.print_log("CMD", " ".join(self.cmd), True)
