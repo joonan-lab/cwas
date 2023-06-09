@@ -154,7 +154,7 @@ class Annotation(Runnable):
             CmdExecutor("rm", args_remove).execute_raising_err()
 
     def execute_CMD_mp(self, bin: str, args: list = [], multi_input: Optional[str] = None):
-        return CmdExecutor(bin, args, multi_input).execute_raising_err()
+        return CmdExecutor(bin = bin, args = args, multi_input = multi_input).execute_raising_err()
     
     def fetch_chromosomes(self):
         chromosomes = ['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY']
