@@ -27,59 +27,24 @@ class Annotation(Runnable):
         super().__init__(args)
 
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of CWAS annotation step",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        parser.add_argument(
-            "-v",
-            "--vcf_file",
-            dest="vcf_path",
-            required=True,
-            type=Path,
-            help="Target VCF file",
-        )
-        parser.add_argument(
-            "-n",
-            "--num_cores",
-            dest="n_cores",
-            required=False,
-            default=1,
-            type=int,
-            help="Number of cores used for annotation processes (default: 1)",
-        )
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        return parser
-
-    @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Target VCF file", args.vcf_path)
         print_arg("Output directory", args.output_dir_path)
-        print_arg("Number of cores", args.n_cores)
+        print_arg("Number of cores", args.num_proc)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.vcf_path)
         check_is_dir(args.output_dir_path)
-        check_num_proc(args.n_cores)
+        check_num_proc(args.num_proc)
 
     @property
     def vcf_path(self):
         return self.args.vcf_path.resolve()
     
     @property
-    def n_cores(self):
-        return self.args.n_cores
+    def num_proc(self):
+        return self.args.num_proc
 
     @property
     def output_dir_path(self):
@@ -92,7 +57,7 @@ class Annotation(Runnable):
             self.get_env("VEP_CACHE_DIR"), self.get_env("VEP_CONSERVATION_FILE"), 
             self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), 
             self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
-            str(self.vcf_path), str(self.n_cores),
+            str(self.vcf_path), str(self.num_proc),
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
         return vep_cmd_generator.cmd
@@ -163,7 +128,7 @@ class Annotation(Runnable):
             self.vep_output_vcf_gz_path,
             self.annotated_vcf_path,
             self.get_env("MERGED_BED"),
-            self.n_cores,
+            self.num_proc,
         )
 
         annotate_vcf.bed_custom_annotate()
