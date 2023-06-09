@@ -117,7 +117,7 @@ def annotation() -> argparse.ArgumentParser:
         required=False,
         default=1,
         type=int,
-        help="Number of processes for this script (default: 1)",
+        help="Number of processes for the annotation (default: 1)",
     )
     result.add_argument(
         "-o_dir",
@@ -279,7 +279,7 @@ def permutation_test() -> argparse.ArgumentParser:
         dest="num_proc",
         required=False,
         type=int,
-        help="Number of worker processes for the categorization",
+        help="Number of worker processes for the permutation",
         default=1,
     )
     result.add_argument(
@@ -406,7 +406,7 @@ def simulation() -> argparse.ArgumentParser:
         dest='num_sim',
         required=False,
         type=int,
-        help='Number of simulations to generate random mutations',
+        help='Number of simulations to generate random variants',
         default=1
     )
     result.add_argument(
@@ -415,7 +415,7 @@ def simulation() -> argparse.ArgumentParser:
         dest='num_proc',
         required=False,
         type=int,
-        help='Number of processes for this script (only necessary for split VCF files)',
+        help='Number of processes for random variant generation (only necessary for split VCF files)',
         default=1
     )
     result.add_argument(
