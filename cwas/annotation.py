@@ -125,7 +125,7 @@ class Annotation(Runnable):
             for i in chroms:
                 multi_inputs.append(' '.join(['tabix -h', str(self.vcf_path), i, '|']))
                 replace_name = '.' + i + '.vep.vcf'
-                tmp_output_vcf_path = self.vcf_path.replace(".vcf.gz", replace_name)
+                tmp_output_vcf_path = self.vcf_path.name.replace(".vcf.gz", replace_name)
                 args_list.append(' '.join(['-o', tmp_output_vcf_path, *vep_args]))
                 tmp_output_list.append(tmp_output_vcf_path)
                 
