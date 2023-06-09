@@ -153,7 +153,7 @@ class Annotation(Runnable):
     def execute_CMD_mp(self, bin: str, args: list = [], multi_input: Optional[str] = None):
         return CmdExecutor(bin, args, multi_input).execute_raising_err()
     
-    def fetch_chromosomes(vcf_file):
+    def fetch_chromosomes(self, vcf_file):
         chromosomes = ['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY']
         chr_list = []
         for chromosome in chromosomes:
