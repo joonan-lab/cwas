@@ -116,6 +116,8 @@ class Annotation(Runnable):
             vep_bin, _, _, _, _, *vep_args = self.vep_cmd
             
             print_progress("For multiprocessing, the input VCF should be indexed")
+            
+            print_progress(self.vcf_path)
             chroms = self.fetch_chromosomes()
             
             multi_inputs = []
