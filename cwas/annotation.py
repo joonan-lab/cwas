@@ -127,6 +127,8 @@ class Annotation(Runnable):
                 tmp_output_vcf_path = self.vcf_path.replace(".vcf.gz", replace_name)
                 args_list.append(' '.join(['-o', tmp_output_vcf_path, *vep_args]))
                 tmp_output_list.append(tmp_output_vcf_path)
+                
+            print_progress(str(' '.join(["Input VCF has", len(chroms), "number of chromosomes"])))
             
             num_processes = self.num_proc if self.num_proc < len(chroms) else len(chroms)
             
