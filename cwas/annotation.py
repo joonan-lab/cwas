@@ -115,7 +115,7 @@ class Annotation(Runnable):
         else:
             vep_bin, _, _, _, _, *vep_args = self.vep_cmd
             
-            print_log("For multiprocessing, the input VCF should be indexed")
+            print_progress("For multiprocessing, the input VCF should be indexed")
             chroms = self.fetch_chromosomes(self.vcf_path)
             
             multi_inputs = []
@@ -143,10 +143,10 @@ class Annotation(Runnable):
             pool.close()
             pool.join()
             
-            print_log("Merge output files into a single bgzipped file")
+            print_progress("Merge output files into a single bgzipped file")
             args_merge = ' '.join([*tmp_output_list, '| bgzip >', self.vep_output_vcf_gz_path])
             CmdExecutor("cat", args_merge).execute_raising_err()
-            print_log("Remove temporary outputs")
+            print_progress("Remove temporary outputs")
             args_remove = ' '.join([*tmp_output_list])
             CmdExecutor("rm", args_remove).execute_raising_err()
 
