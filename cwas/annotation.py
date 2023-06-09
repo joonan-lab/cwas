@@ -126,7 +126,7 @@ class Annotation(Runnable):
                 multi_inputs.append(' '.join(['tabix -h', str(self.vcf_path), i, '|']))
                 replace_name = '.' + i + '.vep.vcf'
                 tmp_output_vcf_path = self.vcf_path.name.replace(".vcf.gz", replace_name)
-                args_list.append(' '.join(['-o', tmp_output_vcf_path, *vep_args]))
+                args_list.append(['-o', tmp_output_vcf_path, *vep_args])
                 tmp_output_list.append(tmp_output_vcf_path)
                 
             print_progress(' '.join(["Input VCF has", str(len(chroms)), "number of chromosomes"]))
@@ -146,10 +146,10 @@ class Annotation(Runnable):
             pool.join()
             
             print_progress("Merge output files into a single bgzipped file")
-            args_merge = ' '.join([*tmp_output_list, '| bgzip >', self.vep_output_vcf_gz_path])
+            args_merge = [*tmp_output_list, '| bgzip >', self.vep_output_vcf_gz_path]
             CmdExecutor("cat", args_merge).execute_raising_err()
             print_progress("Remove temporary outputs")
-            args_remove = ' '.join([*tmp_output_list])
+            args_remove = [*tmp_output_list]
             CmdExecutor("rm", args_remove).execute_raising_err()
 
     def execute_CMD_mp(self, bin: str, args: list = [], multi_input: Optional[str] = None):
