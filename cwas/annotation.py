@@ -125,7 +125,7 @@ class Annotation(Runnable):
             for i in chroms:
                 multi_inputs.append(' '.join(['tabix -h', str(self.vcf_path), i, '|']))
                 replace_name = '.' + i + '.vep.vcf'
-                tmp_output_vcf_path = self.vcf_path.name.replace(".vcf.gz", replace_name)
+                tmp_output_vcf_path = self.vep_output_vcf_path.replace(".vep.vcf", replace_name)
                 args_list.append(['-o', tmp_output_vcf_path, *vep_args])
                 tmp_output_list.append(tmp_output_vcf_path)
                 
@@ -133,27 +133,32 @@ class Annotation(Runnable):
             
             num_processes = self.num_proc if self.num_proc < len(chroms) else len(chroms)
             
-            print_progress(str(vep_bin))
+            _run_multiple_vep = partial(self.execute_CMD_mp,
+                                        shell = True)
             
             # Create a multiprocessing pool
             pool = mp.Pool(processes=num_processes)
             
             # Use starmap to pass args_list and multi_inputs (To keep vep_bin as the first element, the code will repeat it during mapping)
-            pool.starmap(self.execute_CMD_mp, zip([vep_bin for _ in range(len(chroms))], args_list, multi_inputs))
+            pool.starmap(_run_multiple_vep, zip([vep_bin for _ in range(len(chroms))], args_list, multi_inputs))
 
             # Close the pool and wait for all processes to finish
             pool.close()
             pool.join()
             
-            print_progress("Merge output files into a single bgzipped file")
-            args_merge = [*tmp_output_list, '| bgzip >', self.vep_output_vcf_gz_path]
-            CmdExecutor("cat", args_merge).execute_raising_err()
+            print_progress("Merge and sort output files into a single file")
+            args_header = ["'^#'", tmp_output_list[0], ">", self.vep_output_vcf_path]
+            CmdExecutor("grep", args_header, shell=True).execute_raising_err()
+            args_merge = ["-k1,1V", "-k2,2n", '>>', self.vep_output_vcf_path]
+            CmdExecutor("sort", args_merge,
+                        multi_input = ' '.join(["grep", "--no-filename", "-v", "'^#'", *tmp_output_list, '|']),
+                        shell=True).execute_raising_err()
             print_progress("Remove temporary outputs")
             args_remove = [*tmp_output_list]
             CmdExecutor("rm", args_remove).execute_raising_err()
 
-    def execute_CMD_mp(self, bin: str, args: list = [], multi_input: Optional[str] = None):
-        return CmdExecutor(bin = bin, args = args, multi_input = multi_input).execute_raising_err()
+    def execute_CMD_mp(self, bin: str, args: list = [], multi_input: Optional[str] = None, shell: bool = False):
+        return CmdExecutor(bin = bin, args = args, multi_input = multi_input, shell=shell).execute_raising_err()
     
     def fetch_chromosomes(self):
         chromosomes = ['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY']
@@ -176,8 +181,10 @@ class Annotation(Runnable):
             print_progress("Create an index of the VEP output using tabix")
             index_using_tabix(vcf_gz_path)
         else:
+            print_progress("Compress the VEP output using bgzip")
+            vcf_gz_path = compress_using_bgzip(self.vep_output_vcf_path)
             print_progress("Create an index of the VEP output using tabix")
-            index_using_tabix(self.vep_output_vcf_gz_path)
+            index_using_tabix(self.vcf_gz_path)
 
     def annotate_using_bed(self):
         print_progress("BED custom annotation")
