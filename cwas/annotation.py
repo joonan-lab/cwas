@@ -87,7 +87,7 @@ class Annotation(Runnable):
     def annotated_vcf_path(self):
         return (
             f"{self.output_dir_path}/"
-            f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf')}"
+            f"{self.vep_output_vcf_gz_path.replace('vep.vcf.gz', '.annotated.vcf')}"
         )
 
     def run(self):
