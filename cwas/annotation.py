@@ -180,11 +180,6 @@ class Annotation(Runnable):
             vcf_gz_path = compress_using_bgzip(self.vep_output_vcf_path)
             print_progress("Create an index of the VEP output using tabix")
             index_using_tabix(vcf_gz_path)
-        else:
-            print_progress("Compress the VEP output using bgzip")
-            vcf_gz_path = compress_using_bgzip(self.vep_output_vcf_path)
-            print_progress("Create an index of the VEP output using tabix")
-            index_using_tabix(self.vcf_gz_path)
 
     def annotate_using_bed(self):
         print_progress("BED custom annotation")
