@@ -15,6 +15,8 @@ setuptools.setup(
     description=__doc__,
     url="https://github.com/mwjjeong/cwas",
     packages=setuptools.find_packages(),
+    package_data={'': ['*.r', '*.R']},
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
