@@ -10,7 +10,7 @@ import cwas.utils.log as log
 
 
 class CmdExecutor:
-    def __init__(self, bin: str, args: list = []):
+    def __init__(self, bin: str, args: list = [], multi_input: Optional[str] = None, shell: bool = False):
         def resolve_bin(bin: str) -> Optional[str]:
             if Path(bin).resolve().is_file():
                 return str(Path(bin).resolve())
@@ -20,6 +20,8 @@ class CmdExecutor:
         if self._bin_path is None:
             raise FileNotFoundError(f"Failed to find the binary '{bin}'")
         self._args = list(args)
+        self._multi_input = multi_input if multi_input is not None else None
+        self._shell = shell
 
     @property
     def bin_path(self):
@@ -27,7 +29,11 @@ class CmdExecutor:
 
     @property
     def cmd(self) -> list:
-        return [self._bin_path, *self._args]
+        if self._multi_input is None:
+            cmd_args_list = [self._bin_path, *self._args]
+        else:
+            cmd_args_list = [self._multi_input, self._bin_path, *self._args]
+        return cmd_args_list
 
     def execute(self) -> int:
         log.print_log("CMD", " ".join(self.cmd), True)
@@ -41,10 +47,13 @@ class CmdExecutor:
         return output.returncode
 
     def execute_raising_err(self) -> int:
-        log.print_log("CMD", " ".join(self.cmd), True)
-        output = subprocess.run(self.cmd, check=True)
+        if self._shell == True:
+            log.print_log("CMD", " ".join(self.cmd), True)
+            output = subprocess.run(" ".join(self.cmd), check=True, shell = True)            
+        else:
+            log.print_log("CMD", " ".join(self.cmd), True)
+            output = subprocess.run(self.cmd, check=True, shell = False)
         return output.returncode
-
 
 def compress_using_bgzip(
     input_file_path: Path, force_overwrite: bool = False

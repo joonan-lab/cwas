@@ -6,11 +6,11 @@ import itertools
 
 class annotate:
     def __init__(self, in_vcf_gz_path: str,
-                 out_vcf_path: str, annot_bed_path: str, n_cores: str) -> None:
+                 out_vcf_path: str, annot_bed_path: str, num_proc: str) -> None:
         self._in_vcf_gz_path = in_vcf_gz_path
         self._out_vcf_path = out_vcf_path
         self._annot_bed_path = annot_bed_path
-        self._n_cores = n_cores if n_cores < 23 else 22
+        self._num_proc = num_proc if num_proc < 23 else 22
 
     @property
     def in_vcf_gz_path(self) -> str:
@@ -22,8 +22,8 @@ class annotate:
     def annot_bed_path(self) -> str:
         return self._annot_bed_path
     @property
-    def n_cores(self) -> int:
-        return self._n_cores
+    def num_proc(self) -> int:
+        return self._num_proc
 
     def bed_custom_annotate(self):
         with pysam.TabixFile(self.in_vcf_gz_path) as in_vcf_file, pysam.TabixFile(
@@ -44,9 +44,9 @@ class annotate:
 
             # Annotate by the input BED file
             vcf_chroms = in_vcf_file.contigs
-            self._n_cores = self._n_cores if len(vcf_chroms) > self._n_cores else len(vcf_chroms)
+            self._num_proc = self._num_proc if len(vcf_chroms) > self._num_proc else len(vcf_chroms)
 
-            p = mp.Pool(self._n_cores)
+            p = mp.Pool(self._num_proc)
 
             annot_vcf = p.map(self.chr_annotate, vcf_chroms)
             annot_vcf = itertools.chain.from_iterable(annot_vcf)

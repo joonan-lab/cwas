@@ -108,8 +108,6 @@ class VepCmdGenerator:
             self.input_vcf_path,
             "-o",
             self.output_vcf_path,
-            "--fork",
-            self.num_proc,
         ]
         result += self.cmd_option_basic
         result += self.cmd_option_pick_one_gene_isoform
