@@ -7,6 +7,7 @@ Variant Effect Predictor (VEP) to annotate user's VCF file.
 """
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import yaml
 
@@ -20,6 +21,9 @@ from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
 import dotenv
+import multiprocessing as mp
+from functools import partial
+import vcf
 
 
 class Annotation(Runnable):
@@ -28,51 +32,16 @@ class Annotation(Runnable):
         self._vcf_path = None
 
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of CWAS annotation step",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        parser.add_argument(
-            "-v",
-            "--vcf_file",
-            dest="vcf_path",
-            required=True,
-            type=Path,
-            help="Target VCF file",
-        )
-        parser.add_argument(
-            "-n",
-            "--num_cores",
-            dest="n_cores",
-            required=False,
-            default=1,
-            type=int,
-            help="Number of cores used for annotation processes (default: 1)",
-        )
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        return parser
-
-    @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Target VCF file", args.vcf_path)
         print_arg("Output directory", args.output_dir_path)
-        print_arg("Number of cores", args.n_cores)
+        print_arg("Number of worker processes", args.num_proc)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.vcf_path)
         check_is_dir(args.output_dir_path)
-        check_num_proc(args.n_cores)
+        check_num_proc(args.num_proc)
 
     @property
     def vcf_path(self):
@@ -87,8 +56,8 @@ class Annotation(Runnable):
         return self._vcf_path
     
     @property
-    def n_cores(self):
-        return self.args.n_cores
+    def num_proc(self):
+        return self.args.num_proc
 
     @property
     def output_dir_path(self):
@@ -101,7 +70,7 @@ class Annotation(Runnable):
             self.get_env("VEP_CACHE_DIR"), self.get_env("VEP_CONSERVATION_FILE"), 
             self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), 
             self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
-            str(self.vcf_path), str(self.n_cores),
+            str(self.vcf_path), str(self.num_proc),
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path
         return vep_cmd_generator.cmd
@@ -125,10 +94,7 @@ class Annotation(Runnable):
 
     @property
     def annotated_vcf_path(self):
-        return (
-            f"{self.output_dir_path}/"
-            f"{self.vcf_path.name.replace('.vcf', '.annotated.vcf')}"
-        )
+        return self.vep_output_vcf_gz_path.replace('.vep.vcf.gz', '.annotated.vcf')
 
     def run(self):
         self.annotate_using_vep()
@@ -148,9 +114,71 @@ class Annotation(Runnable):
                 True,
             )
             return
+        
+        if self.num_proc == 1:
+            vep_bin, *vep_args = self.vep_cmd
+            CmdExecutor(vep_bin, vep_args).execute_raising_err()
+        else:
+            vep_bin, _, _, _, _, *vep_args = self.vep_cmd
+            
+            print_progress("For multiprocessing, the input VCF should be indexed")
+            
+            chroms = self.fetch_chromosomes()
+            
+            multi_inputs = []
+            args_list = []
+            tmp_output_list = []
+            for i in chroms:
+                multi_inputs.append(' '.join(['tabix -h', str(self.vcf_path), i, '|']))
+                replace_name = '.' + i + '.vep.vcf'
+                tmp_output_vcf_path = self.vep_output_vcf_path.replace(".vep.vcf", replace_name)
+                args_list.append(['-o', tmp_output_vcf_path, *vep_args])
+                tmp_output_list.append(tmp_output_vcf_path)
+                
+            print_progress(' '.join(["Input VCF has", str(len(chroms)), "number of chromosomes"]))
+            
+            num_processes = self.num_proc if self.num_proc < len(chroms) else len(chroms)
+            
+            _run_multiple_vep = partial(self.execute_CMD_mp,
+                                        shell = True)
+            
+            # Create a multiprocessing pool
+            pool = mp.Pool(processes=num_processes)
+            
+            # Use starmap to pass args_list and multi_inputs (To keep vep_bin as the first element, the code will repeat it during mapping)
+            pool.starmap(_run_multiple_vep, zip([vep_bin for _ in range(len(chroms))], args_list, multi_inputs))
 
-        vep_bin, *vep_args = self.vep_cmd
-        CmdExecutor(vep_bin, vep_args).execute_raising_err()
+            # Close the pool and wait for all processes to finish
+            pool.close()
+            pool.join()
+            
+            print_progress("Merge and sort output files into a single file")
+            args_header = ["'^#'", tmp_output_list[0], ">", self.vep_output_vcf_path]
+            CmdExecutor("grep", args_header, shell=True).execute_raising_err()
+            args_merge = ["-k1,1V", "-k2,2n", '>>', self.vep_output_vcf_path]
+            CmdExecutor("sort", args_merge,
+                        multi_input = ' '.join(["grep", "--no-filename", "-v", "'^#'", *tmp_output_list, '|']),
+                        shell=True).execute_raising_err()
+            print_progress("Remove temporary outputs")
+            args_remove = [*tmp_output_list]
+            CmdExecutor("rm", args_remove).execute_raising_err()
+
+    def execute_CMD_mp(self, bin: str, args: list = [], multi_input: Optional[str] = None, shell: bool = False):
+        return CmdExecutor(bin = bin, args = args, multi_input = multi_input, shell=shell).execute_raising_err()
+    
+    def fetch_chromosomes(self):
+        chromosomes = ['chr' + str(i) for i in range(1, 23)] + ['chrX', 'chrY']
+        chr_list = []
+        for chromosome in chromosomes:
+            try:
+                vcf_reader = vcf.Reader(filename=str(self.vcf_path))
+                vcf_reader.fetch(chromosome)
+                chr_list.append(chromosome)
+            except StopIteration:
+                pass
+            except Exception:
+                pass
+        return chr_list
 
     def process_vep_vcf(self):
         print_progress("Compress the VEP output using bgzip")
@@ -172,7 +200,7 @@ class Annotation(Runnable):
             self.vep_output_vcf_gz_path,
             self.annotated_vcf_path,
             self.get_env("MERGED_BED"),
-            self.n_cores,
+            self.num_proc,
         )
 
         annotate_vcf.bed_custom_annotate()

@@ -6,11 +6,12 @@ from math import ceil
 from pathlib import Path
 
 import pandas as pd
-import yaml
+import numpy as np
+import yaml, pickle
+from functools import partial
 
 import cwas.utils.log as log
 from cwas.core.categorization.categorizer import Categorizer
-from cwas.core.categorization.category import Category
 from cwas.core.categorization.parser import (
     parse_annotated_vcf,
     parse_gene_matrix,
@@ -31,43 +32,8 @@ class Categorization(Runnable):
         self._category_domain = None
         self._annotated_vcf_groupby_sample = None
         self._sample_ids = None
-
-    @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of CWAS categorization step",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        
-        parser.add_argument(
-            "-i",
-            "--input_file",
-            dest="input_path",
-            required=True,
-            type=Path,
-            help="Annotated VCF file",
-        )
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        parser.add_argument(
-            "-p",
-            "--num_proc",
-            dest="num_proc",
-            required=False,
-            type=int,
-            help="Number of worker processes for the categorization",
-            default=1,
-        )
-        return parser
+        self._correlation_matrix = None
+        self._intersection_matrix = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -76,6 +42,7 @@ class Categorization(Runnable):
             f"{args.num_proc: ,d}",
         )
         log.print_arg("Annotated VCF file", args.input_path)
+        log.print_arg("Genereate a correlation matrix and an intersection matrix", args.generate_matrix)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -96,12 +63,30 @@ class Categorization(Runnable):
         return self.args.output_dir_path.resolve()
 
     @property
+    def generate_matrix(self):
+        return self.args.generate_matrix
+
+    @property
     def result_path(self) -> Path:
-        suffix = '.gz' if self.input_path.suffix == '.gz' else ''
+        suffix = '' if self.input_path.suffix == '.gz' else '.gz'
         return Path(
             f"{self.output_dir_path}/"
             f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
             f"{suffix}"
+        )
+
+    @property
+    def matrix_path(self) -> Path:
+        return Path(
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace('annotated.vcf', 'correlation_matrix.pkl')}"
+        )
+
+    @property
+    def intersection_matrix_path(self) -> Path:
+        return Path(
+            f"{self.output_dir_path}/"
+            f"{self.input_path.name.replace('annotated.vcf', 'intersection_matrix.pkl')}"
         )
 
     @property
@@ -179,7 +164,7 @@ class Categorization(Runnable):
                 annotation_term_lists[k] = [v]
 
         return {
-            Category(*combination)
+            "_".join(combination)
             for combination in product(
                 annotation_term_lists["variant_type"],
                 annotation_term_lists["gene_list"],
@@ -192,6 +177,7 @@ class Categorization(Runnable):
     def run(self):
         self.categorize_vcf()
         self.remove_redundant_category()
+        self.generate_correlation_matrix()
         self.save_result()
         self.update_env()
         log.print_progress("Done")
@@ -238,9 +224,50 @@ class Categorization(Runnable):
                 chunksize=ceil(len(sample_vcfs) / self.num_proc),
             )
 
+    def generate_correlation_matrix(self):
+        if not self.generate_matrix:
+            return
+
+        log.print_progress("Get an intersection matrix between categories")
+        intersection_matrix = (
+            self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
+            if self.num_proc == 1
+            else self.get_intersection_matrix_with_mp()
+        )
+        sqrt_diag_vec = np.sqrt(np.diag(intersection_matrix))
+        log.print_progress("Calculate a correlation matrix")
+        self._intersection_matrix = intersection_matrix
+        self._correlation_matrix = intersection_matrix/sqrt_diag_vec[:, np.newaxis]/sqrt_diag_vec
+
+    def get_intersection_matrix_with_mp(self):
+        ## use only one third of the cores to avoid memory error
+        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
+        _get_intersection_matrix = partial(self.get_intersection_matrix,
+                                           categorizer=self.categorizer, 
+                                           categories=self._result.columns)
+        
+        with mp.Pool(self.num_proc//3 + 1) as pool:
+            return sum(pool.map(
+                _get_intersection_matrix,
+                split_vcfs
+            ))
+
+    @staticmethod
+    def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
+        return pd.DataFrame(
+            categorizer.get_intersection(annotated_vcf), 
+            index=categories, 
+            columns=categories
+        ).fillna(0).astype(int)
+
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
         self._result.to_csv(self.result_path, sep="\t")
+        if self._correlation_matrix is not None:
+            log.print_progress("Save the intersection matrix to file")
+            pickle.dump(self._intersection_matrix, open(self.intersection_matrix_path, 'wb'), protocol=5)
+            log.print_progress("Save the correlation matrix to file")
+            pickle.dump(self._correlation_matrix, open(self.matrix_path, 'wb'), protocol=5)
 
     def update_env(self):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)

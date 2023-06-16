@@ -111,13 +111,13 @@ def annotation() -> argparse.ArgumentParser:
         help="Target VCF file",
     )
     result.add_argument(
-        "-n",
-        "--num_cores",
-        dest="n_cores",
+        '-p',
+        '--num_proc',
+        dest='num_proc',
         required=False,
         default=1,
         type=int,
-        help="Number of cores used for annotation processes (default: 1)",
+        help="Number of processes for the annotation (default: 1)",
     )
     result.add_argument(
         "-o_dir",
@@ -162,6 +162,14 @@ def categorization() -> argparse.ArgumentParser:
         type=int,
         help="Number of worker processes for the categorization",
         default=1,
+    )
+    result.add_argument(
+        "-m",
+        "--matrix",
+        dest="generate_matrix",
+        required=False,
+        action="store_true",
+        help="Generate a correlation matrix and a matrix with intersected number of variants bewteen categories",
     )
     return result
 
@@ -271,7 +279,7 @@ def permutation_test() -> argparse.ArgumentParser:
         dest="num_proc",
         required=False,
         type=int,
-        help="Number of worker processes for the categorization",
+        help="Number of worker processes for the permutation",
         default=1,
     )
     result.add_argument(
@@ -398,7 +406,7 @@ def simulation() -> argparse.ArgumentParser:
         dest='num_sim',
         required=False,
         type=int,
-        help='Number of simulations to generate random mutations',
+        help='Number of simulations to generate random variants',
         default=1
     )
     result.add_argument(
@@ -407,7 +415,7 @@ def simulation() -> argparse.ArgumentParser:
         dest='num_proc',
         required=False,
         type=int,
-        help='Number of processes for this script (only necessary for split VCF files)',
+        help='Number of processes for random variant generation (only necessary for split VCF files)',
         default=1
     )
     result.add_argument(
@@ -492,10 +500,20 @@ def effective_num_test() -> argparse.ArgumentParser:
     result.add_argument(
         "-i",
         "--input_file",
-        dest="zscore_df_path",
+        dest="input_path",
         required=True,
         type=Path,
-        help="Path to the concatenated z-scores",
+        help="Path to the input file",
+    )
+    result.add_argument(
+        "-if",
+        "--input_format",
+        dest="input_format",
+        required=False,
+        default = 'corr',
+        choices = ['corr', 'inter', 'zscores'],
+        type=str,
+        help="Input format. If not specified, corr will be used.\nAvailable options:\n\tcorr: a correlation matrix\n\tinter: a matrix with intersected number of variants between categories\n\tzscores: concatenated z-scores",
     )
     result.add_argument(
         "-o_dir",
@@ -505,6 +523,23 @@ def effective_num_test() -> argparse.ArgumentParser:
         default=default_workspace,
         type=Path,
         help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        '-n',
+        '--num_sim',
+        dest='num_sim',
+        required=False,
+        type=int,
+        help='Number of eigen values to use',
+        default=10000
+    )
+    result.add_argument(
+        "-s",
+        "--sample_info",
+        dest="sample_info_path",
+        required=False,
+        type=Path,
+        help="File listing information of your samples. Required only when input format is set to 'inter'",
     )
     result.add_argument(
         "-t",
