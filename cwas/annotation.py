@@ -7,7 +7,6 @@ Variant Effect Predictor (VEP) to annotate user's VCF file.
 """
 import argparse
 from pathlib import Path
-import os
 
 import yaml
 
