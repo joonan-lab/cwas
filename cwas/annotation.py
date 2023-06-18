@@ -29,6 +29,7 @@ import vcf
 class Annotation(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
+        self._vcf_path = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -44,7 +45,15 @@ class Annotation(Runnable):
 
     @property
     def vcf_path(self):
-        return self.args.vcf_path.resolve()
+        if self._vcf_path is None:
+            if self.args.n_cores > 1:
+                vcf_gz = compress_using_bgzip(self.args.vcf_path)
+                index_using_tabix(vcf_gz)
+                self._vcf_path = vcf_gz
+            else:
+                self._vcf_path = self.args.vcf_path.resolve()
+        
+        return self._vcf_path
     
     @property
     def num_proc(self):
@@ -91,9 +100,9 @@ class Annotation(Runnable):
         self.annotate_using_vep()
         self.process_vep_vcf()
         self.annotate_using_bed()
-        self.update_env()
+        self.update_env()        
 
-    def annotate_using_vep(self):
+    def annotate_using_vep(self):      
         print_progress("Annotation via VEP")
         if (
             Path(self.vep_output_vcf_path).is_file()
