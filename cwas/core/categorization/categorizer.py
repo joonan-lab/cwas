@@ -19,7 +19,7 @@ from itertools import product
 
 import numpy as np
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 from cwas.core.categorization.utils import extract_sublist_by_int, get_idx_dict
 
 
