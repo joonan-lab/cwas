@@ -1,5 +1,6 @@
 import argparse
 import multiprocessing as mp
+import multiprocessing.shared_memory as shm
 from functools import reduce
 from itertools import product
 from math import ceil
@@ -23,6 +24,7 @@ from cwas.utils.check import check_is_dir
 
 import dotenv
 
+lock = mp.Lock()
 
 class Categorization(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -32,8 +34,10 @@ class Categorization(Runnable):
         self._category_domain = None
         self._annotated_vcf_groupby_sample = None
         self._sample_ids = None
+        self._result = None
         self._correlation_matrix = None
         self._intersection_matrix = None
+        self._shm = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -42,7 +46,7 @@ class Categorization(Runnable):
             f"{args.num_proc: ,d}",
         )
         log.print_arg("Annotated VCF file", args.input_path)
-        log.print_arg("Genereate a correlation matrix and an intersection matrix", args.generate_matrix)
+        log.print_arg("Genereate a correlation matrix and an intersection matrix", (False if args.generate_matrix is None else True))
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -225,19 +229,75 @@ class Categorization(Runnable):
             )
 
     def generate_correlation_matrix(self):
-        if not self.generate_matrix:
+        if self.generate_matrix is None:
             return
 
-        log.print_progress("Get an intersection matrix between categories")
-        intersection_matrix = (
-            self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
-            if self.num_proc == 1
-            else self.get_intersection_matrix_with_mp()
-        )
-        sqrt_diag_vec = np.sqrt(np.diag(intersection_matrix))
+        if self.generate_matrix == "sample":
+            log.print_progress("Get an intersection matrix between categories using the number of samples")
+            idx_s, idx_c = np.where(self._result > 0)
+            _, cnts = np.unique(idx_s, return_counts=True)
+            idx_c_by_s = np.split(idx_c, np.cumsum(cnts)[:-1])
+            if self.num_proc == 1:
+                main_mat = np.zeros((len(self._result.columns), len(self._result.columns)), dtype = int)
+                for arr in idx_c_by_s:
+                    it1 = np.nditer(arr)
+                    for x in it1:
+                        it2 = np.nditer(arr)
+                        for y in it2:
+                            main_mat[x, y]+=1
+            else:
+                ori_mat = np.zeros((len(self._result.columns), len(self._result.columns)), dtype = int)
+                self._shm = shm.SharedMemory(create = True, size = ori_mat.nbytes)
+                main_mat = np.frombuffer(buffer = self._shm.buf, dtype = ori_mat.dtype, count = -1).reshape(ori_mat.shape)
+                get_intersection_matrix_partial = partial(
+                    self.count_shared_sample,
+                    shm_nm = self._shm.name,
+                    shape = ori_mat.shape,
+                )
+                del ori_mat
+                
+                with mp.Pool(self.num_proc) as pool:
+                    for i, _ in enumerate(pool.imap_unordered(
+                        get_intersection_matrix_partial,
+                        idx_c_by_s
+                    ), 1):
+                        if i % 100 == 0:
+                            log.print_progress(f"Calculate {i} samples")
+
+            intersection_matrix = pd.DataFrame(
+                main_mat.copy(),
+                index=self._result.columns,
+                columns=self._result.columns
+            )
+            if self._shm is not None:
+                del main_mat
+                self._shm.close()
+                self._shm.unlink()
+        elif self.generate_matrix == "variant":
+            log.print_progress("Get an intersection matrix between categories using the number of variants")
+            intersection_matrix = (
+                self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
+                if self.num_proc == 1
+                else self.get_intersection_matrix_with_mp()
+            )
+                    
+        diag_sqrt = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")
         self._intersection_matrix = intersection_matrix
-        self._correlation_matrix = intersection_matrix/sqrt_diag_vec[:, np.newaxis]/sqrt_diag_vec
+        self._correlation_matrix = intersection_matrix/np.outer(diag_sqrt, diag_sqrt)
+
+    @staticmethod
+    def count_shared_sample(arr: np.ndarray, shm_nm: str, shape: tuple) -> np.ndarray:
+        temp_shm = shm.SharedMemory(name = shm_nm)
+        mat = np.frombuffer(buffer = temp_shm.buf, dtype = int).reshape(shape)
+        it1 = np.nditer(arr)
+        for x in it1:
+            it2 = np.nditer(arr)
+            for y in it2:
+                with lock:
+                    mat[x, y]+=1
+        del mat
+        temp_shm.close()
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
