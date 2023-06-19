@@ -8,7 +8,7 @@ Variant Effect Predictor (VEP) to annotate user's VCF file.
 import argparse
 from pathlib import Path
 from typing import Optional
-
+import os
 import yaml
 
 from cwas.core.annotation.bed import annotate as _annotate_using_bed
@@ -46,7 +46,7 @@ class Annotation(Runnable):
     @property
     def vcf_path(self):
         if self._vcf_path is None:
-            if self.args.n_cores > 1:
+            if (self.args.num_proc > 1) and (not os.path.basename(self.args.vcf_path).endswith(".gz")):
                 vcf_gz = compress_using_bgzip(self.args.vcf_path)
                 index_using_tabix(vcf_gz)
                 self._vcf_path = vcf_gz
@@ -100,7 +100,8 @@ class Annotation(Runnable):
         self.annotate_using_vep()
         self.process_vep_vcf()
         self.annotate_using_bed()
-        self.update_env()        
+        self.update_env()
+        print_progress("Done")
 
     def annotate_using_vep(self):      
         print_progress("Annotation via VEP")
