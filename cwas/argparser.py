@@ -526,8 +526,8 @@ def effective_num_test() -> argparse.ArgumentParser:
     )
     result.add_argument(
         '-n',
-        '--num_sim',
-        dest='num_sim',
+        '--num_eig',
+        dest='num_eig',
         required=False,
         type=int,
         help='Number of eigen values to use',
