@@ -46,7 +46,7 @@ class Annotation(Runnable):
     @property
     def vcf_path(self):
         if self._vcf_path is None:
-            if self.args.n_cores > 1:
+            if self.args.num_proc > 1:
                 vcf_gz = compress_using_bgzip(self.args.vcf_path)
                 index_using_tabix(vcf_gz)
                 self._vcf_path = vcf_gz
