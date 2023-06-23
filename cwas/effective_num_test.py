@@ -18,7 +18,7 @@ class EffectiveNumTest(Runnable):
         self._correlation_matrix = None
         self._category_set_path = None
         self._category_set = None
-        self._num_sim = None
+        self._num_eig = None
         self.eff_num_test_value = None
         self._replace_term = None
         self._binom_p = None
@@ -100,10 +100,10 @@ class EffectiveNumTest(Runnable):
         return self._binom_p
 
     @property
-    def num_sim(self) -> int:
-        if self._num_sim is None:
-            self._num_sim = self.args.num_sim
-            return self._num_sim
+    def num_eig(self) -> int:
+        if self._num_eig is None:
+            self._num_eig = self.args.num_eig
+            return self._num_eig
 
     @property
     def category_set_path(self) -> Optional[Path]:
@@ -184,7 +184,7 @@ class EffectiveNumTest(Runnable):
         )
 
     def run(self):
-        print_arg("Number of simulations", self.num_sim)
+        print_arg("Number of simulations", self.num_eig)
         if self.eff_num_test:
             self.eign_decomposition()
             self.get_n_etests()
@@ -210,7 +210,7 @@ class EffectiveNumTest(Runnable):
         
         e = 1e-12
         eig_vals = sorted(eig_vals, key=np.linalg.norm, reverse=True)
-        num_eig_val = self.num_sim
+        num_eig_val = self.num_eig
         clean_eig_vals = np.array(eig_vals[:num_eig_val])
         clean_eig_vals = clean_eig_vals[clean_eig_vals >= e]
         clean_eig_val_total_sum = np.sum(clean_eig_vals)
