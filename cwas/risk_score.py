@@ -339,7 +339,7 @@ class RiskScore(Runnable):
             test_y = np.where(test_response, 1.0, -1.0)
             log.print_progress(f"Running LassoCV for {cat} (Seed: {seed})")
             lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-                                     scoring='mean_squared_error')
+                                     scoring='mean_squared_error', random_state=seed)
             lasso_model.fit(cov, y, self.custom_cv_folds())
             opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
             coeffs = getattr(lasso_model, 'coef_path_')

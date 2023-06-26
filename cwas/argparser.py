@@ -393,7 +393,7 @@ def simulation() -> argparse.ArgumentParser:
     )
     result.add_argument(
         '-t',
-        '--out_tag',
+        '--tag',
         dest='out_tag',
         required=False,
         type=str,
@@ -739,7 +739,7 @@ def risk_score() -> argparse.ArgumentParser:
         help="Use the number of samples with variants in each category for calculating R2 instead of the number of variants",
     )
     result.add_argument(
-        "-t",
+        "-thr",
         "--threshold",
         dest="ctrl_thres",
         required=False,
