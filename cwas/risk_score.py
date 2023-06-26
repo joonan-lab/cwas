@@ -408,7 +408,7 @@ class RiskScore(Runnable):
         """Save the results to a file """
         log.print_progress(self.save_results.__doc__)
         result_table = []
-        cat = self._result_dict.keys()
+        cat = list(self._result_dict.keys())[0]
         choose_idx = np.all([self._result_dict[cat][seed][3] != 0 
                             for seed in self._result_dict[cat].keys()], axis=0)
         ## Get the categories which are selected by the LassoCV for all seeds
@@ -429,8 +429,9 @@ class RiskScore(Runnable):
             
         if not self.predict_only:
             null_models = []
-            r2_scores = np.array([self._permutation_dict[self._permutation_dict.keys()][seed][1]
-                                for seed in self._permutation_dict[self._permutation_dict.keys()].keys()])
+            cat2 = list(self._permutation_dict.keys())[0]
+            r2_scores = np.array([self._permutation_dict[cat2][seed][1]
+                                for seed in self._permutation_dict[cat2].keys()])
             null_models.append(['avg', r2_scores.mean(), r2_scores.std()])
             null_models.extend([[i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
             null_models = pd.DataFrame(
