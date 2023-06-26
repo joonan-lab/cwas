@@ -139,6 +139,7 @@ class RiskScore(Runnable):
             self._filtered_combs = self.category_set["Category"]
         else:
             self._filtered_combs = [col for col in self.categorization_result.columns if col != 'SAMPLE']
+        return self._filtered_combs
 
     @property
     def fold(self) -> int:
@@ -319,40 +320,35 @@ class RiskScore(Runnable):
         else:
             response, test_response = self.response, self.test_response
 
-        if self.category_set_path:
-            self.filtered_combs = self.category_set["Category"]
-        else:
-            self.filtered_combs = self.covariates.columns
-        for cat in self.filtered_combs:
-            ctrl_var_counts = pd.concat(
-                [self.covariates[self.filtered_combs[cat]][~response],
-                 self.test_covariates[self.filtered_combs[cat]][~test_response]],
-            ).sum()
-            rare_idx = (ctrl_var_counts < self.ctrl_thres).values
-            log.print_progress(f"# of rare categories for {cat} (Seed: {seed}): {rare_idx.sum()}")
-            cov = self.covariates[self.filtered_combs[cat]].iloc[:, rare_idx]
-            test_cov = self.test_covariates[self.filtered_combs[cat]].iloc[:, rare_idx]
-            if cov.shape[1] == 0:
-                log.print_warn(f"There are no rare categories for {cat} (Seed: {seed}).")
-                continue
-            y = np.where(response, 1.0, -1.0)
-            test_y = np.where(test_response, 1.0, -1.0)
-            log.print_progress(f"Running LassoCV for {cat} (Seed: {seed})")
-            lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-                                     scoring='mean_squared_error', random_state=seed)
-            lasso_model.fit(cov, y, self.custom_cv_folds())
-            opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
-            coeffs = getattr(lasso_model, 'coef_path_')
-            opt_coeff = np.zeros(len(rare_idx))
-            opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
-            opt_lambda = getattr(lasso_model, 'lambda_max_')
-            n_select = np.sum(np.abs(opt_coeff) > 0.0)
-            pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)
-            mean_response = np.mean(test_y)
-            rsq = 1 - np.sum((test_y - pred_responses) ** 2) / np.sum((test_y - mean_response) ** 2)
-            result_dict[cat][seed] = [opt_lambda, rsq, n_select, opt_coeff]
-            
-            log.print_progress("Done")
+        ctrl_var_counts = pd.concat(
+            [self.covariates[self.filtered_combs][~response],
+             self.test_covariates[self.filtered_combs][~test_response]],
+        ).sum()
+        rare_idx = (ctrl_var_counts < self.ctrl_thres).values
+        log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
+        cov = self.covariates[self.filtered_combs].iloc[:, rare_idx]
+        test_cov = self.test_covariates[self.filtered_combs].iloc[:, rare_idx]
+        if cov.shape[1] == 0:
+            log.print_warn(f"There are no rare categories (Seed: {seed}).")
+            return
+        y = np.where(response, 1.0, -1.0)
+        test_y = np.where(test_response, 1.0, -1.0)
+        log.print_progress(f"Running LassoCV (Seed: {seed})")
+        lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+                                 scoring='mean_squared_error', random_state=seed)
+        lasso_model.fit(cov, y, self.custom_cv_folds())
+        opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
+        coeffs = getattr(lasso_model, 'coef_path_')
+        opt_coeff = np.zeros(len(rare_idx))
+        opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
+        opt_lambda = getattr(lasso_model, 'lambda_max_')
+        n_select = np.sum(np.abs(opt_coeff) > 0.0)
+        pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)
+        mean_response = np.mean(test_y)
+        rsq = 1 - np.sum((test_y - pred_responses) ** 2) / np.sum((test_y - mean_response) ** 2)
+        result_dict[self.filtered_combs][seed] = [opt_lambda, rsq, n_select, opt_coeff]
+        
+        log.print_progress("Done")
             
     def custom_cv_folds(self, seed: int = 42) -> Tuple[np.ndarray, np.ndarray]:
         np.random.seed(seed)
