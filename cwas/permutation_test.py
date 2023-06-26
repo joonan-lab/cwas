@@ -23,64 +23,6 @@ class PermutationTest(BurdenTest):
         self._binom_pvals_path = None
 
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = super(PermutationTest, PermutationTest)._create_arg_parser()
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        parser.add_argument(
-            "-n",
-            "--num_perm",
-            dest="num_perm",
-            default=10000,
-            type=int,
-            help="The number of label-swapping permutations",
-        )
-        parser.add_argument(
-            "-p",
-            "--num_proc",
-            dest="num_proc",
-            required=False,
-            type=int,
-            help="Number of worker processes for the categorization",
-            default=1,
-        )
-        parser.add_argument(
-            "-b",
-            "--burden_shift",
-            dest="burden_shift",
-            required=False,
-            action="store_true",
-            help="Generate a file of binomial p-values for each burden-shifted data",
-        )
-        parser.add_argument(
-            "-rr",
-            "--perm_rr",
-            dest="save_perm_rr",
-            required=False,
-            action="store_true",
-            help="Generate a file of relative risks (RRs) for each burden-shifted data",
-        )
-        parser.add_argument(
-            "-u",
-            "--use_n_carrier",
-            dest="use_n_carrier",
-            required=False,
-            default=False,
-            action="store_true",
-            help="Use the number of samples with variants in each category for burden test instead of the number of variants",
-        )
-        return parser
-
-
-    @staticmethod
     def _print_args(args: argparse.Namespace):
         super(PermutationTest, PermutationTest)._print_args(args)
         print_arg(f"Number of permutations", args.num_perm)
