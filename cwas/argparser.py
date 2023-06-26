@@ -705,15 +705,21 @@ def risk_score() -> argparse.ArgumentParser:
         type=Path,
         help="Directory where output file will be saved",
     )
-    result.add_argument('-s', '--sample_info', dest='sample_info_path', required=True, type=Path,
-                        help='File listing sample IDs with their families and sample_types (case or ctrl). '
-                             'If test categorization result is not available, "SET" column is used for dividing training and test set.')
-    result.add_argument('-p', '--num_proc', dest='num_proc', required=False, type=int,
-                        help='Number of processes for this script (only necessary for split VCF files) '
-                            '(Default: 1)', default=1)
     result.add_argument(
-        "-a", "--adjustment_factor",
-        dest="adj_factor_path", required=False, default=None, type=Path,
+        "-s",
+        "--sample_info",
+        dest="sample_info_path",
+        required=True,
+        type=Path,
+        help='File listing sample IDs with their families and sample_types (case or ctrl). '
+        'If test categorization result is not available, "SET" column is used for dividing training and test set.')
+    result.add_argument(
+        "-a",
+        "--adjustment_factor",
+        dest="adj_factor_path",
+        required=False,
+        default=None,
+        type=Path,
         help="File listing adjustment factors of each sample",
     )
     result.add_argument(
@@ -733,29 +739,68 @@ def risk_score() -> argparse.ArgumentParser:
         help="Use the number of samples with variants in each category for calculating R2 instead of the number of variants",
     )
     result.add_argument(
-        "-t", "--threshold",
-        dest="ctrl_thres", required=False, default=3, type=int,
-        help="The number of variants in controls (or the number of control carriers) used to select effective categories",
+        "-t",
+        "--threshold",
+        dest="ctrl_thres",
+        required=False,
+        default=3,
+        type=int,
+        help="The number of variants in controls (or the number of control carriers) used to select rare categories",
     )
     result.add_argument(
-        "-f", "--fold",
-        dest="fold", required=False, default=5, type=int,
+        '-tf',
+        '--train_set_fraction',
+        dest='train_set_f',
+        required=False,
+        type=float,
+        default=0.7,
+        help='Fraction of the training set (Default: 0.7)')
+    result.add_argument(
+        '-n_reg',
+        '--num_regression',
+        dest='num_reg',
+        required=False,
+        type=int,
+        default=10,
+        help='No. regression trials to calculate a mean of R squares (Default: 10)')
+    result.add_argument(
+        "-f",
+        "--fold",
+        dest="fold",
+        required=False,
+        default=5,
+        type=int,
         help="Specify the number of folds in a `(Stratified)KFold`",
     )
     result.add_argument(
-        "-l", "--logistic",
-        dest="logistic", action="store_true",
+        "-l",
+        "--logistic",
+        dest="logistic",
+        action="store_true",
         help="Make a logistic model with L1 penalty",
     )
     result.add_argument(
-        "-n", "--n_permute",
-        dest="n_permute", required=False, default=1000, type=int,
+        "-n",
+        "--n_permute",
+        dest="n_permute",
+        required=False, default=1000,
+        type=int,
         help="The number of permutations used to calculate the p-value",
     )
     result.add_argument(
         "--predict_only",
-        dest="predict_only", action="store_true",
+        dest="predict_only",
+        action="store_true",
         help="Only predict the risk score. Skip the permutation test.",
     )
+    result.add_argument(
+        '-p',
+        '--num_proc',
+        dest='num_proc',
+        required=False,
+        type=int,
+        default=1,
+        help='Number of processes for this script (only necessary for split VCF files) '
+        '(Default: 1)')
     return result
 
