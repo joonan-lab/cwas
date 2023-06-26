@@ -732,6 +732,15 @@ def risk_score() -> argparse.ArgumentParser:
         help="Path to a text file containing categories for risk score analysis. If not specified, all categories will be used.",
     )
     result.add_argument(
+        "-t",
+        "--tag",
+        dest="tag",
+        required=False,
+        default=None,
+        type=str,
+        help="Tag used for the name of the output file",
+    )
+    result.add_argument(
         "-u",
         "--use_n_carrier",
         dest="use_n_carrier",

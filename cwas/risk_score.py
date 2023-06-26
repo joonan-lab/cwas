@@ -282,7 +282,7 @@ class RiskScore(Runnable):
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt')
+            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt')
         )
     
     @property
@@ -408,44 +408,55 @@ class RiskScore(Runnable):
         """Save the results to a file """
         log.print_progress(self.save_results.__doc__)
         result_table = []
-        for cat in self._result_dict.keys():
-            choose_idx = np.all([self._result_dict[cat][seed][3] != 0 
-                                 for seed in self._result_dict[cat].keys()], axis=0)
-            ## Get the categories which are selected by the LassoCV for all seeds
-            coef_df = pd.DataFrame.from_dict(
-                {seed: self._result_dict[cat][seed][3][choose_idx]
-                 for seed in self._result_dict[cat].keys()},
-                orient="index",
-                columns=self.filtered_combs[choose_idx]
+        cat = self._result_dict.keys()
+        choose_idx = np.all([self._result_dict[cat][seed][3] != 0 
+                            for seed in self._result_dict[cat].keys()], axis=0)
+        ## Get the categories which are selected by the LassoCV for all seeds
+        coef_df = pd.DataFrame.from_dict(
+            {seed: self._result_dict[cat][seed][3][choose_idx]
+            for seed in self._result_dict[cat].keys()},
+            orient="index",
+            columns=self.filtered_combs[choose_idx]
+        )
+        coef_df.to_csv(
+            self.coef_path,
+            sep="\t"
+        )
+        parameter = np.mean([self._result_dict[cat][seed][0]
+                           for seed in self._result_dict[cat].keys()])
+        r2 = np.mean([self._result_dict[cat][seed][1]
+                      for seed in self._result_dict[cat].keys()])
+            
+        if not self.predict_only:
+            null_models = []
+            r2_scores = np.array([self._permutation_dict[self._permutation_dict.keys()][seed][1]
+                                for seed in self._permutation_dict[self._permutation_dict.keys()].keys()])
+            null_models.append(['avg', r2_scores.mean(), r2_scores.std()])
+            null_models.extend([[i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
+            null_models = pd.DataFrame(
+                null_models,
+                columns=["N_perm", "R2", "std"]
             )
-            coef_df.to_csv(
-                self.coef_path,
-                sep="\t"
+            null_models.to_csv(self.null_model_path, sep="\t", index=False)
+
+            result_table.append([cat, 'avg', parameter, r2, sum(choose_idx), (sum(r2_scores>=r2+1))/(len(r2_scores)+1)])
+            result_table += [[cat] + [str(seed)] + self._result_dict[cat][seed][:-1] + [(sum(r2_scores>=self._result_dict[cat][seed][1]+1))/(len(r2_scores)+1)]
+                             for seed in self._result_dict[cat].keys()]
+
+            result_table = pd.DataFrame(
+                result_table, columns=["Category", "seed", "parameter", "R2", "n_select", "perm_P"]
             )
-            parameter = np.mean([self._result_dict[cat][seed][0]
-                               for seed in self._result_dict[cat].keys()])
-            r2 = np.mean([self._result_dict[cat][seed][1]
-                          for seed in self._result_dict[cat].keys()])
+            result_table.to_csv(self.result_path, sep="\t", index=False)
+        else:
             result_table.append([cat, 'avg', parameter, r2, sum(choose_idx)])
             result_table += [[cat] + [str(seed)] + self._result_dict[cat][seed][:-1]
                              for seed in self._result_dict[cat].keys()]
 
-        result_table = pd.DataFrame(
-            result_table, columns=["Category", "seed", "parameter", "R2", "n_select"]
-        )
-        result_table.to_csv(self.result_path, sep="\t", index=False)
-        
-        if not self.predict_only:
-            null_models = []
-            for cat in self._permutation_dict.keys():
-                r2_scores = np.array([self._permutation_dict[cat][seed][1]
-                                    for seed in self._permutation_dict[cat].keys()])
-                null_models.append([cat, r2_scores.mean(), r2_scores.std()])
-            null_models = pd.DataFrame(
-                null_models,
-                columns=["Category", "mean", "std"]
+            result_table = pd.DataFrame(
+                result_table, columns=["Category", "seed", "parameter", "R2", "n_select"]
             )
-            null_models.to_csv(self.null_model_path, sep="\t", index=False)
+            result_table.to_csv(self.result_path, sep="\t", index=False)
+    
 
     def update_env(self):
         """Update the environment variables """
