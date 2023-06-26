@@ -428,7 +428,7 @@ def simulation() -> argparse.ArgumentParser:
     )
     result.add_argument(
         '-t',
-        '--out_tag',
+        '--tag',
         dest='out_tag',
         required=False,
         type=str,
@@ -716,3 +716,135 @@ def dawn() -> argparse.ArgumentParser:
     )
             
     return result
+
+def risk_score() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of risk score analysis",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    result.add_argument(
+        "-i",
+        "--input_file",
+        dest="categorization_result_path",
+        required=False,
+        type=Path,
+        help="The path of the categorization result file",
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        "-s",
+        "--sample_info",
+        dest="sample_info_path",
+        required=True,
+        type=Path,
+        help='File listing sample IDs with their families and sample_types (case or ctrl). '
+        'If test categorization result is not available, "SET" column is used for dividing training and test set.')
+    result.add_argument(
+        "-a",
+        "--adjustment_factor",
+        dest="adj_factor_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="File listing adjustment factors of each sample",
+    )
+    result.add_argument(
+        "-c",
+        "--category_set_path",
+        dest="category_set_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file containing categories for risk score analysis. If not specified, all categories will be used.",
+    )
+    result.add_argument(
+        "-t",
+        "--tag",
+        dest="tag",
+        required=False,
+        default=None,
+        type=str,
+        help="Tag used for the name of the output file",
+    )
+    result.add_argument(
+        "-u",
+        "--use_n_carrier",
+        dest="use_n_carrier",
+        action="store_true",
+        help="Use the number of samples with variants in each category for calculating R2 instead of the number of variants",
+    )
+    result.add_argument(
+        "-thr",
+        "--threshold",
+        dest="ctrl_thres",
+        required=False,
+        default=3,
+        type=int,
+        help="The number of variants in controls (or the number of control carriers) used to select rare categories",
+    )
+    result.add_argument(
+        '-tf',
+        '--train_set_fraction',
+        dest='train_set_f',
+        required=False,
+        type=float,
+        default=0.7,
+        help='Fraction of the training set (Default: 0.7)')
+    result.add_argument(
+        '-n_reg',
+        '--num_regression',
+        dest='num_reg',
+        required=False,
+        type=int,
+        default=10,
+        help='No. regression trials to calculate a mean of R squares (Default: 10)')
+    result.add_argument(
+        "-f",
+        "--fold",
+        dest="fold",
+        required=False,
+        default=5,
+        type=int,
+        help="Specify the number of folds in a `(Stratified)KFold`",
+    )
+    result.add_argument(
+        "-l",
+        "--logistic",
+        dest="logistic",
+        action="store_true",
+        help="Make a logistic model with L1 penalty",
+    )
+    result.add_argument(
+        "-n",
+        "--n_permute",
+        dest="n_permute",
+        required=False, default=1000,
+        type=int,
+        help="The number of permutations used to calculate the p-value",
+    )
+    result.add_argument(
+        "--predict_only",
+        dest="predict_only",
+        action="store_true",
+        help="Only predict the risk score. Skip the permutation test.",
+    )
+    result.add_argument(
+        '-p',
+        '--num_proc',
+        dest='num_proc',
+        required=False,
+        type=int,
+        default=1,
+        help='No. worker processes for permutation'
+        '(Default: 1)')
+    return result
+
