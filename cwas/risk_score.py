@@ -275,14 +275,14 @@ class RiskScore(Runnable):
     def result_path(self) -> Path:
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_results_thres_{self.ctrl_thres}.txt')
+            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_results_thres_{self.ctrl_thres}.txt')
         )
 
     @property
     def null_model_path(self) -> Path:
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_null_models_thres_{self.ctrl_thres}.txt')
+            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_null_models_thres_{self.ctrl_thres}.txt')
         )
 
     def run(self):
