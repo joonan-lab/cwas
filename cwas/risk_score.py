@@ -18,6 +18,8 @@ class RiskScore(Runnable):
         self._sample_info = None
         self._categorization_result = None
         self._adj_factor = None
+        self._category_set_path = None
+        self._category_set = None
         self._datasets = None
         self._covariates = None
         self._test_covariates = None
@@ -36,26 +38,36 @@ class RiskScore(Runnable):
                 else "Not specified: $CATEGORIZATION_RESULT will be used")
         log.print_arg("Sample information file", args.sample_info_path)
         log.print_arg("Adjustment factor list", args.adj_factor_path)
+        log.print_arg(
+            "Category set file", 
+            args.category_set_path
+                if args.category_set_path
+                else "Not specified: all rare categories will be used")
         log.print_arg("If the number of carriers is used for calculating R2 or not", args.use_n_carrier)
         log.print_arg(
-            "No. worker processes for simulations",
-            f"{args.num_proc: ,d}",
-        )
-        log.print_arg(
-            "Threshold for selecting effective categories",
+            "Threshold for selecting rare categories",
             f"{args.ctrl_thres: ,d}",
+        )
+        log.print_arg("Fraction of the training set", f"{args.train_set_f: ,f}")
+        log.print_arg(
+            "No. regression trials to calculate a mean of R squares",
+            f"{args.num_reg: ,d}",
         )
         log.print_arg(
             "No. folds for CV",
             f"{args.fold: ,d}",
         )
+        log.print_arg("Use Logistic regression", args.logistic)
         log.print_arg(
             "No. permutation used to calculate the p-value",
             f"{args.n_permute: ,d}",
         )
-        log.print_arg("Use Logistic regression", args.logistic)
         log.print_arg("Skip the permutation test", args.predict_only)
-    
+        log.print_arg(
+            "No. worker processes for permutation",
+            f"{args.num_proc: ,d}",
+        )
+
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_is_file(args.sample_info_path)
@@ -64,7 +76,7 @@ class RiskScore(Runnable):
             check_is_file(args.categorization_result_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
-        if args.category_set_path is not None:
+        if args.category_set_path:
             check_is_file(args.category_set_path)
     
     @property
@@ -114,11 +126,19 @@ class RiskScore(Runnable):
         return self.args.num_proc
 
     @property
+    def num_reg(self) -> int:
+        return self.args.num_reg
+
+    @property
+    def train_set_f(self) -> float:
+        return self.args.train_set_f
+
+    @property
     def filtered_combs(self) -> list:
-        if self.categorization_result_path is None:
-            self._filtered_combs = [col for col in self.categorization_result.columns if col != 'SAMPLE']
-        else:
+        if self.category_set_path:
             self._filtered_combs = self.category_set["Category"]
+        else:
+            self._filtered_combs = [col for col in self.categorization_result.columns if col != 'SAMPLE']
 
     @property
     def fold(self) -> int:
@@ -127,10 +147,6 @@ class RiskScore(Runnable):
     @property
     def n_permute(self) -> int:
         return self.args.n_permute
-
-    @property
-    def use_n_carrier(self) -> bool:
-        return self.args.use_n_carrier
     
     @property
     def ctrl_thres(self) -> int:
@@ -154,7 +170,16 @@ class RiskScore(Runnable):
                 log.print_log("LOG", 
                               "No 'SET' column in sample information file. "
                               "Training and test sets will be assigned randomly.")
-                test_idx = self._sample_info.groupby('PHENOTYPE').sample(frac=0.2, random_state=42).index
+                
+                case_count = sum(self._sample_info['PHENOTYPE'] == 'case')
+                ctrl_count = sum(self._sample_info['PHENOTYPE'] == 'ctrl')
+                min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
+                
+                log.print_log("LOG",
+                              "Use {} samples from each phenotype as training set."
+                              .format(min_size))
+                
+                test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=min_size, random_state=42).index
                 self._sample_info["SET"] = np.where(self._sample_info.index.isin(test_idx), "test", "training")
         return self._sample_info
 
@@ -294,10 +319,10 @@ class RiskScore(Runnable):
         else:
             response, test_response = self.response, self.test_response
 
-        if self.categorization_result_path is None:
-            self.filtered_combs = self.covariates.columns
-        else:
+        if self.category_set_path:
             self.filtered_combs = self.category_set["Category"]
+        else:
+            self.filtered_combs = self.covariates.columns
         for cat in self.filtered_combs:
             ctrl_var_counts = pd.concat(
                 [self.covariates[self.filtered_combs[cat]][~response],

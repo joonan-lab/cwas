@@ -800,7 +800,7 @@ def risk_score() -> argparse.ArgumentParser:
         required=False,
         type=int,
         default=1,
-        help='Number of processes for this script (only necessary for split VCF files) '
+        help='No. worker processes for permutation'
         '(Default: 1)')
     return result
 
