@@ -346,7 +346,7 @@ class RiskScore(Runnable):
         pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)
         mean_response = np.mean(test_y)
         rsq = 1 - np.sum((test_y - pred_responses) ** 2) / np.sum((test_y - mean_response) ** 2)
-        result_dict[self.filtered_combs][seed] = [opt_lambda, rsq, n_select, opt_coeff]
+        result_dict['result'][seed] = [opt_lambda, rsq, n_select, opt_coeff]
         
         log.print_progress("Done")
             
@@ -400,7 +400,7 @@ class RiskScore(Runnable):
                 {seed: self._result_dict[cat][seed][3][choose_idx]
                  for seed in self._result_dict[cat].keys()},
                 orient="index",
-                columns=self.filtered_combs[cat][choose_idx]
+                columns=self.filtered_combs[choose_idx]
             )
             coef_df.to_csv(
                 str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_coef_{cat}_thres_{self.ctrl_thres}.txt'),
