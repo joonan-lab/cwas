@@ -43,6 +43,8 @@ class RiskScore(Runnable):
             args.category_set_path
                 if args.category_set_path
                 else "Not specified: all rare categories will be used")
+        if args.tag:
+            log.print_arg("Output tag (prefix of output files)", args.tag)
         log.print_arg("If the number of carriers is used for calculating R2 or not", args.use_n_carrier)
         log.print_arg(
             "Threshold for selecting rare categories",
@@ -120,6 +122,10 @@ class RiskScore(Runnable):
     @property
     def use_n_carrier(self) -> bool:
         return self.args.use_n_carrier
+
+    @property
+    def tag(self) -> str:
+        return self.args.tag
 
     @property
     def num_proc(self) -> int:
@@ -270,19 +276,29 @@ class RiskScore(Runnable):
                 ] == "case"
             )(self.categorization_result[self.datasets == "test"].index.values)
         return self._test_response
+
+    @property
+    def coef_path(self) -> Path:
+        tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        return Path(
+            f"{self.out_dir}/" +
+            str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt')
+        )
     
     @property
     def result_path(self) -> Path:
+        tag = '' if self.tag is None else ''.join([self.tag, '_'])
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_results_thres_{self.ctrl_thres}.txt')
+            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_results_{tag}thres_{self.ctrl_thres}.txt')
         )
 
     @property
     def null_model_path(self) -> Path:
+        tag = '' if self.tag is None else ''.join([self.tag, '_'])
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_null_models_thres_{self.ctrl_thres}.txt')
+            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_null_models_{tag}thres_{self.ctrl_thres}.txt')
         )
 
     def run(self):
@@ -307,8 +323,8 @@ class RiskScore(Runnable):
     def risk_scores(self):
         """Generate risk scores for various seeds """
         log.print_progress(self.risk_scores.__doc__)
-        seeds = [99, 109, 119, 129, 139, 149, 159, 169, 179, 189]
-                    
+        
+        seeds = np.arange(99, 99 + self.num_reg * 10, 10)
         for seed in seeds:
             self.risk_score_per_category(result_dict=self._result_dict, seed=seed)
             
@@ -403,7 +419,7 @@ class RiskScore(Runnable):
                 columns=self.filtered_combs[choose_idx]
             )
             coef_df.to_csv(
-                str(self.categorization_result_path).replace('.categorization_result.txt.gz', f'.lasso_coef_{cat}_thres_{self.ctrl_thres}.txt'),
+                self.coef_path,
                 sep="\t"
             )
             parameter = np.mean([self._result_dict[cat][seed][0]
