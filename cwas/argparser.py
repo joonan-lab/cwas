@@ -222,6 +222,41 @@ def binomial_test() -> argparse.ArgumentParser:
         action="store_true",
         help="Use the number of samples with variants in each category for burden test instead of the number of variants",
     )
+    result.add_argument(
+        '-t',
+        '--tag',
+        dest='tag',
+        default=None,
+        type=str,
+        required=False,
+        help="Tags of category queried for highlighting points on the volcano plot. If you use multiple tags, concatenate by ',' (e.g. CRE,CHD8)"
+    )
+    result.add_argument(
+        "-ms",
+        "--marker_size",
+        dest="marker_size",
+        required=False,
+        type=float,
+        default=15,
+        help="Maker size of the volcano plot resulted from the binomial test (unit: pt)",
+    )
+    result.add_argument(
+        "-fs",
+        "--font_size",
+        dest='font_size',
+        required=False,
+        type=float,
+        default=15,
+        help="Font size of the volcano plot resulted from the binomial test (unit: pt)",
+    )
+    result.add_argument(
+        '-ps',
+        '--plot_size',
+        required=False,
+        type=float,
+        default=7,
+        help="Plot size of the volcano plot resulted from the binomial test, width and height are the same (unit: inch)"
+    )
     return result
 
 

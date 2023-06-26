@@ -30,58 +30,6 @@ class BurdenTest(Runnable):
         self._ctrl_carrier_cnt = None
 
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments of Burden Tests",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-        parser.add_argument(
-            "-i",
-            "--input_file",
-            dest="cat_path",
-            required=True,
-            type=Path,
-            help="Categorized file (gzipped)",
-        )
-        parser.add_argument(
-            "-o_dir",
-            "--output_directory",
-            dest="output_dir_path",
-            required=False,
-            default=default_workspace,
-            type=Path,
-            help="Directory where output file will be saved",
-        )
-        parser.add_argument(
-            "-s",
-            "--sample_info",
-            dest="sample_info_path",
-            required=True,
-            type=Path,
-            help="File listing information of your samples",
-        )
-        parser.add_argument(
-            "-a",
-            "--adjustment_factor",
-            dest="adj_factor_path",
-            required=False,
-            default=None,
-            type=Path,
-            help="File listing adjustment factors of each sample",
-        )
-        parser.add_argument(
-            "-u",
-            "--use_n_carrier",
-            dest="use_n_carrier",
-            required=False,
-            default=False,
-            action="store_true",
-            help="Use the number of samples with variants in each category for burden test instead of the number of variants",
-        )
-        return parser
-
-    @staticmethod
     def _print_args(args: argparse.Namespace):
         print_arg("Categorized file", args.cat_path)
         print_arg("Output directory", args.output_dir_path)
@@ -143,6 +91,22 @@ class BurdenTest(Runnable):
     @property
     def use_n_carrier(self) -> bool:
         return self.args.use_n_carrier
+
+    @property
+    def tag(self) -> str:
+        return self.args.tag
+
+    @property
+    def marker_size(self) -> float:
+        return self.args.marker_size
+
+    @property
+    def font_size(self) -> float:
+        return self.args.font_size
+
+    @property
+    def plot_size(self) -> float:
+        return self.args.plot_size
 
     @property
     def categorization_result(self) -> pd.DataFrame:
