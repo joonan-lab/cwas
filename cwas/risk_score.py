@@ -440,7 +440,7 @@ class RiskScore(Runnable):
             )
             null_models.to_csv(self.null_model_path, sep="\t", index=False)
 
-            result_table.append([cat, 'avg', parameter, r2, sum(choose_idx), (sum(r2_scores>=r2+1))/(len(r2_scores)+1)])
+            result_table.append([cat, 'avg', parameter, r2, sum(choose_idx), (sum(r2_scores>=r2)+1)/(len(r2_scores)+1)])
             result_table += [[cat] + [str(seed)] + self._result_dict[cat][seed][:-1] + [(sum(r2_scores>=self._result_dict[cat][seed][1]+1))/(len(r2_scores)+1)]
                              for seed in self._result_dict[cat].keys()]
 
