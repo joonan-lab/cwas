@@ -229,7 +229,7 @@ def binomial_test() -> argparse.ArgumentParser:
         default=None,
         type=str,
         required=False,
-        help="Query keyword of category for highlighting points on the volcano plot"
+        help="Tags of category queried for highlighting points on the volcano plot. If you use multiple tags, concatenate by ',' (e.g. CRE,CHD8)"
     )
     result.add_argument(
         "-ms",
