@@ -142,7 +142,7 @@ class RiskScore(Runnable):
     @property
     def filtered_combs(self) -> list:
         if self.category_set_path:
-            self._filtered_combs = self.category_set["Category"]
+            self._filtered_combs = self.category_set["Category"].tolist()
         else:
             self._filtered_combs = [col for col in self.categorization_result.columns if col != 'SAMPLE']
         return self._filtered_combs
@@ -415,9 +415,9 @@ class RiskScore(Runnable):
         coef_df = pd.DataFrame.from_dict(
             {seed: self._result_dict[cat][seed][3][choose_idx]
             for seed in self._result_dict[cat].keys()},
-            orient="index",
-            columns=self.filtered_combs[choose_idx]
+            orient="index"
         )
+        coef_df.columns = self.filtered_combs[choose_idx]
         coef_df.to_csv(
             self.coef_path,
             sep="\t"
