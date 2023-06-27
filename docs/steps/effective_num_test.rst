@@ -4,7 +4,7 @@
 Calculate the effective number of tests
 ========================================
 
-To obtain the measure of category-wide significance, the effective number of tests is required. Each category is equal to each test, but categories could be correlated and these highly correlated categories can be defined as a single effective test. By assessing the correlation between categories, the users can gain the number of effective tests.
+For multiple comparisons, the effective number of tests is required. Each category is equal to each test, but categories could be correlated and these highly correlated categories can be defined as a single effective test. By assessing the correlation between categories, the users can gain the number of effective tests.
 
 The output files from eigen decomposition will also be used for DAWN analysis. For preparing the input for DAWN analysis, calculating eigen values and vectors for categories of interest is recommended. For example, if the uesr is interested in promoter categories, only substracting promoter categories for eigen decomposition is required.
 
