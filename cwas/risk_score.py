@@ -501,7 +501,7 @@ class RiskScore(Runnable):
         plt.axvline(x=r2, color='red')
         plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='black')
         plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
-        plt.locator_params(axis='x', nbins=7)
+        plt.locator_params(axis='x', nbins=5)
 
         plt.savefig(self.plot_path)
 
