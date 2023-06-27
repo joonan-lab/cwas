@@ -11,6 +11,7 @@ from cwas.runnable import Runnable
 from typing import Optional, Tuple
 from contextlib import contextmanager
 from collections import defaultdict
+import matplotlib.pyplot as plt
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -95,6 +96,14 @@ class RiskScore(Runnable):
             self.args.adj_factor_path.resolve()
             if self.args.adj_factor_path
             else None
+        )
+
+    @property
+    def plot_path(self) -> Optional[Path]:
+        tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        return Path(
+            f"{self.out_dir}/" +
+            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf')
         )
 
     @property
@@ -448,6 +457,8 @@ class RiskScore(Runnable):
                 result_table, columns=["Category", "seed", "parameter", "R2", "n_select", "perm_P"]
             )
             result_table.to_csv(self.result_path, sep="\t", index=False)
+            
+            self.draw_histogram_plot(r2, r2_scores)
         else:
             result_table.append([cat, 'avg', parameter, r2, sum(choose_idx)])
             result_table += [[cat] + [str(seed)] + self._result_dict[cat][seed][:-1]
@@ -468,4 +479,28 @@ class RiskScore(Runnable):
             self.set_env("LASSO_NULL_MODELS", self.null_model_path)
         self.save_env()
         
-    
+    def draw_histogram_plot(self, r2: float, perm_r2: np.ndarray):
+        log.print_progress("Save histogram plot")
+        
+        # Set the font size
+        plt.rcParams.update({'font.size': 8})
+        
+        # Set the figure size
+        plt.figure(figsize=(4, 4))
+
+        # Create the histogram plot
+        plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
+        
+        text_label1 = 'P={:.2f}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
+        text_label2 = '$R^2$={:.2f}'.format(r2)
+
+        # Add labels and title
+        plt.xlabel('$R^2$')
+        plt.ylabel('Frequency')
+        plt.title('Histogram Plot', fontsize = 8)
+        plt.axvline(x=r2, color='red')
+        plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='black')
+        plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
+
+        plt.savefig(self.plot_path)
+
