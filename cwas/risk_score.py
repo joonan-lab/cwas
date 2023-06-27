@@ -492,7 +492,7 @@ class RiskScore(Runnable):
         plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
         
         text_label1 = 'P={:.2f}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
-        text_label2 = '$R^2$={:.2f}'.format(r2)
+        text_label2 = '$R^2$={:.2f}%'.format(r2*100)
 
         # Add labels and title
         plt.xlabel('$R^2$')
