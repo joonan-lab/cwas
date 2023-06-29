@@ -81,7 +81,7 @@ class Dawn(Runnable):
     @property
     def corr_mat_file(self):
         if self._corr_mat_file is None:
-            self._corr_mat_file = self._get_input_file("*corr_mat*.pickle")
+            self._corr_mat_file = self._get_input_file("*correlation_matrix*.pkl")
         return self._corr_mat_file
 
     @property
