@@ -694,7 +694,7 @@ def dawn() -> argparse.ArgumentParser:
         required=False,
         type=int,
         default=20,
-        help="The treshold of variant (or sample) counts. The least amount of variants a category should have.",
+        help="The threshold of variant (or sample) counts. The least amount of variants a category should have.",
     )
     result.add_argument(
         "-CR",
