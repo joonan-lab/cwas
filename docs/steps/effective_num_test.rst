@@ -11,11 +11,10 @@ The output files from eigen decomposition will also be used for DAWN analysis. F
 The parameters of the command are as below:
 
 - -i, --input_file: Path to the concatenated z-scores.
-- -if, --input_format: Specify the format of the input file. Available options are ``corr``, ``inter``, and ``zscores``. By default, ``corr`` will be used. Each format refers to the following:
+- -if, --input_format: Specify the format of the input file. Available options are ``corr`` or ``inter``. By default, ``corr`` will be used. Each format refers to the following:
 
   - corr: A matrix with correlation values between categories.
   - inter: A matrix with intersected number of variants (or samples) between categories.
-  - zscores: A matrix with concatenated z-scores.
 
 - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 - -n, --num_sim: Number of eigen values to use in calculating the number of effective tests. The maximum number is equivalent to the number of categories. By default, 10000.
@@ -40,6 +39,8 @@ The parameters of the command are as below:
 
 .. code-block:: solidity
 
-    cwas effective_num_test -i INPUT.zscores.txt.gz -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
+    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
+
+    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -ef -if corr -n 7918 -c CATEGORY_SET.txt
 
 
