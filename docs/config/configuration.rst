@@ -48,3 +48,25 @@ The parameters of the command are as below:
 .. code-block:: solidity
 
     cwas preparation -p 8
+
+
+After preparation, the merged bed file (``merged_annotation.bed.gz``) looks like below:
+
++---------------------------------+
+|#ANNOT=ChmE1|ChmE2|ChmE3         |
++-------+--------+------+---------+
+|#chrom | start  |  end |annot_int|
++-------+--------+------+---------+
+|chr1   | 10000  |10600 |1        |
++-------+--------+------+---------+
+|chr1   | 79200  |80000 |4        |
++-------+--------+------+---------+
+|chr1   | 610420 |612020|2        |
++-------+--------+------+---------+
+|chr1   | 631820 |632020|8        |
++-------+--------+------+---------+
+
+The line starts with ``#ANNOT`` indicates the annotation datasets merged in the bed file. It also indicates the order of the datasets matched to the ``annot_int``.
+
+The column ``annot_int`` represents the decimal number converted from binary code. The binary code consists of 0 and 1, but the representation is different from ordinary binary numbers. For example, 
+
