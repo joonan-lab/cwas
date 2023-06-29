@@ -10,11 +10,10 @@ dependencies:
   - scipy
   - tqdm
   - glmnet
-  - collections
   - igraph
   - matplotlib
   - rpy2
-  - sklearn
+  - scikit-learn
   - pysam
   - tabix
   - pyyaml
