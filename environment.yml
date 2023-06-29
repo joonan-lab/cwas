@@ -19,5 +19,5 @@ dependencies:
   - perl-set-intervaltree
   - perl-bio-bigfile
   - perl-dbd-sqlite
-  - perl-db
   - perl-bio-db-hts
+  - perl-bioperl
