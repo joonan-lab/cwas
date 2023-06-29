@@ -8,6 +8,12 @@ dependencies:
   - numpy
   - pandas
   - scipy
+  - tqdm
+  - glmnet
+  - collections
+  - matplotlib
+  - rpy2
+  - sklearn
   - pysam
   - tabix
   - pyyaml

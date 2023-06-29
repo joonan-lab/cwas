@@ -16,7 +16,6 @@ from rpy2.robjects.packages import importr
 from tqdm import tqdm
 from scipy.stats import norm
 import random
-import sys
 
 from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection

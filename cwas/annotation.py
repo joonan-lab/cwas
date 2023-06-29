@@ -8,7 +8,6 @@ Variant Effect Predictor (VEP) to annotate user's VCF file.
 import argparse
 from pathlib import Path
 from typing import Optional
-import yaml
 
 from cwas.core.annotation.bed import annotate as _annotate_using_bed
 from cwas.core.annotation.vep import VepCmdGenerator
@@ -19,7 +18,6 @@ from cwas.utils.check import check_num_proc
 from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
-import dotenv
 import multiprocessing as mp
 from functools import partial
 import vcf
