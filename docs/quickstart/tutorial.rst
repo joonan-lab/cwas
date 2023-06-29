@@ -116,7 +116,7 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
   .. code-block:: solidity
 
 
-11.  :ref:`DAWN analysis <riskscore>`
+11.  :ref:`DAWN analysis <dawn>`
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
 

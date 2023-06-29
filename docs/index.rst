@@ -67,6 +67,8 @@ CWAS-Plus workflow
    steps/generation_randomset.rst
    steps/effective_num_test.rst
    steps/risk_score.rst
+   steps/burdenshift.rst
+   steps/dawn.rst
 
 .. toctree::
    :maxdepth: 1
