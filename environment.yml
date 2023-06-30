@@ -13,6 +13,7 @@ dependencies:
   - igraph
   - matplotlib
   - rpy2
+  - pyvcf
   - scikit-learn
   - pysam
   - tabix
