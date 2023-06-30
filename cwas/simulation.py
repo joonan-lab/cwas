@@ -1,7 +1,5 @@
-import yaml, os, gzip, sys, argparse, pickle
+import yaml, gzip, argparse
 import multiprocessing as mp
-from functools import partial
-import re
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -13,7 +11,6 @@ import cwas.utils.log as log
 from cwas.core.simulation.fastafile import FastaFile
 from cwas.core.simulation.randomize import label_variant, pick_mutation
 from cwas.utils.check import check_is_file, check_num_proc, check_same_n_lines
-from typing import Optional
 
 class Simulation(Runnable):
     def __init__(self, args: argparse.Namespace):

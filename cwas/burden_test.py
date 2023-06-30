@@ -13,8 +13,6 @@ from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 from cwas.utils.log import print_arg, print_progress
 
-import dotenv
-
 
 class BurdenTest(Runnable):
     def __init__(self, args: Optional[argparse.Namespace] = None):
@@ -73,6 +71,20 @@ class BurdenTest(Runnable):
         )
 
     @property
+    def counts_path(self) -> Path:
+        return Path(
+            f"{self.output_dir_path}/"
+            f"{self.cat_path.name.replace('categorization_result.txt', 'category_counts.txt')}"
+        )
+
+    @property
+    def cat_info_path(self) -> Path:
+        return Path(
+            f"{self.output_dir_path}/"
+            f"{self.cat_path.name.replace('categorization_result.txt', 'category_info.txt')}"
+        )
+
+    @property
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
@@ -115,6 +127,7 @@ class BurdenTest(Runnable):
             self._categorization_result = pd.read_table(
                 self.cat_path, index_col="SAMPLE", compression='gzip'
             )
+            self.save_counts_table(form = 'raw')
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
         return self._categorization_result
@@ -218,6 +231,8 @@ class BurdenTest(Runnable):
         self.run_burden_test()
         self.concat_category_info()
         self.save_result()
+        self.save_counts_table(form = 'adj')
+        self.save_category_info()
         self.update_env()
 
     def count_variant_for_each_category(self):
@@ -283,7 +298,50 @@ class BurdenTest(Runnable):
     def update_env(self):
         self.set_env("BURDEN_TEST_RESULT", self.result_path)
         self.save_env()
+        
+    def save_counts_table(self, form: str):
+        if form == 'raw':
+            self._raw_counts = pd.DataFrame({'Raw_counts': self.categorization_result.sum(axis=0)},
+                                            index= self.categorization_result.sum(axis=0).index)
+            self._raw_counts.index.name = 'Category'
+        elif form =='adj':
+            self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
+            self._counts_table = pd.merge(self._raw_counts, self._adj_counts, on='Category')
+            self._counts_table.to_csv(self.counts_path, sep="\t")
+    
+    def save_category_info(self):
+        cat_set = self._result.loc[:, ['variant_type', 'gene_list', 'conservation', 'gencode', 'region']]
+        cat_set = apply_region_mapping(cat_set)
+        cat_set.to_csv(self.cat_info_path, sep="\t")
+
 
 
 def _contain_same_index(table1: pd.DataFrame, table2: pd.DataFrame) -> bool:
     return cmp_two_arr(table1.index.values, table2.index.values)
+
+def apply_region_mapping(df: pd.DataFrame):
+    coding_region = ['CodingRegion', 'MissenseRegion', 'SilentRegion', 'LoFRegion',
+                     'InFrameRegion', 'DamagingMissenseRegion', 'FrameshiftRegion']
+    noncoding_region = ['NoncodingRegion', 'IntronRegion', 'lincRnaRegion',
+                        'IntergenicRegion', 'OtherTranscriptRegion', 'PromoterRegion',
+                        'UTRsRegion', 'SpliceSiteNoncanonRegion']
+    
+    region_mapping = {
+        'is_coding': lambda x: x['gencode'].isin(coding_region).astype(int),
+        'is_coding_no_ptv': lambda x: x['gencode'].isin(set(coding_region) - set(['CodingRegion', 'LoFRegion', 'FrameshiftRegion'])).astype(int),
+        'is_LoF': lambda x: (x['gencode'] == 'LoFRegion').astype(int),
+        'is_missense': lambda x: (x['gencode'] == 'MissenseRegion').astype(int),
+        'is_damaging_missense': lambda x: (x['gencode'] == 'DamagingMissenseRegion').astype(int),
+        'is_noncoding': lambda x: x['gencode'].isin(noncoding_region).astype(int),
+        'is_noncoding_wo_promoter': lambda x: x['gencode'].isin(set(noncoding_region) - set(['NoncodingRegion', 'PromoterRegion'])).astype(int),
+        'is_promoter': lambda x: (x['gencode'] == 'PromoterRegion').astype(int),
+        'is_intron': lambda x: (x['gencode'] == 'IntronRegion').astype(int),
+        'is_intergenic': lambda x: (x['gencode'] == 'IntergenicRegion').astype(int),
+        'is_UTR': lambda x: (x['gencode'] == 'UTRsRegion').astype(int),
+        'is_lincRNA': lambda x: ((x['gene_list'] == 'lincRNA') | (x['gencode'] == 'lincRnaRegion')).astype(int)
+    }
+
+    for col, condition in region_mapping.items():
+        df[col] = condition(df)
+    
+    return df

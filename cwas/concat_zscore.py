@@ -1,4 +1,4 @@
-import argparse, os, sys, gzip
+import argparse, gzip
 from glob import glob
 import multiprocessing as mp
 from pathlib import Path
@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from typing import Optional
 
-from cwas.utils.log import print_progress, print_arg, print_warn, print_log
+from cwas.utils.log import print_progress, print_arg, print_log
 from cwas.runnable import Runnable
 from functools import partial
 from cwas.utils.check import check_is_file, check_is_dir, check_num_proc
