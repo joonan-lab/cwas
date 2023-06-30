@@ -71,6 +71,13 @@ class BurdenTest(Runnable):
         )
 
     @property
+    def counts_path(self) -> Path:
+        return Path(
+            f"{self.output_dir_path}/"
+            f"{self.cat_path.name.replace('categorization_result.txt', 'category_counts.txt')}"
+        )
+
+    @property
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
@@ -113,6 +120,7 @@ class BurdenTest(Runnable):
             self._categorization_result = pd.read_table(
                 self.cat_path, index_col="SAMPLE", compression='gzip'
             )
+            self.save_counts_table(form = 'raw')
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
         return self._categorization_result
@@ -216,6 +224,7 @@ class BurdenTest(Runnable):
         self.run_burden_test()
         self.concat_category_info()
         self.save_result()
+        self.save_counts_table(form = 'adj')
         self.update_env()
 
     def count_variant_for_each_category(self):
@@ -281,6 +290,17 @@ class BurdenTest(Runnable):
     def update_env(self):
         self.set_env("BURDEN_TEST_RESULT", self.result_path)
         self.save_env()
+        
+    def save_counts_table(self, form: str):
+        if form == 'raw':
+            self._raw_counts = pd.DataFrame({'Raw_counts': self.categorization_result.sum(axis=0)},
+                                            index= self.categorization_result.sum(axis=0).index)
+            self._raw_counts.index.name = 'Category'
+        elif form =='adj':
+            self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
+            self._counts_table = pd.merge(self._raw_counts, self._adj_counts, on='Category')
+            self._counts_table.to_csv(self.counts_path, sep="\t")
+
 
 
 def _contain_same_index(table1: pd.DataFrame, table2: pd.DataFrame) -> bool:
