@@ -232,6 +232,7 @@ class BurdenTest(Runnable):
         self.concat_category_info()
         self.save_result()
         self.save_counts_table(form = 'adj')
+        self.save_category_info()
         self.update_env()
 
     def count_variant_for_each_category(self):
