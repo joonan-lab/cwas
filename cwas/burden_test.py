@@ -310,7 +310,7 @@ class BurdenTest(Runnable):
             self._counts_table.to_csv(self.counts_path, sep="\t")
     
     def save_category_info(self):
-        cat_set = self._result[['variant_type', 'gene_list', 'conservation', 'gencode', 'region']]
+        cat_set = self._result.loc[:, ['variant_type', 'gene_list', 'conservation', 'gencode', 'region']]
         cat_set = apply_region_mapping(cat_set)
         cat_set.to_csv(self.cat_info_path, sep="\t")
 
