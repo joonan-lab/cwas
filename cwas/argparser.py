@@ -168,8 +168,10 @@ def categorization() -> argparse.ArgumentParser:
         "--matrix",
         dest="generate_matrix",
         required=False,
-        action="store_true",
-        help="Generate a correlation matrix and a matrix with intersected number of variants bewteen categories",
+        choices = ['variant', 'sample'],
+        help="""Generate a correlation matrix and a matrix with intersected number of variants (or samples with variants) bewteen categories.\n
+        \tvariant: use the number of variants,\n
+        \tsample: use the number of samples with variants""",
     )
     return result
 
