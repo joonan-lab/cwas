@@ -132,7 +132,7 @@ class Categorization(Runnable):
             )
         return self._annotated_vcf_groupby_sample
 
-    @property
+    @property 
     def sample_ids(self) -> list:
         if self._sample_ids is None:
             self._sample_ids = list(self.annotated_vcf_groupby_sample.groups)

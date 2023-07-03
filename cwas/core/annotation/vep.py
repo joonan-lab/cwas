@@ -3,7 +3,6 @@ Command line generator for Variant Effect Predictor (VEP)
 """
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
-from cwas.utils.check import check_num_proc
 
 
 class VepCmdGenerator:

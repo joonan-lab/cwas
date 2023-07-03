@@ -1,7 +1,6 @@
 from collections import deque
 import multiprocessing as mp ## test multiprocessing
 import pysam
-from functools import partial
 import itertools
 
 class annotate:
