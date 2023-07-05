@@ -121,4 +121,17 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
 
   .. code-block:: solidity
+  
+      cwas dawn -i_dir INPUT_DIR \
+      -o_dir OUTPUT_DIR \
+      -r 2,500 \
+      -s 123 \
+      -t test \
+      -c CATEGORY_SET.txt \
+      -c_count CATEGORY_COUNTS.txt \
+      -CT 2 \
+      -CR 0.7 \
+      -S 20 \
+      -p 8
+
 

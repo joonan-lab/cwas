@@ -397,137 +397,6 @@ def extract_variant() -> argparse.ArgumentParser:
     )    
     return result
 
-def simulation() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(
-        description="Arguments of random variant generation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-    result.add_argument(
-        '-i', '--in_vcf',
-        dest='in_vcf_path',
-        required=True,
-        type=Path,
-        help='Input VCF file which is referred to generate random mutations'
-    )
-    result.add_argument(
-        '-s',
-        '--sample_info',
-        dest='sample_info_path',
-        required=True,
-        type=Path,
-        help='File listing sample IDs with their families and sample_types (case or ctrl)'
-    )
-    result.add_argument(
-        '-o',
-        '--out_dir',
-        dest='out_dir',
-        required=False,
-        type=Path,
-        help='Directory of outputs that lists random mutations. '
-        'The number of outputs will be the same with the number of simulations. '
-        '(default: $CWAS_WORKSPACE/random-mutation)'
-    )
-    result.add_argument(
-        '-t',
-        '--tag',
-        dest='out_tag',
-        required=False,
-        type=str,
-        help='Prefix of output files. Each output file name will start with this tag.',
-        default='rand_mut'
-    )
-    result.add_argument(
-        '-n',
-        '--num_sim',
-        dest='num_sim',
-        required=False,
-        type=int,
-        help='Number of simulations to generate random variants',
-        default=1
-    )
-    result.add_argument(
-        '-p',
-        '--num_proc',
-        dest='num_proc',
-        required=False,
-        type=int,
-        help='Number of processes for random variant generation (only necessary for split VCF files)',
-        default=1
-    )
-    result.add_argument(
-        "-r",
-        "--resume",
-        dest="resume",
-        required=False,
-        default=False,
-        action="store_true",
-        help="Resume the simulation from the last step. Assume some generated output files are not truncated."
-    )
-    return result
-
-
-def concat_zscore() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(
-        description="Arguments of Z-score concatenation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-    result.add_argument(
-        "-i_dir",
-        "--input_directory",
-        dest="input_dir_path",
-        required=True,
-        type=Path,
-        help="Directory where burden test results are saved",
-    )
-    result.add_argument(
-        "-o_dir",
-        "--output_directory",
-        dest="output_dir_path",
-        required=False,
-        default=default_workspace,
-        type=Path,
-        help="Directory where output file will be saved",
-    )
-    result.add_argument(
-        "-s",
-        "--sample_info",
-        dest="sample_info_path",
-        required=True,
-        type=Path,
-        help="File listing information of your samples",
-    )
-    result.add_argument(
-        "-t",
-        "--tag",
-        dest="tag",
-        required=False,
-        default=None,
-        type=str,
-        help="Tag used for the name of the output file (i.e., output.<tag>.zscores.txt.gz)",
-    )
-    result.add_argument(
-        "-c",
-        "--category_set_path",
-        dest="category_set_path",
-        required=True,
-        default=None,
-        type=Path,
-        help="Path to a text file containing categories for extracting variants",
-    )
-    result.add_argument(
-        "-p",
-        "--num_proc",
-        dest="num_proc",
-        required=False,
-        type=int,
-        default=1,
-        help="Max No. processes for this step",
-    )
-    return result
-
-
 def effective_num_test() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Arguments of Effective Number of Test Calculation",
@@ -548,9 +417,9 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="input_format",
         required=False,
         default = 'corr',
-        choices = ['corr', 'inter', 'zscores'],
+        choices = ['corr', 'inter'],
         type=str,
-        help="Input format. If not specified, corr will be used.\nAvailable options:\n\tcorr: a correlation matrix\n\tinter: a matrix with intersected number of variants between categories\n\tzscores: concatenated z-scores",
+        help="Input format. If not specified, corr will be used.\nAvailable options:\n\tcorr: a correlation matrix\n\tinter: a matrix with intersected number of variants between categories",
     )
     result.add_argument(
         "-o_dir",
@@ -594,7 +463,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=Path,
-        help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used.",
+        help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used.",
     )
     result.add_argument(
         "-ef",
