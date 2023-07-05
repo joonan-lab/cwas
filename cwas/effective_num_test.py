@@ -13,7 +13,6 @@ from cwas.utils.check import check_is_file, check_is_dir
 class EffectiveNumTest(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
-        self._zscore_df = None
         self._intersection_matrix = None
         self._correlation_matrix = None
         self._category_set_path = None
@@ -57,12 +56,6 @@ class EffectiveNumTest(Runnable):
     def input_format(self) -> str:
         return self.args.input_format
     
-    @property
-    def zscore_df(self) -> pd.DataFrame:
-        if self._zscore_df is None and self.input_format == 'zscores':
-            self._zscore_df = pd.read_table(self.input_path, index_col='Simulation')
-        return self._zscore_df
-
     @property
     def intersection_matrix(self) -> pd.DataFrame:
         if self._intersection_matrix is None and self.input_format == 'inter':
@@ -129,9 +122,7 @@ class EffectiveNumTest(Runnable):
     @property
     def replace_term(self) -> str:
         if self._replace_term is None:
-            if '.zscores.txt.gz' in str(self.input_path):
-                self._replace_term = '.zscores.txt.gz'
-            elif 'correlation_matrix.pkl' in str(self.input_path):
+            if 'correlation_matrix.pkl' in str(self.input_path):
                 self._replace_term = '.correlation_matrix.pkl'
             elif 'intersection_matrix.pkl' in str(self.input_path):
                 self._replace_term = '.intersection_matrix.pkl'
@@ -237,11 +228,6 @@ class EffectiveNumTest(Runnable):
                 filtered_combs = self.correlation_matrix.columns.tolist()
             elif self.input_format == 'inter':
                 filtered_combs = self.intersection_matrix.columns.tolist()
-            elif self.input_format == 'zscores':
-                if self.zscore_df.columns[0] == 'Simulation':
-                    filtered_combs = self.zscore_df.columns[1:].tolist()
-                else:
-                    filtered_combs = self.zscore_df.columns.tolist()
 
         if self.input_format == 'corr':
             intermediate_mat = self.correlation_matrix.loc[filtered_combs,filtered_combs]
@@ -249,37 +235,10 @@ class EffectiveNumTest(Runnable):
             print_progress("Generating a covariance matrix")
             intermediate_mat = self.intersection_matrix.loc[filtered_combs,filtered_combs]
             intermediate_mat = intermediate_mat.mul((self.binom_p)*(1-self.binom_p))
-        elif self.input_format == 'zscores':
-            if not os.path.isfile(self.corr_mat_path):
-                filtered_zscore_df = self.zscore_df[filtered_combs]
-            
-                # Convert infinite Z to finite Z
-                if (np.isinf(filtered_zscore_df).any().sum()>0):
-                    print_warn("The z-score matrix contains infinite Z. Infinite Z will be replaced with finite Z.")
-                    for_inf_z = norm.ppf(1 - 0.9999999999999999)
-                    filtered_zscore_df = filtered_zscore_df.replace([-np.inf], for_inf_z)            
-                
-                intermediate_mat = np.corrcoef(filtered_zscore_df.values.T)
-                if np.isnan(intermediate_mat).any():
-                    print_warn("The correlation matrix contains NaN. NaN will be replaced with 0,1.")
-                    for i in range(intermediate_mat.shape[0]):
-                        if np.isnan(intermediate_mat[i, i]):
-                            intermediate_mat[i, i] = 1.0
-                    np.nan_to_num(intermediate_mat, copy=False)
-                    
-                corr_mat2 = pd.DataFrame(intermediate_mat, columns=filtered_zscore_df.columns, index=filtered_zscore_df.columns)
-                print_progress("Writing the correlation matrix to file")
-                pickle.dump(corr_mat2, open(self.corr_mat_path, 'wb'), protocol=5)
-            else:
-                with self.corr_mat_path.open('rb') as f:
-                    intermediate_mat = pickle.load(f)
 
         if not os.path.isfile(self.neg_lap_path):
             print_progress("Generating the negative laplacian matrix")
-            if self.input_format == 'zscores':
-                neg_lap = np.abs(intermediate_mat)
-            else:
-                neg_lap = np.abs(intermediate_mat.values)
+            neg_lap = np.abs(intermediate_mat.values)
             degrees = np.sum(neg_lap, axis=0)
             for i in tqdm(range(neg_lap.shape[0])):
                 neg_lap[i, :] = neg_lap[i, :] / np.sqrt(degrees)
