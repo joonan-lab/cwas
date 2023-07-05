@@ -397,68 +397,6 @@ def extract_variant() -> argparse.ArgumentParser:
     )    
     return result
 
-
-def concat_zscore() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(
-        description="Arguments of Z-score concatenation",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-    result.add_argument(
-        "-i_dir",
-        "--input_directory",
-        dest="input_dir_path",
-        required=True,
-        type=Path,
-        help="Directory where burden test results are saved",
-    )
-    result.add_argument(
-        "-o_dir",
-        "--output_directory",
-        dest="output_dir_path",
-        required=False,
-        default=default_workspace,
-        type=Path,
-        help="Directory where output file will be saved",
-    )
-    result.add_argument(
-        "-s",
-        "--sample_info",
-        dest="sample_info_path",
-        required=True,
-        type=Path,
-        help="File listing information of your samples",
-    )
-    result.add_argument(
-        "-t",
-        "--tag",
-        dest="tag",
-        required=False,
-        default=None,
-        type=str,
-        help="Tag used for the name of the output file (i.e., output.<tag>.zscores.txt.gz)",
-    )
-    result.add_argument(
-        "-c",
-        "--category_set_path",
-        dest="category_set_path",
-        required=True,
-        default=None,
-        type=Path,
-        help="Path to a text file containing categories for extracting variants",
-    )
-    result.add_argument(
-        "-p",
-        "--num_proc",
-        dest="num_proc",
-        required=False,
-        type=int,
-        default=1,
-        help="Max No. processes for this step",
-    )
-    return result
-
-
 def effective_num_test() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Arguments of Effective Number of Test Calculation",
@@ -479,9 +417,9 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="input_format",
         required=False,
         default = 'corr',
-        choices = ['corr', 'inter', 'zscores'],
+        choices = ['corr', 'inter'],
         type=str,
-        help="Input format. If not specified, corr will be used.\nAvailable options:\n\tcorr: a correlation matrix\n\tinter: a matrix with intersected number of variants between categories\n\tzscores: concatenated z-scores",
+        help="Input format. If not specified, corr will be used.\nAvailable options:\n\tcorr: a correlation matrix\n\tinter: a matrix with intersected number of variants between categories",
     )
     result.add_argument(
         "-o_dir",
@@ -525,7 +463,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=Path,
-        help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used.",
+        help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used.",
     )
     result.add_argument(
         "-ef",
