@@ -65,25 +65,6 @@ class Configuration(Runnable):
             "annotation data file",
         )
         parser.add_argument(
-            "-sdd",
-            "--simulation_data_dir",
-            dest="sim_data_dir",
-            required=False,
-            type=Path,
-            help="Path to a directory with data required "
-            "for random variant generation",
-        )
-        parser.add_argument(
-            "-sdp",
-            "--simulation_data_paths",
-            dest="sim_data_paths",
-            required=False,
-            type=Path,
-            help="Path to a configuration file (.yaml) that "
-            "specifies each path to the data required for random variant "
-            "generation inside the simulation data directory (-sdd)",
-        )
-        parser.add_argument(
             "-v",
             "--vep",
             dest="vep",
@@ -153,8 +134,6 @@ class Configuration(Runnable):
     def _set_config_to_attr(self):
         user_config = self._load_configuration()
         self.data_dir = Path(user_config.get("ANNOTATION_DATA_DIR"))
-        self.sim_data_dir = Path(user_config.get("SIMULATION_DATA_DIR"))
-        self.sim_data_paths = Path(user_config.get("SIMULATION_PATHS"))
         self.gene_matrix = Path(user_config.get("GENE_MATRIX"))
         self.vep = Path(user_config.get("VEP"))
         self.vep_cache_dir = Path(user_config.get("VEP_CACHE_DIR"))
@@ -189,8 +168,6 @@ class Configuration(Runnable):
     def _check_attr_from_user_config(self):
         check.check_is_file(self.user_config)
         check.check_is_dir(self.data_dir)
-        check.check_is_dir(self.sim_data_dir)
-        check.check_is_file(self.sim_data_paths)
         check.check_is_dir(self.vep_cache_dir)        
         check.check_is_file(self.vep_conservation)
         check.check_is_dir(self.vep_loftee)
@@ -272,8 +249,6 @@ class Configuration(Runnable):
     def _set_env(self):
         log.print_progress("Set CWAS environment variables")
         self.set_env("VEP", getattr(self, "vep"))
-        self.set_env("SIMULATION_DATA_DIR", getattr(self, "sim_data_dir"))
-        self.set_env("SIMULATION_PATHS", getattr(self, "sim_data_paths"))
         self.set_env("VEP_CACHE_DIR", getattr(self, "vep_cache_dir"))
         self.set_env("VEP_CONSERVATION_FILE", getattr(self, "vep_conservation"))
         self.set_env("VEP_LOFTEE", getattr(self, "vep_loftee"))
