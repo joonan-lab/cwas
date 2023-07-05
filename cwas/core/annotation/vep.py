@@ -9,15 +9,17 @@ class VepCmdGenerator:
     def __init__(self, vep_path: str,
                  vep_cache_path: str, vep_conservation_path: str,
                  vep_loftee_path: str, vep_human_ancestor_fa_path: str,
-                 vep_gerp_bw_path: str, vep_mpc_path: str,
-                 input_vcf_path: str, num_proc: str) -> None:
+                 vep_gerp_bw_path: str, vep_mis_db_path: str,
+                 vep_mis_info_key: str, input_vcf_path: str,
+                 num_proc: str) -> None:
         self._vep_path = vep_path
         self._vep_cache_path = vep_cache_path
         self._vep_conservation_path = vep_conservation_path
         self._vep_loftee_path = vep_loftee_path
         self._vep_human_ancestor_fa_path = vep_human_ancestor_fa_path
         self._vep_gerp_bw_path = vep_gerp_bw_path
-        self._vep_mpc_path = vep_mpc_path
+        self._vep_mis_db_path = vep_mis_db_path
+        self._vep_mis_info_key = vep_mis_info_key
         self._input_vcf_path = input_vcf_path
         self._check_validity()
         self._output_vcf_path = input_vcf_path.replace(".vcf", ".vep.vcf")
@@ -41,7 +43,7 @@ class VepCmdGenerator:
          self._check_path(self._vep_loftee_path, "Invalid VEP resource path (loftee directory)", is_dir=True)
          self._check_path(self._vep_human_ancestor_fa_path, "Invalid VEP resource path (human ancestor fasta file)")
          self._check_path(self._vep_gerp_bw_path, "Invalid VEP resource path (gerp bigwig file)")
-         self._check_path(self._vep_mpc_path, "Invalid VEP resource path (MPC database file)")
+         self._check_path(self._vep_mis_db_path, "Invalid VEP resource path (missense database file)")
          self._check_path(self._input_vcf_path, "Invalid input VCF path")
          self._check_path(self._vep_cache_path, "Invalid VEP cache directory path", is_dir=True)
 
@@ -66,8 +68,12 @@ class VepCmdGenerator:
         return self._vep_gerp_bw_path
 
     @property
-    def vep_mpc_path(self) -> str:
-        return self._vep_mpc_path
+    def vep_mis_db_path(self) -> str:
+        return self._vep_mis_db_path
+
+    @property
+    def vep_mis_info_key(self) -> str:
+        return self._vep_mis_info_key
 
     @property
     def vep_cache_path(self) -> str:
@@ -130,8 +136,8 @@ class VepCmdGenerator:
                       'gerp_bigwig:' + self.vep_gerp_bw_path]),
             "--dir_plugins",
             self.vep_loftee_path,
-            "--plugin",
-            ','.join(["MPC", self._vep_mpc_path]),
+            "--custom",
+            ",".join([self._vep_mis_db_path, "MisDb", 'vcf', "exact", "0", self.vep_mis_info_key]),
         ]
 
     @property
