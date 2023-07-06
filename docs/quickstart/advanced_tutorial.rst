@@ -83,31 +83,69 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     conda env create -f environment.yml -n cwas
 
 
-  After creating conda environment, activate the environment and install CWAS-Plus.
+  After creating conda environment, activate the environment and install CWAS-Plus. If users want to force the installation, they can use ``-f`` option.
 
   .. code-block:: solidity
     
     conda activate cwas
     python setup.py install
 
-  If users want to force the installation, they can use ``-f`` option.
+
+  CWAS-Plus requires a working directory for efficiency. Users can create the working directory through command below.
 
   .. code-block:: solidity
     
-    cwas start -w .cwas_wd
+    cwas start
 
+  By default, the command creates a working directory (``.cwas``) in the home directory. However, if users want to set the working directory manually, they can use ``-w`` option to specify the path of the desired working directory.
 
+  .. code-block:: solidity
+    
+    cwas start -w /path/to/the/working/directory
 
-
-   Create and activate a conda environment and install the package.
-  
-  ``cwas start`` command creates a working directory (``-w``) along with a configuration file.
-
+  The command ``cwas start``, also creates a configuration file inside the working directory. If there is a pre-installed VEP, the path of the VEP in the configuration file will be automatically set.
 
 
 2. :ref:`Configuration <configuration>`
 
-  Inside the CWAS working directory, there is a configuration file (``configuration.txt``). Fill in the file with paths of the required tools and data.
+  Inside the CWAS working directory, there is a configuration file (``configuration.txt``). This file is needed for retrieving the path of specific files needed for CWAS-Plus run.
+  With pre-installed VEP, the configuration file looks like below.
+  
+  .. code-block:: solidity
+    
+    ANNOTATION_DATA_DIR=
+    GENE_MATRIX=
+    ANNOTATION_KEY_CONFIG=
+    VEP=/home/cwas_testing/miniconda3/envs/cwas/bin/vep
+    VEP_CACHE_DIR=
+    VEP_CONSERVATION_FILE=
+    VEP_LOFTEE=
+    VEP_HUMAN_ANCESTOR_FA=
+    VEP_GERP_BIGWIG=
+    VEP_MIS_DB=
+    VEP_MIS_INFO_KEY=
+    VEP_MIS_THRES=
+
+
+   Fill in the file with paths of the required tools and data.
+   For example run, fill in the configuration file as below.
+
+  .. code-block:: solidity
+    
+    ANNOTATION_DATA_DIR=$HOME/cwas-dataset
+    GENE_MATRIX=$HOME/cwas-dataset/gene_matrix.txt
+    ANNOTATION_KEY_CONFIG=$HOME/cwas-dataset/annotation_keys.yaml
+    VEP=$HOME/miniconda3/envs/cwas/bin/vep
+    VEP_CACHE_DIR=$HOME/.vep
+    VEP_CONSERVATION_FILE=$HOME/.vep/loftee.sql
+    VEP_LOFTEE=$HOME/.vep/Plugins/loftee
+    VEP_HUMAN_ANCESTOR_FA=$HOME/.vep/human_ancestor.fa.gz
+    VEP_GERP_BIGWIG=$HOME/.vep/gerp_conservation_scores.homo_sapiens.GRCh38.bw
+    VEP_MIS_DB=$HOME/.vep/MPC_hg38.vcf.bgz
+    VEP_MIS_INFO_KEY=MPC
+    VEP_MIS_THRES=2
+
+
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory and fill the ``.cwas_env`` file in the home directory for storing environmental variables.
 
