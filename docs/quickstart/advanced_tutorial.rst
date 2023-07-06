@@ -416,10 +416,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.lasso_results_thres_*.txt``, ``.lasso_null_models_thres_*.txt``, ``.lasso_histogram_thres_*.pdf``, ``lasso_coef_thres_*.txt``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
 
-  - OUTPUT.lasso_results_thres_*.txt: The negative laplacian matrix. This file is an intermediate output during eigen decomposition.
-  - OUTPUT.lasso_null_models_thres_*.txt: The matrix containing eigen values. This file will be used to calculate the number of effective tests.
+  - OUTPUT.lasso_results_thres_*.txt: 
+  - OUTPUT.lasso_null_models_thres_*.txt: 
   - OUTPUT.lasso_histogram_thres_*.pdf: Histogram plot for the observed predictive |R2| and random distribution. The random distribution is obtained from samples with a randomly shuffled phenotype. The x axis refers to the observed |R2| and the y axis refers to the frequency of |R2| s.
-  - OUTPUT.lasso_coef_thres_*.txt: The matrix containing eigen vectors. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
+  - OUTPUT.lasso_coef_thres_*.txt: 
 
 
 9.  :ref:`Burden shift analysis <burdenshift>`
