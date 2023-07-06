@@ -88,7 +88,7 @@ class BurdenTest(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE"
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
         return self._sample_info
 
@@ -96,7 +96,7 @@ class BurdenTest(Runnable):
     def adj_factor(self) -> pd.DataFrame:
         if self._adj_factor is None and self.adj_factor_path:
             self._adj_factor = pd.read_table(
-                self.adj_factor_path, index_col="SAMPLE"
+                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
         return self._adj_factor
 
@@ -125,7 +125,7 @@ class BurdenTest(Runnable):
         if self._categorization_result is None:
             print_progress("Load the categorization result")
             self._categorization_result = pd.read_table(
-                self.cat_path, index_col="SAMPLE", compression='gzip'
+                self.cat_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
             self.save_counts_table(form = 'raw')
             if self.adj_factor is not None:
@@ -305,7 +305,10 @@ class BurdenTest(Runnable):
                                             index= self.categorization_result.sum(axis=0).index)
             self._raw_counts.index.name = 'Category'
         elif form =='adj':
-            self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
+            if self.use_n_carrier:
+                self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_Carrier_Count'] + self._result['Ctrl_Carrier_Count']})
+            else:
+                self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
             self._counts_table = pd.merge(self._raw_counts, self._adj_counts, on='Category')
             self._counts_table.to_csv(self.counts_path, sep="\t")
     

@@ -17,11 +17,11 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
 
 **2. VEP resources**
 
-- **MPC plugin**: MPC will be used to classify damaging missense variants.
+- **Missense database**: Missense database containing scores to classify damaging missense variants are required. In CWAS-Plus, MPC database is available. If users want to use other database, they can download their own database and customize the ``configuration.txt`` to use it.
 
   .. code-block:: solidity
     
-    vep_install -a p -g MPC
+    git clone https://github.com/joonan-lab/cwas-dataset.git
     
     
 - **loftee plugin**: loftee will be used to classify protein-truncating variants. Be aware of which branch you are cloning.

@@ -82,7 +82,7 @@ class EffectiveNumTest(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE"
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
         return self._sample_info
 

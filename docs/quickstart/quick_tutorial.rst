@@ -1,8 +1,8 @@
-=======================
-Tutorial for CWAS-Plus
-=======================
+================================
+Quick tutorial for CWAS-Plus
+================================
 
-This is a quick tutorial for CWAS-Plus. Specific description of arguments are described in the page of each step.
+This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are described in the page of each step.
 
 
 
@@ -10,7 +10,7 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
 
   The users can install CWAS-Plus through Github. Create a conda environment and install the package.
   
-  ``cwas start`` command creates a working directory along with a configuration file.
+  ``cwas start`` command creates a working directory (``-w``) along with a configuration file.
 
   .. code-block:: solidity
     
