@@ -33,7 +33,6 @@ The parameters of the command are as below:
   |All_DDD_All_PromoterRegion_EarlyCREOligo               |
   +-------------------------------------------------------+
 
-- -ef, --eff_num_test: Calculate the effective number of tests. By default, false.
 
 
 

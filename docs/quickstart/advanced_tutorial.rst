@@ -289,7 +289,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 6. :ref:`Burden test <burdentest>`
 
-  Calculate the burden of each category by comparing the number of variants per case and control. Two types of tests are used for p-value calculation: binomial test and permutation test.
+  Calculate the burden of each category by calculating the burden of each category by comparing the rate of variants per cases and the rate of variants per controls.
+  
+  For burden measurement, the package uses relative risk (RR), which is calculated by comparing the number of variants per phenotype group (RR>1, case burden; RR<1, control burden). The burden test in CWAS-Plus contains two types of p-value computation methods, binomial test and permutation test, to find more accurate p statistics.
    
   - Binomial test
 
@@ -330,15 +332,72 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 7.  :ref:`Calculate the number of effective tests <effnumtest>`
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
+  
+  The parameters of the command are as below:
+
+    - -i, --input_file: Path to the concatenated z-scores.
+    - -if, --input_format: Specify the format of the input file. Available options are ``corr`` or ``inter``. By default, ``corr`` will be used. Each format refers to the following:
+
+      - corr: A matrix with correlation values between categories.
+      - inter: A matrix with intersected number of variants (or samples) between categories.
+
+    - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+    - -n, --num_sim: Number of eigen values to use in calculating the number of effective tests. The maximum number is equivalent to the number of categories. By default, 10000.
+    - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter``. By default, None.
+    - -t, --tag: Tag used for the name of the output files. By default, None.
+    - -c, --category_set_path: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used. This file must contain ``Category`` column with the name of categories to be used.
+    - -ef, --eff_num_test: Calculate the effective number of tests. By default, False.
+
+    +-------------------------------------------------------+
+    |Category                                               |
+    +=======================================================+
+    |All_CHD8Common_All_IntergenicRegion_EarlyCREMicro      |
+    +-------------------------------------------------------+
+    |All_CHD8Common_phastCons46way_PromoterRegion_EarlyCREL4|
+    +-------------------------------------------------------+
+    |All_DDD_All_PromoterRegion_EarlyCREOligo               |
+    +-------------------------------------------------------+
+
+
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
+
+  - OUTPUT.neg_lap.pickle: The negative laplacian matrix. This file is an intermediate output during eigen decomposition.
+  - OUTPUT.eig_vals.pickle: The matrix containing eigen values. This file will be used to calculate the number of effective tests.
+  - OUTPUT.eig_vecs.txt.gz: The matrix containing eigen vectors. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
+
+  In addition, the number of effective tests will be printed when ``-ef`` option is given. The number will also be written in ``.cwas_env``.
 
   .. code-block:: solidity
 
-    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
+    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -ef -if corr -n 7918 -c CATEGORY_SET.txt
 
 
 8.  :ref:`Risk score analysis <riskscore>`
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
+  
+  CWAS-Plus utilizes categorized results to estimate the optimal predictor for the phenotype. It trains a Lasso regression model using the number of variants within each category across samples. After training the model with a subset of samples, the remaining test set is employed to calculate the |R2|. The significance of the |R2| value is determined by calculating it from samples with a randomly shuffled phenotype. The number of regressions (-n_reg) can be set to obtain the average |R2| value from all regressions.
+
+  .. |R2| replace:: R\ :sup:`2`
+
+  The parameters of the command are as below:
+  
+  - -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+  - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+  - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
+  - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
+  - -c, --category_set_path: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
+  - -t, --tag: Tag used for the name of the output files. By default, None.
+  - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+  - -thr, --threshold: The number of variants in controls (or the number of control carriers) used to select rare categories. For example, if set to 3, categories with less than 3 variants in controls will be used for training. By default, 3.
+  - -tf, --train_set_fraction: The fraction of the training set. For example, if set to 0.7, 70% of the samples will be used as training set and 30% will be used as test set. By default, 0.7.
+  - -n_reg, --num_regression: Number of regression trials to calculate a mean of R squares. By default, 10.
+  - -f, --fold: Number of folds for cross-validation.
+  - -l, --logistic: (hold) Make a logistic model with L1 penalty. By default, False.
+  - -n, --n_permute: The number of permutations used to calculate the p-value. By default, 1,000.
+  - --predict_only: If set, only predict the risk score and skip the permutation process. By default, False.
+  - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
+
 
   .. code-block:: solidity
 
@@ -353,6 +412,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     -f 5 \
     -n 1000 \
     -p 8
+
+
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
+
+  - OUTPUT.neg_lap.pickle: The negative laplacian matrix. This file is an intermediate output during eigen decomposition.
+  - OUTPUT.eig_vals.pickle: The matrix containing eigen values. This file will be used to calculate the number of effective tests.
+  - OUTPUT.eig_vecs.txt.gz: The matrix containing eigen vectors. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
 
 
 9.  :ref:`Burden shift analysis <burdenshift>`
