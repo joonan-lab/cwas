@@ -604,6 +604,82 @@ def effective_num_test() -> argparse.ArgumentParser:
     )
     return result
 
+def burden_shift() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of Burden Shift Test",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    result.add_argument(
+        "-i",
+        "--input_file",
+        dest="input_path",
+        required=True,
+        type=Path,
+        help="Path to the input file which is result of burden test from binomial test (*.burden_test.txt.gz)",
+    )
+    result.add_argument(
+        '-b',
+        '--burden_res',
+        dest='burden_res',
+        required=True,
+        type=Path,
+        help='Path to the result of burden shift from permutation test (*.binom_pvals.txt.gz)',
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        '-c_set',
+        '--cat_set',
+        dest='cat_set_file',
+        required=True,
+        type=Path,
+        help='Path of the categories set file from permutation test',
+    )
+    result.add_argument(
+        '-c_count',
+        '--cat_count',
+        dest='cat_count_file',
+        required=True,
+        type=Path,
+        help='Path of the categories counts file from permutation test',
+    )
+    result.add_argument(
+        "-t",
+        "--tag",
+        dest="tag",
+        required=False,
+        default=None,
+        type=str,
+        help="Tag used for the name of the output files.",
+    )
+    result.add_argument(
+        "-c_cutoff",
+        "--count_cutoff",
+        dest="count_cutoff",
+        required=False,
+        default=7,
+        type=int,
+        help="The number of cutoff for category counts. It must be positive value.",
+    )
+    result.add_argument(
+        "-pval",
+        "--pval",
+        dest="pval",
+        required=False,
+        default=0.05,
+        type=int,
+        help="P-value of threshold.",
+    )
+    return result
+
 def dawn() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Arguments of CWAS DAWN analysis",
