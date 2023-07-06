@@ -283,7 +283,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   - OUTPUT.categorization_result.txt.gz: The final output file containing the number of variants in each category across samples. This file will be used as input in the burden test process.
   - OUTPUT.intersection_matrix.pkl: The matrix containing the number of intersected variants (or samples) between every two categories. This file will be generated only with ``-m`` option given.
-  - OUTPUT.correlation_matrix.pkl: The matrix containing the correlation values between every two categories. This file will be generated only with ``-m`` option given. This file will be used for :ref:`calculating the number of effective tests <effnumtest>`.
+  - OUTPUT.correlation_matrix.pkl: The matrix containing the correlation values between every two categories. This file will be generated only with ``-m`` option given. This file will be used for :ref:`calculating the number of effective tests <effnumtest>`. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
 
 
 
@@ -324,7 +324,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.burden_test.txt.gz``, ``.permutation_test.txt.gz``, ``.binom_pvals.txt.gz``) in the file name as below will be found in the output directory.
 
   - OUTPUT.burden_test.txt.gz: The final output file containing relative risk, two-sided binomial p-value and one-sided binomial p-value of each category.
-  - OUTPUT.permutation_test.txt.gz: The final output file containing p-values calculated from permutations.
+  - OUTPUT.permutation_test.txt.gz: The final output file containing p-values calculated from permutations. This file will be used for :ref:`DAWN analysis <dawn>`.
   - OUTPUT.binom_pvals.txt.gz: The matrix containing binomial p-values generated from each permutation. This file will be generated only with ``-b`` option given.
 
 
@@ -414,11 +414,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     -p 8
 
 
-  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.lasso_results_thres_*.txt``, ``.lasso_null_models_thres_*.txt``, ``.lasso_histogram_thres_*.pdf``, ``lasso_coef_thres_*.txt``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
 
-  - OUTPUT.neg_lap.pickle: The negative laplacian matrix. This file is an intermediate output during eigen decomposition.
-  - OUTPUT.eig_vals.pickle: The matrix containing eigen values. This file will be used to calculate the number of effective tests.
-  - OUTPUT.eig_vecs.txt.gz: The matrix containing eigen vectors. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
+  - OUTPUT.lasso_results_thres_*.txt: The negative laplacian matrix. This file is an intermediate output during eigen decomposition.
+  - OUTPUT.lasso_null_models_thres_*.txt: The matrix containing eigen values. This file will be used to calculate the number of effective tests.
+  - OUTPUT.lasso_histogram_thres_*.pdf: Histogram plot for the observed predictive |R2| and random distribution. The random distribution is obtained from samples with a randomly shuffled phenotype. The x axis refers to the observed |R2| and the y axis refers to the frequency of |R2| s.
+  - OUTPUT.lasso_coef_thres_*.txt: The matrix containing eigen vectors. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
 
 
 9.  :ref:`Burden shift analysis <burdenshift>`
@@ -431,6 +432,27 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 10.  :ref:`DAWN analysis <dawn>`
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
+
+  The parameters of the command are as below:
+
+  - -i_dir, --input_directory: Path to the directory where the input files are stored. This directory must include three required files.
+
+    - Eigen vector file: This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.txt.gz``.
+    - Category correlation matrix file: This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.pkl``.
+    - Permutation test file: This is the output file from :ref:`burden test <permtest>`. The file name must have pattern ``*permutation_test*.txt.gz``.
+
+  - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+  - -r, --range: Range (i.e., (start,end)) to find optimal K for k-means clustering. It must contain two integers that are comma-separated. The first integer refers to the start number and must be above 1. The second integer refers to the end.
+  - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
+  - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
+  - -t, --tag: Tag used for the name of the output files. By default, None.
+  - -c, --category_set_path: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
+  - -c_count, --cat_count
+  - -CT, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
+  - -CR, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
+  - -S, --size_threshold: The threshold of the number of categories per cluster. The least amount of categories a cluster should have.
+  - -p, --num_proc: Number of worker processes that will be used for the DAWN analysis. By default, 1.
+
 
   .. code-block:: solidity
   
