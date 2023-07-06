@@ -34,7 +34,8 @@ CWAS-Plus workflow
    :maxdepth: 1
    :caption: CWAS-Plus tutorial
 
-   quickstart/tutorial.rst
+   quickstart/quick_tutorial.rst
+   quickstart/advanced_tutorial.rst
 
 .. toctree::
    :maxdepth: 1

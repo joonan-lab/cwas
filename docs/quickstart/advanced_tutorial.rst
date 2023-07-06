@@ -212,7 +212,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
-  The command will also add environmental variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
+  The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
 
   .. code-block:: solidity
 
@@ -359,17 +359,23 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     +-------------------------------------------------------+
 
 
+  .. code-block:: solidity
+
+    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -ef -if corr -n 7918 -c CATEGORY_SET.txt
+
+
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
 
   - OUTPUT.neg_lap.pickle: The negative laplacian matrix. This file is an intermediate output during eigen decomposition.
   - OUTPUT.eig_vals.pickle: The matrix containing eigen values. This file will be used to calculate the number of effective tests.
   - OUTPUT.eig_vecs.txt.gz: The matrix containing eigen vectors. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
 
-  In addition, the number of effective tests will be printed when ``-ef`` option is given. The number will also be written in ``.cwas_env``.
+  In addition, the number of effective tests will be printed as below when ``-ef`` option is given. The number will also be written in ``.cwas_env`` as environment variable ``N_EFFECTIVE_TEST``.
 
   .. code-block:: solidity
+    
+    [RESULT] The number of effective tests is 1438.
 
-    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -ef -if corr -n 7918 -c CATEGORY_SET.txt
 
 
 8.  :ref:`Risk score analysis <riskscore>`
