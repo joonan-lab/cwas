@@ -1,6 +1,6 @@
-=======================
-Tutorial for CWAS-Plus
-=======================
+================================
+Quick tutorial for CWAS-Plus
+================================
 
 This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are described in the page of each step.
 
