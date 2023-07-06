@@ -71,6 +71,14 @@ class Categorization(Runnable):
         return self.args.generate_matrix
 
     @property
+    def mis_info_key(self) -> str:
+        return self.get_env("VEP_MIS_INFO_KEY")
+
+    @property
+    def mis_thres(self) -> float:
+        return float(self.get_env("VEP_MIS_THRES"))
+
+    @property
     def result_path(self) -> Path:
         suffix = '' if self.input_path.suffix == '.gz' else '.gz'
         return Path(
@@ -121,7 +129,7 @@ class Categorization(Runnable):
 
     @property
     def categorizer(self) -> Categorizer:
-        categorizer = Categorizer(self.category_domain, self.gene_matrix)
+        categorizer = Categorizer(self.category_domain, self.gene_matrix, self.mis_info_key, self.mis_thres)
         return categorizer
 
     @property
