@@ -8,9 +8,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 0. Data requirements
 
-  1. Input vcf data (variant list)
+  1. Input vcf file (variant list)
 
-  Prepare variants in vcf format. The order of the columns should follow the specification of `vcf <https://samtools.github.io/hts-specs/VCFv4.2.pdf>`_. The INFO field must contain a sample ID of each variant with this format ``SAMPLE={sample_id}``.
+  Prepare sorted variants in vcf format. The order of the columns should follow the specification of `vcf <https://samtools.github.io/hts-specs/VCFv4.2.pdf>`_. The INFO field must contain a sample ID of each variant with this format ``SAMPLE={sample_id}``.
 
   .. code-block:: solidity
 
@@ -23,7 +23,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   2. Sample information
 
   Prepare sample information in txt format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
-  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf data.
+  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
 
   +----------+--------+-----------+
   |  SAMPLE  | FAMILY | PHENOTYPE |
@@ -40,7 +40,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   3. Adjustment factors
 
   Adjustment factors are required if the users want to adjust the number of variants for each sample in CWAS-Plus. The file must be tab separated and must contain two columns, *SAMPLE* and *AdjustFactor*. A value in the *AdjustFactor* must be a float.
-  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf data.
+  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
 
   +----------+--------------+
   | SAMPLE   | AdjustFactor |
@@ -153,11 +153,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     conda install -c bioconda ensembl-vep
 
 
-  To download VEP resources in GRCh38 version in one step, run the command below.
+  To download VEP resources in GRCh38 version in one step, run the command below. It will create a directory (``$HOME/.vep``) and download resources in the directory.
 
   .. code-block:: solidity
 
-    Run.
+    sh download_vep_resources.sh
 
   Specific paths for downloading resources are as below.
 
@@ -191,12 +191,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/gerp_conservation_scores.homo_sapiens.GRCh38.bw
 
 
+  After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
-
-
-
-   For example run, copy the ``configuration.txt`` in the ``cwas-dataset`` to the working directory. The file should be as below.
-
+  For example run, copy the ``configuration.txt`` in the ``cwas-dataset`` to the working directory. The file should be as below.
+  
   .. code-block:: solidity
     
     ANNOTATION_DATA_DIR=$HOME/cwas-dataset
@@ -213,8 +211,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     VEP_MIS_THRES=2
 
 
-
-  After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory and fill the ``.cwas_env`` file in the home directory for storing environmental variables.
+  After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
+  The command will also add environmental variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
 
   .. code-block:: solidity
 
@@ -222,7 +220,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 3. :ref:`Prepare annotation datasets <data-prep-label>`
 
-  Gather and merge functional annotations and scores into a single bed file.
+  Gather and merge functional annotations and scores into a single bed file. The annotation datasets in the *ANNOTATION_DATA_DIR* will be merged to a single bed file in the working directory.
+  
+  The parameters of the command are as below:
+
+   - p: The number of processors.
 
   .. code-block:: solidity
 
@@ -231,37 +233,44 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 4. :ref:`Annotation <annotation>`
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
+  When using more than one worker processes, CWAS-Plus automatically gzip and indexes non-gzipped input files for efficient multiprocessing.
+  Output files are stored in the designated output directory (``-o_dir``) or, by default, in the working directory (``$CWAS_WORKSPACE``).
+
+  The parameters of the command are as below:
+
+   - -v, --vcf_file: Path to the input vcf file. This file could be gzipped or not.
+   - -n, --num_cores: Number of worker processes that will be used for the annotation process. By default, 1.
+   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
   .. code-block:: solidity
 
     cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -n 8
 
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.vep.vcf.gz``, ``.vep.vcf.gz.tbi``, ``.annotated.vcf``) in the file name as below will be found in the output directory.
+
+  - OUTPUT.vep.vcf.gz: VEP annotated output file. This file is an intermediate output that has not been annotated with bed annotation files yet.
+  - OUTPUT.vep.vcf.gz.tbi: Index file of the OUTPUT.vep.vcf.gz.
+  - OUTPUT.annotated.vcf: The final output file. This file will be used as an input for categorization process.
+
 5. :ref:`Categorization <categorization>`
 
   Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>`.
 
+  The input file is the final output file resulted from annotation process. If users want to generate a matrix that contains correlation values between every two CWAS-Plus categories, they can use ``-m`` option. With this option, users must specify whether they want to calculate the correlation in variant-level (``-m variant``) or sample-level (``-m sample``). The generated correlation matrix will be used to calculate the number of effective tests for multiple comparisons.
+
+  The parameters of the command are as below:
+
+   - -i, --input_file: Path to the annotated VCF, resulted from annotation process. This file contains a specific pattern of ``.annotated.vcf`` in the file name. This file could be gzipped or not.
+   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+   - -p, --num_proc: Number of worker processes that will be used for the categorization process. To prevent crashes caused by insufficient RAM when processing large input VCF files (e.g., over 10 million variants) using multiple cores, using small number of cores and monitoring the memory usage are recommended. By default, 1.
+   - -m, --matrix: Generate a correlation matrix and a matrix with intersected number of variants (or samples) between every two categories. Available options are ``variant`` or ``sample``. By default, False.
+
+     - variant: Use the intersected number of variants between two categories.
+     - sample: Use the intersected number of samples between two categories.
+
   .. code-block:: solidity
 
     cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8
-
-6. :ref:`Burden test <burdentest>`
-
-  Calculate the burden of each category by comparing the number of variants per case and control. Two types of tests are used for p-value calculation: binomial test and permutation test.
-   
-  - Binomial test
-
-     .. code-block:: solidity
-
-        cwas binomial_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
-
-  - Permutation test
-   
-     .. code-block:: solidity
-
-        cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
-
-
-7. :ref:`Caculate the correlation matrix <categorization>`
 
   Caculate the correlation matrix from the intersected number of variants (or samples) between every two categories.
 
@@ -270,7 +279,55 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8 -m variant
 
 
-8.  :ref:`Calculate the number of effective tests <effnumtest>`
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.categorization_result.txt.gz``, ``.intersection_matrix.pkl``, ``.correlation_matrix.pkl``) in the file name as below will be found in the output directory.
+
+  - OUTPUT.categorization_result.txt.gz: The final output file containing the number of variants in each category across samples. This file will be used as input in the burden test process.
+  - OUTPUT.intersection_matrix.pkl: The matrix containing the number of intersected variants (or samples) between every two categories. This file will be generated only with ``-m`` option given.
+  - OUTPUT.correlation_matrix.pkl: The matrix containing the correlation values between every two categories. This file will be generated only with ``-m`` option given. This file will be used for :ref:`calculating the number of effective tests <effnumtest>`.
+
+
+
+6. :ref:`Burden test <burdentest>`
+
+  Calculate the burden of each category by comparing the number of variants per case and control. Two types of tests are used for p-value calculation: binomial test and permutation test.
+   
+  - Binomial test
+
+  - -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+  - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+  - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
+  - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
+  - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+
+     .. code-block:: solidity
+
+        cwas binomial_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
+
+  - Permutation test
+   
+   - -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+   - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
+   - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
+   - -n, --num_perm: Number of permutations for label-swapping. By default, 10000.
+   - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
+   - -b, --burden_shift: Generates an output file containing binomial p-values for each label-swapped permutation. By default, False.
+   - -rr, --perm_rr: Generates an output file containing relative risks for each label-swapped permutation. By default, False.
+   - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+
+     .. code-block:: solidity
+
+        cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
+
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.burden_test.txt.gz``, ``.permutation_test.txt.gz``, ``.binom_pvals.txt.gz``) in the file name as below will be found in the output directory.
+
+  - OUTPUT.burden_test.txt.gz: The final output file containing relative risk, two-sided binomial p-value and one-sided binomial p-value of each category.
+  - OUTPUT.permutation_test.txt.gz: The final output file containing p-values calculated from permutations.
+  - OUTPUT.binom_pvals.txt.gz: The matrix containing binomial p-values generated from each permutation. This file will be generated only with ``-b`` option given.
+
+
+
+7.  :ref:`Calculate the number of effective tests <effnumtest>`
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
 
@@ -279,7 +336,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
 
 
-9.  :ref:`Risk score analysis <riskscore>`
+8.  :ref:`Risk score analysis <riskscore>`
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
 
@@ -298,14 +355,14 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     -p 8
 
 
-10.  :ref:`Burden shift analysis <riskscore>`
+9.  :ref:`Burden shift analysis <burdenshift>`
 
   Identify the overrepresented domains associated to the phenotype.
 
   .. code-block:: solidity
 
 
-11.  :ref:`DAWN analysis <dawn>`
+10.  :ref:`DAWN analysis <dawn>`
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
 
