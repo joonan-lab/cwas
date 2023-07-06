@@ -27,14 +27,15 @@ CWAS-Plus workflow
    :width: 90%
    :align: center
 
-   **A.** Overall workflow of CWAS-Plus. Variants extracted from whole genome sequencing data of samples (Sample WGS) and random variants are used as inputs. The color of the circles next to the box indicates which input each process uses (blue, Sample WGS; brown, Random variant sets). The three steps inside the black box refer to the final outputs obtained from CWAS-Plus. **B-I.** Graphic descriptions of each process in CWAS-Plus. Red (case) and blue (control) indicate the phenotype. **H.** The network inside the purple circle shows an example of a subset of a network in a magnified scale. The color indicates the direction of the burden in each category (red, case burden; blue, control burden). **I.** The color of the clusters indicates the scale of the z-score, which represents the significance and the relative risk of the cluster. Darker red refers to the higher case burden. And the size of the circle indicates the number of categories inside the cluster.
+   **A.** Overview of CWAS-Plus. Variants extracted from whole genome sequencing data of samples (Sample variant) are used as inputs. The three steps inside the black box refer to the final outputs obtained from CWAS-Plus. **B-I.** Graphic descriptions of each process in CWAS-Plus. Red (case) and blue (control) indicate the phenotype. **H.** The network inside the purple circle shows an example of a subset of a network in a magnified scale. The color indicates the direction of the burden in each category (red, case burden; blue, control burden). **I.** The color of the clusters indicates the scale of the z-score, which represents the significance and the relative risk of the cluster. Darker red refers to the higher case burden. And the size of the circle indicates the number of categories inside the cluster.
 
 
 .. toctree::
    :maxdepth: 1
    :caption: CWAS-Plus tutorial
 
-   quickstart/tutorial.rst
+   quickstart/quick_tutorial.rst
+   quickstart/advanced_tutorial.rst
 
 .. toctree::
    :maxdepth: 1
@@ -64,14 +65,15 @@ CWAS-Plus workflow
    steps/annotation.rst
    steps/categorization.rst
    steps/burden.rst
-   steps/generation_randomset.rst
    steps/effective_num_test.rst
+   steps/risk_score.rst
+   steps/burdenshift.rst
+   steps/dawn.rst
 
 .. toctree::
    :maxdepth: 1
    :caption: Other useful commands
 
-   utils/concat_zscores.rst
    utils/extract_variants.rst
 
 .. toctree::

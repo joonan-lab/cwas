@@ -8,6 +8,8 @@ With categorized results, CWAS-Plus calculate the burden of each category by com
 
 For burden measurement, the package uses relative risk (RR), which is calculated by comparing the number of variants per phenotype group (RR>1, case burden; RR<1, control burden). The burden test in CWAS-Plus contains two types of p-value computation methods, binomial test and permutation test, to find more accurate p statistics.
 
+.. _binomtest:
+
 --------------------------------
 Binomial test
 --------------------------------
@@ -49,6 +51,9 @@ For binomial tests, two types of tests are used: two-sided binomial tests and on
 .. code-block:: solidity
 
     cwas binomial_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
+
+
+.. _permtest:
 
 --------------------------------
 Permutation test

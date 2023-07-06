@@ -8,7 +8,6 @@ Variant Effect Predictor (VEP) to annotate user's VCF file.
 import argparse
 from pathlib import Path
 from typing import Optional
-import yaml
 
 from cwas.core.annotation.bed import annotate as _annotate_using_bed
 from cwas.core.annotation.vep import VepCmdGenerator
@@ -19,7 +18,6 @@ from cwas.utils.check import check_num_proc
 from cwas.utils.cmd import CmdExecutor, compress_using_bgzip, index_using_tabix
 from cwas.utils.log import print_arg, print_log, print_progress
 
-import dotenv
 import multiprocessing as mp
 from functools import partial
 import vcf
@@ -65,10 +63,10 @@ class Annotation(Runnable):
     @property
     def vep_cmd(self):
         vep_cmd_generator = VepCmdGenerator(
-            self.get_env("VEP"),
-            self.get_env("VEP_CACHE_DIR"), self.get_env("VEP_CONSERVATION_FILE"), 
-            self.get_env("VEP_LOFTEE"), self.get_env("VEP_HUMAN_ANCESTOR_FA"), 
-            self.get_env("VEP_GERP_BIGWIG"), self.get_env("VEP_MPC"),
+            self.get_env("VEP"), self.get_env("VEP_CACHE_DIR"),
+            self.get_env("VEP_CONSERVATION_FILE"), self.get_env("VEP_LOFTEE"), 
+            self.get_env("VEP_HUMAN_ANCESTOR_FA"), self.get_env("VEP_GERP_BIGWIG"), 
+            self.get_env("VEP_MIS_DB"), self.get_env("VEP_MIS_INFO_KEY"),
             str(self.vcf_path), str(self.num_proc),
         )
         vep_cmd_generator.output_vcf_path = self.vep_output_vcf_path

@@ -10,10 +10,13 @@ In this step, users can also generate two matrices, (1) a matrix that contains t
 
 The parameters of the command are as below:
 
-- -i, --input_file: Path to the annotated VCF, resulted from annotation process. This file could be gzipped or not.
+- -i, --input_file: Path to the annotated VCF, resulted from annotation process. This file contains a specific pattern of ``.annotated.vcf`` in the file name. This file could be gzipped or not.
 - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 - -p, --num_proc: Number of worker processes that will be used for the categorization process. To prevent crashes caused by insufficient RAM when processing large input VCF files (e.g., over 10 million variants) using multiple cores, using small number of cores and monitoring the memory usage are recommended. By default, 1.
-- -m, --matrix: Generate a correlation matrix and a matrix with intersected number of variants bewteen categories By default, False.
+- -m, --matrix: Generate a correlation matrix and a matrix with intersected number of variants (or samples) between every two categories. Available options are ``variant`` or ``sample``. By default, False.
+
+  - variant: Use the intersected number of variants between two categories.
+  - sample: Use the intersected number of samples between two categories.
 
 .. code-block:: solidity
 

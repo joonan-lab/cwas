@@ -1,8 +1,8 @@
-=======================
-Tutorial for CWAS-Plus
-=======================
+================================
+Quick tutorial for CWAS-Plus
+================================
 
-This is a quick tutorial for CWAS-Plus. Specific description of arguments are described in the page of each step.
+This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are described in the page of each step.
 
 
 
@@ -10,7 +10,7 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
 
   The users can install CWAS-Plus through Github. Create a conda environment and install the package.
   
-  ``cwas start`` command creates a working directory along with a configuration file.
+  ``cwas start`` command creates a working directory (``-w``) along with a configuration file.
 
   .. code-block:: solidity
     
@@ -72,31 +72,66 @@ This is a quick tutorial for CWAS-Plus. Specific description of arguments are de
         cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
 
 
-7. :ref:`Generate random variant sets<simulation>`
+7. :ref:`Caculate the correlation matrix <categorization>`
+
+  Caculate the correlation matrix from the intersected number of variants (or samples) between every two categories.
 
   .. code-block:: solidity
 
-    cwas simulation -i INPUT.annotated.vcf -s SAMPLE_LIST.txt -n 10000 -p 8
+    cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8 -m variant
 
 
-8. Multiprocessing
+8.  :ref:`Calculate the number of effective tests <effnumtest>`
 
-  Apply CWAS-Plus to generated random variant sets by multiprocessing.
-
-
-9.  :ref:`Calculate the number of effective tests <effnumtest>`
-
-  :ref:`Concatenate z-scores<concatzscores>` from burden test results of random variant sets.
+  From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
 
   .. code-block:: solidity
 
-    cwas concat_zscore -i_dir INPUT_DIR -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -c CATEGORY_SET.txt -p 8
+    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
 
-  From z-scores, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
+
+9.  :ref:`Risk score analysis <riskscore>`
+
+  Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
 
   .. code-block:: solidity
 
-    cwas effective_num_test -i INPUT.zscores.txt.gz -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
+    cwas risk_score -i INPUT.categorization_result.txt.gz \
+    -o_dir OUTPUT_DIR \
+    -s SAMPLE_LIST.txt \
+    -a ADJUST_FACTOR.txt \
+    -c CATEGORY_SET.txt \
+    -thr 3 \
+    -tf 0.7 \
+    -n_reg 10 \
+    -f 5 \
+    -n 1000 \
+    -p 8
 
+
+10.  :ref:`Burden shift analysis <riskscore>`
+
+  Identify the overrepresented domains associated to the phenotype.
+
+  .. code-block:: solidity
+
+
+11.  :ref:`DAWN analysis <dawn>`
+
+  Investigate the relationship between categories and identify the specific type of categories clustered within the network.
+
+  .. code-block:: solidity
+  
+      cwas dawn -i_dir INPUT_DIR \
+      -o_dir OUTPUT_DIR \
+      -r 2,500 \
+      -s 123 \
+      -t test \
+      -c CATEGORY_SET.txt \
+      -c_count CATEGORY_COUNTS.txt \
+      -CT 2 \
+      -CR 0.7 \
+      -S 20 \
+      -p 8
 
 

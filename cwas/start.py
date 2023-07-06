@@ -80,15 +80,15 @@ class Start(Runnable):
             "ANNOTATION_DATA_DIR": "",
             "GENE_MATRIX": "",
             "ANNOTATION_KEY_CONFIG": "",
-            "SIMULATION_DATA_DIR": "",
-            "SIMULATION_PATHS": "",
             "VEP": "",
             "VEP_CACHE_DIR": "",
             "VEP_CONSERVATION_FILE": "",
             "VEP_LOFTEE": "",
             "VEP_HUMAN_ANCESTOR_FA": "",
             "VEP_GERP_BIGWIG": "",
-            "VEP_MPC": "",
+            "VEP_MIS_DB": "",
+            "VEP_MIS_INFO_KEY": "",
+            "VEP_MIS_THRES": "",
         }
 
         installed_vep = self._find_vep_path()

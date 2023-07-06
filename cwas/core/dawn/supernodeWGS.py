@@ -5,7 +5,7 @@
 
 import pandas as pd
 import numpy as np
-import os, sys
+import os
 from scipy.optimize import minimize_scalar
 from scipy.stats import norm
 from scipy.stats import rankdata
@@ -19,7 +19,6 @@ import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-import cairo, cairocffi
 
 
 class supernodeWGS_func:

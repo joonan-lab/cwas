@@ -11,6 +11,7 @@ from cwas.runnable import Runnable
 from typing import Optional, Tuple
 from contextlib import contextmanager
 from collections import defaultdict
+import matplotlib.pyplot as plt
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -98,6 +99,14 @@ class RiskScore(Runnable):
         )
 
     @property
+    def plot_path(self) -> Optional[Path]:
+        tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        return Path(
+            f"{self.out_dir}/" +
+            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf')
+        )
+
+    @property
     def category_set_path(self) -> Optional[Path]:
         return (
             self.args.category_set_path.resolve()
@@ -171,7 +180,7 @@ class RiskScore(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE"
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
             if ("SET" not in self._sample_info.columns):
                 log.print_log("LOG", 
@@ -194,7 +203,7 @@ class RiskScore(Runnable):
     def adj_factor(self) -> pd.DataFrame:
         if self._adj_factor is None and self.adj_factor_path:
             self._adj_factor = pd.read_table(
-                self.adj_factor_path, index_col="SAMPLE"
+                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
         return self._adj_factor
     
@@ -203,7 +212,7 @@ class RiskScore(Runnable):
         if self._categorization_result is None:
             log.print_progress("Load the categorization result")
             self._categorization_result = pd.read_table(
-                self.categorization_result_path, index_col="SAMPLE"
+                self.categorization_result_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
@@ -448,6 +457,8 @@ class RiskScore(Runnable):
                 result_table, columns=["Category", "seed", "parameter", "R2", "n_select", "perm_P"]
             )
             result_table.to_csv(self.result_path, sep="\t", index=False)
+            
+            self.draw_histogram_plot(r2, r2_scores)
         else:
             result_table.append([cat, 'avg', parameter, r2, sum(choose_idx)])
             result_table += [[cat] + [str(seed)] + self._result_dict[cat][seed][:-1]
@@ -468,4 +479,29 @@ class RiskScore(Runnable):
             self.set_env("LASSO_NULL_MODELS", self.null_model_path)
         self.save_env()
         
-    
+    def draw_histogram_plot(self, r2: float, perm_r2: np.ndarray):
+        log.print_progress("Save histogram plot")
+        
+        # Set the font size
+        plt.rcParams.update({'font.size': 8})
+        
+        # Set the figure size
+        plt.figure(figsize=(4, 4))
+
+        # Create the histogram plot
+        plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
+        
+        text_label1 = 'P={:.2f}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
+        text_label2 = '$R^2$={:.2f}%'.format(r2*100)
+
+        # Add labels and title
+        plt.xlabel('$R^2$')
+        plt.ylabel('Frequency')
+        plt.title('Histogram Plot', fontsize = 8)
+        plt.axvline(x=r2, color='red')
+        plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='black')
+        plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
+        plt.locator_params(axis='x', nbins=5)
+
+        plt.savefig(self.plot_path)
+
