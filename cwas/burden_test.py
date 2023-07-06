@@ -305,7 +305,10 @@ class BurdenTest(Runnable):
                                             index= self.categorization_result.sum(axis=0).index)
             self._raw_counts.index.name = 'Category'
         elif form =='adj':
-            self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
+            if self.use_n_carrier:
+                self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_Carrier_Count'] + self._result['Ctrl_Carrier_Count']})
+            else:
+                self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
             self._counts_table = pd.merge(self._raw_counts, self._adj_counts, on='Category')
             self._counts_table.to_csv(self.counts_path, sep="\t")
     
