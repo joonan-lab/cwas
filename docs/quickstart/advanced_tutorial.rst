@@ -189,7 +189,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cd /home/cwas_testing/.vep/Plugins
+    cd $HOME/.vep/Plugins
     git clone -b grch38 https://github.com/konradjk/loftee.git
 
   - *VEP_HUMAN_ANCESTOR_FA* can be downloaded as below.
@@ -234,7 +234,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     cwas configuration
 
-3. :ref:`Prepare annotation datasets <data-prep-label>`
+1. :ref:`Prepare annotation datasets <data-prep-label>`
 ############################################################
 
   Gather and merge functional annotations and scores into a single bed file. The annotation datasets in the *ANNOTATION_DATA_DIR* will be merged to a single bed file in the working directory.
