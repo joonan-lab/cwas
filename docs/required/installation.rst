@@ -1,12 +1,12 @@
 .. _installation:
 
-############################
+*********************************
 Installation
-############################
+*********************************
 
 
 Requirements
-====================
+###############
 
 For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Effect Predictor (VEP) and (2) download a few databases for annotation.
 
@@ -60,7 +60,7 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
 
 
 Install CWAS-Plus
-====================
+####################
 
 
 To install CWAS-Plus, git clone the repository from github or download the package. Create a conda environment with installing required packages in the environment.

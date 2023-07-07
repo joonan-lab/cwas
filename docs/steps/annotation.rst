@@ -1,8 +1,8 @@
 .. _annotation:
 
-###############################
+*********************************
 Annotation
-###############################
+*********************************
 
 CWAS-Plus annotated variants using VEP and its own custom annotation algorithm. The parameters of the command are as below:
 

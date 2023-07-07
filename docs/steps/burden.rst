@@ -1,8 +1,8 @@
 .. _burdentest:
 
-###############################
+*********************************
 Burden test
-###############################
+*********************************
 
 With categorized results, CWAS-Plus calculate the burden of each category by comparing the rate of variants per cases and the rate of variants per controls.
 
@@ -10,9 +10,9 @@ For burden measurement, the package uses relative risk (RR), which is calculated
 
 .. _binomtest:
 
---------------------------------
+
 Binomial test
---------------------------------
+#####################
 
 For binomial tests, two types of tests are used: two-sided binomial tests and one-sided binomial tests with an alternative hypothesis of "greater".
 
@@ -55,9 +55,9 @@ For binomial tests, two types of tests are used: two-sided binomial tests and on
 
 .. _permtest:
 
---------------------------------
+
 Permutation test
---------------------------------
+#####################
 
 In permutation tests, phenotype labels (case, control) are randomly swapped by randomly selecting cases. Here, the number of selected cases are same as the original number of cases. After swapping, relative risks of each category are calculated. This swap processes are conducted 10,000 times by default (set the number of permutations by ``-n`` option).
 
