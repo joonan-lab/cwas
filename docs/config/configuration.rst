@@ -1,14 +1,14 @@
 .. _configuration:
 
-====================
+**********************
 Configuration
-====================
+**********************
 
 Configuration step is required for setting the path the required datasets and environmental variables.
 
--------------------------------------
+
 Setting the environmental variables
--------------------------------------
+######################################
 
 Inside the CWAS-Plus workspace directory, there is a configuration file ``configuration.txt``. This file contains a few crucial environmental variables that will be used through CWAS-Plus. The description of each variable is as below:
 
@@ -49,9 +49,9 @@ After configuration, a file ``.cwas_env`` that contains environmental variables 
 
 .. _data-prep-label:
 
-------------------
+
 Data preparation
-------------------
+#######################
 
 For efficient annotation process, the users should merge all bed files by typing the below command. During this process, all bed files will be split into their intersected or non-intersected intervals with numbers that indicate which annotation datasets are matched to the interval in binary scale.
 
