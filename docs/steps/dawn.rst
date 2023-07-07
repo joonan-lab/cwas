@@ -1,8 +1,8 @@
 .. _dawn:
 
-###############################
+*********************************
 DAWN analysis
-###############################
+*********************************
 
 The users can investigate the relationship between categories and identify the specific type of categories that are clustered within the network of categories of interest.
 

@@ -1,8 +1,8 @@
 .. _riskscore:
 
-###############################
+*************************
 Risk score analysis
-###############################
+*************************
 
 CWAS-Plus utilizes categorized results to estimate the optimal predictor for the phenotype. It trains a Lasso regression model using the number of variants within each category across samples. After training the model with a subset of samples, the remaining test set is employed to calculate the |R2|. The significance of the |R2| value is determined by calculating it from samples with a randomly shuffled phenotype. The number of regressions (-n_reg) can be set to obtain the average |R2| value from all regressions.
 

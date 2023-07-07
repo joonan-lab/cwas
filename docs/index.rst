@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-=====================================
+****************************************
 Welcome to CWAS-Plus's documentation!
-=====================================
+****************************************
 
 CWAS-Plus (Category-Wide Association Study) is a data analysis tool designed to conduct rigorous association tests for discovering noncoding associations in complex genomic disorders. It runs category-based burden tests using variants from whole-genome sequencing data and various annotation datasets. CWAS-Plus provides a user-friendly interface for efficient hypothesis testing and has promising implications for uncovering the pathophysiology of various genomic disorders.
 
@@ -18,9 +18,9 @@ Here are the reference papers:
 Here is the original CWAS repository: `sanderslab/cwas <https://github.com/sanderslab/cwas>`_
 
 
---------------------
+
 CWAS-Plus workflow
---------------------
+#####################
 
 .. figure:: ../images/CWAS_workflow.jpg
    :alt: CWAS-Plus workflow

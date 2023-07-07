@@ -1,8 +1,8 @@
 .. _effnumtest:
 
-========================================
+********************************************
 Calculate the effective number of tests
-========================================
+********************************************
 
 For multiple comparisons, the effective number of tests is required. Each category is equal to each test, but categories could be correlated and these highly correlated categories can be defined as a single effective test. By assessing the correlation between categories, the users can gain the number of effective tests.
 
