@@ -22,6 +22,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
   1. Sample information
+  ************************
 
   Prepare sample information in txt format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
   The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
