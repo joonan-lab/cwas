@@ -21,7 +21,20 @@ Inside the CWAS-Plus workspace directory, there is a configuration file ``config
 - **VEP_HUMAN_ANCESTOR_FA**: This is the path of the human ancestor fasta file, which will be used for variant classification.
 - **VEP_GERP_BIGWIG**: This is the path of the GERP bigwig file, which will be used for variant classification.
 - **VEP_MIS_DB**: This is the path of the database in vcf format. This will be used for variant classification. Users can manually prepare this file to classify damaging missense variants.
-- **VEP_MIS_INFO_KEY**: The name that will be used for the missense classification database.
+- **VEP_MIS_INFO_KEY**: The name of the score in the missense classification database. It must be present in the INFO field of the database. The score must be specified by this name in the field. For example, if the user is using MPC score in the database, the database will look like below.
+  
+  +------+------+----+-----+-----+-----+--------+-----------+
+  |#CHROM| POS  |  ID| REF |  ALT| QUAL| FILTER |INFO       |
+  +------+------+----+-----+-----+-----+--------+-----------+
+  |chr1  | 69094|  . | G   |  A  | .   | .      |MPC=2.73403|
+  +------+------+----+-----+-----+-----+--------+-----------+
+  |chr1  | 69094|  . | G   |  C  | .   | .      |MPC=2.29136|
+  +------+------+----+-----+-----+-----+--------+-----------+
+  |chr1  | 69094|  . | G   |  T  | .   | .      |MPC=2.29136|
+  +------+------+----+-----+-----+-----+--------+-----------+
+  |chr1  | 69095|  . | T   |  A  | .   | .      |MPC=4.31666|
+  +------+------+----+-----+-----+-----+--------+-----------+
+
 - **VEP_MIS_THRES**: The cutoff that will be used for the missense classification. The missense variants scoring equal to or above *VEP_MIS_THRES* will be classified as damaging missense mutations.
 
 After filling the configuration file, type the below command for configuration. This process will create a symlink to the annotation dataset directory, gene matrix and the annotation key file to the user's workspace. Also, based on the annotation key file, a category domain file and a redundant category file will be created. The category domain file contains all the inferior category groups that will be used for CWAS-Plus. The redundant category file contains the combination of categories that will be excluded in CWAS-Plus. This is for removing duplicated categories (for example, coding variants with all genes and coding variants with coding genes) and nonsense categories (for example, missense variants that are indels).
