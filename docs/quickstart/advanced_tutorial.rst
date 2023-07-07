@@ -1,12 +1,13 @@
-================================
+*********************************
 Advanced tutorial for CWAS-Plus
-================================
+*********************************
 
 This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments are described in the page of each step.
 
 
 
 0. Data requirements
+#####################
 
   1. Input vcf file (variant list)
 
@@ -20,7 +21,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
 
 
-  2. Sample information
+  1. Sample information
 
   Prepare sample information in txt format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
   The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
@@ -139,7 +140,20 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - **VEP_HUMAN_ANCESTOR_FA**: This is the path of the human ancestor fasta file, which will be used for variant classification.
   - **VEP_GERP_BIGWIG**: This is the path of the GERP bigwig file, which will be used for variant classification.
   - **VEP_MIS_DB**: This is the path of the database in vcf format. This will be used for variant classification. Users can manually prepare this file to classify damaging missense variants.
-  - **VEP_MIS_INFO_KEY**: The name that will be used for the missense classification database.
+  - **VEP_MIS_INFO_KEY**: The name of the score in the missense classification database. It must be present in the INFO field of the database. The score must be specified by this name in the field. For example, if the user is using MPC score in the database, the database will look like below.
+  
+    +------+------+----+-----+-----+-----+--------+-----------+
+    |#CHROM| POS  |  ID| REF |  ALT| QUAL| FILTER |INFO       |
+    +------+------+----+-----+-----+-----+--------+-----------+
+    |chr1  | 69094|  . | G   |  A  | .   | .      |MPC=2.73403|
+    +------+------+----+-----+-----+-----+--------+-----------+
+    |chr1  | 69094|  . | G   |  C  | .   | .      |MPC=2.29136|
+    +------+------+----+-----+-----+-----+--------+-----------+
+    |chr1  | 69094|  . | G   |  T  | .   | .      |MPC=2.29136|
+    +------+------+----+-----+-----+-----+--------+-----------+
+    |chr1  | 69095|  . | T   |  A  | .   | .      |MPC=4.31666|
+    +------+------+----+-----+-----+-----+--------+-----------+
+
   - **VEP_MIS_THRES**: The cutoff that will be used for the missense classification. The missense variants scoring equal to or above *VEP_MIS_THRES* will be classified as damaging missense mutations.
 
 
