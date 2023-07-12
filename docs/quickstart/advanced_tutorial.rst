@@ -174,7 +174,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     conda install -c bioconda ensembl-vep
 
 
-  To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create a directory (``$HOME/.vep``) and download resources in the directory.
+  To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create directory (``$HOME/.vep``) and download resources in the directory. By default, the resources are in the child directory of the home directory.
 
   .. code-block:: solidity
 
@@ -207,20 +207,29 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   .. code-block:: solidity
     
-    ANNOTATION_DATA_DIR=$HOME/cwas-dataset
-    GENE_MATRIX=$HOME/cwas-dataset/gene_matrix.txt
-    ANNOTATION_KEY_CONFIG=$HOME/cwas-dataset/annotation_keys.yaml
-    VEP=$HOME/miniconda3/envs/cwas/bin/vep
-    VEP_CACHE_DIR=$HOME/.vep
-    VEP_CONSERVATION_FILE=$HOME/.vep/loftee.sql
-    VEP_LOFTEE=$HOME/.vep/Plugins/loftee
-    VEP_HUMAN_ANCESTOR_FA=$HOME/.vep/human_ancestor.fa.gz
-    VEP_GERP_BIGWIG=$HOME/.vep/gerp_conservation_scores.homo_sapiens.GRCh38.bw
-    VEP_MIS_DB=$HOME/cwas-dataset/MPC_hg38.vcf.bgz
+    ANNOTATION_DATA_DIR=/path/to/cwas-dataset
+    GENE_MATRIX=gene_matrix.txt
+    ANNOTATION_KEY_CONFIG=annotation_keys.yaml
+    VEP=/path/to/vep
+    VEP_CACHE_DIR=/path/to/.vep
+    VEP_CONSERVATION_FILE=loftee.sql
+    VEP_LOFTEE=Plugins/loftee
+    VEP_HUMAN_ANCESTOR_FA=human_ancestor.fa.gz
+    VEP_GERP_BIGWIG=gerp_conservation_scores.homo_sapiens.GRCh38.bw
+    VEP_MIS_DB=MPC_hg38.vcf.bgz
     VEP_MIS_INFO_KEY=MPC
     VEP_MIS_THRES=2
 
-  Please check the VEP path and modify *VEP* with the exact path.
+  Before running configuration, please check things below.
+
+  - Check the VEP path and modify *VEP* with the exact path.
+  - Check the path to *ANNOTATION_DATA_DIR* and *VEP_CACHE_DIR*.
+   
+    - The BED files, *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG* and *VEP_MIS_DB* **must** be inside *ANNOTATION_DATA_DIR*.
+    - The *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be inside *VEP_CACHE_DIR*.
+    - For *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG*, *VEP_MIS_DB*, *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be only file names, not the absolute path. For instance, if *VEP_CACHE_DIR* is ``/home/user/.vep`` and the file name of *VEP_GERP_BIGWIG* is file.bw, *VEP_GERP_BIGWIG* should only be specified as ``file.bw``, excluding the complete path.
+
+
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
   The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
