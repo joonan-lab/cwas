@@ -353,7 +353,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
     
 
 1. :ref:`Burden test <burdentest>`
@@ -402,11 +402,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
-    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
+    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt
+    
+    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt -n 10000 -p 8 -b
 
 
-7.  :ref:`Calculate the number of effective tests <effnumtest>`
+1.  :ref:`Calculate the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
@@ -455,8 +456,14 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     [RESULT] The number of effective tests is 1438.
 
 
+  Example run:
 
-8.  :ref:`Risk score analysis <riskscore>`
+  .. code-block:: solidity
+    
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas-dataset/subset_categories.txt
+
+
+1.  :ref:`Risk score analysis <riskscore>`
 ############################################
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
@@ -507,7 +514,24 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - OUTPUT.lasso_coef_thres_*.txt: 
 
 
-9.  :ref:`Burden shift analysis <burdenshift>`
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas risk_score -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz \
+    -o_dir $HOME/cwas_output \
+    -s $HOME/cwas-input-example/samples.txt \
+    -a $HOME/cwas-input-example/adj_factors.txt.txt \
+    -c $HOME/cwas-dataset/subset_categories.txt \
+    -thr 3 \
+    -tf 0.7 \
+    -n_reg 10 \
+    -f 5 \
+    -n 1000 \
+    -p 8
+
+
+1.  :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
@@ -558,3 +582,21 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -p 8
 
 
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
+
+
+  Example run:
+
+  .. code-block:: solidity
+  
+      cwas dawn -i_dir $HOME/cwas_output \
+      -o_dir $HOME/cwas_output \
+      -r 2,500 \
+      -s 123 \
+      -t test \
+      -c $HOME/cwas-dataset/subset_categories.txt \
+      -c_count -c $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
+      -CT 2 \
+      -CR 0.7 \
+      -S 20 \
+      -p 8
