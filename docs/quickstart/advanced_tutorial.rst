@@ -181,6 +181,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cd $HOME
     git clone https://github.com/joonan-lab/cwas-dataset.git
     cd cwas-dataset
+    tar -zxvf functional_annotations.tar.gz # Decompress bed files
+    mv functional_annotations/* . # Move bed files to the parent directory
     sh download_vep_resources.sh
 
   The downloading process might take a while.
