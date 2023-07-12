@@ -257,7 +257,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     cwas configuration
 
-1. :ref:`Prepare annotation datasets <data-prep-label>`
+3. :ref:`Prepare annotation datasets <data-prep-label>`
 ############################################################
 
   Gather and merge functional annotations and scores into a single bed file. The annotation datasets in the *ANNOTATION_DATA_DIR* will be merged to a single bed file in the working directory.
@@ -314,7 +314,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   Above example command takes almost 4 minutes.
 
 
-1. :ref:`Categorization <categorization>`
+5. :ref:`Categorization <categorization>`
 ############################################
 
   Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>`.
@@ -356,7 +356,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
     
 
-1. :ref:`Burden test <burdentest>`
+6. :ref:`Burden test <burdentest>`
 ############################################
 
   Calculate the burden of each category by calculating the burden of each category by comparing the rate of variants per cases and the rate of variants per controls.
@@ -407,7 +407,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt -n 10000 -p 8 -b
 
 
-1.  :ref:`Calculate the number of effective tests <effnumtest>`
+7.  :ref:`Calculate the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
@@ -463,7 +463,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas-dataset/subset_categories.txt
 
 
-1.  :ref:`Risk score analysis <riskscore>`
+8.  :ref:`Risk score analysis <riskscore>`
 ############################################
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
@@ -531,7 +531,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     -p 8
 
 
-1.  :ref:`Burden shift analysis <burdenshift>`
+9.  :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
