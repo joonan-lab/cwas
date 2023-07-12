@@ -185,7 +185,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     mv functional_annotations/* . # Move bed files to the parent directory
     sh download_vep_resources.sh
 
-  The downloading process might take a while.
+  The downloading time could be close to three hours, depending on the speed of the network.
 
   The descriptions of the files in the cwas-dataset are as below.
 
@@ -203,7 +203,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
-  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the working directory. The file should be as below.
+  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory. The file should be as below.
   
   .. code-block:: solidity
     
