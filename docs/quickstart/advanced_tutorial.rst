@@ -58,6 +58,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   For example run, the above data are available at `joonan-lab/cwas-input-example <https://github.com/joonan-lab/cwas-input-example>`_.
 
+  .. code-block:: solidity
+
+    git clone https://github.com/joonan-lab/cwas-input-example.git
+
+
 
   4. Annotation dataset
 
@@ -134,14 +139,14 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   The descriptions of each path are as follows.
 
   - **ANNOTATION_DATA_DIR**: This is the path of the directory, which contains annotation datasets, such as bed files.
-  - **GENE_MATRIX**: This is the path of the gene matrix, which is a text file. The first column should be gene ID, and the second column should be gene name. The other columns will represent each gene list and show whether each row (=gene) are matched to the gene list or not by a binary code (0, 1). 1 if the gene is matched to a gene list, 0 if not.
-  - **ANNOTATION_KEY_CONFIG**: This is the path of the annotation key file, which is a yaml file. This file contains the name of the annotation datasets inside the annotation dataset directory and the key names that will be used to represent the dataset. All details should be written in yaml syntax. Also, to split the category group to functional score and functional annotation, the users should type each annotation dataset under the matched group dictionary. Below is an example of this file. The format should be (name): (key) with a uniform indentation for each row. Be aware that the name of the annotations should not contain '_'. As domains will combined with '_' as a delimiter, using '_' in the annotation name will cause errors.
+  - **GENE_MATRIX**: This is the file name of the gene matrix, which is a text file. The first column should be gene ID, and the second column should be gene name. The other columns will represent each gene list and show whether each row (=gene) are matched to the gene list or not by a binary code (0, 1). 1 if the gene is matched to a gene list, 0 if not.
+  - **ANNOTATION_KEY_CONFIG**: This is the file name of the annotation key file, which is a yaml file. This file contains the name of the annotation datasets inside the annotation dataset directory and the key names that will be used to represent the dataset. All details should be written in yaml syntax. Also, to split the category group to functional score and functional annotation, the users should type each annotation dataset under the matched group dictionary. Below is an example of this file. The format should be (name): (key) with a uniform indentation for each row. Be aware that the name of the annotations should not contain '_'. As domains will combined with '_' as a delimiter, using '_' in the annotation name will cause errors.
   - **VEP**: This is the path of VEP. If there is a pre-installed VEP, this line would be written in advance when the users typed the command ``cwas start``.
   - **VEP_CONSERVATION_FILE**: This is the path of the conservation file (`loftee.sql`), which will be used for variant classification.
-  - **VEP_LOFTEE**: This is the path of the directory of loftee plugin, which will be used for variant classification.
-  - **VEP_HUMAN_ANCESTOR_FA**: This is the path of the human ancestor fasta file, which will be used for variant classification.
-  - **VEP_GERP_BIGWIG**: This is the path of the GERP bigwig file, which will be used for variant classification.
-  - **VEP_MIS_DB**: This is the path of the database in vcf format. This will be used for variant classification. Users can manually prepare this file to classify damaging missense variants.
+  - **VEP_LOFTEE**: This is the file name of the directory of loftee plugin, which will be used for variant classification.
+  - **VEP_HUMAN_ANCESTOR_FA**: This is the file name of the human ancestor fasta file, which will be used for variant classification.
+  - **VEP_GERP_BIGWIG**: This is the file name of the GERP bigwig file, which will be used for variant classification.
+  - **VEP_MIS_DB**: This is the file name of the database in vcf format. This will be used for variant classification. Users can manually prepare this file to classify damaging missense variants.
   - **VEP_MIS_INFO_KEY**: The name of the score in the missense classification database. It must be present in the INFO field of the database. The score must be specified by this name in the field. For example, if the user is using MPC score in the database, the database will look like below.
   
     +------+------+----+-----+-----+-----+--------+-----------+
@@ -169,16 +174,18 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     conda install -c bioconda ensembl-vep
 
 
-  To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create a directory (``$HOME/.vep``) and download resources in the directory.
+  To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create directory (``$HOME/.vep``) and download resources in the directory. By default, the resources are in the child directory of the home directory.
 
   .. code-block:: solidity
 
     cd $HOME
     git clone https://github.com/joonan-lab/cwas-dataset.git
     cd cwas-dataset
+    tar -zxvf functional_annotations.tar.gz # Decompress bed files
+    mv functional_annotations/* . # Move bed files to the parent directory
     sh download_vep_resources.sh
 
-  The downloading process might take a while.
+  The downloading time could be close to three hours, depending on the speed of the network.
 
   The descriptions of the files in the cwas-dataset are as below.
 
@@ -196,24 +203,33 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
-  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the working directory. The file should be as below.
+  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory. The file should be as below.
   
   .. code-block:: solidity
     
-    ANNOTATION_DATA_DIR=$HOME/cwas-dataset
-    GENE_MATRIX=$HOME/cwas-dataset/gene_matrix.txt
-    ANNOTATION_KEY_CONFIG=$HOME/cwas-dataset/annotation_keys.yaml
-    VEP=$HOME/miniconda3/envs/cwas/bin/vep
-    VEP_CACHE_DIR=$HOME/.vep
-    VEP_CONSERVATION_FILE=$HOME/.vep/loftee.sql
-    VEP_LOFTEE=$HOME/.vep/Plugins/loftee
-    VEP_HUMAN_ANCESTOR_FA=$HOME/.vep/human_ancestor.fa.gz
-    VEP_GERP_BIGWIG=$HOME/.vep/gerp_conservation_scores.homo_sapiens.GRCh38.bw
-    VEP_MIS_DB=$HOME/cwas-dataset/MPC_hg38.vcf.bgz
+    ANNOTATION_DATA_DIR=/path/to/cwas-dataset
+    GENE_MATRIX=gene_matrix.txt
+    ANNOTATION_KEY_CONFIG=annotation_keys.yaml
+    VEP=/path/to/vep
+    VEP_CACHE_DIR=/path/to/.vep
+    VEP_CONSERVATION_FILE=loftee.sql
+    VEP_LOFTEE=Plugins/loftee
+    VEP_HUMAN_ANCESTOR_FA=human_ancestor.fa.gz
+    VEP_GERP_BIGWIG=gerp_conservation_scores.homo_sapiens.GRCh38.bw
+    VEP_MIS_DB=MPC_hg38.vcf.bgz
     VEP_MIS_INFO_KEY=MPC
     VEP_MIS_THRES=2
 
-  Please check the VEP path and modify *VEP* with the exact path.
+  Before running configuration, please check things below.
+
+  - Check the VEP path and modify *VEP* with the exact path.
+  - Check the path to *ANNOTATION_DATA_DIR* and *VEP_CACHE_DIR*.
+   
+    - The BED files, *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG* and *VEP_MIS_DB* **must** be inside *ANNOTATION_DATA_DIR*.
+    - The *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be inside *VEP_CACHE_DIR*.
+    - For *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG*, *VEP_MIS_DB*, *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be only file names, not the absolute path. For instance, if *VEP_CACHE_DIR* is ``/home/user/.vep`` and the file name of *VEP_GERP_BIGWIG* is file.bw, *VEP_GERP_BIGWIG* should only be specified as ``file.bw``, excluding the complete path.
+
+
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
   The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
