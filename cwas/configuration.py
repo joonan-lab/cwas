@@ -134,20 +134,20 @@ class Configuration(Runnable):
     def _set_config_to_attr(self):
         user_config = self._load_configuration()
         self.data_dir = Path(user_config.get("ANNOTATION_DATA_DIR"))
-        self.gene_matrix = Path(user_config.get("GENE_MATRIX"))
+        self.gene_matrix = self.data_dir.joinpath(user_config.get("GENE_MATRIX"))
         self.vep = Path(user_config.get("VEP"))
         self.vep_cache_dir = Path(user_config.get("VEP_CACHE_DIR"))
-        self.vep_conservation = Path(user_config.get("VEP_CONSERVATION_FILE"))
-        self.vep_loftee = Path(user_config.get("VEP_LOFTEE"))
-        self.vep_human_ancestor_fa = Path(user_config.get("VEP_HUMAN_ANCESTOR_FA"))
-        self.vep_gerp_bw = Path(user_config.get("VEP_GERP_BIGWIG"))
-        self.vep_mis_db = Path(user_config.get("VEP_MIS_DB"))
+        self.vep_conservation = self.vep_cache_dir.joinpath(user_config.get("VEP_CONSERVATION_FILE"))
+        self.vep_loftee = self.vep_cache_dir.joinpath(user_config.get("VEP_LOFTEE"))
+        self.vep_human_ancestor_fa = self.vep_cache_dir.joinpath(user_config.get("VEP_HUMAN_ANCESTOR_FA"))
+        self.vep_gerp_bw = self.vep_cache_dir.joinpath(user_config.get("VEP_GERP_BIGWIG"))
+        self.vep_mis_db = self.data_dir.joinpath(user_config.get("VEP_MIS_DB"))
         self.vep_mis_info_key = user_config.get("VEP_MIS_INFO_KEY")
         self.vep_mis_thres = Path(user_config.get("VEP_MIS_THRES"))
 
         annot_key_conf = user_config.get("ANNOTATION_KEY_CONFIG")
         self.annot_key_conf = (
-            None if not annot_key_conf else Path(annot_key_conf)
+            None if not annot_key_conf else self.data_dir.joinpath(annot_key_conf)
         )
 
     def _load_configuration(self) -> dict:
