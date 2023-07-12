@@ -120,7 +120,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ANNOTATION_DATA_DIR=
     GENE_MATRIX=
     ANNOTATION_KEY_CONFIG=
-    VEP=/home/cwas_testing/miniconda3/envs/cwas/bin/vep
+    VEP=/path/to/VEP
     VEP_CACHE_DIR=
     VEP_CONSERVATION_FILE=
     VEP_LOFTEE=
@@ -131,7 +131,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     VEP_MIS_THRES=
 
 
-  Fill in the file with paths of the required tools and data.
+  The descriptions of each path are as follows.
 
   - **ANNOTATION_DATA_DIR**: This is the path of the directory, which contains annotation datasets, such as bed files.
   - **GENE_MATRIX**: This is the path of the gene matrix, which is a text file. The first column should be gene ID, and the second column should be gene name. The other columns will represent each gene list and show whether each row (=gene) are matched to the gene list or not by a binary code (0, 1). 1 if the gene is matched to a gene list, 0 if not.
@@ -159,9 +159,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - **VEP_MIS_THRES**: The cutoff that will be used for the missense classification. The missense variants scoring equal to or above *VEP_MIS_THRES* will be classified as damaging missense mutations.
 
 
-  Each data is available as below.
-
-  - By default, CWAS-Plus provides *ANNOTATION_DATA_DIR*, *GENE_MATRIX* and *ANNOTATION_KEY_CONFIG* through `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_.
+  
+  By default, CWAS-Plus provides all of the data above (except for VEP) and configuration file (``configuration.txt``) through `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_. Please note that the provided data serves as default examples, which users can customize to their specific needs.
+  
   - *VEP* can be installed through github or conda. The command to install VEP through conda is as below.
 
   .. code-block:: solidity
@@ -169,47 +169,21 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     conda install -c bioconda ensembl-vep
 
 
-  To download VEP resources in GRCh38 version in one step, run the command below. It will create a directory (``$HOME/.vep``) and download resources in the directory.
+  To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create a directory (``$HOME/.vep``) and download resources in the directory.
 
   .. code-block:: solidity
 
+    cd $HOME
+    git clone https://github.com/joonan-lab/cwas-dataset.git
+    cd cwas-dataset
     sh download_vep_resources.sh
 
-  Specific paths for downloading resources are as below.
-
-
-  - *VEP_CONSERVATION_FILE* can be downloaded as below.
-
-  .. code-block:: solidity
-    
-    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/loftee.sql.gz
-    gunzip -k loftee.sql.gz
-
-  - *VEP_LOFTEE* can be downloaded as below.
-
-  .. code-block:: solidity
-    
-    cd $HOME/.vep/Plugins
-    git clone -b grch38 https://github.com/konradjk/loftee.git
-
-  - *VEP_HUMAN_ANCESTOR_FA* can be downloaded as below.
-
-  .. code-block:: solidity
-    
-    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/human_ancestor.fa.gz
-    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/human_ancestor.fa.gz.fai
-    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/human_ancestor.fa.gz.gzi
-
-  - *VEP_GERP_BIGWIG* can be downloaded as below.
-
-  .. code-block:: solidity
-
-    wget https://personal.broadinstitute.org/konradk/loftee_data/GRCh38/gerp_conservation_scores.homo_sapiens.GRCh38.bw
+  The downloading process might take a while.
 
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
-  For example run, copy the ``configuration.txt`` in the ``cwas-dataset`` to the working directory. The file should be as below.
+  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the working directory. The file should be as below.
   
   .. code-block:: solidity
     
@@ -222,10 +196,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     VEP_LOFTEE=$HOME/.vep/Plugins/loftee
     VEP_HUMAN_ANCESTOR_FA=$HOME/.vep/human_ancestor.fa.gz
     VEP_GERP_BIGWIG=$HOME/.vep/gerp_conservation_scores.homo_sapiens.GRCh38.bw
-    VEP_MIS_DB=$HOME/.vep/MPC_hg38.vcf.bgz
+    VEP_MIS_DB=$HOME/cwas-dataset/MPC_hg38.vcf.bgz
     VEP_MIS_INFO_KEY=MPC
     VEP_MIS_THRES=2
 
+  Please check the VEP path and modify *VEP* with the exact path.
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
   The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
@@ -453,6 +428,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
+
+  *In progress.*
 
   .. code-block:: solidity
 
