@@ -6,9 +6,11 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
+import time
 import polars as pl
 
-from cwas.utils.log import print_progress, print_arg, print_warn, print_log
+
+from cwas.utils.log import print_progress, print_arg
 from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
@@ -46,14 +48,14 @@ class BurdenShift(Runnable):
     @property
     def burden_res(self):
         if self._burden_res is None:
-            self._burden_res = pl.read_csv(self.input_file, separator="\t").to_pandas()
+            self._burden_res = pl.read_csv(self.input_file, separator="\t")
         return self._burden_res
     
     @property
     def burden_shift_res(self) -> Path:
         if self._burden_shift_res is None:
-            self._burden_shift_res = pl.read_csv(self.args.burden_res.resolve(), separator="\t").to_pandas()
-            self._burden_shift_res.index = self._burden_shift_res['Trial'].tolist()
+            self._burden_shift_res = pl.read_csv(self.args.burden_res.resolve(), separator="\t")
+            #self._burden_shift_res.index = self._burden_shift_res['Trial'].tolist()
         return self._burden_shift_res       
     
     @property
@@ -151,9 +153,12 @@ class BurdenShift(Runnable):
         return _cat_sets
     
     def _count_cats(self, pvals, pvalTrash):
-        nCase = len(pvals[(pvals>0) & (pvals<=pvalTrash)])
-        nCtrl = len(pvals[(pvals>0) & (abs(pvals)<=pvalTrash)])
-        return {'case':nCase, 'control':nCtrl}
+        pvals = np.array(pvals)
+        nCase = sum((pvals>0) & (pvals<=pvalTrash))
+        nCtrl = sum((pvals<0) & (abs(pvals)<=pvalTrash))
+        #nCase = len(pvals[(pvals>0) & (pvals<=pvalTrash)])
+        #nCtrl = len(pvals[(pvals>0) & (abs(pvals)<=pvalTrash)])
+        return (nCase, nCtrl)
     
     def _draw_shiftDistPlot(self, df, setName, nObsCase, nObsCtrl, pCase, pCtrl):
         ggpermCounts = pd.DataFrame(df['case'].tolist()+df['control'].tolist(), columns=['N_signif_tests'])
@@ -188,15 +193,15 @@ class BurdenShift(Runnable):
                         alpha=.6, fill=True, linewidth=1, label='Control')
         ymax = ax.get_ylim()[-1]
         plt.vlines(ymin=0, ymax=ymax, x=nObsCase, color='red', linestyles='--', linewidth=1)
-        plt.text(nObsCase+larger*0.02, ymax*0.8, pCase, color='red', fontsize=ft_size)
+        plt.text(nObsCase+larger*0.02, ymax*0.7, pCase, color='red', fontsize=ft_size)
         plt.vlines(ymin=0, ymax=ymax, x=nObsCtrl, color='blue', linestyles='--', linewidth=1)
-        plt.text(nObsCtrl+larger*0.02, ymax*0.9, pCtrl, color='blue', fontsize=ft_size)
+        plt.text(nObsCtrl+larger*0.02, ymax*0.8, pCtrl, color='blue', fontsize=ft_size)
         plt.xlabel('Number of significant tests', fontsize=ft_size, labelpad=5, weight='bold')
         plt.ylabel('Density', fontsize=ft_size, labelpad=5, weight='bold')
         plt.xticks(xticks, fontsize=ft_size)
         plt.yticks(fontsize=ft_size)
         plt.ylim(0, ymax)
-        plt.legend(fontsize=ft_size)
+        plt.legend(fontsize=7, ncol=2)
         plt.tight_layout()
         plt.close()
 
@@ -204,6 +209,7 @@ class BurdenShift(Runnable):
         
     def run(self):
         self.burden_shift()
+        print_progress("Done")
         
     def burden_shift(self):
         print(self.input_file, type(self.input_file))
@@ -215,9 +221,8 @@ class BurdenShift(Runnable):
         print_progress("Compare burden test and permutation test")
         
         obsTab = pd.DataFrame()
-        plot_output = f'plotDistr_p_{self.pval}_{self.c_cutoff}.{self.tag}.pdf'
+        plot_output = f'plotDistr_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.pdf'
         pdfsave = PdfPages(os.path.join(self.output_dir_path, plot_output))
-        
         for i in tqdm(range(len(filt_cat_sets.columns))):
             setName = None
             testCats = None
@@ -231,22 +236,22 @@ class BurdenShift(Runnable):
             
             if len(testCats) > 0:
                 # Subset true results to only the categories in the set
-                burdenResTrim = self.burden_res.loc[self.burden_res['Category'].isin(testCats)]
-                
+                burdenResTrim = self.burden_res.filter(self.burden_res['Category'].is_in(testCats))
+
                 # Find case and control counts from this subset of categories (Two-sided)
-                nObsCase = len(burdenResTrim.loc[(burdenResTrim['P']<=self.pval)&(burdenResTrim['Relative_Risk']>1)])
-                nObsCtrl = len(burdenResTrim.loc[(burdenResTrim['P']<=self.pval)&(burdenResTrim['Relative_Risk']<1)])
+                nObsCase = len(burdenResTrim.filter((burdenResTrim['P']<=self.pval)&(burdenResTrim['Relative_Risk']>1)))
+                nObsCtrl = len(burdenResTrim.filter((burdenResTrim['P']<=self.pval)&(burdenResTrim['Relative_Risk']<1)))
                 
                 # Subset burden shift results to only the categories in the set
-                burdenShitTrim = self.burden_shift_res.loc[:, list(set(self.burden_shift_res.columns)&set(testCats))]
-                permCounts = pd.DataFrame(burdenShitTrim.apply(lambda x: self._count_cats(x, self.pval), axis=1).tolist())
-                
+                burdenShitTrim = self.burden_shift_res.select(list(set(self.burden_shift_res.columns)&set(testCats))).to_pandas()
+                permCounts = pd.DataFrame(burdenShitTrim.apply(lambda x: self._count_cats(x, self.pval), axis=1).tolist(), columns=['case','control'])
+                                
                 # Compare the observed counts to the permuted counts to calculate shift p-values
-                nPermCase = len(permCounts.loc[permCounts['case']>=nObsCase])
+                nPermCase = len(np.where(permCounts['case']>=nObsCase)[0])
                 pCase = nPermCase / len(permCounts)
-                nPermCtrl = len(permCounts.loc[permCounts['control']>=nObsCtrl])
+                nPermCtrl = len(np.where(permCounts['control']>=nObsCtrl)[0])
                 pCtrl = nPermCtrl / len(permCounts)
-                
+                                
                 # Plot the results
                 fig1, fig2 = self._draw_shiftDistPlot(permCounts, setName, nObsCase, nObsCtrl, pCase, pCtrl)
                 pdfsave.savefig(fig1)
