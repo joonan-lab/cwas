@@ -311,6 +311,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas annotation -v $HOME/cwas-input-example/de_novo_variants.vcf -o_dir $HOME/cwas_output -p 8
 
 
+  Above example command takes almost 4 minutes.
+
 
 1. :ref:`Categorization <categorization>`
 ############################################
@@ -347,7 +349,14 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - OUTPUT.correlation_matrix.pkl: The matrix containing the correlation values between every two categories. This file will be generated only with ``-m`` option given. This file will be used for :ref:`calculating the number of effective tests <effnumtest>`. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
 
 
-6. :ref:`Burden test <burdentest>`
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
+    
+
+1. :ref:`Burden test <burdentest>`
 ############################################
 
   Calculate the burden of each category by calculating the burden of each category by comparing the rate of variants per cases and the rate of variants per controls.
@@ -388,6 +397,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - OUTPUT.permutation_test.txt.gz: The final output file containing p-values calculated from permutations. This file will be used for :ref:`DAWN analysis <dawn>`.
   - OUTPUT.binom_pvals.txt.gz: The matrix containing binomial p-values generated from each permutation. This file will be generated only with ``-b`` option given.
 
+
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
+    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
 
 
 7.  :ref:`Calculate the number of effective tests <effnumtest>`
