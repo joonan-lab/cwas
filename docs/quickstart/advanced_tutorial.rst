@@ -180,6 +180,19 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The downloading process might take a while.
 
+  The descriptions of the files in the cwas-dataset are as below.
+
+  - *annotation_keys.yaml*: List of annotation datasets with the exact file names and short names used for CWAS-Plus annotation.
+  - *gene_matrix.txt*: List of genes with their functional annotations.
+  - *download_vep_resources.sh*: Code to download VEP resources.
+  - *configuration.txt*: Configuration file for CWAS-Plus specifying VEP path and required resources.
+  - *functional_annotations.tar.gz*: BED files for annotating variants. After decompressing, **please move the files within the directory to the parent directory "cwas-dataset."**
+  - *MPC_hg38.vcf.bgz*: Database for annotation damaging missense variants. For further information, please refer to the provided reference.
+  - BED files for vertebrate conservation scores
+
+    - PhyloP46way and PhastCons46Way
+    - Due to the large file sizes, we provide an alternative download link for the original files.
+
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
