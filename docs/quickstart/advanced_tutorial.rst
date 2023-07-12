@@ -60,6 +60,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
 
+    cd $HOME
     git clone https://github.com/joonan-lab/cwas-input-example.git
 
 
@@ -71,6 +72,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
 
+    cd $HOME
     git clone https://github.com/joonan-lab/cwas-dataset.git
   
 
@@ -142,6 +144,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - **GENE_MATRIX**: This is the file name of the gene matrix, which is a text file. The first column should be gene ID, and the second column should be gene name. The other columns will represent each gene list and show whether each row (=gene) are matched to the gene list or not by a binary code (0, 1). 1 if the gene is matched to a gene list, 0 if not.
   - **ANNOTATION_KEY_CONFIG**: This is the file name of the annotation key file, which is a yaml file. This file contains the name of the annotation datasets inside the annotation dataset directory and the key names that will be used to represent the dataset. All details should be written in yaml syntax. Also, to split the category group to functional score and functional annotation, the users should type each annotation dataset under the matched group dictionary. Below is an example of this file. The format should be (name): (key) with a uniform indentation for each row. Be aware that the name of the annotations should not contain '_'. As domains will combined with '_' as a delimiter, using '_' in the annotation name will cause errors.
   - **VEP**: This is the path of VEP. If there is a pre-installed VEP, this line would be written in advance when the users typed the command ``cwas start``.
+  - **VEP_CACHE_DIR**: This is the path of the directory, which contains cache files and overall resources for VEP.
   - **VEP_CONSERVATION_FILE**: This is the path of the conservation file (`loftee.sql`), which will be used for variant classification.
   - **VEP_LOFTEE**: This is the file name of the directory of loftee plugin, which will be used for variant classification.
   - **VEP_HUMAN_ANCESTOR_FA**: This is the file name of the human ancestor fasta file, which will be used for variant classification.
@@ -173,6 +176,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     conda install -c bioconda ensembl-vep
 
+  
+  To use VEP, users need cache file matching to the VEP version. The cache file can be found `here <https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache>`_. Please download the file in the *VEP_CACHE_DIR*.
 
   To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create directory (``$HOME/.vep``) and download resources in the directory. By default, the resources are in the child directory of the home directory.
 
@@ -265,6 +270,17 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     cwas preparation -p 8
 
+  After running the command, merged BED file and its index will be generated in your CWAS workspace.
+
+  .. code-block:: solidity
+
+    CWAS_WORKSPACE
+    ...
+    ├── merged_annotation.bed.gz
+    ├── merged_annotation.bed.gz.tbi
+    ...
+
+
 4. :ref:`Annotation <annotation>`
 ############################################
 
@@ -275,12 +291,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   The parameters of the command are as below:
 
    - -v, --vcf_file: Path to the input vcf file. This file could be gzipped or not.
-   - -n, --num_cores: Number of worker processes that will be used for the annotation process. By default, 1.
+   - -p, --num_proc: Number of worker processes that will be used for the annotation process. By default, 1.
    - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
   .. code-block:: solidity
 
-    cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -n 8
+    cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -p 8
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.vep.vcf.gz``, ``.vep.vcf.gz.tbi``, ``.annotated.vcf``) in the file name as below will be found in the output directory.
 
@@ -288,7 +304,15 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - OUTPUT.vep.vcf.gz.tbi: Index file of the OUTPUT.vep.vcf.gz.
   - OUTPUT.annotated.vcf: The final output file. This file will be used as an input for categorization process.
 
-5. :ref:`Categorization <categorization>`
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas annotation -v $HOME/cwas-input-example/de_novo_variants.vcf -o_dir $HOME/cwas_output -p 8
+
+
+
+1. :ref:`Categorization <categorization>`
 ############################################
 
   Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>`.
