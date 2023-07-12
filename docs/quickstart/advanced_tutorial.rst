@@ -280,8 +280,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ├── merged_annotation.bed.gz.tbi
     ...
 
+  With the example annotation datasets, this process takes one hour and 16 minutes.
 
-4. :ref:`Annotation <annotation>`
+
+1. :ref:`Annotation <annotation>`
 ############################################
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
