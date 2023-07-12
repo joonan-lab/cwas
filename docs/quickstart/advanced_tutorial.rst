@@ -58,6 +58,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   For example run, the above data are available at `joonan-lab/cwas-input-example <https://github.com/joonan-lab/cwas-input-example>`_.
 
+  .. code-block:: solidity
+
+    git clone https://github.com/joonan-lab/cwas-input-example.git
+
+
 
   4. Annotation dataset
 
