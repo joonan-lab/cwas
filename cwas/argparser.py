@@ -511,7 +511,7 @@ def burden_shift() -> argparse.ArgumentParser:
         dest="input_path",
         required=True,
         type=Path,
-        help="Path to the input file which is result of burden test from binomial test (*.burden_test.txt.gz)",
+        help="Path to the input file which is the result of burden test from binomial test (*.burden_test.txt.gz)",
     )
     result.add_argument(
         '-b',
@@ -532,7 +532,7 @@ def burden_shift() -> argparse.ArgumentParser:
     )
     result.add_argument(
         '-c',
-        '--category_set',
+        '--category_info',
         dest='cat_set_file',
         required=True,
         type=Path,
@@ -565,7 +565,6 @@ def burden_shift() -> argparse.ArgumentParser:
         help="The number of cutoff for category counts. It must be positive value.",
     )
     result.add_argument(
-        "-pval",
         "--pval",
         dest="pval",
         required=False,

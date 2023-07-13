@@ -105,7 +105,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
   .. code-block:: solidity
 
-    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
 
 6. :ref:`Burden test <burdentest>`
 ######################################
@@ -121,8 +121,8 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 
      .. code-block:: solidity
-
-        cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt
+        
+        cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt
 
   - Permutation test
 
@@ -137,11 +137,11 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 
      .. code-block:: solidity
+        
+        cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
-        cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt -n 10000 -p 8 -b
 
-
-7.  :ref:`Calculate the number of effective tests <effnumtest>`
+1.  :ref:`Calculate the number of effective tests <effnumtest>`
 #################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
@@ -171,9 +171,19 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     |All_DDD_All_PromoterRegion_EarlyCREOligo               |
     +-------------------------------------------------------+
 
-  .. code-block:: solidity
 
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas-dataset/subset_categories.txt
+  Create a category set with categories with more than 7 variants.
+
+  .. code-block:: solidity
+    
+    zcat $HOME/cwas_output/de_novo_variants.category_counts.txt.gz | head -1 > $HOME/cwas_output/subset_categories.v2.txt
+    zcat $HOME/cwas_output/de_novo_variants.category_counts.txt.gz | awk '$2 > 7' >> $HOME/cwas_output/subset_categories.v2.txt
+
+  Now run the below command.
+
+  .. code-block:: solidity
+    
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas_output/subset_categories.v2.txt
 
 
 
@@ -202,13 +212,22 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
   - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
 
 
-  .. code-block:: solidity
+  Create a category set with noncoding categories.
 
+  .. code-block:: solidity
+    
+    zcat $HOME/cwas_output/de_novo_variants.category_info.txt.gz | head -1 > $HOME/cwas_output/subset_categories.txt
+    zcat $HOME/cwas_output/de_novo_variants.category_info.txt.gz | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
+
+  Now run the below command.
+
+  .. code-block:: solidity
+    
     cwas risk_score -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz \
     -o_dir $HOME/cwas_output \
     -s $HOME/cwas-input-example/samples.txt \
-    -a $HOME/cwas-input-example/adj_factors.txt.txt \
-    -c $HOME/cwas-dataset/subset_categories.txt \
+    -a $HOME/cwas-input-example/adj_factors.txt \
+    -c $HOME/cwas_output/subset_categories.txt \
     -thr 3 \
     -tf 0.7 \
     -n_reg 10 \
@@ -218,7 +237,36 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
 
 
-9.   :ref:`DAWN analysis <dawn>`
+9.  :ref:`Burden shift analysis <burdenshift>`
+################################################
+
+  Identify the overrepresented domains associated to the phenotype.
+
+  The parameters of the command are as below:
+
+  - -i, --input_file: Path to the input file which is the result of binomial burden test (\*.burden_test.txt.gz).
+  - -b, --burden_res: Path to the result of burden shift from permutation test (\*.binom_pvals.txt.gz).
+  - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
+  - -c, --category_info: Path to the category information file from binomial burden test (\*.category_info.txt.gz).
+  - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt.gz).
+  - -t, --tag: Tag used for the name of the output files. By default, None.
+  - -c_cutoff, --count_cutoff: The number of cutoff for category counts. It must be positive value. By default, 7.
+  - --pval: P-value threshold. By default, 0.05.
+
+  .. code-block:: solidity
+    
+    cwas burden_shift -i $HOME/cwas_output/de_novo_variants.burden_test.txt.gz \
+    -b $HOME/cwas_output/de_novo_variants.binom_pvals.txt.gz \
+    -o_dir $HOME/cwas_output \
+    -c $HOME/cwas_output/de_novo_variants.category_info.txt.gz \
+    -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
+    -c_cutoff 7 \
+    --pval 0.05
+
+
+
+
+10.   :ref:`DAWN analysis <dawn>`
 ####################################
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
@@ -237,7 +285,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
-  - -c_count, --cat_count
+  - -c_count, --cat_count: Path of the categories counts file from burden test
   - -CT, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
   - -CR, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
   - -S, --size_threshold: The threshold of the number of categories per cluster. The least amount of categories a cluster should have.
@@ -251,8 +299,8 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
       -r 2,500 \
       -s 123 \
       -t test \
-      -c $HOME/cwas-dataset/subset_categories.txt \
-      -c_count -c $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
+      -c $HOME/cwas_output/subset_categories.txt \
+      -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
       -CT 2 \
       -CR 0.7 \
       -S 20 \
