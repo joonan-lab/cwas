@@ -154,7 +154,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
     +------+------+----+-----+-----+-----+--------+-----------+
     |#CHROM| POS  |  ID| REF |  ALT| QUAL| FILTER |INFO       |
-    +------+------+----+-----+-----+-----+--------+-----------+
+    +======+======+====+=====+=====+=====+========+===========+
     |chr1  | 69094|  . | G   |  A  | .   | .      |MPC=2.73403|
     +------+------+----+-----+-----+-----+--------+-----------+
     |chr1  | 69094|  . | G   |  C  | .   | .      |MPC=2.29136|
@@ -283,7 +283,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   With the example annotation datasets, this process takes one hour and 16 minutes.
 
 
-1. :ref:`Annotation <annotation>`
+4. :ref:`Annotation <annotation>`
 ############################################
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
@@ -313,7 +313,37 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas annotation -v $HOME/cwas-input-example/de_novo_variants.vcf -o_dir $HOME/cwas_output -p 8
 
 
-  Above example command takes almost 4 minutes.
+  Above example command takes almost 5 minutes.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.vep.vcf.gz
+    ├── de_novo_variants.vep.vcf.gz.tbi
+    ├── de_novo_variants.annotated.vcf
+    ...
+
+  The ``de_novo_variants.annotated.vcf`` looks like below. The number following ``ANNOT=`` in the ``INFO`` field indicates specific annotations associated with the variant, which will be decoded into binary code representing the relevant annotations.
+
+  .. code-block:: solidity
+
+    ##fileformat=VCFv4.1
+    ##VEP="v105" time="2023-07-13 11:51:32" cache="/home/cwas_testing/.vep/homo_sapiens/105_GRCh38" ensembl-funcgen=105.660df8f ensembl-io=105.2a0a40c ensembl-variation=105.ac8178e ensembl=105.525fbcb 1000genomes="phase3" COSMIC="92" ClinVar="202106" ESP="V2-SSA137" HGMD-PUBLIC="20204" assembly="GRCh38.p13" dbSNP="154" gencode="GENCODE 39" genebuild="2014-07" gnomAD="r2.1.1" polyphen="2.2.2" regbuild="1.0" sift="sift5.2.2"
+    ##INFO=<ID=CSQ,Number=.,Type=String,Description="Consequence annotations from Ensembl VEP. Format: Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Feature|BIOTYPE|EXON|INTRON|HGVSc|HGVSp|cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation|DISTANCE|STRAND|FLAGS|SYMBOL_SOURCE|HGNC_ID|SOURCE|NEAREST|LoF|LoF_filter|LoF_flags|LoF_info|MisDb|MisDb_MPC">
+    ##LoF=Loss-of-function annotation (HC = High Confidence; LC = Low Confidence)
+    ##LoF_filter=Reason for LoF not being HC
+    ##LoF_flags=Possible warning flags for LoF
+    ##LoF_info=Info used for LoF annotation
+    ##INFO=<ID=MisDb,Number=.,Type=String,Description="/home/cwas_testing/cwas-dataset/MPC_hg38.vcf.bgz (exact)">
+    ##INFO=<ID=MisDb_MPC,Number=.,Type=String,Description="MPC field from /home/cwas_testing/cwas-dataset/MPC_hg38.vcf.bgz">
+    ##INFO=<ID=ANNOT,Key=phastCons46way|phyloP46way|ChmE1|ChmE10|ChmE11|ChmE12|ChmE13|ChmE14|ChmE15|ChmE2|ChmE3|ChmE4|ChmE5|ChmE6|ChmE7|ChmE8|ChmE9|EpiDNase|EpiH3K27ac|EpiH3K27me3|EpiH3K36me3|EpiH3K4me1|EpiH3K4me3|EpiH3K9ac|EpiH3K9me3|MidFetalH3K27ac|YaleH3K27acCBC|YaleH3K27acDFC|MidFetalATAC|EncodeDNase|EncodeTFBS|EnhancerVista|EnhancerFantom|HARs>
+    #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+    chr1	822758	chr1:822758:C:T	C	T	.	.	SAMPLE=11299.s1;BATCH=WGS519;CSQ=T|intron_variant&non_coding_transcript_variant|MODIFIER||ENSG00000230021|Transcript|ENST00000635509|processed_transcript||1/3||||||||||-1|||||SAMD11||||||;ANNOT=33313024
+    chr1	842732	chr1:842732:G:A	G	A	.	.	SAMPLE=13373.p1;BATCH=P231;CSQ=A|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||1807|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=764418304
+    chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;BATCH=WGS519;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
 
 
 5. :ref:`Categorization <categorization>`
@@ -355,8 +385,32 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
+
+  In the above example, categorizing variants soley takes about 6 minutes. Calculating the correlation matrix takes about ~ minutes.
+
+  Below is the output file generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.categorization_result.txt.gz
+    ...
+
+
+  The ``de_novo_variants.categorization_result.txt.gz`` looks like below. The "SAMPLE" column refers to the sample ID. Each of the other columns corresponds to a specific category. The values in these columns represent the number of variants within each category, specifically for each sample.
+
+  .. code-block:: solidity
     
+        SAMPLE All_Any_All_Any_Any All_Any_All_Any_ChmE1    ... Indel_CHD8Common_phyloP46way_IntronRegion_YaleH3K27acCBC
+      11000.p1                  79                     4    ...                                                        0
+      11000.s1                  46                     2    ...                                                        0
+      11002.p1                  92                     3    ...                                                        0
+      11002.s1                  82                     2    ...                                                        0
+      11003.p1                  94                     4    ...                                                        0
+
+
 
 6. :ref:`Burden test <burdentest>`
 ############################################
@@ -404,12 +458,36 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt
+    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt
     
-    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt -n 10000 -p 8 -b
+    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
-7.  :ref:`Calculate the number of effective tests <effnumtest>`
+  In the above example, binomial burden test takes about 4 minutes.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.burden_test.volcano_plot.pdf
+    ├── de_novo_variants.burden_test.txt.gz
+    ├── de_novo_variants.category_counts.txt.gz
+    ├── de_novo_variants.category_info.txt.gz
+    ...
+
+  The ``de_novo_variants.burden_test.volcano_plot.pdf`` looks like below. The x axis refers to two-sided binomial p-values in |log10|
+
+  .. figure:: ../images/de_novo_variants.burden_test.volcano_plot.png
+    :alt: CWAS-Plus workflow
+    :width: 90%
+    :align: center
+
+
+  .. |log10| replace:: log\ :sub:`10`
+
+1.  :ref:`Calculate the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
