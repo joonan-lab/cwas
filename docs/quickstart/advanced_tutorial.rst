@@ -396,6 +396,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     $HOME/cwas_output
     ...
     ├── de_novo_variants.categorization_result.txt.gz
+    ├── de_novo_variants.intersection_matrix.pkl
+    ├── de_novo_variants.correlation_matrix.pkl
     ...
 
 
