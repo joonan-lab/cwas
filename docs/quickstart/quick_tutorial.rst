@@ -20,18 +20,43 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     conda env create -f environment.yml -n cwas
     conda activate cwas
     python setup.py install
-    cwas start -w .cwas_wd
+    cwas start
+
+
+  Download example input.
+
+  .. code-block:: solidity
+
+    cd $HOME
+    git clone https://github.com/joonan-lab/cwas-input-example.git
+
 
 2. :ref:`Configuration <configuration>`
 ###########################################
 
   Inside the CWAS working directory, there is a configuration file (``configuration.txt``). Fill in the file with paths of the required tools and data.
 
+  Download required resources (annotation datasets and VEP resources) for CWAS-Plus. This might take a few hours depending on the speed of the network.
+
+  .. code-block:: solidity
+
+    cd $HOME
+    git clone https://github.com/joonan-lab/cwas-dataset.git
+    cd cwas-dataset
+    tar -zxvf functional_annotations.tar.gz # Decompress bed files
+    mv functional_annotations/* . # Move bed files to the parent directory
+    sh download_vep_resources.sh
+
+  Copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory (by default, ``$HOME/.cwas``).
+
+  After copying, modify the path of the *VEP*, *ANNOTATION_DATA_DIR* and *VEP_CACHE_DIR* to the exact path from the user's environment.
+
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory and fill the ``.cwas_env`` file in the home directory for storing environmental variables.
 
   .. code-block:: solidity
 
     cwas configuration
+
 
 3. :ref:`Prepare annotation datasets <data-prep-label>`
 ###########################################
@@ -52,7 +77,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
   The parameters of the command are as below:
 
    - -v, --vcf_file: Path to the input vcf file. This file could be gzipped or not.
-   - -n, --num_cores: Number of worker processes that will be used for the annotation process. By default, 1.
+   - -p, --num_proc: Number of worker processes that will be used for the annotation process. By default, 1.
    - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
 
@@ -60,7 +85,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
   .. code-block:: solidity
 
-    cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -n 8
+    cwas annotation -v $HOME/cwas-input-example/de_novo_variants.vcf -o_dir $HOME/cwas_output -p 8
 
 5. :ref:`Categorization <categorization>`
 ###########################################
@@ -80,7 +105,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
   .. code-block:: solidity
 
-    cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
 
 6. :ref:`Burden test <burdentest>`
 ######################################
@@ -97,7 +122,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
      .. code-block:: solidity
 
-        cwas binomial_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
+        cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt
 
   - Permutation test
 
@@ -113,13 +138,13 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
      .. code-block:: solidity
 
-        cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
+        cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt -n 10000 -p 8 -b
 
 
-7. :ref:`Caculate the correlation matrix <categorization>`
-#############################################################
+7.  :ref:`Calculate the number of effective tests <effnumtest>`
+#################################################################
 
-  Caculate the correlation matrix from the intersected number of variants (or samples) between every two categories.
+  From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
 
   The parameters of the command are as below:
 
@@ -148,13 +173,15 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
   .. code-block:: solidity
 
-    cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8 -m variant
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas-dataset/subset_categories.txt
 
 
-8.  :ref:`Calculate the number of effective tests <effnumtest>`
-#################################################################
 
-  From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
+8.  :ref:`Risk score analysis <riskscore>`
+##############################################
+ 
+
+  Identify the overrepresented domains associated to the phenotype.
 
   The parameters of the command are as below:
   
@@ -177,21 +204,11 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
   .. code-block:: solidity
 
-    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -c CATEGORY_SET.txt -ef
-
-
-9.  :ref:`Risk score analysis <riskscore>`
-##############################################
-
-  Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
-
-  .. code-block:: solidity
-
-    cwas risk_score -i INPUT.categorization_result.txt.gz \
-    -o_dir OUTPUT_DIR \
-    -s SAMPLE_LIST.txt \
-    -a ADJUST_FACTOR.txt \
-    -c CATEGORY_SET.txt \
+    cwas risk_score -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz \
+    -o_dir $HOME/cwas_output \
+    -s $HOME/cwas-input-example/samples.txt \
+    -a $HOME/cwas-input-example/adj_factors.txt.txt \
+    -c $HOME/cwas-dataset/subset_categories.txt \
     -thr 3 \
     -tf 0.7 \
     -n_reg 10 \
@@ -200,10 +217,11 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     -p 8
 
 
-10.  :ref:`Burden shift analysis <riskscore>`
-##############################################
 
-  Identify the overrepresented domains associated to the phenotype.
+9.   :ref:`DAWN analysis <dawn>`
+####################################
+
+  Investigate the relationship between categories and identify the specific type of categories clustered within the network.
 
   The parameters of the command are as below:
 
@@ -227,22 +245,14 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
 
   .. code-block:: solidity
-
-
-11.  :ref:`DAWN analysis <dawn>`
-####################################
-
-  Investigate the relationship between categories and identify the specific type of categories clustered within the network.
-
-  .. code-block:: solidity
   
-      cwas dawn -i_dir INPUT_DIR \
-      -o_dir OUTPUT_DIR \
+      cwas dawn -i_dir $HOME/cwas_output \
+      -o_dir $HOME/cwas_output \
       -r 2,500 \
       -s 123 \
       -t test \
-      -c CATEGORY_SET.txt \
-      -c_count CATEGORY_COUNTS.txt \
+      -c $HOME/cwas-dataset/subset_categories.txt \
+      -c_count -c $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
       -CT 2 \
       -CR 0.7 \
       -S 20 \

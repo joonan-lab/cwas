@@ -60,6 +60,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
 
+    cd $HOME
     git clone https://github.com/joonan-lab/cwas-input-example.git
 
 
@@ -71,6 +72,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
 
+    cd $HOME
     git clone https://github.com/joonan-lab/cwas-dataset.git
   
 
@@ -142,6 +144,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - **GENE_MATRIX**: This is the file name of the gene matrix, which is a text file. The first column should be gene ID, and the second column should be gene name. The other columns will represent each gene list and show whether each row (=gene) are matched to the gene list or not by a binary code (0, 1). 1 if the gene is matched to a gene list, 0 if not.
   - **ANNOTATION_KEY_CONFIG**: This is the file name of the annotation key file, which is a yaml file. This file contains the name of the annotation datasets inside the annotation dataset directory and the key names that will be used to represent the dataset. All details should be written in yaml syntax. Also, to split the category group to functional score and functional annotation, the users should type each annotation dataset under the matched group dictionary. Below is an example of this file. The format should be (name): (key) with a uniform indentation for each row. Be aware that the name of the annotations should not contain '_'. As domains will combined with '_' as a delimiter, using '_' in the annotation name will cause errors.
   - **VEP**: This is the path of VEP. If there is a pre-installed VEP, this line would be written in advance when the users typed the command ``cwas start``.
+  - **VEP_CACHE_DIR**: This is the path of the directory, which contains cache files and overall resources for VEP.
   - **VEP_CONSERVATION_FILE**: This is the path of the conservation file (`loftee.sql`), which will be used for variant classification.
   - **VEP_LOFTEE**: This is the file name of the directory of loftee plugin, which will be used for variant classification.
   - **VEP_HUMAN_ANCESTOR_FA**: This is the file name of the human ancestor fasta file, which will be used for variant classification.
@@ -173,6 +176,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     conda install -c bioconda ensembl-vep
 
+  
+  To use VEP, users need cache file matching to the VEP version. The cache file can be found `here <https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache>`_. Please download the file in the *VEP_CACHE_DIR*.
 
   To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create directory (``$HOME/.vep``) and download resources in the directory. By default, the resources are in the child directory of the home directory.
 
@@ -228,7 +233,21 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - The BED files, *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG* and *VEP_MIS_DB* **must** be inside *ANNOTATION_DATA_DIR*.
     - The *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be inside *VEP_CACHE_DIR*.
     - For *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG*, *VEP_MIS_DB*, *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be only file names, not the absolute path. For instance, if *VEP_CACHE_DIR* is ``/home/user/.vep`` and the file name of *VEP_GERP_BIGWIG* is file.bw, *VEP_GERP_BIGWIG* should only be specified as ``file.bw``, excluding the complete path.
+    - The directory structure must be like below.
 
+  .. code-block:: solidity
+
+    ANNOTATION_DATA_DIR
+    ├── GENE_MATRIX
+    ├── ANNOTATION_KEY_CONFIG
+    ├── VEP_MIS_DB
+    ├── BED files (functional annotations, functional scores)
+
+    VEP_CACHE_DIR
+    ├── VEP_CONSERVATION_FILE
+    ├── VEP_LOFTEE
+    ├── VEP_HUMAN_ANCESTOR_FA
+    ├── VEP_GERP_BIGWIG
 
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
@@ -238,7 +257,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     cwas configuration
 
-1. :ref:`Prepare annotation datasets <data-prep-label>`
+3. :ref:`Prepare annotation datasets <data-prep-label>`
 ############################################################
 
   Gather and merge functional annotations and scores into a single bed file. The annotation datasets in the *ANNOTATION_DATA_DIR* will be merged to a single bed file in the working directory.
@@ -251,7 +270,20 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     cwas preparation -p 8
 
-4. :ref:`Annotation <annotation>`
+  After running the command, merged BED file and its index will be generated in your CWAS workspace.
+
+  .. code-block:: solidity
+
+    CWAS_WORKSPACE
+    ...
+    ├── merged_annotation.bed.gz
+    ├── merged_annotation.bed.gz.tbi
+    ...
+
+  With the example annotation datasets, this process takes one hour and 16 minutes.
+
+
+1. :ref:`Annotation <annotation>`
 ############################################
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
@@ -261,18 +293,28 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   The parameters of the command are as below:
 
    - -v, --vcf_file: Path to the input vcf file. This file could be gzipped or not.
-   - -n, --num_cores: Number of worker processes that will be used for the annotation process. By default, 1.
+   - -p, --num_proc: Number of worker processes that will be used for the annotation process. By default, 1.
    - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
   .. code-block:: solidity
 
-    cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -n 8
+    cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -p 8
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.vep.vcf.gz``, ``.vep.vcf.gz.tbi``, ``.annotated.vcf``) in the file name as below will be found in the output directory.
 
   - OUTPUT.vep.vcf.gz: VEP annotated output file. This file is an intermediate output that has not been annotated with bed annotation files yet.
   - OUTPUT.vep.vcf.gz.tbi: Index file of the OUTPUT.vep.vcf.gz.
   - OUTPUT.annotated.vcf: The final output file. This file will be used as an input for categorization process.
+
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas annotation -v $HOME/cwas-input-example/de_novo_variants.vcf -o_dir $HOME/cwas_output -p 8
+
+
+  Above example command takes almost 4 minutes.
+
 
 5. :ref:`Categorization <categorization>`
 ############################################
@@ -308,6 +350,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - OUTPUT.intersection_matrix.pkl: The matrix containing the number of intersected variants (or samples) between every two categories. This file will be generated only with ``-m`` option given.
   - OUTPUT.correlation_matrix.pkl: The matrix containing the correlation values between every two categories. This file will be generated only with ``-m`` option given. This file will be used for :ref:`calculating the number of effective tests <effnumtest>`. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
 
+
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
+    
 
 6. :ref:`Burden test <burdentest>`
 ############################################
@@ -350,6 +399,14 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - OUTPUT.permutation_test.txt.gz: The final output file containing p-values calculated from permutations. This file will be used for :ref:`DAWN analysis <dawn>`.
   - OUTPUT.binom_pvals.txt.gz: The matrix containing binomial p-values generated from each permutation. This file will be generated only with ``-b`` option given.
 
+
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt
+    
+    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt.txt -n 10000 -p 8 -b
 
 
 7.  :ref:`Calculate the number of effective tests <effnumtest>`
@@ -400,6 +457,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     
     [RESULT] The number of effective tests is 1438.
 
+
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas-dataset/subset_categories.txt
 
 
 8.  :ref:`Risk score analysis <riskscore>`
@@ -453,6 +516,23 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - OUTPUT.lasso_coef_thres_*.txt: 
 
 
+  Example run:
+
+  .. code-block:: solidity
+    
+    cwas risk_score -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz \
+    -o_dir $HOME/cwas_output \
+    -s $HOME/cwas-input-example/samples.txt \
+    -a $HOME/cwas-input-example/adj_factors.txt.txt \
+    -c $HOME/cwas-dataset/subset_categories.txt \
+    -thr 3 \
+    -tf 0.7 \
+    -n_reg 10 \
+    -f 5 \
+    -n 1000 \
+    -p 8
+
+
 9.  :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
@@ -504,3 +584,21 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -p 8
 
 
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
+
+
+  Example run:
+
+  .. code-block:: solidity
+  
+      cwas dawn -i_dir $HOME/cwas_output \
+      -o_dir $HOME/cwas_output \
+      -r 2,500 \
+      -s 123 \
+      -t test \
+      -c $HOME/cwas-dataset/subset_categories.txt \
+      -c_count -c $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
+      -CT 2 \
+      -CR 0.7 \
+      -S 20 \
+      -p 8
