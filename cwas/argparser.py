@@ -402,8 +402,8 @@ def extract_variant() -> argparse.ArgumentParser:
         help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz)",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,
@@ -481,8 +481,8 @@ def effective_num_test() -> argparse.ArgumentParser:
         help="Tag used for the name of the output files (e.g., corr_mat_<tag>.pickle)",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,
@@ -511,7 +511,7 @@ def burden_shift() -> argparse.ArgumentParser:
         dest="input_path",
         required=True,
         type=Path,
-        help="Path to the input file which is result of burden test from binomial test (*.burden_test.txt.gz)",
+        help="Path to the input file which is the result of burden test from binomial test (*.burden_test.txt.gz)",
     )
     result.add_argument(
         '-b',
@@ -531,8 +531,8 @@ def burden_shift() -> argparse.ArgumentParser:
         help="Directory where output file will be saved",
     )
     result.add_argument(
-        '-c_set',
-        '--cat_set',
+        '-c',
+        '--category_info',
         dest='cat_set_file',
         required=True,
         type=Path,
@@ -565,7 +565,6 @@ def burden_shift() -> argparse.ArgumentParser:
         help="The number of cutoff for category counts. It must be positive value.",
     )
     result.add_argument(
-        "-pval",
         "--pval",
         dest="pval",
         required=False,
@@ -643,8 +642,8 @@ def dawn() -> argparse.ArgumentParser:
         help="Tag used for the name of output files (e.g. intergenic, coding etc.).",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_file",
         required=True,
         type=Path,
@@ -729,8 +728,8 @@ def risk_score() -> argparse.ArgumentParser:
         help="File listing adjustment factors of each sample",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,
@@ -786,13 +785,6 @@ def risk_score() -> argparse.ArgumentParser:
         default=5,
         type=int,
         help="Specify the number of folds in a `(Stratified)KFold`",
-    )
-    result.add_argument(
-        "-l",
-        "--logistic",
-        dest="logistic",
-        action="store_true",
-        help="Make a logistic model with L1 penalty",
     )
     result.add_argument(
         "-n",
