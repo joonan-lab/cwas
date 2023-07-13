@@ -581,7 +581,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - -n, --num_sim: Number of eigen values to use in calculating the number of effective tests. The maximum number is equivalent to the number of categories. By default, 10000.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter``. By default, None.
     - -t, --tag: Tag used for the name of the output files. By default, None.
-    - -c, --category_set_path: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used. This file must contain ``Category`` column with the name of categories to be used.
+    - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used. This file must contain ``Category`` column with the name of categories to be used.
     - -ef, --eff_num_test: Calculate the effective number of tests. By default, False.
 
     +-------------------------------------------------------+
@@ -635,7 +635,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
   - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
-  - -c, --category_set_path: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
+  - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
   - -thr, --threshold: The number of variants in controls (or the number of control carriers) used to select rare categories. For example, if set to 3, categories with less than 3 variants in controls will be used for training. By default, 3.
@@ -762,12 +762,17 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Identify the overrepresented domains associated to the phenotype.
 
-  *In progress.*
+  The parameters of the command are as below:
+
+  - -i, --input_file
+  - -b, --burden_res
+  - -o_dir, --output_directory
+  - -c, --category_set
 
   .. code-block:: solidity
 
 
-10.  :ref:`DAWN analysis <dawn>`
+10.   :ref:`DAWN analysis <dawn>`
 ##################################
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
@@ -785,7 +790,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
   - -t, --tag: Tag used for the name of the output files. By default, None.
-  - -c, --category_set_path: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
+  - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
   - -c_count, --cat_count
   - -CT, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
   - -CR, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
@@ -826,3 +831,16 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -CR 0.7 \
       -S 20 \
       -p 8
+
+  The above example requires approximately ~ minutes using eight cores.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── 
+    ...
+
+
