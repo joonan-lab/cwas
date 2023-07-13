@@ -484,7 +484,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   .. |log2| replace:: log\ :sub:`2`
 
   .. figure:: ../images/de_novo_variants.burden_test.volcano_plot.png
-    :alt: CWAS-Plus workflow
+    :alt: Volcano plot of categories
     :width: 90%
     :align: center
 
@@ -719,10 +719,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     119	0.325822029103329	9.403763033356525e-14	-0.013037026552019174	0.301570528717263	0.02878003342276997	0.10879422840112464	1.4424484032226136e-14
     129	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
     139	0.5043686907598725	2.418464484994985e-13	-0.2997682117383215	0.40693256150789164	0.2842697675162165	0.28273561659692653	7.517089359062178e-14
-    149	0.325822029103329	9.403763033356525e-14	-0.013037026552019174	0.301570528717263	0.02878003342276997	0.10879422840112464	1.4424484032226136e-14
-    159	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
-    169	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
-    179	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
 
 
   The ``de_novo_variants.lasso_null_models_thres_3.txt`` looks like below.
@@ -753,14 +749,15 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The ``de_novo_variants.lasso_histogram_thres_3.pdf`` looks like below.
 
-  .. figure:: ../images/de_novo_variants.burden_test.volcano_plot.png
-    :alt: CWAS-Plus workflow
+  .. figure:: ../images/de_novo_variants.lasso_histogram_thres_3.png
+    :alt: Significance of observed |R2| from the trained model
     :width: 90%
     :align: center
 
+  .. |R2| replace:: R\ :sup:`2`
 
 
-1.  :ref:`Burden shift analysis <burdenshift>`
+9.  :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
@@ -816,15 +813,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Example run:
 
-  Create a category set with noncoding categories.
-
-  .. code-block:: solidity
-    
-    zcat de_novo_variants.category_info.txt.gz | head -1 > $HOME/cwas_output/subset_categories.v2.txt
-    zcat de_novo_variants.category_info.txt.gz | awk '$12 == 1' >> $HOME/cwas_output/subset_categories.v2.txt
-
-  Now run the below command.
-
   .. code-block:: solidity
   
       cwas dawn -i_dir $HOME/cwas_output \
@@ -832,7 +820,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -r 2,500 \
       -s 123 \
       -t test \
-      -c $HOME/cwas_output/subset_categories.v2.txt \
+      -c $HOME/cwas_output/subset_categories.txt \
       -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
       -CT 2 \
       -CR 0.7 \
