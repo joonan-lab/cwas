@@ -477,7 +477,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ├── de_novo_variants.category_info.txt.gz
     ...
 
-  The ``de_novo_variants.burden_test.volcano_plot.pdf`` looks like below. The x axis refers to two-sided binomial p-values in |log10|
+  The ``de_novo_variants.burden_test.volcano_plot.pdf`` looks like below. Each dot in the plot is a category. The x axis refers to two-sided binomial p-values in -|log10| format. The y axis refers to the relative risk in |log2| format. The red dashed line represents a p-value threshold of 0.05.
+
+  .. |log10| replace:: log\ :sub:`10`
+  
+  .. |log2| replace:: log\ :sub:`2`
 
   .. figure:: ../images/de_novo_variants.burden_test.volcano_plot.png
     :alt: CWAS-Plus workflow
@@ -485,9 +489,82 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     :align: center
 
 
-  .. |log10| replace:: log\ :sub:`10`
+  The ``de_novo_variants.burden_test.txt.gz`` looks like below. This output file contains the burden and significance of each category resulted from burden test.
 
-1.  :ref:`Calculate the number of effective tests <effnumtest>`
+  .. code-block:: solidity
+    
+    Category	variant_type	gene_list	conservation	gencode	region	Case_DNV_Count	Ctrl_DNV_Count	Relative_Risk	P	P_1side	Z_1side
+    All_Any_All_Any_Any	All	Any	All	Any	Any	127980.74882782927	127125.25117217058	1.0067295651160606	0.09049325143155384	0.04524725746471302	1.6927948940326458
+    All_Any_All_Any_ChmE1	All	Any	All	Any	ChmE1	3492.624543347174	3415.2414632009927	1.0226581578432972	0.35422122183796734	0.17714543977308672	0.926298491713728
+    All_Any_All_Any_ChmE15	All	Any	All	Any	ChmE15	114169.68816535878	113387.99788686923	1.0068939419784928	0.10158592232815379	0.05079371255896036	1.6372060415337832
+    All_Any_All_Any_ChmE2	All	Any	All	Any	ChmE2	3502.020519447336	3481.047898897923	1.006024800910109	0.8108467363001403	0.40543665227930936	0.23929956259075175
+    All_Any_All_Any_ChmE7	All	Any	All	Any	ChmE7	21707.074780596762	21489.912803685875	1.0101052981877916	0.2986807028097194	0.14934594434817228	1.0392426732530815
+
+  The descriptions of each column are as below.
+
+  - Category: The name of the category.
+  - variant_type: The variant type of the variants in the category.
+  - gene_list: The name of the specific gene list to which the genes in the category belong.
+  - conservation: The name of the specific functional score domain region to which the variants in the category belong.
+  - gencode: The gene biotype (such as coding, noncoding, promoter, etc.) of the variants within the category.
+  - region: The name of the specific region from functional region domain to which the variants in the category belong.
+  - Case_DNV_Count: The number of variants in cases within the category.
+  - Ctrl_DNV_Count: The number of variants in controls within the category.
+  - Relative_Risk: The ratio of (# of variants in cases / # of cases) divided by (# of variants in controls / # of controls). If *Relative_Risk* is greater than 1, the category indicates a case burden. On the other hand, if *Relative_Risk* is less than 1, the category suggests a control burden.
+  - P: Two-sided binomial p-value.
+  - P_1side: One-sided binomial p-value with an alternative hypothesis of 'greater'. This indicates that it measures the statistical significance of the expected proportion of the number of variants in cases being greater than the proportion of cases in the total samples.
+  - Z_1side: Z-score calculated from the one-sided binomial p-value.
+
+
+  The ``de_novo_variants.category_counts.txt.gz`` looks like below. This output file contains the number of variants in each category.
+
+  .. code-block:: solidity
+    
+    Category	Raw_counts	Adj_counts
+    All_Any_All_Any_Any	255106	255105.99999999985
+    All_Any_All_Any_ChmE1	6914	6907.866006548167
+    All_Any_All_Any_ChmE15	227579	227557.686052228
+    All_Any_All_Any_ChmE2	6982	6983.0684183452595
+    All_Any_All_Any_ChmE7	43247	43196.98758428264
+    All_Any_All_Any_EpiDNase	15202	15193.304061650162
+
+  The descriptions of each column are as below.
+
+  - Category: The name of the category.
+  - Raw_counts: The number of variants in the category. Not adjusted.
+  - Adj_counts: The adjusted number of variants in the category.
+
+
+  The ``de_novo_variants.category_info.txt.gz`` looks like below. This output file contains the additional information about the category that are useful to the users. Specifically, columns starting with ``is_`` indicate the respective group to which each category belongs, based on the gene biotype domain.
+
+  For instance, categories that have ``1`` in ``is_coding`` colmn are coding categories.
+
+  .. code-block:: solidity
+    
+    Category	variant_type	gene_list	conservation	gencode	region	is_coding	is_coding_no_ptv	is_LoF	is_missense	is_damaging_missense	is_noncoding	is_noncoding_wo_promoter	is_promoter	is_intron	is_intergenic	is_UTR	is_lincRNA
+    All_Any_All_Any_Any	All	Any	All	Any	Any	0	0	0	0	0	0	0	0	0	00	0
+    All_Any_All_Any_ChmE1	All	Any	All	Any	ChmE1	0	0	0	0	0	0	0	0	0	00	0
+    All_Any_All_Any_ChmE15	All	Any	All	Any	ChmE15	0	0	0	0	0	0	0	0	0	00	0
+    All_Any_All_Any_ChmE2	All	Any	All	Any	ChmE2	0	0	0	0	0	0	0	0	0	00	0
+
+  The descriptions of columns starting with ``is_`` are as below. ``1`` means the category belongs to a group, while ``0`` means it does not.
+
+  - Category: The name of the category.
+  - is_coding: Coding categories.
+  - is_coding_no_ptv: Coding categories without protein truncating variant categories.
+  - is_LoF: Categories of Loss-of-function (LoF) variants.
+  - is_missense: Categories of missense variants.
+  - is_damaging_missense: Categories of damaging missense variants.
+  - is_noncoding: Noncoding categories.
+  - is_noncoding_wo_promoter: Noncoding categories without promoter variant categories.
+  - is_promoter: Categories with promoter variants.
+  - is_intron: Categories with intron variants.
+  - is_intergenic: Categories with intergenic variants.
+  - is_UTR: Categories with untranslated region (UTR) variants.
+  - is_lincRNA: Categories with long noncoding RNA variants.
+
+
+7.  :ref:`Calculate the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
@@ -565,7 +642,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -tf, --train_set_fraction: The fraction of the training set. For example, if set to 0.7, 70% of the samples will be used as training set and 30% will be used as test set. By default, 0.7.
   - -n_reg, --num_regression: Number of regression trials to calculate a mean of R squares. By default, 10.
   - -f, --fold: Number of folds for cross-validation.
-  - -l, --logistic: (hold) Make a logistic model with L1 penalty. By default, False.
   - -n, --n_permute: The number of permutations used to calculate the p-value. By default, 1,000.
   - --predict_only: If set, only predict the risk score and skip the permutation process. By default, False.
   - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
@@ -596,19 +672,42 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Example run:
 
+  Create a category set with noncoding categories.
+
+  .. code-block:: solidity
+    
+    zcat de_novo_variants.category_info.txt.gz | head -1 > $HOME/cwas_output/subset_categories.txt
+    zcat de_novo_variants.category_info.txt.gz | awk '$12 == 1' >> $HOME/cwas_output/subset_categories.txt
+
+  Now run the below command.
+
   .. code-block:: solidity
     
     cwas risk_score -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz \
     -o_dir $HOME/cwas_output \
     -s $HOME/cwas-input-example/samples.txt \
-    -a $HOME/cwas-input-example/adj_factors.txt.txt \
-    -c $HOME/cwas-dataset/subset_categories.txt \
+    -a $HOME/cwas-input-example/adj_factors.txt \
+    -c $HOME/cwas_output/subset_categories.txt \
     -thr 3 \
     -tf 0.7 \
     -n_reg 10 \
     -f 5 \
     -n 1000 \
     -p 8
+
+  The above example requires approximately two hours using eight cores.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.lasso_coef_thres_5.txt
+    ├── de_novo_variants.lasso_histogram_thres_5.pdf
+    ├── de_novo_variants.lasso_null_models_thres_5.txt
+    ├── de_novo_variants.lasso_results_thres_5.txt
+    ...
 
 
 9.  :ref:`Burden shift analysis <burdenshift>`
@@ -667,6 +766,15 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Example run:
 
+  Create a category set with noncoding categories.
+
+  .. code-block:: solidity
+    
+    zcat de_novo_variants.category_info.txt.gz | head -1 > $HOME/cwas_output/subset_categories.v2.txt
+    zcat de_novo_variants.category_info.txt.gz | awk '$12 == 1' >> $HOME/cwas_output/subset_categories.v2.txt
+
+  Now run the below command.
+
   .. code-block:: solidity
   
       cwas dawn -i_dir $HOME/cwas_output \
@@ -674,8 +782,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -r 2,500 \
       -s 123 \
       -t test \
-      -c $HOME/cwas-dataset/subset_categories.txt \
-      -c_count -c $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
+      -c $HOME/cwas_output/subset_categories.v2.txt \
+      -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
       -CT 2 \
       -CR 0.7 \
       -S 20 \

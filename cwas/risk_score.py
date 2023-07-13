@@ -60,7 +60,6 @@ class RiskScore(Runnable):
             "No. folds for CV",
             f"{args.fold: ,d}",
         )
-        log.print_arg("Use Logistic regression", args.logistic)
         log.print_arg(
             "No. permutation used to calculate the p-value",
             f"{args.n_permute: ,d}",
@@ -167,10 +166,6 @@ class RiskScore(Runnable):
     @property
     def ctrl_thres(self) -> int:
         return self.args.ctrl_thres
-    
-    @property
-    def logistic(self) -> bool:
-        return self.args.logistic
     
     @property
     def predict_only(self) -> bool:

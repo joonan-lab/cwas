@@ -51,8 +51,8 @@ class BinomialTest(BurdenTest):
 
         xticks = [int(x) for x in np.arange(-max_x, max_x+1, 2)]
         xlabels = xticks.copy()
-        xlabels[0] = '-inf'
-        xlabels[-1] = 'inf'
+        xlabels[0] = '-Inf'
+        xlabels[-1] = 'Inf'
         yticks = [int(x) for x in np.arange(0, max(burden_res['-log_P']), 2)]
         ylabels = yticks.copy()
 
