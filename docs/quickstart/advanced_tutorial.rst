@@ -676,8 +676,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    zcat de_novo_variants.category_info.txt.gz | head -1 > $HOME/cwas_output/subset_categories.txt
-    zcat de_novo_variants.category_info.txt.gz | awk '$12 == 1' >> $HOME/cwas_output/subset_categories.txt
+    zcat $HOME/cwas_output/de_novo_variants.category_info.txt.gz | head -1 > $HOME/cwas_output/subset_categories.txt
+    zcat $HOME/cwas_output/de_novo_variants.category_info.txt.gz | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
 
   Now run the below command.
 
@@ -695,7 +695,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     -n 1000 \
     -p 8
 
-  The above example requires approximately two hours using eight cores.
+  The above example requires approximately 10 minutes using eight cores.
 
   Below are the output files generated.
 
@@ -703,14 +703,64 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     $HOME/cwas_output
     ...
-    ├── de_novo_variants.lasso_coef_thres_5.txt
-    ├── de_novo_variants.lasso_histogram_thres_5.pdf
-    ├── de_novo_variants.lasso_null_models_thres_5.txt
-    ├── de_novo_variants.lasso_results_thres_5.txt
+    ├── de_novo_variants.lasso_coef_thres_3.txt
+    ├── de_novo_variants.lasso_null_models_thres_3.txt
+    ├── de_novo_variants.lasso_results_thres_3.txt
+    ├── de_novo_variants.lasso_histogram_thres_3.pdf
     ...
 
+  The ``de_novo_variants.lasso_coef_thres_3.txt`` looks like below. This output file lists the categories chosen as predictors for the phenotype through the Lasso regression model.
 
-9.  :ref:`Burden shift analysis <burdenshift>`
+  .. code-block:: solidity
+    
+    All_ASDTADAFDR03_phastCons46way_IntergenicRegion_EncodeTFBS	SNV_ASDTADAFDR03_phastCons46way_IntergenicRegion_EncodeTFBS	Indel_FMRPDarnell_phyloP46way_NoncodingRegion_EncodeTFBS	All_PSD_phastCons46way_PromoterRegion_EncodeTFBS	Indel_CHD8Common_phyloP46way_UTRsRegion_EncodeTFBS	All_ASDTADAFDR03_All_PromoterRegion_EncodeTFBS	SNV_ASDTADAFDR03_All_PromoterRegion_EncodeTFBS
+    99	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
+    109	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
+    119	0.325822029103329	9.403763033356525e-14	-0.013037026552019174	0.301570528717263	0.02878003342276997	0.10879422840112464	1.4424484032226136e-14
+    129	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
+    139	0.5043686907598725	2.418464484994985e-13	-0.2997682117383215	0.40693256150789164	0.2842697675162165	0.28273561659692653	7.517089359062178e-14
+    149	0.325822029103329	9.403763033356525e-14	-0.013037026552019174	0.301570528717263	0.02878003342276997	0.10879422840112464	1.4424484032226136e-14
+    159	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
+    169	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
+    179	0.45023131938423333	1.8696018995171272e-13	-0.2130071674412616	0.3919908217878494	0.2068279907707919	0.22350343508417986	5.0113929060414515e-14
+
+
+  The ``de_novo_variants.lasso_null_models_thres_3.txt`` looks like below.
+
+  .. code-block:: solidity
+    
+    N_perm	R2	std
+    avg	-0.0007819472040231392	0.002634748805294369
+    1	-0.00039280661207419243
+    2	0.0
+    3	0.0
+    4	0.0
+    5	0.0
+    6	-0.0012461780223531616
+
+
+  The ``de_novo_variants.lasso_results_thres_3.txt`` looks like below.
+
+  .. code-block:: solidity
+    
+    Category	seed	parameter	R2	n_select	perm_P
+    result	avg	0.034980744744024496	0.0005405475816937733	7	0.1088911088911089
+    result	99	0.03389551266865287	0.0004014361946027556	10	0.0
+    result	109	0.03389551266865287	0.0004014361946027556	10	0.0
+    result	119	0.04082726500827879	0.0013018193415366142	8	0.0
+    result	129	0.03389551266865287	0.0004014361946027556	10	0.0
+    result	139	0.030884328743117234	-8.21622835478486e-06	10	0.0
+
+  The ``de_novo_variants.lasso_histogram_thres_3.pdf`` looks like below.
+
+  .. figure:: ../images/de_novo_variants.burden_test.volcano_plot.png
+    :alt: CWAS-Plus workflow
+    :width: 90%
+    :align: center
+
+
+
+1.  :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
