@@ -465,7 +465,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
-  In the above example, binomial burden test takes about 4 minutes.
+  In the above example, binomial burden test takes about 4 minutes. The permutation test takes about 628 minutes using 8 cores.
 
   Below are the output files generated.
 
