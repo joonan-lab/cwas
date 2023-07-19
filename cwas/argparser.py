@@ -569,8 +569,36 @@ def burden_shift() -> argparse.ArgumentParser:
         dest="pval",
         required=False,
         default=0.05,
-        type=int,
+        type=float,
         help="P-value of threshold.",
+    )
+    result.add_argument(
+        "-c_list",
+        "--cat_set_list",
+        dest="cat_set_list",
+        required=None,
+        type=Path,
+        help="Path of the list of interest category sets for the main output plot. In the file, one line stores one category set name and, do not include header.\nIf the category set name is combination of two or more domains, it must be separated by &. \nIf no user input is entered, the plot outputs for top N category sets."
+    )
+    result.add_argument(
+        "-N",
+        "--n_cat_sets",
+        dest='n_cat_sets',
+        required=False,
+        default=10,
+        type=int,
+        help="The number of the category sets contained in the main output plot. Top N category sets will be contain in main output plot"
+        
+    )
+    result.add_argument(
+        "-fs",
+        "--fontsize",
+        dest='fontsize',
+        required=False,
+        default=10,
+        type=int,
+        help="Font size of final main output plot."
+        
     )
     return result
 

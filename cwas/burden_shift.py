@@ -4,16 +4,19 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import seaborn as sns
 from matplotlib.backends.backend_pdf import PdfPages
-import time
+from matplotlib import gridspec
 import polars as pl
-
+import re
 
 from cwas.utils.log import print_progress, print_arg
 from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
+
+pd.set_option('mode.chained_assignment',  None)
 
 class BurdenShift(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -21,7 +24,8 @@ class BurdenShift(Runnable):
         self._burden_res = None
         self._burden_shift_res = None
         self._cat_sets = None
-        self._cat_counts = None        
+        self._cat_counts = None
+        self._cat_set_list = None
         
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -98,6 +102,21 @@ class BurdenShift(Runnable):
     def pval(self) -> float:
         return self.args.pval
     
+    @property
+    def cat_set_list(self):
+        if self._cat_set_list is None:
+            with open(self.args.cat_set_list, 'r') as f:
+                self._cat_set_list = f.read().splitlines()
+        return self._cat_set_list
+
+    @property
+    def n_cat_sets(self) -> int:
+        return self.args.n_cat_sets
+    
+    @property
+    def fontsize(self) -> int:
+        return self.args.fontsize
+    
 
     def _create_category_sets(self):
         print_progress("Create category sets combined all of regions, biotypes, and gene list")
@@ -163,7 +182,7 @@ class BurdenShift(Runnable):
     def _draw_shiftDistPlot(self, df, setName, nObsCase, nObsCtrl, pCase, pCtrl):
         ggpermCounts = pd.DataFrame(df['case'].tolist()+df['control'].tolist(), columns=['N_signif_tests'])
 
-        ft_size = 10
+        ft_size = self.fontsize
         larger = max(nObsCase, nObsCtrl)
         max_cnts = round(ggpermCounts['N_signif_tests'].max())
         xticks = np.arange(max_cnts/4, (max_cnts/4)*4+1, max_cnts/4) if max_cnts > 0 else [max_cnts]
@@ -206,20 +225,112 @@ class BurdenShift(Runnable):
         plt.close()
 
         return fig1, fig2        
+    
+    def _burden_shift_size(self, x):
+        if x == 0:
+            return 1
+        elif x < 10:
+            return 3
+        elif (x>=10) & (x<50):
+            return 5
+        elif (x>=50) & (x<100):
+            return 7
+        elif (x>=100) & (x<150):
+            return 9
+        elif (x>=150) & (x<200):
+            return 11
+        elif x>=200:
+            return 13
+    
+    def _change_cre_name(self, x):
+        pat = re.search(r'([a-zA-Z]*CRE[a-zA-Z0-9]*)', x).group(1)
+        return x.replace(pat, pat.replace('CRE', " ")+'-CRE')
+    
+    def _match_cat_sets(self, pre, x):
+        if len(pre.split("&")) == len(x.replace('is_','').split("_")):
+            res = set(pre.split("&"))&set(x.split("_"))
+            
+            if len(res) == len(pre.split("&")):
+                return x
+            
+    def _create_shiftResPlot_df(self, df):
+        main_domain = ['Coding', 'LoF', 'Missense', 'Damaging', 'Noncoding', 'Promoter', 'Intron', 'Intergenic', 'UTR', 'LincRNA']
+        domain_order = ['Coding (All)','LoF','Missense','Coding w/o LoF','Noncoding (All)','Promoter','Intron','Intergenic','UTR','LincRNA','CRE','Others']
         
-    def run(self):
-        self.burden_shift()
-        print_progress("Done")
+        ## modify dataframe as validated form
+        df = df.loc[(df['Category_set'] != 'All')&(df['Category_set']!='is_lincRNA_lincRNA')]
+        df['Category_set'] = df['Category_set'].str.replace('ptv','LoF')
+        df['Category_set'] = df['Category_set'].str.replace('_no_','_w/o_')
+        df['Category_set'] = df['Category_set'].str.replace('_wo_','_w/o_')
+        df['Domain'] = df['Category_set'].str.split('_').str[1]
+        df['Domain'] = df['Domain'].str[0].str.upper() + df['Domain'].str[1:]
+
+        df_case = df.loc[:, ['Category_set','N_cats_case','P_case','Domain']]
+        df_case.columns = ['Category_set','N_cats','P','Domain']
+        df_case['Phenotype'] = 'Case'
+        df_ctrl = df.loc[:, ['Category_set','N_cats_control','P_control','Domain']]
+        df_ctrl.columns = ['Category_set','N_cats','P','Domain']
+        df_ctrl['Phenotype'] = 'Control'
+
+        df2 = pd.concat([df_case, df_ctrl])#.sort_values(['Category_set','Phenotype'])
+        df2['Size'] = df2['N_cats'].apply(lambda x: self._burden_shift_size(x))
+        df2.loc[~df2.Domain.isin(main_domain), 'Domain'] = 'Others'
+        df2["Domain2"] = df2["Domain"]
+        df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] = df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] + " (All)"
+        df2.loc[df2['Domain2']=="Damaging", "Domain2"] = "Missense"
+        df2.loc[df2['Category_set']=="is_coding_w/o_promoter", "Domain2"] = "Coding w/o LoF"
+        df2['Domain_order'] = df2.Domain2.apply(lambda x: domain_order.index(x))
+
+        df2["Category_term"] = df2["Category_set"].str.replace("is_","")
+        df2.loc[df2["Category_term"]=='coding_w/o_LoF', "Category_term"] = "coding w/o LoF"
+        df2.loc[df2["Category_term"].str.contains("CRE"), "Category_term"] = df2.loc[df2["Category_term"].str.contains("CRE"), "Category_term"].apply(lambda x: self._change_cre_name(x))
+
+        df2.loc[df2['Domain2']=='Others', 'Category_term'] = df2.loc[df2['Domain2']=='Others', 'Category_term'].apply(lambda x: x.replace('_', "\n"))
+        df2['Category_term'] = df2["Category_term"].apply(lambda x: " ".join(x.split('_')[1:]) if len(x.split('_'))>2 else x.split('_')[-1])
+
+        df2["Category_term"] = df2["Category_term"].str.replace("CHD8Common", "CHD8 targets")
+        df2["Category_term"] = df2["Category_term"].str.replace("FMRPDarnel", "FMRP targets")
+        df2["Category_term"] = df2["Category_term"].str.replace("L23", "L2/3")
+        df2["Category_term"] = df2["Category_term"].str.replace("L56", "L5/6")	
+        df2["Category_term"] = df2["Category_term"].str.replace("WillseyUnion", "ASD coexpression")
+        df2["Category_term"] = df2["Category_term"].str.replace("ASDTADAFDR03", "ASD risk")
+        df2["Category_term"] = df2["Category_term"].str.replace("LOEUF35", "Constrained genes")
+        df2["Category_term"] = df2["Category_term"].str.replace("Micro", "Microglia")
+        df2['Category_term'] = df2['Category_term'].str[0].str.upper() + df2['Category_term'].str[1:]
+
+        df2["new_name"] = df2["Category_term"] + "::" + df2["Domain2"]
+        df2["-log10P"] = df2["P"].apply(lambda x: -np.log10(x))
         
+        ## extract queried data frame for drawing plot
+        all_cat_sets = self.cat_sets.columns.tolist()[1:]
+        query_df = pd.DataFrame()
+        
+        if not self.cat_set_list is None:
+            query_cat_sets = []
+            for x in self.cat_set_list:
+                if len(x.split('&'))>1:
+                    query = list(set([x for x in list(map(lambda y: self._match_cat_sets(x, y), all_cat_sets)) if not x is None]))
+                    query_cat_sets.extend(query)
+                else:
+                    query_cat_sets.append('is_'+x)
+            query_df = df2.loc[df2["Category_set"].isin(query_cat_sets)]    
+        else:
+            topN_cats = df2.loc[df2.Phenotype=='Case'].sort_values(["-log10P","N_cats"], ascending=False)["Category_set"].tolist()[:self.n_cat_sets]
+            query_df = df2.loc[df2["Category_set"].isin(topN_cats)]
+
+        max_lim = query_df.loc[~np.isinf(query_df["-log10P"]), "-log10P"].max() + 0.3
+        query_df.loc[np.isinf(query_df["-log10P"]), "-log10P"] = max_lim
+        query_df.sort_values(["Domain_order","Category_set"], ascending=False, inplace=True)
+        return query_df
+    
+
     def burden_shift(self):
-        print(self.input_file, type(self.input_file))
         filt_cats = self.cat_counts.loc[self.cat_counts['Raw_counts'] >= self.c_cutoff, "Category"].tolist()
         filt_cat_sets = self.cat_sets.loc[self.cat_sets['Category'].isin(filt_cats)]
         print_progress("Number of category sets above category counts cutoff: {}".format(len(filt_cat_sets)))
             
         ## Loop through categories specified in the catsets object
         print_progress("Compare burden test and permutation test")
-        
         obsTab = pd.DataFrame()
         plot_output = f'plotDistr_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.pdf'
         pdfsave = PdfPages(os.path.join(self.output_dir_path, plot_output))
@@ -259,7 +370,7 @@ class BurdenShift(Runnable):
                 
                 # Add data to output object
                 tmp_df = pd.DataFrame([{'Category_set':setName,
-                                       "N_cats_cse":nObsCase,
+                                       "N_cats_case":nObsCase,
                                        'N_cats_control':nObsCtrl,
                                        'P_case':pCase,
                                        'P_control':pCtrl}])
@@ -267,7 +378,102 @@ class BurdenShift(Runnable):
                     
         pdfsave.close()
         
-        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz','')
-        obsFile = output_name + f".nCats_obs_p_{self.pval}_{self.c_cutoff}.{self.tag}.txt"
+        self._obsTab = obsTab
         
+        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz','')
+        obsFile = output_name + f"nCats_obs_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.txt"    
         obsTab.to_csv(os.path.join(self.output_dir_path, obsFile), sep="\t", index=False)
+        
+    def draw_shiftResPlot(self):
+        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz','')
+        plot_output = output_name + f"nCats_obs_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.result_plot.pdf"
+        
+        plot_df = self._create_shiftResPlot_df(self._obsTab)
+        case_df = plot_df.loc[plot_df.Phenotype=='Case'].reset_index(drop=True)
+        ctrl_df = plot_df.loc[plot_df.Phenotype=='Control'].reset_index(drop=True)
+
+        ## Draw plot
+        plt.rcParams['font.size'] = self.fontsize
+        plt.rcParams['legend.title_fontsize'] = self.fontsize-1
+        plt.rcParams['legend.fontsize'] = self.fontsize-1
+        
+        fig = plt.figure(figsize=(14,7))
+        spec = gridspec.GridSpec(ncols=2, nrows=1,
+                                 width_ratios=[0.5,13.5])
+
+        ## main scatter plot
+        ax1 = fig.add_subplot(spec[1])
+        ax1.set_title('Burdenshift: Overrepresented terms', weight='bold', loc='left', pad=5)
+        ax1.scatter(case_df['-log10P'], case_df['new_name'],
+                    s=case_df['Size']*20, label='case', color='#ff8a89', edgecolor='black', linewidth=0.5)
+        ax1.scatter(ctrl_df['-log10P'], ctrl_df['new_name'],
+                    s=ctrl_df['Size']*20, label='contorl', color='#8b8aff', edgecolor='black', linewidth=0.5)
+
+        y_min, y_max = ax1.get_ylim()
+        ax1.vlines(ymin=y_min, ymax=y_max, x=-np.log10(0.05), color='red', linestyle='--', linewidth=1.5)
+
+        x_max = ax1.get_xlim()[-1]
+        ax1.set_xticks(np.arange(0, x_max+.5, 0.5))
+        ax1.set_xlim(0-0.2, round(x_max,1)+0.2)
+        ax1.set_xlabel('P(-log10)')
+
+        ## create and draw grouped y-label
+        cat_pos = ax1.get_yticks()
+        cat_labels = [x.get_text() for x in ax1.get_yticklabels()]
+
+        tmp = pd.DataFrame({'y_pos':cat_pos, 'new_name':cat_labels}, index=range(len(cat_pos)))
+        y_axis_df = pd.merge(tmp, plot_df.loc[:,["Category_set","Domain_order","Domain2","new_name"]], on="new_name").drop_duplicates()
+        minor_ypos = pd.DataFrame(y_axis_df.groupby("Domain2").mean('y_pos'))["y_pos"].reset_index().rename({"y_pos":"minor_y_pos"}, axis=1)
+
+        ax0 = fig.add_subplot(spec[0])
+        ax0.axis('off')
+        ## create vertical line for category domain name
+        for d in y_axis_df["Domain2"].unique():
+            y_min_val = y_axis_df.loc[y_axis_df["Domain2"]==d, "y_pos"].min()
+            y_max_val = y_axis_df.loc[y_axis_df["Domain2"]==d, "y_pos"].max()
+            ax0.vlines(0, y_min_val-.25, y_max_val+0.25, color='black', linewidth=1.5, ls='-' , clip_on=False)
+            
+        ## add domain name (grouping y-label)
+        for y_pos, y_label in zip(minor_ypos["minor_y_pos"], minor_ypos['Domain2']):
+            ax0.text(-.015, y_pos, y_label, color='black', ha="right", va='center')
+        
+        ## set ytick labels
+        yticklabels = [text.get_text().split("::")[0] for text in ax1.get_yticklabels()]
+        ax1.set_yticklabels(yticklabels)
+        ax1.set_ylim(y_min, y_max)
+
+        ## create multiple legends
+        ### legend1 - phenotype
+        pheno_lds = [Line2D([0],[0], markerfacecolor='#ff8a89', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Case'),
+                     Line2D([0],[0], markerfacecolor='#8b8aff', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Control')]
+        legend1 = ax1.legend(handles=pheno_lds, loc='center left', bbox_to_anchor=(1,0.3), labelspacing=.7, title='Phenotype', frameon=False)
+        legend1._legend_box.align = 'left'
+
+        ### legend2 - size
+        size_lds = []
+        sizes = [1, 3, 5, 7, 9, 11, 13]
+        size_labels = ['0','<10','<50','<100','<150','<200',"≥200"]
+        for s, sl in zip(sizes, size_labels):
+            tmp_lds = Line2D([0],[0], markerfacecolor='white', marker='o', markersize=s, markeredgewidth=0.5, markeredgecolor='black', linewidth=0, label=sl)
+            size_lds.append(tmp_lds)
+        legend2 = ax1.legend(handles=size_lds, loc='center left', bbox_to_anchor=(1,0.6), labelspacing=.7, title='Number of\nsignificant\ncategories', frameon=False)
+        legend2._legend_box.align = 'left'
+
+        ## add legends
+        ax1.add_artist(legend1)
+        ax1.add_artist(legend2)
+        ax1.legend(handles=[], loc='center left', bbox_to_anchor=(1.1,0.5), frameon=False) 
+
+        ## set ticks params
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax1.spines['left'].set_linewidth(1.5)
+        ax1.spines['bottom'].set_linewidth(1.5)
+        ax1.tick_params(width=1.5, size=7)
+        plt.tight_layout()        
+        plt.savefig(os.path.join(self.output_dir_path, plot_output), bbox_inches='tight')    
+
+    def run(self):
+        self.burden_shift()
+        self.draw_shiftResPlot()
+        print_progress("Done")
