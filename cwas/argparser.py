@@ -576,7 +576,7 @@ def burden_shift() -> argparse.ArgumentParser:
         "-c_list",
         "--cat_set_list",
         dest="cat_set_list",
-        required=None,
+        required=False,
         type=Path,
         help="Path of the list of interest category sets for the main output plot. In the file, one line stores one category set name and, do not include header.\nIf the category set name is combination of two or more domains, it must be separated by &. \nIf no user input is entered, the plot outputs for top N category sets."
     )
