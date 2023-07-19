@@ -5,6 +5,9 @@ from functools import reduce
 from itertools import product
 from math import ceil
 from pathlib import Path
+import parmap
+from cwas.core.common import chunk_list
+import polars as pl
 
 import pandas as pd
 import numpy as np
@@ -242,45 +245,16 @@ class Categorization(Runnable):
 
         if self.generate_matrix == "sample":
             log.print_progress("Get an intersection matrix between categories using the number of samples")
-            idx_s, idx_c = np.where(self._result > 0)
-            _, cnts = np.unique(idx_s, return_counts=True)
-            idx_c_by_s = np.split(idx_c, np.cumsum(cnts)[:-1])
-            if self.num_proc == 1:
-                main_mat = np.zeros((len(self._result.columns), len(self._result.columns)), dtype = int)
-                for arr in idx_c_by_s:
-                    it1 = np.nditer(arr)
-                    for x in it1:
-                        it2 = np.nditer(arr)
-                        for y in it2:
-                            main_mat[x, y]+=1
-            else:
-                ori_mat = np.zeros((len(self._result.columns), len(self._result.columns)), dtype = int)
-                self._shm = shm.SharedMemory(create = True, size = ori_mat.nbytes)
-                main_mat = np.frombuffer(buffer = self._shm.buf, dtype = ori_mat.dtype, count = -1).reshape(ori_mat.shape)
-                get_intersection_matrix_partial = partial(
-                    self.count_shared_sample,
-                    shm_nm = self._shm.name,
-                    shape = ori_mat.shape,
-                )
-                del ori_mat
-                
-                with mp.Pool(self.num_proc) as pool:
-                    for i, _ in enumerate(pool.imap_unordered(
-                        get_intersection_matrix_partial,
-                        idx_c_by_s
-                    ), 1):
-                        if i % 100 == 0:
-                            log.print_progress(f"Calculate {i} samples")
 
-            intersection_matrix = pd.DataFrame(
-                main_mat.copy(),
-                index=self._result.columns,
-                columns=self._result.columns
-            )
-            if self._shm is not None:
-                del main_mat
-                self._shm.close()
-                self._shm.unlink()
+            if self.num_proc == 1:
+                intersection_matrix = self.process_columns(column_range = range(self._result.shape[1]), matrix=self._result)
+            else:
+                # Split the column range into evenly sized chunks based on the number of workers
+                chunks = chunk_list(range(self._result.shape[1]), self.num_proc)
+                result = parmap.map(self.process_columns, chunks, matrix=self._result, pm_pbar=True, pm_processes=self.num_proc)
+                # Concatenate the count values
+                intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
+
         elif self.generate_matrix == "variant":
             log.print_progress("Get an intersection matrix between categories using the number of variants")
             intersection_matrix = (
@@ -295,17 +269,23 @@ class Categorization(Runnable):
         self._correlation_matrix = intersection_matrix/np.outer(diag_sqrt, diag_sqrt)
 
     @staticmethod
-    def count_shared_sample(arr: np.ndarray, shm_nm: str, shape: tuple) -> np.ndarray:
-        temp_shm = shm.SharedMemory(name = shm_nm)
-        mat = np.frombuffer(buffer = temp_shm.buf, dtype = int).reshape(shape)
-        it1 = np.nditer(arr)
-        for x in it1:
-            it2 = np.nditer(arr)
-            for y in it2:
-                with lock:
-                    mat[x, y]+=1
-        del mat
-        temp_shm.close()
+    def process_columns(column_range, matrix: pd.DataFrame) -> list:
+        results = []
+    
+        # Iterate over the column range
+        for i in column_range:
+            # Multiply the i-th column with values in the 'matrix' DataFrame
+            df_multiplied = matrix.mul(matrix.iloc[:, i], axis=0)
+            
+            # Count the number of values greater than 0 in each column
+            count_values_gt_zero = (df_multiplied > 0).sum(axis=0)
+            
+            # Assign the column name to count_values_gt_zero
+            count_values_gt_zero.name = matrix.columns[i]
+            
+            results.append(count_values_gt_zero)
+        
+        return results
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
