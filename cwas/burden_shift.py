@@ -34,7 +34,7 @@ class BurdenShift(Runnable):
         print_arg("Output directory", args.output_dir_path)
         print_arg("Category set file", os.path.basename(args.cat_set_file))
         print_arg("Category counts file", os.path.basename(args.cat_count_file))
-        print_arg("Cutoff of category sets and p-value", [args.c_cutoff, args.pval])
+        print_arg("Cutoff of category sets and p-value", [args.count_cutoff, args.pval])
         print_arg("Output tag (prefix of output files)", args.tag)
 
     @staticmethod
@@ -391,7 +391,7 @@ class BurdenShift(Runnable):
         ## Draw plot
         plt.rcParams['font.size'] = self.fontsize
         h = len(plot_df)/2 * 0.7
-        fig, ax = plt.subplots(ncols=2, figsize=(14,7),
+        fig, ax = plt.subplots(ncols=2, figsize=(14,h),
                                width_ratios=[.5,13.5])
 
         ## main plot
@@ -437,8 +437,8 @@ class BurdenShift(Runnable):
 
         ## create multiple legends
         ### legend1 - phenotype
-        pheno_lds = [Line2D([0],[0], markerfacecolor='#ff8a89', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Case'),
-                     Line2D([0],[0], markerfacecolor='#8b8aff', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Control')]
+        pheno_lds = [Line2D([0],[0], markerfacecolor='#ff8a89', marker='o', markersize=self.fontsize*1.15, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Case'),
+                     Line2D([0],[0], markerfacecolor='#8b8aff', marker='o', markersize=self.fontsize*1.15, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Control')]
         legend1 = ax[1].legend(handles=pheno_lds, loc='center left', bbox_to_anchor=(1,0.25), labelspacing=.7, title='Phenotype', frameon=False, borderaxespad=0.)
         legend1._legend_box.align = 'left'
 
