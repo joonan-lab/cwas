@@ -34,7 +34,7 @@ class BurdenShift(Runnable):
         print_arg("Output directory", args.output_dir_path)
         print_arg("Category set file", os.path.basename(args.cat_set_file))
         print_arg("Category counts file", os.path.basename(args.cat_count_file))
-        print_arg("Cutoff of p-value", args.pval)
+        print_arg("Cutoff of category sets and p-value", [args.c_cutoff, args.pval])
         print_arg("Output tag (prefix of output files)", args.tag)
 
     @staticmethod
@@ -59,7 +59,6 @@ class BurdenShift(Runnable):
     def burden_shift_res(self) -> Path:
         if self._burden_shift_res is None:
             self._burden_shift_res = pl.read_csv(self.args.burden_res.resolve(), separator="\t")
-            #self._burden_shift_res.index = self._burden_shift_res['Trial'].tolist()
         return self._burden_shift_res       
     
     @property
@@ -93,10 +92,6 @@ class BurdenShift(Runnable):
                 print("Count cutoff is must be positive value.")
             )        
         return self.args.count_cutoff
-    
-    @property
-    def num_perms(self) -> int:
-        return self.args.num_perms
     
     @property
     def pval(self) -> float:
@@ -395,21 +390,16 @@ class BurdenShift(Runnable):
 
         ## Draw plot
         plt.rcParams['font.size'] = self.fontsize
-        plt.rcParams['legend.title_fontsize'] = self.fontsize-1
-        plt.rcParams['legend.fontsize'] = self.fontsize-1
-        
-        #fig = plt.figure(figsize=(14,7), layout='constrained')
-        #spec = gridspec.GridSpec(ncols=2, nrows=1,
-        #                         width_ratios=[0.5,13.5])
-        fig, ax = plt.subplots(ncols=2, figsize=(14,7), width_ratios=[.5, 13.5])
+        h = len(plot_df)/2 * 0.7
+        fig, ax = plt.subplots(ncols=2, figsize=(14,7),
+                               width_ratios=[.5,13.5])
 
-        ## main scatter plot
-        #ax1 = fig.add_subplot(spec[1])
+        ## main plot
         ax[1].set_title('Burdenshift: Overrepresented terms', weight='bold', loc='left', pad=5)
         ax[1].scatter(case_df['-log10P'], case_df['new_name'],
-                    s=case_df['Size']*20, label='case', color='#ff8a89', edgecolor='black', linewidth=0.5)
+                      s=case_df['Size']*20, label='case', color='#ff8a89', edgecolor='black', linewidth=0.5)
         ax[1].scatter(ctrl_df['-log10P'], ctrl_df['new_name'],
-                    s=ctrl_df['Size']*20, label='contorl', color='#8b8aff', edgecolor='black', linewidth=0.5)
+                      s=ctrl_df['Size']*20, label='contorl', color='#8b8aff', edgecolor='black', linewidth=0.5)
 
         y_min, y_max = ax[1].get_ylim()
         ax[1].vlines(ymin=y_min, ymax=y_max, x=-np.log10(0.05), color='red', linestyle='--', linewidth=1.5)
@@ -422,28 +412,26 @@ class BurdenShift(Runnable):
         ## create and draw grouped y-label
         cat_pos = ax[1].get_yticks()
         cat_labels = [x.get_text() for x in ax[1].get_yticklabels()]
-
         tmp = pd.DataFrame({'y_pos':cat_pos, 'new_name':cat_labels}, index=range(len(cat_pos)))
         y_axis_df = pd.merge(tmp, plot_df.loc[:,["Category_set","Domain_order","Domain2","new_name"]], on="new_name").drop_duplicates()
         minor_ypos = pd.DataFrame(y_axis_df.groupby("Domain2").mean('y_pos'))["y_pos"].reset_index().rename({"y_pos":"minor_y_pos"}, axis=1)
 
-        #ax0 = fig.add_subplot(spec[0])
-        ax[0].axis('off')
-        ## create vertical line for category domain name
+        ### create vertical line for category domain name
+        ax[0].set_yticks(cat_pos)
+        ax[0].set_ylim(y_min, y_max)
         for d in y_axis_df["Domain2"].unique():
             y_min_val = y_axis_df.loc[y_axis_df["Domain2"]==d, "y_pos"].min()
             y_max_val = y_axis_df.loc[y_axis_df["Domain2"]==d, "y_pos"].max()
             ax[0].vlines(0, y_min_val-.25, y_max_val+0.25, color='black', linewidth=1.5, ls='-' , clip_on=False)
             
-        ## add domain name (grouping y-label)
+        ### add domain name (grouping y-label)
         for y_pos, y_label in zip(minor_ypos["minor_y_pos"], minor_ypos['Domain2']):
             ax[0].text(-.015, y_pos, y_label, color='black', ha="right", va='center')
-        
-        ## set ytick labels
-        ticks_loc = ax[1].get_yticks()
-        yticklabels = [text.get_text().split("::")[0] for text in ax[1].get_yticklabels()]
+        ax[0].axis('off')
 
-        ax[1].yaxis.set_major_locator(mticker.FixedLocator(ticks_loc))
+        ## set yaxis of main plot
+        yticklabels = [text.split("::")[0] for text in cat_labels]
+        ax[1].yaxis.set_major_locator(mticker.FixedLocator(cat_pos))
         ax[1].set_yticklabels(yticklabels)
         ax[1].set_ylim(y_min, y_max)
 
@@ -451,7 +439,7 @@ class BurdenShift(Runnable):
         ### legend1 - phenotype
         pheno_lds = [Line2D([0],[0], markerfacecolor='#ff8a89', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Case'),
                      Line2D([0],[0], markerfacecolor='#8b8aff', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Control')]
-        legend1 = ax[1].legend(handles=pheno_lds, loc='center left', bbox_to_anchor=(1,0.3), labelspacing=.7, title='Phenotype', frameon=False)
+        legend1 = ax[1].legend(handles=pheno_lds, loc='center left', bbox_to_anchor=(1,0.25), labelspacing=.7, title='Phenotype', frameon=False, borderaxespad=0.)
         legend1._legend_box.align = 'left'
 
         ### legend2 - size
@@ -461,20 +449,20 @@ class BurdenShift(Runnable):
         for s, sl in zip(sizes, size_labels):
             tmp_lds = Line2D([0],[0], markerfacecolor='white', marker='o', markersize=s, markeredgewidth=0.5, markeredgecolor='black', linewidth=0, label=sl)
             size_lds.append(tmp_lds)
-        legend2 = ax[1].legend(handles=size_lds, loc='center left', bbox_to_anchor=(1,0.6), labelspacing=.7, title='Number of\nsignificant\ncategories', frameon=False)
+        legend2 = ax[1].legend(handles=size_lds, loc='center left', bbox_to_anchor=(1,0.6), labelspacing=.7, title='Number of\nsignificant\ncategories', frameon=False, borderaxespad=0.)
         legend2._legend_box.align = 'left'
 
-        ## add legends
         ax[1].add_artist(legend1)
         ax[1].add_artist(legend2)
-        ax[1].legend(handles=[], loc='center left', bbox_to_anchor=(1.1,0.5), frameon=False) 
-
+        ax[1].legend(handles=[], loc='center left', bbox_to_anchor=(1.1,0.5), frameon=False)
+        
         ## set ticks params
         ax[1].spines['top'].set_visible(False)
         ax[1].spines['right'].set_visible(False)
         ax[1].spines['left'].set_linewidth(1.5)
         ax[1].spines['bottom'].set_linewidth(1.5)
         ax[1].tick_params(width=1.5, size=7)
+
         plt.tight_layout()
         plt.savefig(os.path.join(self.output_dir_path, plot_output), bbox_inches='tight')    
 
