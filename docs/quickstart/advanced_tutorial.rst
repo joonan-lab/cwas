@@ -387,7 +387,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     
     cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
 
-  In the above example, categorizing variants soley takes about 6 minutes. Calculating the correlation matrix takes about ~ minutes.
+  In the above example, categorizing variants soley takes about 6 minutes. In addition to categorization, calculating the correlation matrix takes about 139 minutes with eight cores.
 
   Below is the output file generated.
 
@@ -396,6 +396,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     $HOME/cwas_output
     ...
     ├── de_novo_variants.categorization_result.txt.gz
+    ├── de_novo_variants.intersection_matrix.pkl
+    ├── de_novo_variants.correlation_matrix.pkl
     ...
 
 
@@ -463,7 +465,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
-  In the above example, binomial burden test takes about 4 minutes.
+  In the above example, binomial burden test takes about 4 minutes. The permutation test takes about 628 minutes using 8 cores.
 
   Below are the output files generated.
 
