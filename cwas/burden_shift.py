@@ -34,7 +34,7 @@ class BurdenShift(Runnable):
         print_arg("Output directory", args.output_dir_path)
         print_arg("Category set file", os.path.basename(args.cat_set_file))
         print_arg("Category counts file", os.path.basename(args.cat_count_file))
-        print_arg("Cutoff of category sets and p-value", [args.c_cutoff, args.pval])
+        print_arg("Cutoff of category sets and p-value", [args.count_cutoff, args.pval])
         print_arg("Output tag (prefix of output files)", args.tag)
 
     @staticmethod
