@@ -447,7 +447,7 @@ class data_collection:
         neg = len(np.where(vec < 0)[0])
         if (pos > neg):
             return 1
-        else:
+        elif (pos < neg):
             return -1
         return np.random.binomial(1, 0.5) * 2 - 1
     
