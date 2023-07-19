@@ -8,6 +8,7 @@ from pathlib import Path
 import parmap
 from cwas.core.common import chunk_list
 import polars as pl
+from tqdm import tqdm
 
 import pandas as pd
 import numpy as np
@@ -247,7 +248,7 @@ class Categorization(Runnable):
             log.print_progress("Get an intersection matrix between categories using the number of samples")
 
             if self.num_proc == 1:
-                intersection_matrix = self.process_columns(column_range = range(self._result.shape[1]), matrix=self._result)
+                intersection_matrix = self.process_columns_single(column_range = range(self._result.shape[1]), matrix=self._result)
             else:
                 # Split the column range into evenly sized chunks based on the number of workers
                 chunks = chunk_list(range(self._result.shape[1]), self.num_proc)
@@ -274,7 +275,7 @@ class Categorization(Runnable):
     
         # Iterate over the column range
         for i in column_range:
-            # Multiply the i-th column with values in the 'matrix' DataFrame
+            # Multiply the i-th column with values in the matrix
             df_multiplied = matrix.mul(matrix.iloc[:, i], axis=0)
             
             # Count the number of values greater than 0 in each column
@@ -286,6 +287,33 @@ class Categorization(Runnable):
             results.append(count_values_gt_zero)
         
         return results
+
+    @staticmethod
+    def process_columns_single(column_range, matrix: pd.DataFrame) -> pd.DataFrame:
+        # Initialize an empty DataFrame to store the concatenated results
+        result = pd.DataFrame()
+
+        # Define the progress bar
+        pbar = tqdm(column_range, desc='Processing')
+
+        # Perform the multiplication in a loop
+        for i in pbar:
+            # Multiply the i-th column with values in the matrix
+            df_multiplied = matrix.mul(matrix.iloc[:, i], axis=0)
+            
+            # Count the number of values greater than 0 in each column
+            count_values_gt_zero = (df_multiplied > 0).sum(axis=0)
+            
+            # Assign the column name to count_values_gt_zero
+            count_values_gt_zero.name = matrix.columns[i]
+            
+            # Concatenate the count values to the 'result' DataFrame
+            result = pd.concat([result, count_values_gt_zero], axis=1)
+
+        # Close the progress bar
+        pbar.close()
+        
+        return result
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
