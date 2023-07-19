@@ -437,8 +437,8 @@ class BurdenShift(Runnable):
 
         ## create multiple legends
         ### legend1 - phenotype
-        pheno_lds = [Line2D([0],[0], markerfacecolor='#ff8a89', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Case'),
-                     Line2D([0],[0], markerfacecolor='#8b8aff', marker='o', markersize=12.5, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Control')]
+        pheno_lds = [Line2D([0],[0], markerfacecolor='#ff8a89', marker='o', markersize=self.fontsize*1.15, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Case'),
+                     Line2D([0],[0], markerfacecolor='#8b8aff', marker='o', markersize=self.fontsize*1.15, markeredgewidth=0.5, linewidth=0, markeredgecolor='black', label='Control')]
         legend1 = ax[1].legend(handles=pheno_lds, loc='center left', bbox_to_anchor=(1,0.25), labelspacing=.7, title='Phenotype', frameon=False, borderaxespad=0.)
         legend1._legend_box.align = 'left'
 
