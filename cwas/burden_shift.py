@@ -391,7 +391,7 @@ class BurdenShift(Runnable):
         ## Draw plot
         plt.rcParams['font.size'] = self.fontsize
         h = len(plot_df)/2 * 0.7
-        fig, ax = plt.subplots(ncols=2, figsize=(14,7),
+        fig, ax = plt.subplots(ncols=2, figsize=(14,h),
                                width_ratios=[.5,13.5])
 
         ## main plot
