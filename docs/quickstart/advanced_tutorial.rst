@@ -387,7 +387,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     
     cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
 
-  In the above example, categorizing variants soley takes about 6 minutes. In addition to categorization, calculating the correlation matrix takes about 139 minutes with eight cores.
+  In the above example, categorizing variants soley takes about 6 minutes. In addition to categorization, calculating the correlation matrix takes about 31 minutes with eight cores.
 
   Below is the output file generated.
 
@@ -465,7 +465,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
-  In the above example, binomial burden test takes about 4 minutes. The permutation test takes about 628 minutes using 8 cores.
+  In the above example, binomial burden test takes about 4 minutes.
 
   Below are the output files generated.
 
@@ -566,7 +566,25 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - is_lincRNA: Categories with long noncoding RNA variants.
 
 
-7.  :ref:`Calculate the number of effective tests <effnumtest>`
+  .. code-block:: solidity
+    
+    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
+
+
+  In the above example, permutation test takes about 628 minutes using 8 cores.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.permutation_test.txt.gz
+    ├── de_novo_variants.binom_pvals.txt.gz
+    ...
+
+
+1.  :ref:`Calculate the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
