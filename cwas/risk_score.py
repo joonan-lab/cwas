@@ -4,7 +4,7 @@ import numpy as np
 import cwas.utils.log as log
 from pathlib import Path
 from tqdm import tqdm
-from glmnet import ElasticNet
+from glmnet import ElasticNet, LogitNet
 from cwas.core.common import cmp_two_arr
 from cwas.utils.check import check_is_file, check_num_proc
 from cwas.runnable import Runnable
@@ -60,6 +60,7 @@ class RiskScore(Runnable):
             "No. folds for CV",
             f"{args.fold: ,d}",
         )
+        log.print_arg("Use Logistic regression", args.logistic)
         log.print_arg(
             "No. permutation used to calculate the p-value",
             f"{args.n_permute: ,d}",
@@ -112,6 +113,10 @@ class RiskScore(Runnable):
             if self.args.category_set_path
             else None
         )
+
+    @property
+    def logistic(self) -> bool:
+        return self.args.logistic
 
     @property
     def out_dir(self) -> Path:
@@ -354,8 +359,14 @@ class RiskScore(Runnable):
         y = np.where(response, 1.0, -1.0)
         test_y = np.where(test_response, 1.0, -1.0)
         log.print_progress(f"Running LassoCV (Seed: {seed})")
-        lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-                                 scoring='mean_squared_error', random_state=seed)
+        
+        if self.logistic == True:
+            lasso_model = LogitNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+                                     scoring='mean_squared_error', random_state=seed)
+        else:
+            lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+                                     scoring='mean_squared_error', random_state=seed)
+
         lasso_model.fit(cov, y, self.custom_cv_folds())
         opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
         coeffs = getattr(lasso_model, 'coef_path_')
