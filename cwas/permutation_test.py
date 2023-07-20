@@ -13,6 +13,7 @@ from cwas.burden_test import BurdenTest
 from cwas.utils.log import print_progress, print_arg
 from cwas.utils.check import check_num_proc
 from cwas.core.burden_test.binomial import binom_two_tail
+import polars as pl
 
 class PermutationTest(BurdenTest):
     def __init__(self, args: Optional[argparse.Namespace] = None):

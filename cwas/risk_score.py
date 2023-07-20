@@ -12,6 +12,7 @@ from typing import Optional, Tuple
 from contextlib import contextmanager
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import polars as pl
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -211,9 +212,10 @@ class RiskScore(Runnable):
     def categorization_result(self) -> pd.DataFrame:
         if self._categorization_result is None:
             log.print_progress("Load the categorization result")
-            self._categorization_result = pd.read_table(
-                self.categorization_result_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+            self._categorization_result = pl.read_csv(
+                self.categorization_result_path, dtypes={"SAMPLE": str}
             )
+            self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
             if self.use_n_carrier:
