@@ -79,7 +79,7 @@ CWAS uses _[conda virtual environment](https://docs.conda.io/projects/conda/en/l
 
 ```bash
 # In your directory where CWAS is installed
-git clone https://github.com/mwjjeong/cwas.git
+git clone https://github.com/joonan-lab/cwas.git
 cd cwas
 conda env create -f environment.yml -n cwas
 conda activate cwas
