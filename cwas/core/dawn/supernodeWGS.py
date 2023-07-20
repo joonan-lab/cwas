@@ -304,7 +304,7 @@ class supernodeWGS_func:
 
         return pd.DataFrame({"Name":vec, "p.value":pvalue, "FDR":flocalfdr, "indicator":Iupdate})
     
-    def dawn_plot(self, g, zval):
+    def dawn_plot(self, g, zval, annot):
         random.seed(self.seed)
 
         node_size = [sum(np.array(self.clusters)==x) for x in self.cluster_idx_]
@@ -316,23 +316,83 @@ class supernodeWGS_func:
         node_col = list(map(lambda x: self._node_color_(maxz=maxz, minz=minz, x=x), zval))
 
         layout = g.layout(layout='auto')
-
-        fig, ax = plt.subplots(figsize=(7,7))
-        igraph.plot(g, vertex_size=node_size*5*10e-3, vertex_label=None, vertex_color=node_col, edge_width=.7, layout=layout, bbox=(300,300), target=ax)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph.pdf".format(self.tag)))
-        print("(1/3) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph.pdf".format(self.tag))))
-
-        fig, ax = plt.subplots(figsize=(7,7))
-        igraph.plot(g, vertex_size=node_size*5*10e-3, vertex_color=node_col, vertex_label=g.vs['name'], vertex_label_size=10, edge_width=.7, layout=layout, bbox=(300,300), target=ax)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_number.pdf".format(self.tag)))      
-        print("(2/3) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_number.pdf".format(self.tag))))  
-
         layout_mat = pd.DataFrame(layout[:], columns=['X.pos','Y.pos'])
         layout_mat = pd.concat([pd.DataFrame({'Cluster.index':g.vs['name']}), layout_mat, pd.DataFrame({"node.size":node_size, "node.color":node_col})], axis=1)
-        layout_mat.to_csv(os.path.join(self.output_dir_path, "{}.graph_layout.csv".format(self.tag)), index=False)
-        print("(3/3) {} saved!".format(os.path.join(self.output_dir_path, "{}.graph_layout.csv".format(self.tag))))
+        
+        comm_leiden = g.community_leiden(objective_function='modularity')
+        comm_membership = [comm_leiden.membership[v] for v in range(g.vcount())]
+        comm_df = pd.DataFrame({'Cluster.index':g.vs['name'], 'Community':comm_membership})
+        cluster_df = pd.merge(layout_mat, comm_df, on='Cluster.index')
+        cluster_df["Category"] = annot
+        comm_cat = pd.DataFrame(cluster_df.groupby("Community")["Category"].apply(lambda x: sum(x, []))).reset_index()
+        comm_cat["Represent_term"] = comm_cat["Category"].apply(lambda x: self._term_freq(x))
+        cluster_df = pd.merge(cluster_df, comm_cat.loc[:,["Community","Represent_term"]], on="Community")
+
+        x_pos_list = cluster_df.groupby('Community')["X.pos"].max()
+        y_pos_list = cluster_df.groupby('Community')["Y.pos"].mean()
+
+        fig, ax = plt.subplots(figsize=(7,7))
+        igraph.plot(comm_leiden,
+                    mark_groups=True,
+                    vertex_size=node_size*5*10e-3,
+                    vertex_label=None,
+                    vertex_color=node_col,
+                    edge_width=.7,
+                    layout=layout,
+                    bbox=(300,300),
+                    margin=20,
+                    target=ax)
+        for i in cluster_df["Community"].unique():
+            ax.annotate(cluster_df.loc[cluster_df["Community"]==i, "Represent_term"].values[0], (x_pos_list[i]+.1,y_pos_list[i]+.1), fontsize=10)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_community.pdf".format(self.tag)))
+        print("(1/4) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_community.pdf".format(self.tag))))
+
+        fig, ax = plt.subplots(figsize=(7,7))
+        igraph.plot(g,
+                    vertex_size=node_size*5*10e-3,
+                    vertex_color=node_col,
+                    vertex_label=None,
+                    edge_width=.7,
+                    layout=layout,
+                    bbox=(300,300),
+                    target=ax)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph.pdf".format(self.tag)))      
+        print("(2/4) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph.pdf".format(self.tag)))) 
+
+        fig, ax = plt.subplots(figsize=(7,7))
+        igraph.plot(g,
+                    vertex_size=node_size*5*10e-3,
+                    vertex_color=node_col,
+                    vertex_label=g.vs['name'],
+                    vertex_label_size=10,
+                    edge_width=.7,
+                    layout=layout,
+                    bbox=(300,300),
+                    target=ax)
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_number.pdf".format(self.tag)))      
+        print("(3/4) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_number.pdf".format(self.tag))))  
+        
+        layout_mat.to_csv(os.path.join(self.output_dir_path, "{}.graph_layout.csv".format(self.tag)), index=False)      
+        print("(4/4) {} saved!".format(os.path.join(self.output_dir_path, "{}.graph_layout.csv".format(self.tag))))
+
+    def _term_freq(self, x):
+        tmp = sum(list(map(lambda x: x.split("_"), x)), [])
+        word_count = pd.DataFrame(columns=['cnt'])
+        except_terms = ["All","Any","SNV","Indel"]
+
+        for t in tmp:
+            if (not t in except_terms) and (not self.tag in t.lower()):
+                if not t in word_count.index:
+                    word_count.loc[t, 'cnt'] = 1
+                else:
+                    word_count.loc[t, 'cnt'] = word_count.loc[t, 'cnt'] + 1
+
+        max_cnt = word_count.cnt.max()
+        rep_term = '&'.join(word_count.loc[word_count['cnt'] == max_cnt].index.tolist())
+        return rep_term
 
     def _node_color_(self, maxz, minz, x):
         tmp = (maxz - x) / (maxz-minz)
