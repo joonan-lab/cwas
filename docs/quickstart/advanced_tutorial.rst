@@ -685,7 +685,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas_output/subset_categories.v2.txt
 
 
-1.  :ref:`Risk score analysis <riskscore>`
+8.  :ref:`Risk score analysis <riskscore>`
 ############################################
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
