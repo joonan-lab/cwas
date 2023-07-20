@@ -583,8 +583,45 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ├── de_novo_variants.binom_pvals.txt.gz
     ...
 
+  The ``de_novo_variants.permutation_test.txt.gz`` looks like below.
 
-1.  :ref:`Calculate the number of effective tests <effnumtest>`
+  .. code-block:: solidity
+    
+    Category	variant_type	gene_list	conservation	gencode	region	Case_DNV_Count	Ctrl_DNV_Count	Relative_Risk	P
+    All_Any_All_Any_Any	All	Any	All	Any	Any	127980.74882782927	127125.25117217058	1.0067295651160606	0.10188981101889812
+    All_Any_All_Any_ChmE1	All	Any	All	Any	ChmE1	3492.624543347174	3415.2414632009927	1.0226581578432972	0.19098090190980901
+    All_Any_All_Any_ChmE15	All	Any	All	Any	ChmE15	114169.68816535878	113387.99788686923	1.0068939419784928	0.10268973102689731
+    All_Any_All_Any_ChmE2	All	Any	All	Any	ChmE2	3502.020519447336	3481.047898897923	1.006024800910109	0.41135886411358863
+    All_Any_All_Any_ChmE7	All	Any	All	Any	ChmE7	21707.074780596762	21489.912803685875	1.0101052981877916	0.1628837116288371
+
+  The descriptions of each column are as below.
+
+  - Category: The name of the category.
+  - variant_type: The variant type of the variants in the category.
+  - gene_list: The name of the specific gene list to which the genes in the category belong.
+  - conservation: The name of the specific functional score domain region to which the variants in the category belong.
+  - gencode: The gene biotype (such as coding, noncoding, promoter, etc.) of the variants within the category.
+  - region: The name of the specific region from functional region domain to which the variants in the category belong.
+  - Case_DNV_Count: The number of variants in cases within the category.
+  - Ctrl_DNV_Count: The number of variants in controls within the category.
+  - Relative_Risk: The ratio of (# of variants in cases / # of cases) divided by (# of variants in controls / # of controls). If *Relative_Risk* is greater than 1, the category indicates a case burden. On the other hand, if *Relative_Risk* is less than 1, the category suggests a control burden.
+  - P: Permutation p-value. Calculated by comparing the relative risks from permuted outputs and the observed relative risk.
+
+
+  The ``de_novo_variants.binom_pvals.txt.gz`` looks like below. This file is used in the burden shift analysis. The Trial column refers to each permutation. Other columns indicate the p-values of each category. Positive p-values indicate categories enriched in cases and negative p-values indicate categories enriched in controls. This distinguishment is for the burden shift analysis (to count the number of significant categories in each phenotype).
+
+  .. code-block:: solidity
+    
+    Trial All_Any_All_Any_Any All_Any_All_Any_ChmE1    ... Indel_CHD8Common_phyloP46way_IntronRegion_YaleH3K27acCBC
+        1         -0.18532295            -0.5717465    ...                                                       -1
+        2          0.08605956             0.9712071    ...                                                       -1
+        3          0.76496878             0.4629949    ...                                                        1
+        4          0.59706298            -0.6218066    ...                                                        1
+        5          0.19333246             0.6389063    ...                                                        1
+
+
+
+7.  :ref:`Calculate the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
