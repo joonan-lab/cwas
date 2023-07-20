@@ -387,7 +387,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     
     cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
 
-  In the above example, categorizing variants soley takes about 6 minutes. In addition to categorization, calculating the correlation matrix takes about 31 minutes with eight cores.
+  In the above example, categorizing variants soley takes about 6 minutes. In addition to categorization, calculating the correlation matrix takes about 139 minutes with eight cores.
 
   Below is the output file generated.
 
