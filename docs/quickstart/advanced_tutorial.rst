@@ -684,6 +684,25 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     
     cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas_output/subset_categories.v2.txt
 
+  This process uses all of the cores. With 40 cores, it takes about 90 minutes.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.neg_lap.pickle
+    ├── de_novo_variants.eig_vals.pickle
+    ├── de_novo_variants.eig_vecs.txt.gz
+    ...
+
+  The number of effective tests will be shown like below.
+
+  .. code-block:: solidity
+    
+    [RESULT] The number of effective tests is 4088.
+
 
 8.  :ref:`Risk score analysis <riskscore>`
 ############################################
