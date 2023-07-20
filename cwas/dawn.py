@@ -16,6 +16,7 @@ from rpy2.robjects.packages import importr
 from tqdm import tqdm
 from scipy.stats import norm
 import random
+import polars as pl
 
 from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection
@@ -74,7 +75,10 @@ class Dawn(Runnable):
     @property
     def eig_vector(self):
         if self._eig_vector is None:
-            self._eig_vector = pd.read_table(self.eig_vector_file, compression='gzip', index_col=0)
+            self._eig_vector = pl.read_csv(self.eig_vector_file, separator='\t', has_header=False).to_pandas()
+            self._eig_vector.index = self._eig_vector.iloc[:,0].tolist()
+            self._eig_vector = self._eig_vector.iloc[:,1:]
+            #self._eig_vector = pd.read_table(self.eig_vector_file, compression='gzip', index_col=0)
         return self._eig_vector
     
     @property
@@ -303,16 +307,13 @@ class Dawn(Runnable):
 
 
         ## save dawn plots and tables
-        print_progress("[DAWN] Draw DAWN clusters network graph and save graph layout")
-        supernodeWGS_process.dawn_plot(g, zval_supernode)
-
-        ## 
+        ### annotation table
         print_progress("[DAWN] Save DAWN clusters with annotations")
         tmp_idx = list(range(g.vcount()))
         cluster_indices = np.array(g.vs['name'])[tmp_idx].astype(int)
         assert all(np.array(sorted(cluster_indices)) == np.array(sorted(cluster_idx[tmp_idx])))
 
-        result = [[] for x in cluster_indices]
+        annot = [[] for x in cluster_indices]
 
         for i in range(len(cluster_indices)):
             node_idx = testvec_res['index'][tmp_idx[i]]
@@ -321,15 +322,19 @@ class Dawn(Runnable):
             assert len(set(np.array(clusters)[node_idx])) == 1, "Stop if they don't belong in the same cluster"
             assert len(node_idx) <= cluster_size[cluster_indices[i]-1], "Stop if the number of categories in the cluster is bigger than the size of the cluster."
 
-            result[i] = list(node_nam)
+            annot[i] = list(node_nam)
 
-        max_len = max(list(map(len, result)))
+        max_len = max(list(map(len, annot)))
 
         # Create a matrix where the result will be stored.
-        mat = pd.DataFrame(index=range(max_len), columns=range(len(cluster_indices)))
+        annot_mat = pd.DataFrame(index=range(max_len), columns=range(len(cluster_indices)))
 
         for i in range(len(cluster_indices)):
-            mat.iloc[:len(result[i]), i] = result[i]
+            annot_mat.iloc[:len(annot[i]), i] = annot[i]
         
-        mat.columns = cluster_indices
-        mat.to_csv(os.path.join(self.output_dir_path, "{}.cluster_annotation.csv".format(self.tag)), sep=",", index=False)
+        annot_mat.columns = cluster_indices
+        annot_mat.to_csv(os.path.join(self.output_dir_path, "{}.cluster_annotation.csv".format(self.tag)), sep=",", index=False)
+        
+        ## dawn plots
+        print_progress("[DAWN] Draw DAWN clusters network graph and save graph layout")
+        supernodeWGS_process.dawn_plot(g, zval_supernode, annot)
