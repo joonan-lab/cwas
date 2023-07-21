@@ -118,7 +118,7 @@ class Configuration(Runnable):
                     f'"{data_dir_symlink}" already exists, removing it and creating the symbolic link again.'
                 )
                 temp_link = Path(str(data_dir_symlink) + ".new")
-                os.remove(temp_link)
+                os.remove(data_dir_symlink)
                 os.symlink(data_dir, temp_link)
                 os.rename(temp_link, data_dir_symlink)
             else:
@@ -142,7 +142,7 @@ class Configuration(Runnable):
                     f'"{gene_matrix_symlink}" already exists, removing it and creating the symbolic link again.'
                 )
                 temp_link = gene_matrix_symlink + ".new"
-                os.remove(temp_link)
+                os.remove(gene_matrix_symlink)
                 os.symlink(gene_matrix, temp_link)
                 os.rename(temp_link, gene_matrix_symlink)
             log.print_warn(
@@ -166,7 +166,7 @@ class Configuration(Runnable):
                     f'"{bed_key_list_symlink}" already exists, removing it and creating the symbolic link again.'
                 )
                 temp_link = bed_key_list_symlink + ".new"
-                os.remove(temp_link)
+                os.remove(bed_key_list_symlink)
                 os.symlink(annot_key_conf, temp_link)
                 os.rename(temp_link, bed_key_list_symlink)
             
