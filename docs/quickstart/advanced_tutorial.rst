@@ -485,7 +485,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   .. |log2| replace:: log\ :sub:`2`
 
-  .. figure:: .././images/de_novo_variants.burden_test.volcano_plot.png
+  .. figure:: ../../images/de_novo_variants.burden_test.volcano_plot.png
     :alt: Volcano plot of categories
     :width: 90%
     :align: center
