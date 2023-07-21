@@ -12,6 +12,7 @@ from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 from cwas.utils.log import print_arg, print_progress
+import polars as pl
 
 
 class BurdenTest(Runnable):
@@ -124,9 +125,10 @@ class BurdenTest(Runnable):
     def categorization_result(self) -> pd.DataFrame:
         if self._categorization_result is None:
             print_progress("Load the categorization result")
-            self._categorization_result = pd.read_table(
-                self.cat_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+            self._categorization_result = pl.read_csv(
+                self.cat_path, dtypes={"SAMPLE": str}
             )
+            self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
             self.save_counts_table(form = 'raw')
             if self.adj_factor is not None:
                 self._adjust_categorization_result()

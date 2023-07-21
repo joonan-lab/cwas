@@ -4,7 +4,7 @@ import numpy as np
 import cwas.utils.log as log
 from pathlib import Path
 from tqdm import tqdm
-from glmnet import ElasticNet
+from glmnet import ElasticNet, LogitNet
 from cwas.core.common import cmp_two_arr
 from cwas.utils.check import check_is_file, check_num_proc
 from cwas.runnable import Runnable
@@ -12,6 +12,7 @@ from typing import Optional, Tuple
 from contextlib import contextmanager
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import polars as pl
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -60,6 +61,7 @@ class RiskScore(Runnable):
             "No. folds for CV",
             f"{args.fold: ,d}",
         )
+        log.print_arg("Use Logistic regression", args.logistic)
         log.print_arg(
             "No. permutation used to calculate the p-value",
             f"{args.n_permute: ,d}",
@@ -112,6 +114,10 @@ class RiskScore(Runnable):
             if self.args.category_set_path
             else None
         )
+
+    @property
+    def logistic(self) -> bool:
+        return self.args.logistic
 
     @property
     def out_dir(self) -> Path:
@@ -184,13 +190,13 @@ class RiskScore(Runnable):
                 
                 case_count = sum(self._sample_info['PHENOTYPE'] == 'case')
                 ctrl_count = sum(self._sample_info['PHENOTYPE'] == 'ctrl')
-                min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
+                self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
                 
                 log.print_log("LOG",
                               "Use {} samples from each phenotype as training set."
-                              .format(min_size))
+                              .format(self.min_size))
                 
-                test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=min_size, random_state=42).index
+                test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
                 self._sample_info["SET"] = np.where(self._sample_info.index.isin(test_idx), "test", "training")
         return self._sample_info
 
@@ -206,9 +212,10 @@ class RiskScore(Runnable):
     def categorization_result(self) -> pd.DataFrame:
         if self._categorization_result is None:
             log.print_progress("Load the categorization result")
-            self._categorization_result = pd.read_table(
-                self.categorization_result_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+            self._categorization_result = pl.read_csv(
+                self.categorization_result_path, dtypes={"SAMPLE": str}, separator = '\t'
             )
+            self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
             if self.use_n_carrier:
@@ -242,11 +249,9 @@ class RiskScore(Runnable):
     @property
     def datasets(self) -> np.ndarray:
         if self._datasets is None:
-            self._datasets = np.vectorize(
-                lambda sample_id: self.sample_info.to_dict()["SET"][
-                    sample_id
-                ]
-            )(self.categorization_result.index.values)
+            sample_ids = self.categorization_result.index.values
+            set_dict = self.sample_info.to_dict()["SET"]
+            self._datasets = np.array([set_dict[sample_id] for sample_id in sample_ids])
         return self._datasets
 
     @property
@@ -264,21 +269,17 @@ class RiskScore(Runnable):
     @property
     def response(self) -> np.ndarray:
         if self._response is None:
-            self._response = np.vectorize(
-                lambda sample_id: self.sample_info.to_dict()["PHENOTYPE"][
-                    sample_id
-                ] == "case"
-            )(self.categorization_result[self.datasets == "training"].index.values)
+            sample_ids = self.categorization_result[self.datasets == "training"].index.values
+            phenotype_dict = self.sample_info.to_dict()["PHENOTYPE"]
+            self._response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids])
         return self._response
-    
+
     @property
     def test_response(self) -> np.ndarray:
         if self._test_response is None:
-            self._test_response = np.vectorize(
-                lambda sample_id: self.sample_info.to_dict()["PHENOTYPE"][
-                    sample_id
-                ] == "case"
-            )(self.categorization_result[self.datasets == "test"].index.values)
+            sample_ids = self.categorization_result[self.datasets == "test"].index.values
+            phenotype_dict = self.sample_info.to_dict()["PHENOTYPE"]
+            self._test_response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids])
         return self._test_response
 
     @property
@@ -336,31 +337,73 @@ class RiskScore(Runnable):
         """Lasso model selection """
         if swap_label:
             np.random.seed(seed)
-            response, test_response = np.random.permutation(self.response), np.random.permutation(self.test_response)
+            
+            perm_sample_info = self.sample_info
+            perm_sample_info['Perm_PHENOTYPE'] = np.random.permutation(self.sample_info['PHENOTYPE'])
+            perm_sample_info = perm_sample_info.drop(columns=['PHENOTYPE', 'SET'])
+            test_idx = perm_sample_info.groupby('Perm_PHENOTYPE').sample(n=self.min_size, random_state=seed).index
+            perm_sample_info["Perm_SET"] = np.where(perm_sample_info.index.isin(test_idx), "test", "training")
+            
+            sample_ids1 = self.categorization_result.index.values
+            set_dict = perm_sample_info.to_dict()["Perm_SET"]
+            datasets = np.array([set_dict[sample_id] for sample_id in sample_ids1])
+            
+            sample_ids2 = self.categorization_result[datasets == "test"].index.values
+            phenotype_dict = perm_sample_info.to_dict()["Perm_PHENOTYPE"]
+            test_response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids2])
+            
+            sample_ids3 = self.categorization_result[datasets == "training"].index.values
+            response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids3])
+            
+            covariates = self.categorization_result[datasets == "training"]
+            test_covariates = self.categorization_result[datasets == "test"]
+            
+            ctrl_var_counts = pd.concat(
+                [covariates[self.filtered_combs][~response],
+                 test_covariates[self.filtered_combs][~test_response]],
+            ).sum()
+            rare_idx = (ctrl_var_counts < self.ctrl_thres).values
+            log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
+            cov = covariates[self.filtered_combs].iloc[:, rare_idx]
+            test_cov = test_covariates[self.filtered_combs].iloc[:, rare_idx]
         else:
             response, test_response = self.response, self.test_response
+            
+            ctrl_var_counts = pd.concat(
+                [self.covariates[self.filtered_combs][~response],
+                 self.test_covariates[self.filtered_combs][~test_response]],
+            ).sum()
+            rare_idx = (ctrl_var_counts < self.ctrl_thres).values
+            log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
+            cov = self.covariates[self.filtered_combs].iloc[:, rare_idx]
+            test_cov = self.test_covariates[self.filtered_combs].iloc[:, rare_idx]
 
-        ctrl_var_counts = pd.concat(
-            [self.covariates[self.filtered_combs][~response],
-             self.test_covariates[self.filtered_combs][~test_response]],
-        ).sum()
-        rare_idx = (ctrl_var_counts < self.ctrl_thres).values
-        log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
-        cov = self.covariates[self.filtered_combs].iloc[:, rare_idx]
-        test_cov = self.test_covariates[self.filtered_combs].iloc[:, rare_idx]
         if cov.shape[1] == 0:
             log.print_warn(f"There are no rare categories (Seed: {seed}).")
             return
         y = np.where(response, 1.0, -1.0)
         test_y = np.where(test_response, 1.0, -1.0)
         log.print_progress(f"Running LassoCV (Seed: {seed})")
-        lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-                                 scoring='mean_squared_error', random_state=seed)
+        
+        if self.logistic == True:
+            lasso_model = LogitNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+                                     scoring='mean_squared_error', random_state=seed)
+        else:
+            lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+                                     scoring='mean_squared_error', random_state=seed)
+
         lasso_model.fit(cov, y, self.custom_cv_folds())
         opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
         coeffs = getattr(lasso_model, 'coef_path_')
         opt_coeff = np.zeros(len(rare_idx))
-        opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
+
+        if self.logistic == True:
+            # coef_path_ : array, shape (n_classes, n_features, n_lambda_)
+            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx]
+        else:
+            # coef_path_ : array, shape (n_features, n_lambda_)
+            opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
+
         opt_lambda = getattr(lasso_model, 'lambda_max_')
         n_select = np.sum(np.abs(opt_coeff) > 0.0)
         pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)
