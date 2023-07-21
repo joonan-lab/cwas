@@ -16,32 +16,6 @@ class Preparation(Runnable):
         super().__init__(args)
 
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments for Annotation Data Preparation",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        parser.add_argument(
-            "-p",
-            "--num_proc",
-            dest="num_proc",
-            required=False,
-            type=int,
-            default=1,
-            help="Max No. processes for this step",
-        )
-        parser.add_argument(
-            "-f",
-            "--force_overwrite",
-            dest="force_overwrite",
-            action="store_const",
-            const=1,
-            default=0,
-            help="Force to overwrite the result",
-        )
-        return parser
-
-    @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg("No. Processes for this step", args.num_proc)
         log.print_arg(

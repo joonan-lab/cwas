@@ -141,7 +141,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
         cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
-1.  :ref:`Calculate the number of effective tests <effnumtest>`
+7.  :ref:`Calculate the number of effective tests <effnumtest>`
 #################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
