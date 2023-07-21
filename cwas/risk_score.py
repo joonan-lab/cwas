@@ -271,7 +271,7 @@ class RiskScore(Runnable):
         if self._response is None:
             sample_ids = self.categorization_result[self.datasets == "training"].index.values
             phenotype_dict = self.sample_info.to_dict()["PHENOTYPE"]
-            self._test_response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids])
+            self._response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids])
         return self._response
 
     @property
