@@ -213,7 +213,7 @@ class RiskScore(Runnable):
         if self._categorization_result is None:
             log.print_progress("Load the categorization result")
             self._categorization_result = pl.read_csv(
-                self.categorization_result_path, dtypes={"SAMPLE": str}
+                self.categorization_result_path, dtypes={"SAMPLE": str}, separator = '\t'
             )
             self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
             if self.adj_factor is not None:
