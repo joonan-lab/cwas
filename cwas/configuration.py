@@ -32,7 +32,6 @@ class Configuration(Runnable):
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        log.print_arg("No. Processes for this step", args.num_proc)
         log.print_arg(
             "Force to overwrite the result",
             "Y" if args.force_overwrite else "N",
