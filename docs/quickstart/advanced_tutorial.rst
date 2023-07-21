@@ -21,8 +21,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
 
 
-  1. Sample information
-  ************************************************
+  2. Sample information
 
   Prepare sample information in txt format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
   The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
@@ -836,11 +835,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   The ``de_novo_variants.lasso_histogram_thres_3.pdf`` looks like below.
 
   .. figure:: ../images/de_novo_variants.lasso_histogram_thres_3.png
-    :alt: Significance of observed |R2| from the trained model
+    :alt: Significance of observed R\ :sup:`2` from the trained model
     :width: 90%
     :align: center
 
-  .. |R2| replace:: R\ :sup:`2`
 
 
 9.  :ref:`Burden shift analysis <burdenshift>`
