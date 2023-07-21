@@ -28,7 +28,7 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
 
   .. code-block:: solidity
     
-    cd /home/cwas_testing/.vep/Plugins
+    cd $HOME/.vep/Plugins
     git clone -b grch38 https://github.com/konradjk/loftee.git
     
     

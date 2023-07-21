@@ -51,8 +51,8 @@ class BinomialTest(BurdenTest):
 
         xticks = [int(x) for x in np.arange(-max_x, max_x+1, 2)]
         xlabels = xticks.copy()
-        xlabels[0] = '-inf'
-        xlabels[-1] = 'inf'
+        xlabels[0] = '-Inf'
+        xlabels[-1] = 'Inf'
         yticks = [int(x) for x in np.arange(0, max(burden_res['-log_P']), 2)]
         ylabels = yticks.copy()
 
@@ -94,7 +94,7 @@ class BinomialTest(BurdenTest):
                 axes.spines['top'].set_visible(False)
                 axes.spines['right'].set_visible(False)
                 
-                output = self.result_path.name.replace(".txt.gz", f'{t}.volcano_plot.pdf')
+                output = self.result_path.name.replace(".txt.gz", f'.{t}.volcano_plot.pdf')
                 
                 plt.tight_layout()
                 plt.savefig(os.path.join(self.output_dir_path, output), bbox_inches='tight')

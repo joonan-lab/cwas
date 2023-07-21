@@ -402,8 +402,8 @@ def extract_variant() -> argparse.ArgumentParser:
         help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz)",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,
@@ -481,8 +481,8 @@ def effective_num_test() -> argparse.ArgumentParser:
         help="Tag used for the name of the output files (e.g., corr_mat_<tag>.pickle)",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,
@@ -496,6 +496,109 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         action="store_true",
         help="Calculate the effective number of tests",
+    )
+    return result
+
+def burden_shift() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        description="Arguments of Burden Shift Test",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    result.add_argument(
+        "-i",
+        "--input_file",
+        dest="input_path",
+        required=True,
+        type=Path,
+        help="Path to the input file which is the result of burden test from binomial test (*.burden_test.txt.gz)",
+    )
+    result.add_argument(
+        '-b',
+        '--burden_res',
+        dest='burden_res',
+        required=True,
+        type=Path,
+        help='Path to the result of burden shift from permutation test (*.binom_pvals.txt.gz)',
+    )
+    result.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved",
+    )
+    result.add_argument(
+        '-c',
+        '--category_info',
+        dest='cat_set_file',
+        required=True,
+        type=Path,
+        help='Path of the categories set file from permutation test',
+    )
+    result.add_argument(
+        '-c_count',
+        '--cat_count',
+        dest='cat_count_file',
+        required=True,
+        type=Path,
+        help='Path of the categories counts file from permutation test',
+    )
+    result.add_argument(
+        "-t",
+        "--tag",
+        dest="tag",
+        required=False,
+        default=None,
+        type=str,
+        help="Tag used for the name of the output files.",
+    )
+    result.add_argument(
+        "-c_cutoff",
+        "--count_cutoff",
+        dest="count_cutoff",
+        required=False,
+        default=7,
+        type=int,
+        help="The number of cutoff for category counts. It must be positive value.",
+    )
+    result.add_argument(
+        "--pval",
+        dest="pval",
+        required=False,
+        default=0.05,
+        type=float,
+        help="P-value of threshold.",
+    )
+    result.add_argument(
+        "-c_list",
+        "--cat_set_list",
+        dest="cat_set_list",
+        required=False,
+        type=Path,
+        help="Path of the list of interest category sets for the main output plot. In the file, one line stores one category set name and, do not include header.\nIf the category set name is combination of two or more domains, it must be separated by &. \nIf no user input is entered, the plot outputs for top N category sets."
+    )
+    result.add_argument(
+        "-N",
+        "--n_cat_sets",
+        dest='n_cat_sets',
+        required=False,
+        default=10,
+        type=int,
+        help="The number of the category sets contained in the main output plot. Top N category sets will be contain in main output plot"
+        
+    )
+    result.add_argument(
+        "-fs",
+        "--fontsize",
+        dest='fontsize',
+        required=False,
+        default=10,
+        type=int,
+        help="Font size of final main output plot."
+        
     )
     return result
 
@@ -567,8 +670,8 @@ def dawn() -> argparse.ArgumentParser:
         help="Tag used for the name of output files (e.g. intergenic, coding etc.).",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_file",
         required=True,
         type=Path,
@@ -653,8 +756,8 @@ def risk_score() -> argparse.ArgumentParser:
         help="File listing adjustment factors of each sample",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,
