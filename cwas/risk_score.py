@@ -369,8 +369,6 @@ class RiskScore(Runnable):
         else:
             response, test_response = self.response, self.test_response
             
-            print(response)
-            
             ctrl_var_counts = pd.concat(
                 [self.covariates[self.filtered_combs][~response],
                  self.test_covariates[self.filtered_combs][~test_response]],
