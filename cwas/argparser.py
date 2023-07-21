@@ -92,6 +92,15 @@ def configuration() -> argparse.ArgumentParser:
         type=float,
         help="Threshold of score from database for predicting damaging missense mutations",
     )
+    result.add_argument(
+        "-f",
+        "--force_overwrite",
+        dest="force_overwrite",
+        action="store_const",
+        const=1,
+        default=0,
+        help="Force to overwrite the result",
+    )
     return result
 
 def preparation() -> argparse.ArgumentParser:
