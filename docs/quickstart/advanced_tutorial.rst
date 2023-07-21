@@ -834,8 +834,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The ``de_novo_variants.lasso_histogram_thres_3.pdf`` looks like below.
 
-  .. figure:: ../images/de_novo_variants.lasso_histogram_thres_3.png
-    :alt: Significance of observed R:sup:`2` from the trained model
+  .. figure:: ../../images/de_novo_variants.lasso_histogram_thres_3.png
+    :alt: Significance of observed R\ :sup:`2` from the trained model
     :width: 90%
     :align: center
 
