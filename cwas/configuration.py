@@ -145,10 +145,11 @@ class Configuration(Runnable):
                 os.remove(gene_matrix_symlink)
                 os.symlink(gene_matrix, temp_link)
                 os.rename(temp_link, gene_matrix_symlink)
-            log.print_warn(
-                f'"{gene_matrix_symlink}" already exists so skip '
-                f"creating the symbolic link"
-            )
+            else:
+                log.print_warn(
+                    f'"{gene_matrix_symlink}" already exists so skip '
+                    f"creating the symbolic link"
+                )
             
     def _create_bed_key_list_symlink(self):
         annot_key_conf = getattr(self, "annot_key_conf")
@@ -169,11 +170,11 @@ class Configuration(Runnable):
                 os.remove(bed_key_list_symlink)
                 os.symlink(annot_key_conf, temp_link)
                 os.rename(temp_link, bed_key_list_symlink)
-            
-            log.print_warn(
-                f'"{bed_key_list_symlink}" already exists so skip '
-                f"creating the symbolic link"
-            )
+            else:
+                log.print_warn(
+                    f'"{bed_key_list_symlink}" already exists so skip '
+                    f"creating the symbolic link"
+                )
 
     def _create_category_info(self):
         """ Create a list of category domains and a redundant category table"""
