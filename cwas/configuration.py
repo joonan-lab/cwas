@@ -60,7 +60,7 @@ class Configuration(Runnable):
         self.vep_loftee = self.vep_cache_dir.joinpath(user_config.get("VEP_LOFTEE"))
         self.vep_human_ancestor_fa = self.vep_cache_dir.joinpath(user_config.get("VEP_HUMAN_ANCESTOR_FA"))
         self.vep_gerp_bw = self.vep_cache_dir.joinpath(user_config.get("VEP_GERP_BIGWIG"))
-        self.vep_mis_db = self.data_dir.joinpath(user_config.get("VEP_MIS_DB"))
+        self.vep_mis_db = self.vep_cache_dir.joinpath(user_config.get("VEP_MIS_DB"))
         self.vep_mis_info_key = user_config.get("VEP_MIS_INFO_KEY")
         self.vep_mis_thres = Path(user_config.get("VEP_MIS_THRES"))
 

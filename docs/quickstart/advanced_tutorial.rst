@@ -229,9 +229,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   - Check the VEP path and modify *VEP* with the exact path.
   - Check the path to *ANNOTATION_DATA_DIR* and *VEP_CACHE_DIR*.
+  - Move **MPC_hg38.vcf.bgz** from ``cwas-dataset`` to *VEP_CACHE_DIR*.
    
-    - The BED files, *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG* and *VEP_MIS_DB* **must** be inside *ANNOTATION_DATA_DIR*.
-    - The *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be inside *VEP_CACHE_DIR*.
+    - The BED files, *GENE_MATRIX*, and *ANNOTATION_KEY_CONFIG* **must** be inside *ANNOTATION_DATA_DIR*.
+    - The *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG*, *VEP_GERP_BIGWIG*, and *VEP_MIS_DB* **must** be inside *VEP_CACHE_DIR*.
     - For *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG*, *VEP_MIS_DB*, *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be only file names, not the absolute path. For instance, if *VEP_CACHE_DIR* is ``/home/user/.vep`` and the file name of *VEP_GERP_BIGWIG* is file.bw, *VEP_GERP_BIGWIG* should only be specified as ``file.bw``, excluding the complete path.
     - The directory structure must be like below.
 
@@ -240,7 +241,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ANNOTATION_DATA_DIR
     ├── GENE_MATRIX
     ├── ANNOTATION_KEY_CONFIG
-    ├── VEP_MIS_DB
     ├── BED files (functional annotations, functional scores)
 
     VEP_CACHE_DIR
@@ -248,6 +248,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ├── VEP_LOFTEE
     ├── VEP_HUMAN_ANCESTOR_FA
     ├── VEP_GERP_BIGWIG
+    ├── VEP_MIS_DB
 
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
