@@ -92,6 +92,15 @@ def configuration() -> argparse.ArgumentParser:
         type=float,
         help="Threshold of score from database for predicting damaging missense mutations",
     )
+    result.add_argument(
+        "-f",
+        "--force_overwrite",
+        dest="force_overwrite",
+        action="store_const",
+        const=1,
+        default=0,
+        help="Force to overwrite the result",
+    )
     return result
 
 def preparation() -> argparse.ArgumentParser:
@@ -469,7 +478,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="sample_info_path",
         required=False,
         type=Path,
-        help="File listing information of your samples. Required only when input format is set to 'inter'",
+        help="File listing information of your samples. Required only when input format is set to 'inter' or '-thr' is not given",
+    )
+    result.add_argument(
+        "-c_count",
+        "--cat_count",
+        dest="category_count_file",
+        required=True,
+        type=Path,
+        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
     )
     result.add_argument(
         "-t",
@@ -496,6 +513,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         action="store_true",
         help="Calculate the effective number of tests",
+    )
+    result.add_argument(
+        "-thr",
+        "--threshold",
+        dest="count_thres",
+        required=False,
+        default=None,
+        type=int,
+        help="The number of variants (or samples) to filter categories",
     )
     return result
 

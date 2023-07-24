@@ -141,7 +141,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
         cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
-1.  :ref:`Calculate the number of effective tests <effnumtest>`
+7.  :ref:`Calculate the number of effective tests <effnumtest>`
 #################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
@@ -206,7 +206,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
   - -tf, --train_set_fraction: The fraction of the training set. For example, if set to 0.7, 70% of the samples will be used as training set and 30% will be used as test set. By default, 0.7.
   - -n_reg, --num_regression: Number of regression trials to calculate a mean of R squares. By default, 10.
   - -f, --fold: Number of folds for cross-validation.
-  - -l, --logistic: (hold) Make a logistic model with L1 penalty. By default, False.
+  - -l, --logistic:  Make a logistic model with L1 penalty (Lasso model). By default, False.
   - -n, --n_permute: The number of permutations used to calculate the p-value. By default, 1,000.
   - --predict_only: If set, only predict the risk score and skip the permutation process. By default, False.
   - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.

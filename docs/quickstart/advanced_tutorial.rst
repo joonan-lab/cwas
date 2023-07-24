@@ -229,9 +229,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   - Check the VEP path and modify *VEP* with the exact path.
   - Check the path to *ANNOTATION_DATA_DIR* and *VEP_CACHE_DIR*.
+  - Move **MPC_hg38.vcf.bgz** from ``cwas-dataset`` to *VEP_CACHE_DIR*.
    
-    - The BED files, *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG* and *VEP_MIS_DB* **must** be inside *ANNOTATION_DATA_DIR*.
-    - The *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be inside *VEP_CACHE_DIR*.
+    - The BED files, *GENE_MATRIX*, and *ANNOTATION_KEY_CONFIG* **must** be inside *ANNOTATION_DATA_DIR*.
+    - The *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG*, *VEP_GERP_BIGWIG*, and *VEP_MIS_DB* **must** be inside *VEP_CACHE_DIR*.
     - For *GENE_MATRIX*, *ANNOTATION_KEY_CONFIG*, *VEP_MIS_DB*, *VEP_CONSERVATION_FILE*, *VEP_LOFTEE*, *VEP_HUMAN_ANCESTOR_FA*, *VEP_GERP_BIGWIG* and *VEP_GERP_BIGWIG* **must** be only file names, not the absolute path. For instance, if *VEP_CACHE_DIR* is ``/home/user/.vep`` and the file name of *VEP_GERP_BIGWIG* is file.bw, *VEP_GERP_BIGWIG* should only be specified as ``file.bw``, excluding the complete path.
     - The directory structure must be like below.
 
@@ -240,7 +241,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ANNOTATION_DATA_DIR
     ├── GENE_MATRIX
     ├── ANNOTATION_KEY_CONFIG
-    ├── VEP_MIS_DB
     ├── BED files (functional annotations, functional scores)
 
     VEP_CACHE_DIR
@@ -248,6 +248,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ├── VEP_LOFTEE
     ├── VEP_HUMAN_ANCESTOR_FA
     ├── VEP_GERP_BIGWIG
+    ├── VEP_MIS_DB
 
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
@@ -485,7 +486,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   .. |log2| replace:: log\ :sub:`2`
 
-  .. figure:: ../images/de_novo_variants.burden_test.volcano_plot.png
+  .. figure:: ../../images/de_novo_variants.burden_test.volcano_plot.png
     :alt: Volcano plot of categories
     :width: 90%
     :align: center
@@ -621,14 +622,16 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
 
-7.  :ref:`Calculate the number of effective tests <effnumtest>`
+7.  :ref:`Find the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
-  
+
+  The outputs of this command can also be used for DAWN analysis. More detailed explanations are below the description of parameters.
+
   The parameters of the command are as below:
 
-    - -i, --input_file: Path to the concatenated z-scores.
+    - -i, --input_file: Path to a matrix of correlation or intersected number of variants between two categories.
     - -if, --input_format: Specify the format of the input file. Available options are ``corr`` or ``inter``. By default, ``corr`` will be used. Each format refers to the following:
 
       - corr: A matrix with correlation values between categories.
@@ -636,10 +639,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
     - -n, --num_sim: Number of eigen values to use in calculating the number of effective tests. The maximum number is equivalent to the number of categories. By default, 10000.
-    - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter``. By default, None.
+    - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter`` or ``-thr`` is not given. By default, None.
+    - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt.gz).
     - -t, --tag: Tag used for the name of the output files. By default, None.
-    - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used. This file must contain ``Category`` column with the name of categories to be used.
-    - -ef, --eff_num_test: Calculate the effective number of tests. By default, False.
+    - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
 
     +-------------------------------------------------------+
     |Category                                               |
@@ -651,11 +654,33 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     |All_DDD_All_PromoterRegion_EarlyCREOligo               |
     +-------------------------------------------------------+
 
+    - -ef, --eff_num_test: Calculate the effective number of tests. For calculation, the users should use all categories (with the number of variants/samples≥cutoff). By default, False.
+    - -thr, --threshold: The number of variants (or samples) to filter categories. By default, None.
 
-  .. code-block:: solidity
 
-    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -ef -if corr -n 7918 -c CATEGORY_SET.txt
+    1. Find the number of effective tests
 
+      - Use all categories with the number of variants (or samples) greater than the cutoff. The cutoff is used to select informative significant tests with a sufficient number of variants (or samples).
+        
+        - With specified cutoff: Categories with a number of variants (or samples) exceeding the **specified cutoff** are used.
+
+        .. code-block:: solidity
+            
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 7 -c_count INPUT.category_counts.txt.gz
+
+        - Without specified cutoff: The cutoff is automatically calculated and applied to filter categories that surpass its value. The cutoff represents the minimum number of variants (or samples) required for a one-sided binomial test with p\<0.05, assuming the null hypothesis is a Binomial(m, No. cases/No. total samples) distribution with 1 mutation in controls and m-1 mutations in cases.
+
+        .. code-block:: solidity
+            
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -c_count INPUT.category_counts.txt.gz
+
+    2. Generate inputs for DAWN analysis
+
+      - Use the identical cutoff for the number of variants (or samples) as in ``1. Find the number of effective tests``, while focusing only on specific categories relevant to the users' domains of interest. For example, users can exclusively use intergenic categories. Aditionally, when generating DAWN analysis inputs, **omit the** ``-ef`` **argument**, as the number of effective tests calculated for this subset of categories of interest will not be used elsewhere.
+
+        .. code-block:: solidity
+            
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt -c_count INPUT.category_counts.txt.gz
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
 
@@ -672,17 +697,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Example run:
 
-  Create a category set with categories with more than 7 variants.
-
   .. code-block:: solidity
     
-    zcat $HOME/cwas_output/de_novo_variants.category_counts.txt.gz | awk '$2 > 7' >> $HOME/cwas_output/subset_categories.v2.txt
-
-  Now run the below command.
-
-  .. code-block:: solidity
-    
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas_output/subset_categories.v2.txt
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -thr 7 -if corr -n 10000 -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz
 
   This process uses all of the cores. With 40 cores, it takes about 90 minutes.
 
@@ -704,7 +721,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     [RESULT] The number of effective tests is 4088.
 
 
-8.  :ref:`Risk score analysis <riskscore>`
+1.  :ref:`Risk score analysis <riskscore>`
 ############################################
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
@@ -834,12 +851,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The ``de_novo_variants.lasso_histogram_thres_3.pdf`` looks like below.
 
-  .. figure:: ../images/de_novo_variants.lasso_histogram_thres_3.png
-    :alt: Significance of observed |R2| from the trained model
+  .. figure:: ../../images/de_novo_variants.lasso_histogram_thres_3.png
+    :alt: Significance of observed R\ :sup:`2` from the trained model
     :width: 90%
     :align: center
 
-  .. |R2| replace:: R\ :sup:`2`
 
 
 9.  :ref:`Burden shift analysis <burdenshift>`

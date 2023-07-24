@@ -45,7 +45,7 @@ class Dawn(Runnable):
         )
         print_arg("Input files directory: ", args.input_dir_path)
         print_arg("Output directory: ", args.output_dir_path)
-        print_arg("Using DNM counts file: ", args.category_count_file)
+        print_arg("Using variant (or sample) counts file: ", args.category_count_file)
         print_arg("Using category sets file: ", args.category_set_file)
         print_arg("Thresholds of count / correlation / size: ", ", ".join(list(map(str, [args.count_threshold, args.corr_threshold, args.size_threshold]))))
 
