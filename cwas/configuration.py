@@ -141,7 +141,7 @@ class Configuration(Runnable):
                 log.print_warn(
                     f'"{gene_matrix_symlink}" already exists, removing it and creating the symbolic link again.'
                 )
-                temp_link = gene_matrix_symlink + ".new"
+                temp_link = Path(str(gene_matrix_symlink) + ".new")
                 os.remove(gene_matrix_symlink)
                 os.symlink(gene_matrix, temp_link)
                 os.rename(temp_link, gene_matrix_symlink)
@@ -165,7 +165,7 @@ class Configuration(Runnable):
                 log.print_warn(
                     f'"{bed_key_list_symlink}" already exists, removing it and creating the symbolic link again.'
                 )
-                temp_link = bed_key_list_symlink + ".new"
+                temp_link = Path(str(bed_key_list_symlink) + ".new")
                 os.remove(bed_key_list_symlink)
                 os.symlink(annot_key_conf, temp_link)
                 os.rename(temp_link, bed_key_list_symlink)
