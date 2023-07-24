@@ -628,7 +628,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   The parameters of the command are as below:
 
-    - -i, --input_file: Path to the concatenated z-scores.
+    - -i, --input_file: Path to a matrix of correlation or intersected number of variants between two categories.
     - -if, --input_format: Specify the format of the input file. Available options are ``corr`` or ``inter``. By default, ``corr`` will be used. Each format refers to the following:
 
       - corr: A matrix with correlation values between categories.
@@ -639,7 +639,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter``. By default, None.
     - -t, --tag: Tag used for the name of the output files. By default, None.
     - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used. This file must contain ``Category`` column with the name of categories to be used.
-    - -ef, --eff_num_test: Calculate the effective number of tests. By default, False.
 
     +-------------------------------------------------------+
     |Category                                               |
@@ -650,6 +649,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     +-------------------------------------------------------+
     |All_DDD_All_PromoterRegion_EarlyCREOligo               |
     +-------------------------------------------------------+
+
+    - -ef, --eff_num_test: Calculate the effective number of tests. For calculation, the users should use all categories (with the number of variants/samples≥cutoff). By default, False.
 
 
   .. code-block:: solidity
@@ -704,7 +705,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     [RESULT] The number of effective tests is 4088.
 
 
-8.  :ref:`Risk score analysis <riskscore>`
+1.  :ref:`Risk score analysis <riskscore>`
 ############################################
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
