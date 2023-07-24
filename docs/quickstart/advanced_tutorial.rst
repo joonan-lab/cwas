@@ -621,11 +621,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
 
-7.  :ref:`Calculate the number of effective tests <effnumtest>`
+7.  :ref:`Find the number of effective tests <effnumtest>`
 ####################################################################
 
   From correlation matrix, compute eigen values and vectors. Based on these outputs, users can calculate the number of effective tests.
-  
+
+  The outputs of this command can also be used for DAWN analysis. More detailed explanations are below the description of parameters.
+
   The parameters of the command are as below:
 
     - -i, --input_file: Path to a matrix of correlation or intersected number of variants between two categories.
@@ -636,7 +638,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
     - -n, --num_sim: Number of eigen values to use in calculating the number of effective tests. The maximum number is equivalent to the number of categories. By default, 10000.
-    - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter``. By default, None.
+    - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter`` and when ``-ef`` is used without ``-thr``. By default, None.
     - -t, --tag: Tag used for the name of the output files. By default, None.
     - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories in the z-score file will be used. This file must contain ``Category`` column with the name of categories to be used.
 
@@ -651,12 +653,32 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     +-------------------------------------------------------+
 
     - -ef, --eff_num_test: Calculate the effective number of tests. For calculation, the users should use all categories (with the number of variants/samples≥cutoff). By default, False.
+    - -thr, --threshold: The number of variants (or samples) to filter categories.
 
 
-  .. code-block:: solidity
+    1. Find the number of effective tests
 
-    cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -t test -ef -if corr -n 7918 -c CATEGORY_SET.txt
+      - Use all categories with the number of variants (or samples) greater than the cutoff. The cutoff is used to select informative significant tests with a sufficient number of variants (or samples).
+        
+        - With specified cutoff: Categories with a number of variants (or samples) exceeding the **specified cutoff** are used.
 
+        .. code-block:: solidity
+            
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 7
+
+        - Without specified cutoff: The cutoff is automatically calculated and applied to filter categories that surpass its value. The cutoff represents the minimum number of variants (or samples) required for a one-sided binomial test with p\<0.05, assuming the null hypothesis is a Binomial(m, No. cases/No. total samples) distribution with 1 mutation in controls and m-1 mutations in cases.
+
+        .. code-block:: solidity
+            
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef
+
+    2. Generate inputs for DAWN analysis
+
+      - Use the identical cutoff for the number of variants (or samples) as in ``1. Find the number of effective tests``, while focusing only on specific categories relevant to the users' domains of interest. For example, users can exclusively use intergenic categories. Aditionally, when generating DAWN analysis inputs, **omit the** ``-ef`` **argument**, as the number of effective tests calculated for this subset of categories of interest will not be used elsewhere.
+
+        .. code-block:: solidity
+            
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
 
