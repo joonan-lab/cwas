@@ -481,6 +481,14 @@ def effective_num_test() -> argparse.ArgumentParser:
         help="File listing information of your samples. Required only when input format is set to 'inter' or '-thr' is not given",
     )
     result.add_argument(
+        "-c_count",
+        "--cat_count",
+        dest="category_count_file",
+        required=True,
+        type=Path,
+        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
+    )
+    result.add_argument(
         "-t",
         "--tag",
         dest="tag",

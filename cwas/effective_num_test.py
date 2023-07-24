@@ -31,6 +31,8 @@ class EffectiveNumTest(Runnable):
         print_arg("Output directory", args.output_dir_path)
         if args.sample_info_path:
             print_arg("Sample information file", args.sample_info_path)
+        if args.category_count_file:
+            print_arg("Using variant (or sample) counts file: ", args.category_count_file)
         if args.tag:
             print_arg("Output tag (prefix of output files)", args.tag)
         if args.category_set_path :
@@ -42,6 +44,8 @@ class EffectiveNumTest(Runnable):
         check_is_dir(args.output_dir_path)
         if args.sample_info_path:
             check_is_file(args.sample_info_path)
+        if args.category_count_file:
+            check_is_file(args.category_count_file)
         if args.category_set_path :
             check_is_file(args.category_set_path)
 
@@ -56,6 +60,11 @@ class EffectiveNumTest(Runnable):
     @property
     def input_format(self) -> str:
         return self.args.input_format
+
+    @property
+    def category_count(self):
+        category_count_ = pd.read_table(self.args.category_count_file)
+        return category_count_
     
     @property
     def intersection_matrix(self) -> pd.DataFrame:
@@ -235,12 +244,18 @@ class EffectiveNumTest(Runnable):
     def eign_decomposition(self, save_vecs: bool = True):
         print_progress(f"Calculate eign values")
         if self.category_set_path:
-            filtered_combs = self.category_set["Category"]
+            c1 = self.category_set["Category"].tolist()
         else:
             if self.input_format == 'corr':
-                filtered_combs = self.correlation_matrix.columns.tolist()
+                c1 = self.correlation_matrix.columns.tolist()
             elif self.input_format == 'inter':
-                filtered_combs = self.intersection_matrix.columns.tolist()
+                c1 = self.intersection_matrix.columns.tolist()
+
+        c2 = self.category_count[self.category_count['Raw_counts'] > self.count_thres]['Category'].tolist()
+        
+        filtered_combs = [x for x in c1 if x in c2]
+        
+        print_progress(f"Use # of categories: {len(filtered_combs)}")
 
         if self.input_format == 'corr':
             intermediate_mat = self.correlation_matrix.loc[filtered_combs,filtered_combs]

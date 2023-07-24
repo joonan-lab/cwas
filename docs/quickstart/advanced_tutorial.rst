@@ -639,6 +639,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
     - -n, --num_sim: Number of eigen values to use in calculating the number of effective tests. The maximum number is equivalent to the number of categories. By default, 10000.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter`` or ``-thr`` is not given. By default, None.
+    - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt.gz).
     - -t, --tag: Tag used for the name of the output files. By default, None.
     - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
 
@@ -664,13 +665,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
         .. code-block:: solidity
             
-            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 7
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 7 -c_count INPUT.category_counts.txt.gz
 
         - Without specified cutoff: The cutoff is automatically calculated and applied to filter categories that surpass its value. The cutoff represents the minimum number of variants (or samples) required for a one-sided binomial test with p\<0.05, assuming the null hypothesis is a Binomial(m, No. cases/No. total samples) distribution with 1 mutation in controls and m-1 mutations in cases.
 
         .. code-block:: solidity
             
-            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -c_count INPUT.category_counts.txt.gz
 
     2. Generate inputs for DAWN analysis
 
@@ -678,7 +679,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
         .. code-block:: solidity
             
-            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt -c_count INPUT.category_counts.txt.gz
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
 
@@ -695,17 +696,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Example run:
 
-  Create a category set with categories with more than 7 variants.
-
   .. code-block:: solidity
     
-    zcat $HOME/cwas_output/de_novo_variants.category_counts.txt.gz | awk '$2 > 7' >> $HOME/cwas_output/subset_categories.v2.txt
-
-  Now run the below command.
-
-  .. code-block:: solidity
-    
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -if corr -n 10000 -c $HOME/cwas_output/subset_categories.v2.txt
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -thr 7 -if corr -n 10000 -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz
 
   This process uses all of the cores. With 40 cores, it takes about 90 minutes.
 
