@@ -478,7 +478,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="sample_info_path",
         required=False,
         type=Path,
-        help="File listing information of your samples. Required only when input format is set to 'inter'",
+        help="File listing information of your samples. Required only when input format is set to 'inter' or '-thr' is not given",
     )
     result.add_argument(
         "-t",
@@ -505,6 +505,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         action="store_true",
         help="Calculate the effective number of tests",
+    )
+    result.add_argument(
+        "-thr",
+        "--threshold",
+        dest="count_thres",
+        required=False,
+        default=None,
+        type=int,
+        help="The number of variants (or samples) to filter categories",
     )
     return result
 

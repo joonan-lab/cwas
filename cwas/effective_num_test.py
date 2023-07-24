@@ -9,6 +9,7 @@ from cwas.utils.log import print_progress, print_arg, print_warn, print_log
 from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
+from scipy.stats import binom_test
 
 class EffectiveNumTest(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -91,6 +92,18 @@ class EffectiveNumTest(Runnable):
         if self._binom_p is None:
             self._binom_p = (self.sample_info["PHENOTYPE"] == "case").sum() / np.isin(self.sample_info["PHENOTYPE"], ["case", "ctrl"]).sum()
         return self._binom_p
+
+    @property
+    def count_thres(self) -> int:
+        if self.args.count_thres is None:
+            m = 1
+            while True:
+                p_value = binom_test(m-1, m, self.binom_p, alternative='greater')
+                if p_value < 0.05:
+                    return m
+                m += 1
+        else:
+            return self.args.count_thres
 
     @property
     def num_eig(self) -> int:
