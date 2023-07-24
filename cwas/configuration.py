@@ -33,7 +33,7 @@ class Configuration(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         log.print_arg(
-            "Force to overwrite the result",
+            "Force to overwrite configuration",
             "Y" if args.force_overwrite else "N",
         )
 
