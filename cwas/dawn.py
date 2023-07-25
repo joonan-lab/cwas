@@ -35,6 +35,7 @@ class Dawn(Runnable):
         self._corr_mat_file = None
         self._permut_test = None
         self._permut_test_file = None
+        self._category_set = None
         self._k_val = None
         self.kmeans_r = importr('stats').kmeans
 
@@ -144,8 +145,9 @@ class Dawn(Runnable):
 
     @property
     def category_set(self):
-        category_set_ = pd.read_table(self.args.category_set_file)
-        return category_set_
+        if self._category_set is None:
+            self._category_set = self.eig_vector.index.tolist()
+        return self._category_set
 
     @property
     def category_count(self):
@@ -226,7 +228,6 @@ class Dawn(Runnable):
     def dawn_analysis(self):
         random.seed(self.seed)
         print_progress("DAWN analysis")
-        # supernode_resDir = os.path.join(self.output_dir_path, "supernodeWGS_results", "blocks_"+self.tag) # correlation block (dawn output 3)
         clusters = list(self._fit_res['cluster'])
 
         supernodeWGS_process = supernodeWGS_func(self.corr_mat,
@@ -246,16 +247,14 @@ class Dawn(Runnable):
         
         ## preparation for dawn
         # Load data, which contains the number of variants in each category.
-        categories = self.category_set['Category'].tolist()
-        category_count_sub = self.category_count.loc[self.category_count['Category'].isin(categories)]
-        permut_test_sub = self.permut_test.loc[self.permut_test['Category'].isin(categories)]
+        category_count_sub = self.category_count.loc[self.category_count['Category'].isin(self.category_set)]
+        permut_test_sub = self.permut_test.loc[self.permut_test['Category'].isin(self.category_set)]
 
         print_progress("[DAWN] Preprocess data for the DAWN analysis")
         cat_count_permut, cluster_idx, cluster_size = supernodeWGS_process.dawn_preprocess(category_count_sub,
                                                                                            permut_test_sub,
                                                                                            self.count_threshold,
                                                                                            self.size_threshold)
-
         print_progress("[DAWN] Compute graph on correlation matrix and form graph")
         form_data = data_collection(path=os.path.join(self.output_dir_path, "supernodeWGS_results", "blocks_"+self.tag),
                                     cores=30, max_cluster=self.k_val, verbose=True)
