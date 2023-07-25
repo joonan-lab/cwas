@@ -177,11 +177,11 @@ class EffectiveNumTest(Runnable):
     def run(self):
         print_arg("Number of simulations", self.num_eig)
         if self.eff_num_test:
-            self.eign_decomposition()
+            self.eigen_decomposition()
             self.get_n_etests()
             self.update_env()
         else:
-            self.eign_decomposition()
+            self.eigen_decomposition()
         print_progress("Done")
     
     def get_n_etests(self):
@@ -190,11 +190,11 @@ class EffectiveNumTest(Runnable):
         if os.path.isfile(self.eig_val_path):
             print_log(
                 "NOTICE",
-                "You already have eign values for the selected categories.",
+                "You already have eigen values for the selected categories.",
                 False,
             )
         else:
-            self.eign_decomposition(save_vecs=False)
+            self.eigen_decomposition(save_vecs=False)
             
         with self.eig_val_path.open('rb') as f:
             eig_vals = pickle.load(f)
@@ -219,8 +219,8 @@ class EffectiveNumTest(Runnable):
         
         self.eff_num_test_value = eff_num_test
         
-    def eign_decomposition(self, save_vecs: bool = True):
-        print_progress(f"Calculate eign values")
+    def eigen_decomposition(self, save_vecs: bool = True):
+        print_progress(f"Calculate eigen values")
         if self.category_set_path:
             filtered_combs = self.category_set["Category"]
         else:
