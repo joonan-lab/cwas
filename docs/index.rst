@@ -3,9 +3,9 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-=====================================
+****************************************
 Welcome to CWAS-Plus's documentation!
-=====================================
+****************************************
 
 CWAS-Plus (Category-Wide Association Study) is a data analysis tool designed to conduct rigorous association tests for discovering noncoding associations in complex genomic disorders. It runs category-based burden tests using variants from whole-genome sequencing data and various annotation datasets. CWAS-Plus provides a user-friendly interface for efficient hypothesis testing and has promising implications for uncovering the pathophysiology of various genomic disorders.
 
@@ -18,16 +18,16 @@ Here are the reference papers:
 Here is the original CWAS repository: `sanderslab/cwas <https://github.com/sanderslab/cwas>`_
 
 
---------------------
+
 CWAS-Plus workflow
---------------------
+#####################
 
 .. figure:: ../images/CWAS_workflow.jpg
    :alt: CWAS-Plus workflow
    :width: 90%
    :align: center
 
-   **A.** Overview of CWAS-Plus. Variants extracted from whole genome sequencing data of samples (Sample variant) are used as inputs. The three steps inside the black box refer to the final outputs obtained from CWAS-Plus. **B-I.** Graphic descriptions of each process in CWAS-Plus. Red (case) and blue (control) indicate the phenotype. **H.** The network inside the purple circle shows an example of a subset of a network in a magnified scale. The color indicates the direction of the burden in each category (red, case burden; blue, control burden). **I.** The color of the clusters indicates the scale of the z-score, which represents the significance and the relative risk of the cluster. Darker red refers to the higher case burden. And the size of the circle indicates the number of categories inside the cluster.
+   **A.** Workflow\: Variants extracted from whole-genome sequencing data of samples (sample variant) serve as inputs. The three steps depicted in the black box correspond to the final outputs obtained from CWAS-Plus. **B-G.** Graphic descriptions of each process in CWAS-Plus\: Red (case) and blue (control) represent the phenotype. **F.** Representative network pointed by the purple arrow provides an enlarged view of a subset of the network. The color indicates the direction of the burden in each category (red, case burden; blue, control burden). **G.** The color of the clusters reflects the scale of the normalized z-score, which represents the degree of disease association of the cluster. Darker red indicates a higher association. Circle size represents the number of categories within the cluster.
 
 
 .. toctree::

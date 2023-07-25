@@ -13,6 +13,8 @@ dependencies:
   - igraph
   - matplotlib
   - rpy2
+  - seaborn
+  - polars
   - pyvcf
   - scikit-learn
   - pysam

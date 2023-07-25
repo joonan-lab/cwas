@@ -1,6 +1,7 @@
 import argparse
 import shutil
 from pathlib import Path
+import os
 
 import cwas.core.configuration.create as create
 import cwas.utils.log as log
@@ -30,97 +31,15 @@ class Configuration(Runnable):
         return Path(workspace)
 
     @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        """This argparse is only supposed to print help
-        in order to explain what each configuration means.
-        """
-        parser = argparse.ArgumentParser(
-            description="Arguments for CWAS Configuration",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    def _print_args(args: argparse.Namespace):
+        log.print_arg(
+            "Force to overwrite configuration",
+            "Y" if args.force_overwrite else "N",
         )
-        parser.add_argument(
-            "-d",
-            "--annotation_data_dir",
-            dest="data_dir",
-            required=False,
-            type=Path,
-            help="Path to your annotation data directory",
-        )
-        parser.add_argument(
-            "-m",
-            "--gene_matrix",
-            dest="gene_matrix",
-            required=False,
-            type=Path,
-            help="Path to your gene matrix",
-        )
-        parser.add_argument(
-            "-a",
-            "--annotation_key_config",
-            dest="annot_key_conf",
-            required=False,
-            type=Path,
-            help="Path to a configuration file (.yaml) that "
-            "specifies the annotation key of each "
-            "annotation data file",
-        )
-        parser.add_argument(
-            "-v",
-            "--vep",
-            dest="vep",
-            required=False,
-            type=Path,
-            help="Path to Variant Effect Predictor (VEP)",
-        )
-        parser.add_argument(
-            "-vcache",
-            "--vep_cache_dir",
-            dest="vep_cache_dir",
-            required=False,
-            type=Path,
-            help="Path to VEP resource (cache directory)",
-        )
-        parser.add_argument(
-            "-vconv",
-            "--vep_conservation",
-            dest="vep_conservation",
-            required=False,
-            type=Path,
-            help="Path to your VEP resource (conservation file)",
-        )
-        parser.add_argument(
-            "-vlof",
-            "--vep_loftee",
-            dest="vep_loftee",
-            required=False,
-            type=Path,
-            help="Path to your VEP resource (loftee directory)",
-        )
-        parser.add_argument(
-            "-vha",
-            "--vep_human_ancestor_fa",
-            dest="vep_human_ancestor_fa",
-            required=False,
-            type=Path,
-            help="Path to your VEP resource (human ancestor)",
-        )
-        parser.add_argument(
-            "-vgerp",
-            "--vep_gerp_bw",
-            dest="vep_gerp_bw",
-            required=False,
-            type=Path,
-            help="Path to your VEP resource (gerp bigwig)",
-        )
-        parser.add_argument(
-            "-vmpc",
-            "--vep_mpc",
-            dest="vep_mpc",
-            required=False,
-            type=Path,
-            help="Path to your VEP resource (MPC)",
-        )
-        return parser
+
+    @property
+    def force_overwrite(self):
+        return bool(self.args.force_overwrite)
 
     def run(self):
         self._set_config_to_attr()
@@ -134,20 +53,20 @@ class Configuration(Runnable):
     def _set_config_to_attr(self):
         user_config = self._load_configuration()
         self.data_dir = Path(user_config.get("ANNOTATION_DATA_DIR"))
-        self.gene_matrix = Path(user_config.get("GENE_MATRIX"))
+        self.gene_matrix = self.data_dir.joinpath(user_config.get("GENE_MATRIX"))
         self.vep = Path(user_config.get("VEP"))
         self.vep_cache_dir = Path(user_config.get("VEP_CACHE_DIR"))
-        self.vep_conservation = Path(user_config.get("VEP_CONSERVATION_FILE"))
-        self.vep_loftee = Path(user_config.get("VEP_LOFTEE"))
-        self.vep_human_ancestor_fa = Path(user_config.get("VEP_HUMAN_ANCESTOR_FA"))
-        self.vep_gerp_bw = Path(user_config.get("VEP_GERP_BIGWIG"))
-        self.vep_mis_db = Path(user_config.get("VEP_MIS_DB"))
+        self.vep_conservation = self.vep_cache_dir.joinpath(user_config.get("VEP_CONSERVATION_FILE"))
+        self.vep_loftee = self.vep_cache_dir.joinpath(user_config.get("VEP_LOFTEE"))
+        self.vep_human_ancestor_fa = self.vep_cache_dir.joinpath(user_config.get("VEP_HUMAN_ANCESTOR_FA"))
+        self.vep_gerp_bw = self.vep_cache_dir.joinpath(user_config.get("VEP_GERP_BIGWIG"))
+        self.vep_mis_db = self.vep_cache_dir.joinpath(user_config.get("VEP_MIS_DB"))
         self.vep_mis_info_key = user_config.get("VEP_MIS_INFO_KEY")
         self.vep_mis_thres = Path(user_config.get("VEP_MIS_THRES"))
 
         annot_key_conf = user_config.get("ANNOTATION_KEY_CONFIG")
         self.annot_key_conf = (
-            None if not annot_key_conf else Path(annot_key_conf)
+            None if not annot_key_conf else self.data_dir.joinpath(annot_key_conf)
         )
 
     def _load_configuration(self) -> dict:
@@ -194,10 +113,19 @@ class Configuration(Runnable):
         try:
             data_dir_symlink.symlink_to(data_dir, target_is_directory=True)
         except FileExistsError:
-            log.print_warn(
-                f'"{data_dir_symlink}" already exists so skip '
-                f"creating the symbolic link"
-            )
+            if self.force_overwrite:
+                log.print_warn(
+                    f'"{data_dir_symlink}" already exists, removing it and creating the symbolic link again.'
+                )
+                temp_link = Path(str(data_dir_symlink) + ".new")
+                os.remove(data_dir_symlink)
+                os.symlink(data_dir, temp_link)
+                os.rename(temp_link, data_dir_symlink)
+            else:
+                log.print_warn(
+                    f'"{data_dir_symlink}" already exists so skip '
+                    f"creating the symbolic link"
+                )
 
     def _create_gene_matrix_symlink(self):
         gene_matrix = getattr(self, "gene_matrix")
@@ -209,10 +137,19 @@ class Configuration(Runnable):
         try:
             gene_matrix_symlink.symlink_to(gene_matrix)
         except FileExistsError:
-            log.print_warn(
-                f'"{gene_matrix_symlink}" already exists so skip '
-                f"creating the symbolic link"
-            )
+            if self.force_overwrite:
+                log.print_warn(
+                    f'"{gene_matrix_symlink}" already exists, removing it and creating the symbolic link again.'
+                )
+                temp_link = Path(str(gene_matrix_symlink) + ".new")
+                os.remove(gene_matrix_symlink)
+                os.symlink(gene_matrix, temp_link)
+                os.rename(temp_link, gene_matrix_symlink)
+            else:
+                log.print_warn(
+                    f'"{gene_matrix_symlink}" already exists so skip '
+                    f"creating the symbolic link"
+                )
             
     def _create_bed_key_list_symlink(self):
         annot_key_conf = getattr(self, "annot_key_conf")
@@ -224,10 +161,20 @@ class Configuration(Runnable):
         try:
             bed_key_list_symlink.symlink_to(annot_key_conf)
         except FileExistsError:
-            log.print_warn(
-                f'"{bed_key_list_symlink}" already exists so skip '
-                f"creating the symbolic link"
-            )
+
+            if self.force_overwrite:
+                log.print_warn(
+                    f'"{bed_key_list_symlink}" already exists, removing it and creating the symbolic link again.'
+                )
+                temp_link = Path(str(bed_key_list_symlink) + ".new")
+                os.remove(bed_key_list_symlink)
+                os.symlink(annot_key_conf, temp_link)
+                os.rename(temp_link, bed_key_list_symlink)
+            else:
+                log.print_warn(
+                    f'"{bed_key_list_symlink}" already exists so skip '
+                    f"creating the symbolic link"
+                )
 
     def _create_category_info(self):
         """ Create a list of category domains and a redundant category table"""

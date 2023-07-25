@@ -92,6 +92,15 @@ def configuration() -> argparse.ArgumentParser:
         type=float,
         help="Threshold of score from database for predicting damaging missense mutations",
     )
+    result.add_argument(
+        "-f",
+        "--force_overwrite",
+        dest="force_overwrite",
+        action="store_const",
+        const=1,
+        default=0,
+        help="Force to overwrite the result",
+    )
     return result
 
 def preparation() -> argparse.ArgumentParser:
@@ -454,8 +463,8 @@ def extract_variant() -> argparse.ArgumentParser:
         help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz) (default: None)",
     )
     result.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,
@@ -533,7 +542,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="sample_info_path",
         required=False,
         type=Path,
-        help="File listing information of your samples. Required only when input format is set to 'inter'",
+        help="File listing information of your samples. Required only when input format is set to 'inter' or '-thr' is not given",
+    )
+    result.add_argument(
+        "-c_count",
+        "--cat_count",
+        dest="category_count_file",
+        required=True,
+        type=Path,
+        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
     )
     optional.add_argument(
         "-t",
@@ -552,6 +569,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         default=None,
         type=Path,
         help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used. (default: None)",
+    )
+    optional.add_argument(
+        "-thr",
+        "--threshold",
+        dest="count_thres",
+        required=False,
+        default=None,
+        type=int,
+        help="The number of variants (or samples) to filter categories",
     )
     optional.add_argument(
         "-ef",
@@ -588,7 +614,7 @@ def burden_shift() -> argparse.ArgumentParser:
         dest="input_path",
         required=True,
         type=Path,
-        help="Path to the input file which is result of burden test from binomial test (*.burden_test.txt.gz)",
+        help="Path to the input file which is the result of burden test from binomial test (*.burden_test.txt.gz)",
     )
     required.add_argument(
         '-b',
@@ -704,6 +730,14 @@ def dawn() -> argparse.ArgumentParser:
         type=Path,
         help="Directory where input files stored. This directory must include three required input files.\n 1. Eigen vectors file (*eig_vecs*.txt.gz)\n 2. Category correlation matrix file (*correlation_matrix*.pkl)\n 3. Permutation test file (*permutation_test*.txt.gz)",
     )
+    required.add_argument(
+        "-c_count",
+        "--cat_count",
+        dest="category_count_file",
+        required=True,
+        type=Path,
+        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
+    )
     optional.add_argument(
         "-p",
         "--num_proc",
@@ -757,14 +791,6 @@ def dawn() -> argparse.ArgumentParser:
         default=None,
         type=str,
         help="Tag used for the name of output files (e.g. intergenic, coding etc.) (default: None).",
-    )
-    required.add_argument(
-        "-c_count",
-        "--cat_count",
-        dest="category_count_file",
-        required=True,
-        type=Path,
-        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
     )
     optional.add_argument(
         "-CT",
@@ -848,8 +874,8 @@ def risk_score() -> argparse.ArgumentParser:
         help="File listing adjustment factors of each sample. The file is required to use the adjusted values in the binomial test. (default: None)",
     )
     optional.add_argument(
-        "-c",
-        "--category_set_path",
+        '-c',
+        '--category_set',
         dest="category_set_path",
         required=False,
         default=None,

@@ -1,6 +1,6 @@
-===================
+*************************
 Extract variants
-===================
+*************************
 
 This process is to extract variants that are allocated to a specific category. When there is a category of interest, the users can extract the variants that belong to the category and look through.
 
