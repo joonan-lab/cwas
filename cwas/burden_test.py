@@ -303,9 +303,15 @@ class BurdenTest(Runnable):
         
     def save_counts_table(self, form: str):
         if form == 'raw':
-            self._raw_counts = pd.DataFrame({'Raw_counts': self.categorization_result.sum(axis=0)},
-                                            index= self.categorization_result.sum(axis=0).index)
-            self._raw_counts.index.name = 'Category'
+            if self.use_n_carrier:
+                self._raw_counts = pd.DataFrame({'Raw_counts': (self.categorization_result > 0).sum(axis=0)},
+                                                index=self.categorization_result.columns)
+                self._raw_counts.index.name = 'Category'
+
+            else:
+                self._raw_counts = pd.DataFrame({'Raw_counts': self.categorization_result.sum(axis=0)},
+                                                index= self.categorization_result.sum(axis=0).index)
+                self._raw_counts.index.name = 'Category'
         elif form =='adj':
             if self.use_n_carrier:
                 self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_Carrier_Count'] + self._result['Ctrl_Carrier_Count']})
