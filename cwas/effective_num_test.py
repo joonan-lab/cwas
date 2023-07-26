@@ -63,7 +63,7 @@ class EffectiveNumTest(Runnable):
 
     @property
     def category_count(self):
-        category_count_ = pd.read_table(self.args.category_count_file)
+        category_count_ = pd.read_table(self.args.category_count_file, sep="\t")
         return category_count_
     
     @property
@@ -92,7 +92,7 @@ class EffectiveNumTest(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
             )
         return self._sample_info
 
