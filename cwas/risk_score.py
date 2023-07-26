@@ -359,8 +359,8 @@ class RiskScore(Runnable):
             perm_sample_info['Perm_PHENOTYPE'] = np.random.permutation(self.sample_info['PHENOTYPE'])
             perm_sample_info = perm_sample_info.drop(columns=['PHENOTYPE', 'SET'])
             
-            perm_case_test_idx = perm_sample_info.loc[perm_sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
-            perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
+            perm_case_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
+            perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
             perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'
             perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'
             perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
