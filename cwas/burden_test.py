@@ -89,7 +89,7 @@ class BurdenTest(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
             )
         return self._sample_info
 
@@ -97,7 +97,7 @@ class BurdenTest(Runnable):
     def adj_factor(self) -> pd.DataFrame:
         if self._adj_factor is None and self.adj_factor_path:
             self._adj_factor = pd.read_table(
-                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
             )
         return self._adj_factor
 
@@ -126,7 +126,7 @@ class BurdenTest(Runnable):
         if self._categorization_result is None:
             print_progress("Load the categorization result")
             self._categorization_result = pl.read_csv(
-                self.cat_path, dtypes={"SAMPLE": str}
+                self.cat_path, separator="\t", dtypes={"SAMPLE": str}
             )
             self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
             self.save_counts_table(form = 'raw')
@@ -303,9 +303,15 @@ class BurdenTest(Runnable):
         
     def save_counts_table(self, form: str):
         if form == 'raw':
-            self._raw_counts = pd.DataFrame({'Raw_counts': self.categorization_result.sum(axis=0)},
-                                            index= self.categorization_result.sum(axis=0).index)
-            self._raw_counts.index.name = 'Category'
+            if self.use_n_carrier:
+                self._raw_counts = pd.DataFrame({'Raw_counts': (self.categorization_result > 0).sum(axis=0)},
+                                                index=self.categorization_result.columns)
+                self._raw_counts.index.name = 'Category'
+
+            else:
+                self._raw_counts = pd.DataFrame({'Raw_counts': self.categorization_result.sum(axis=0)},
+                                                index= self.categorization_result.sum(axis=0).index)
+                self._raw_counts.index.name = 'Category'
         elif form =='adj':
             if self.use_n_carrier:
                 self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_Carrier_Count'] + self._result['Ctrl_Carrier_Count']})

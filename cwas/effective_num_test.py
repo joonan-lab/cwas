@@ -9,6 +9,7 @@ from cwas.utils.log import print_progress, print_arg, print_warn, print_log
 from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
+from scipy.stats import binom_test
 
 class EffectiveNumTest(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -30,6 +31,8 @@ class EffectiveNumTest(Runnable):
         print_arg("Output directory", args.output_dir_path)
         if args.sample_info_path:
             print_arg("Sample information file", args.sample_info_path)
+        if args.category_count_file:
+            print_arg("Using variant (or sample) counts file: ", args.category_count_file)
         if args.tag:
             print_arg("Output tag (prefix of output files)", args.tag)
         if args.category_set_path :
@@ -41,6 +44,8 @@ class EffectiveNumTest(Runnable):
         check_is_dir(args.output_dir_path)
         if args.sample_info_path:
             check_is_file(args.sample_info_path)
+        if args.category_count_file:
+            check_is_file(args.category_count_file)
         if args.category_set_path :
             check_is_file(args.category_set_path)
 
@@ -55,6 +60,11 @@ class EffectiveNumTest(Runnable):
     @property
     def input_format(self) -> str:
         return self.args.input_format
+
+    @property
+    def category_count(self):
+        category_count_ = pd.read_table(self.args.category_count_file, sep="\t")
+        return category_count_
     
     @property
     def intersection_matrix(self) -> pd.DataFrame:
@@ -82,7 +92,7 @@ class EffectiveNumTest(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
             )
         return self._sample_info
 
@@ -91,6 +101,18 @@ class EffectiveNumTest(Runnable):
         if self._binom_p is None:
             self._binom_p = (self.sample_info["PHENOTYPE"] == "case").sum() / np.isin(self.sample_info["PHENOTYPE"], ["case", "ctrl"]).sum()
         return self._binom_p
+
+    @property
+    def count_thres(self) -> int:
+        if self.args.count_thres is None:
+            m = 1
+            while True:
+                p_value = binom_test(m-1, m, self.binom_p, alternative='greater')
+                if p_value < 0.05:
+                    return m
+                m += 1
+        else:
+            return self.args.count_thres
 
     @property
     def num_eig(self) -> int:
@@ -177,11 +199,11 @@ class EffectiveNumTest(Runnable):
     def run(self):
         print_arg("Number of simulations", self.num_eig)
         if self.eff_num_test:
-            self.eign_decomposition()
+            self.eigen_decomposition()
             self.get_n_etests()
             self.update_env()
         else:
-            self.eign_decomposition()
+            self.eigen_decomposition()
         print_progress("Done")
     
     def get_n_etests(self):
@@ -190,11 +212,11 @@ class EffectiveNumTest(Runnable):
         if os.path.isfile(self.eig_val_path):
             print_log(
                 "NOTICE",
-                "You already have eign values for the selected categories.",
+                "You already have eigen values for the selected categories.",
                 False,
             )
         else:
-            self.eign_decomposition(save_vecs=False)
+            self.eigen_decomposition(save_vecs=False)
             
         with self.eig_val_path.open('rb') as f:
             eig_vals = pickle.load(f)
@@ -219,15 +241,21 @@ class EffectiveNumTest(Runnable):
         
         self.eff_num_test_value = eff_num_test
         
-    def eign_decomposition(self, save_vecs: bool = True):
-        print_progress(f"Calculate eign values")
+    def eigen_decomposition(self, save_vecs: bool = True):
+        print_progress(f"Calculate eigen values")
         if self.category_set_path:
-            filtered_combs = self.category_set["Category"]
+            c1 = self.category_set["Category"].tolist()
         else:
             if self.input_format == 'corr':
-                filtered_combs = self.correlation_matrix.columns.tolist()
+                c1 = self.correlation_matrix.columns.tolist()
             elif self.input_format == 'inter':
-                filtered_combs = self.intersection_matrix.columns.tolist()
+                c1 = self.intersection_matrix.columns.tolist()
+
+        c2 = self.category_count[self.category_count['Raw_counts'] > self.count_thres]['Category'].tolist()
+        
+        filtered_combs = [x for x in c1 if x in c2]
+        
+        print_progress(f"Use # of categories: {len(filtered_combs)}")
 
         if self.input_format == 'corr':
             intermediate_mat = self.correlation_matrix.loc[filtered_combs,filtered_combs]
