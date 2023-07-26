@@ -8,7 +8,6 @@ from cwas.core.burden_test.binomial import binom_one_tail, binom_two_tail
 from cwas.utils.log import print_progress
 
 
-
 class BinomialTest(BurdenTest):
     @property
     def binom_p(self) -> float:
@@ -116,7 +115,6 @@ class BinomialTest(BurdenTest):
             axes.set_xticklabels(xlabels, fontsize=self.font_size)
             axes.set_yticks(yticks)
             axes.set_yticklabels(ylabels, fontsize=self.font_size)
-            axes.legend(markerscale=self.font_size*0.15, fontsize=self.font_size*0.85)
             axes.spines['bottom'].set_linewidth(1.25)
             axes.spines['left'].set_linewidth(1.25)
             axes.tick_params(width=1.25)
