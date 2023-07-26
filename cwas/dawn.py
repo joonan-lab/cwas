@@ -103,7 +103,7 @@ class Dawn(Runnable):
     @property
     def permut_test(self):
         if self._permut_test is None:
-            self._permut_test = pd.read_table(self.permut_test_file, compression='gzip')
+            self._permut_test = pd.read_table(self.permut_test_file, compression='gzip', sep="\t")
             
         return self._permut_test
     
@@ -151,7 +151,7 @@ class Dawn(Runnable):
 
     @property
     def category_count(self):
-        category_count_ = pd.read_table(self.args.category_count_file)
+        category_count_ = pd.read_table(self.args.category_count_file, sep="\t")
         return category_count_
 
     @property
