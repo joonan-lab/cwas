@@ -508,6 +508,14 @@ def effective_num_test() -> argparse.ArgumentParser:
         type=Path,
         help="Path to the input file, either correlation matrix or intersection matrix resulting from categorization.",
     )
+    required.add_argument(
+        "-c_count",
+        "--cat_count",
+        dest="category_count_file",
+        required=True,
+        type=Path,
+        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
+    )
     optional.add_argument(
         "-if",
         "--input_format",
@@ -543,14 +551,6 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         type=Path,
         help="File listing information of your samples. Required only when input format is set to 'inter' or '-thr' is not given",
-    )
-    result.add_argument(
-        "-c_count",
-        "--cat_count",
-        dest="category_count_file",
-        required=True,
-        type=Path,
-        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
     )
     optional.add_argument(
         "-t",
