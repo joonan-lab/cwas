@@ -89,7 +89,7 @@ class BurdenTest(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
             )
         return self._sample_info
 
@@ -97,7 +97,7 @@ class BurdenTest(Runnable):
     def adj_factor(self) -> pd.DataFrame:
         if self._adj_factor is None and self.adj_factor_path:
             self._adj_factor = pd.read_table(
-                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}
+                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
             )
         return self._adj_factor
 
@@ -126,7 +126,7 @@ class BurdenTest(Runnable):
         if self._categorization_result is None:
             print_progress("Load the categorization result")
             self._categorization_result = pl.read_csv(
-                self.cat_path, dtypes={"SAMPLE": str}
+                self.cat_path, separator="\t", dtypes={"SAMPLE": str}
             )
             self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
             self.save_counts_table(form = 'raw')
