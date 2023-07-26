@@ -624,15 +624,6 @@ def burden_shift() -> argparse.ArgumentParser:
         type=Path,
         help='Path to the result of burden shift from permutation test (*.binom_pvals.txt.gz)',
     )
-    optional.add_argument(
-        "-o_dir",
-        "--output_directory",
-        dest="output_dir_path",
-        required=False,
-        default=default_workspace,
-        type=Path,
-        help="Directory where output file will be saved (default: {})".format(default_workspace),
-    )
     required.add_argument(
         '-c_set',
         '--cat_set',
@@ -648,6 +639,15 @@ def burden_shift() -> argparse.ArgumentParser:
         required=True,
         type=Path,
         help='Path of the categories counts file from permutation test (*.category_counts.txt.gz).',
+    )
+    optional.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved (default: {})".format(default_workspace),
     )
     optional.add_argument(
         "-t",
@@ -847,6 +847,14 @@ def risk_score() -> argparse.ArgumentParser:
         type=Path,
         help="The path of the categorization result file",
     )
+    required.add_argument(
+        "-s",
+        "--sample_info",
+        dest="sample_info_path",
+        required=True,
+        type=Path,
+        help="File listing sample IDs with their families and sample_types (case or ctrl).\nIf test categorization result is not available, 'SET' column is used for dividing training and test set."
+    )
     optional.add_argument(
         "-o_dir",
         "--output_directory",
@@ -855,14 +863,6 @@ def risk_score() -> argparse.ArgumentParser:
         default=default_workspace,
         type=Path,
         help="Directory where output file will be saved (default: {})".format(default_workspace),
-    )
-    required.add_argument(
-        "-s",
-        "--sample_info",
-        dest="sample_info_path",
-        required=True,
-        type=Path,
-        help="File listing sample IDs with their families and sample_types (case or ctrl).\nIf test categorization result is not available, 'SET' column is used for dividing training and test set."
     )
     optional.add_argument(
         "-a",
