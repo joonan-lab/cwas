@@ -158,7 +158,8 @@ class RiskScore(Runnable):
         if self.category_set_path:
             self._filtered_combs = self.category_set["Category"]
         else:
-            self._filtered_combs = pd.Series([col for col in self.categorization_result.columns if col != 'SAMPLE'])
+            #self._filtered_combs = pd.Series([col for col in self.categorization_result.columns if col != 'SAMPLE'])
+            self._filtered_combs = pd.Series(self.categorization_result.columns)
         return self._filtered_combs
 
     @property
@@ -190,14 +191,27 @@ class RiskScore(Runnable):
                 
                 case_count = sum(self._sample_info['PHENOTYPE'] == 'case')
                 ctrl_count = sum(self._sample_info['PHENOTYPE'] == 'ctrl')
-                self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
+                
+                self.case_f = round(case_count*self.train_set_f)
+                self.ctrl_f = round(ctrl_count*self.train_set_f)
+                
                 
                 log.print_log("LOG",
-                              "Use {} samples from each phenotype as training set."
-                              .format(self.min_size))
+                              "Use {} cases and {} controls for training set".format(self.case_f, self.ctrl_f)
+                              )
+                              #"Use {} samples from each phenotype as training set."
+                              #.format(self.min_size))
                 
-                test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
-                self._sample_info["SET"] = np.where(self._sample_info.index.isin(test_idx), "test", "training")
+                
+                case_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
+                ctrl_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
+                self._sample_info.loc[case_test_idx, 'SET'] = 'training'
+                self._sample_info.loc[ctrl_test_idx, 'SET'] = 'training'
+                self._sample_info["SET"] = self._sample_info['SET'].fillna('test')
+                
+                #self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
+                #test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
+                #self._sample_info["SET"] = np.where(self._sample_info.index.isin(test_idx), "test", "training")
         return self._sample_info
 
     @property
@@ -234,10 +248,13 @@ class RiskScore(Runnable):
                 "not the same with the sample IDs "
                 "from the categorization result."
             )
+        '''
         adj_factors = [
             self.adj_factor.to_dict()["AdjustFactor"][sample_id]
             for sample_id in self._categorization_result.index.values
         ]
+        '''
+        adj_factors = self.adj_factor.loc[self._categorization_result.index.values, "AdjustFactor"].tolist()
         self._categorization_result = self._categorization_result.multiply(
             adj_factors, axis="index"
         )
@@ -341,8 +358,15 @@ class RiskScore(Runnable):
             perm_sample_info = self.sample_info
             perm_sample_info['Perm_PHENOTYPE'] = np.random.permutation(self.sample_info['PHENOTYPE'])
             perm_sample_info = perm_sample_info.drop(columns=['PHENOTYPE', 'SET'])
-            test_idx = perm_sample_info.groupby('Perm_PHENOTYPE').sample(n=self.min_size, random_state=seed).index
-            perm_sample_info["Perm_SET"] = np.where(perm_sample_info.index.isin(test_idx), "test", "training")
+            
+            perm_case_test_idx = perm_sample_info.loc[perm_sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
+            perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
+            perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'
+            perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'
+            perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
+
+            #test_idx = perm_sample_info.groupby('Perm_PHENOTYPE').sample(n=self.min_size, random_state=seed).index
+            #perm_sample_info["Perm_SET"] = np.where(perm_sample_info.index.isin(test_idx), "test", "training")
             
             sample_ids1 = self.categorization_result.index.values
             set_dict = perm_sample_info.to_dict()["Perm_SET"]
@@ -381,8 +405,10 @@ class RiskScore(Runnable):
         if cov.shape[1] == 0:
             log.print_warn(f"There are no rare categories (Seed: {seed}).")
             return
-        y = np.where(response, 1.0, -1.0)
-        test_y = np.where(test_response, 1.0, -1.0)
+        #y = np.where(response, 1.0, -1.0)
+        #test_y = np.where(test_response, 1.0, -1.0)
+        y = np.where(response, 1.0, 0.0)
+        test_y = np.where(test_response, 1.0, 0.0)
         log.print_progress(f"Running LassoCV (Seed: {seed})")
         
         if self.logistic == True:
@@ -408,7 +434,7 @@ class RiskScore(Runnable):
         n_select = np.sum(np.abs(opt_coeff) > 0.0)
         pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)
         mean_response = np.mean(test_y)
-        rsq = 1 - np.sum((test_y - pred_responses) ** 2) / np.sum((test_y - mean_response) ** 2)
+        rsq = 1 - (np.sum((test_y - pred_responses) ** 2) / np.sum((test_y - mean_response) ** 2))
         result_dict['result'][seed] = [opt_lambda, rsq, n_select, opt_coeff]
         
         log.print_progress("Done")
