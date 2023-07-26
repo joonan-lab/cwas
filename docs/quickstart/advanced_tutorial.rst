@@ -16,12 +16,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   .. code-block:: solidity
 
     #CHROM  POS ID  REF ALT QUAL    FILTER  INFO
-    chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1;BATCH=P231
-    chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1;BATCH=P231
-    chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
+    chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1
+    chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1
+    chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1
 
 
-  2. Sample information
+  1. Sample information
 
   Prepare sample information in txt format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
   The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
@@ -342,12 +342,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ##INFO=<ID=MisDb_MPC,Number=.,Type=String,Description="MPC field from /home/cwas_testing/cwas-dataset/MPC_hg38.vcf.bgz">
     ##INFO=<ID=ANNOT,Key=phastCons46way|phyloP46way|ChmE1|ChmE10|ChmE11|ChmE12|ChmE13|ChmE14|ChmE15|ChmE2|ChmE3|ChmE4|ChmE5|ChmE6|ChmE7|ChmE8|ChmE9|EpiDNase|EpiH3K27ac|EpiH3K27me3|EpiH3K36me3|EpiH3K4me1|EpiH3K4me3|EpiH3K9ac|EpiH3K9me3|MidFetalH3K27ac|YaleH3K27acCBC|YaleH3K27acDFC|MidFetalATAC|EncodeDNase|EncodeTFBS|EnhancerVista|EnhancerFantom|HARs>
     #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
-    chr1	822758	chr1:822758:C:T	C	T	.	.	SAMPLE=11299.s1;BATCH=WGS519;CSQ=T|intron_variant&non_coding_transcript_variant|MODIFIER||ENSG00000230021|Transcript|ENST00000635509|processed_transcript||1/3||||||||||-1|||||SAMD11||||||;ANNOT=33313024
-    chr1	842732	chr1:842732:G:A	G	A	.	.	SAMPLE=13373.p1;BATCH=P231;CSQ=A|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||1807|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=764418304
-    chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;BATCH=WGS519;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
+    chr1	822758	chr1:822758:C:T	C	T	.	.	SAMPLE=11299.s1;CSQ=T|intron_variant&non_coding_transcript_variant|MODIFIER||ENSG00000230021|Transcript|ENST00000635509|processed_transcript||1/3||||||||||-1|||||SAMD11||||||;ANNOT=33313024
+    chr1	842732	chr1:842732:G:A	G	A	.	.	SAMPLE=13373.p1;CSQ=A|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||1807|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=764418304
+    chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
 
 
-5. :ref:`Categorization <categorization>`
+1. :ref:`Categorization <categorization>`
 ############################################
 
   Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>`.
