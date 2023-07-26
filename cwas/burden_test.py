@@ -89,7 +89,7 @@ class BurdenTest(Runnable):
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
+                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
         return self._sample_info
 
@@ -97,7 +97,7 @@ class BurdenTest(Runnable):
     def adj_factor(self) -> pd.DataFrame:
         if self._adj_factor is None and self.adj_factor_path:
             self._adj_factor = pd.read_table(
-                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
+                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}
             )
         return self._adj_factor
 
