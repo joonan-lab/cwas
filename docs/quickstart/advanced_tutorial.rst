@@ -915,7 +915,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
   - -t, --tag: Tag used for the name of the output files. By default, None.
-  - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
   - -c_count, --cat_count: Path of the categories counts file from burden test.
   - -CT, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
   - -CR, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
@@ -930,7 +929,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -r 2,500 \
       -s 123 \
       -t test \
-      -c CATEGORY_SET.txt \
       -c_count CATEGORY_COUNTS.txt \
       -CT 2 \
       -CR 0.7 \
@@ -950,7 +948,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -r 2,500 \
       -s 123 \
       -t test \
-      -c $HOME/cwas_output/subset_categories.txt \
       -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
       -CT 2 \
       -CR 0.7 \
