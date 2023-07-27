@@ -6,76 +6,81 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
 
-0. Data requirements
+0. Requirements
 #####################
 
-  1. Input vcf file (variant list)
+  1. Input
 
-  Prepare sorted variants in vcf format. The order of the columns should follow the specification of `vcf <https://samtools.github.io/hts-specs/VCFv4.2.pdf>`_. The INFO field must contain a sample ID of each variant with this format ``SAMPLE={sample_id}``.
+     1. Input vcf file (variant list)
 
-  .. code-block:: solidity
+        Prepare sorted variants in `vcf <https://samtools.github.io/hts-specs/VCFv4.2.pdf>`_ format. The INFO field in each entry includes a sample ID in ``SAMPLE={sample_id}`` format.
 
-    #CHROM  POS ID  REF ALT QUAL    FILTER  INFO
-    chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1;BATCH=P231
-    chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1;BATCH=P231
-    chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
+        .. code-block:: solidity
 
-
-  2. Sample information
-
-  Prepare sample information in txt format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
-  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
-
-  +----------+--------+-----------+
-  |  SAMPLE  | FAMILY | PHENOTYPE |
-  +==========+========+===========+
-  | 11000.p1 | 11000  |   case    |
-  +----------+--------+-----------+
-  | 11000.s1 | 11000  |   ctrl    |
-  +----------+--------+-----------+
-  | 11002.p1 | 11002  |   case    |
-  +----------+--------+-----------+
-  | 11002.s1 | 11002  |   ctrl    |
-  +----------+--------+-----------+
-
-  3. Adjustment factors
-
-  Adjustment factors are required if the users want to adjust the number of variants for each sample in CWAS-Plus. The file must be tab separated and must contain two columns, *SAMPLE* and *AdjustFactor*. A value in the *AdjustFactor* must be a float.
-  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
-
-  +----------+--------------+
-  | SAMPLE   | AdjustFactor |
-  +==========+==============+
-  | 11000.p1 | 0.932        |
-  +----------+--------------+
-  | 11000.s1 | 1.082        |
-  +----------+--------------+
-  | 11002.p1 | 0.895        |
-  +----------+--------------+
-  | 11002.s1 | 1.113        |
-  +----------+--------------+
+            #CHROM  POS ID  REF ALT QUAL    FILTER  INFO
+            chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1
+            chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1
+            chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1
 
 
-  For example run, the above data are available at `joonan-lab/cwas-input-example <https://github.com/joonan-lab/cwas-input-example>`_.
+     2. Sample information
 
-  .. code-block:: solidity
+        Prepare the sample information in a text file, such as in txt or tsv format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
+        The values in the SAMPLE column are matched to the sample IDs of variants in the input vcf file.
 
-    cd $HOME
-    git clone https://github.com/joonan-lab/cwas-input-example.git
+        +----------+--------+-----------+
+        |  SAMPLE  | FAMILY | PHENOTYPE |
+        +==========+========+===========+
+        | 11000.p1 | 11000  |   case    |
+        +----------+--------+-----------+
+        | 11000.s1 | 11000  |   ctrl    |
+        +----------+--------+-----------+
+        | 11002.p1 | 11002  |   case    |
+        +----------+--------+-----------+
+        | 11002.s1 | 11002  |   ctrl    |
+        +----------+--------+-----------+
+
+     3. Adjustment factors
+
+        Adjustment factors are required if the users want to adjust the number of variants for each sample in CWAS-Plus. The file must be tab separated and must contain two columns, *SAMPLE* and *AdjustFactor*. A value in the *AdjustFactor* must be a float.
+        The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
+
+        +----------+--------------+
+        | SAMPLE   | AdjustFactor |
+        +==========+==============+
+        | 11000.p1 | 0.932        |
+        +----------+--------------+
+        | 11000.s1 | 1.082        |
+        +----------+--------------+
+        | 11002.p1 | 0.895        |
+        +----------+--------------+
+        | 11002.s1 | 1.113        |
+        +----------+--------------+
 
 
+        For example run, the above data are available at `joonan-lab/cwas-input-example <https://github.com/joonan-lab/cwas-input-example>`_.
 
-  4. Annotation dataset
+        .. code-block:: solidity
+            
+            cd $HOME
+            git clone https://github.com/joonan-lab/cwas-input-example.git
 
-  CWAS-Plus requires annotation dataset to annotate and categorize variants. Users can customize their own annotation dataset based on ther interest.
-  For example run, annotation datasets for investigating autism spectrum disorder are available at `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_.
 
-  .. code-block:: solidity
+  2. Annotation dataset
 
-    cd $HOME
-    git clone https://github.com/joonan-lab/cwas-dataset.git
+    CWAS-Plus requires annotation dataset to annotate and categorize variants. Users can customize their own annotation dataset based on ther interest.
+    For example run, annotation datasets for investigating autism spectrum disorder are available at `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_.
+
+    .. code-block:: solidity
+
+        cd $HOME
+        git clone https://github.com/joonan-lab/cwas-dataset.git
   
 
+  3. Required installations
+
+   - **Conda**: CWAS-Plus is installed in a conda environment, so conda should be installed.
+   - **VEP**: For variant annotation, VEP should be installed. Please refer to the `reference <https://ensembl.org/info/docs/tools/vep/script/vep_download.html>`_.
 
 
 1. :ref:`Install CWAS-Plus <installation>`
@@ -170,12 +175,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   By default, CWAS-Plus provides all of the data above (except for VEP) and configuration file (``configuration.txt``) through `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_. Please note that the provided data serves as default examples, which users can customize to their specific needs.
   
-  - *VEP* can be installed through github or conda. The command to install VEP through conda is as below.
-
-  .. code-block:: solidity
-
-    conda install -c bioconda ensembl-vep
-
   
   To use VEP, users need cache file matching to the VEP version. The cache file can be found `here <https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache>`_. Please download the file in the *VEP_CACHE_DIR*.
 
@@ -252,13 +251,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
-  The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
+  The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. To force configuration (overwrite previous configurations), use ``-f`` option.
 
   .. code-block:: solidity
 
     cwas configuration
 
-3. :ref:`Prepare annotation datasets <data-prep-label>`
+1. :ref:`Prepare annotation datasets <data-prep-label>`
 ############################################################
 
   Gather and merge functional annotations and scores into a single bed file. The annotation datasets in the *ANNOTATION_DATA_DIR* will be merged to a single bed file in the working directory.
@@ -342,12 +341,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ##INFO=<ID=MisDb_MPC,Number=.,Type=String,Description="MPC field from /home/cwas_testing/cwas-dataset/MPC_hg38.vcf.bgz">
     ##INFO=<ID=ANNOT,Key=phastCons46way|phyloP46way|ChmE1|ChmE10|ChmE11|ChmE12|ChmE13|ChmE14|ChmE15|ChmE2|ChmE3|ChmE4|ChmE5|ChmE6|ChmE7|ChmE8|ChmE9|EpiDNase|EpiH3K27ac|EpiH3K27me3|EpiH3K36me3|EpiH3K4me1|EpiH3K4me3|EpiH3K9ac|EpiH3K9me3|MidFetalH3K27ac|YaleH3K27acCBC|YaleH3K27acDFC|MidFetalATAC|EncodeDNase|EncodeTFBS|EnhancerVista|EnhancerFantom|HARs>
     #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
-    chr1	822758	chr1:822758:C:T	C	T	.	.	SAMPLE=11299.s1;BATCH=WGS519;CSQ=T|intron_variant&non_coding_transcript_variant|MODIFIER||ENSG00000230021|Transcript|ENST00000635509|processed_transcript||1/3||||||||||-1|||||SAMD11||||||;ANNOT=33313024
-    chr1	842732	chr1:842732:G:A	G	A	.	.	SAMPLE=13373.p1;BATCH=P231;CSQ=A|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||1807|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=764418304
-    chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;BATCH=WGS519;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
+    chr1	822758	chr1:822758:C:T	C	T	.	.	SAMPLE=11299.s1;CSQ=T|intron_variant&non_coding_transcript_variant|MODIFIER||ENSG00000230021|Transcript|ENST00000635509|processed_transcript||1/3||||||||||-1|||||SAMD11||||||;ANNOT=33313024
+    chr1	842732	chr1:842732:G:A	G	A	.	.	SAMPLE=13373.p1;CSQ=A|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||1807|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=764418304
+    chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
 
 
-5. :ref:`Categorization <categorization>`
+1. :ref:`Categorization <categorization>`
 ############################################
 
   Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>`.
@@ -721,7 +720,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     [RESULT] The number of effective tests is 4088.
 
 
-1.  :ref:`Risk score analysis <riskscore>`
+8.  :ref:`Risk score analysis <riskscore>`
 ############################################
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
@@ -916,7 +915,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
   - -t, --tag: Tag used for the name of the output files. By default, None.
-  - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
   - -c_count, --cat_count: Path of the categories counts file from burden test.
   - -CT, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
   - -CR, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
@@ -931,7 +929,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -r 2,500 \
       -s 123 \
       -t test \
-      -c CATEGORY_SET.txt \
       -c_count CATEGORY_COUNTS.txt \
       -CT 2 \
       -CR 0.7 \
@@ -951,7 +948,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -r 2,500 \
       -s 123 \
       -t test \
-      -c $HOME/cwas_output/subset_categories.txt \
       -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
       -CT 2 \
       -CR 0.7 \
