@@ -251,7 +251,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
-  The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
+  The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. To force configuration (overwrite previous configurations), use ``-f`` option.
 
   .. code-block:: solidity
 
