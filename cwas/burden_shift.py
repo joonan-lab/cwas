@@ -185,7 +185,8 @@ class BurdenShift(Runnable):
         
         fig1 = plt.figure(figsize=(5,4))
         plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
-        ax = sns.kdeplot(ggpermCounts['N_signif_tests'], edgecolor='black', color='#EBEBEB', alpha=1, fill=True, linewidth=1)
+        ax = sns.kdeplot(ggpermCounts['N_signif_tests'], edgecolor='black', color='#EBEBEB',
+                         alpha=1, fill=True, linewidth=1, warn_singular=False)
         ymax = ax.get_ylim()[-1]
         plt.vlines(ymin=0, ymax=ymax, x=nObsCase, color='red', linestyles='--', linewidth=1)
         plt.text(nObsCase+larger*0.02, ymax*0.8, pCase, color='red', fontsize=ft_size)
@@ -203,9 +204,9 @@ class BurdenShift(Runnable):
         fig2 = plt.figure(figsize=(5,4))
         plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
         ax = sns.kdeplot(df2.loc[df2['type']=='case','value'], edgecolor='black', color='#ff8a89', 
-                        alpha=.6, fill=True, linewidth=1, label='Case')
+                        alpha=.6, fill=True, linewidth=1, label='Case', warn_singular=False)
         ax = sns.kdeplot(df2.loc[df2['type']=='control','value'], edgecolor='black', color='#8b8aff', 
-                        alpha=.6, fill=True, linewidth=1, label='Control')
+                        alpha=.6, fill=True, linewidth=1, label='Control', warn_singular=False)
         ymax = ax.get_ylim()[-1]
         plt.vlines(ymin=0, ymax=ymax, x=nObsCase, color='red', linestyles='--', linewidth=1)
         plt.text(nObsCase+larger*0.02, ymax*0.7, pCase, color='red', fontsize=ft_size)
@@ -355,9 +356,9 @@ class BurdenShift(Runnable):
                                 
                 # Compare the observed counts to the permuted counts to calculate shift p-values
                 nPermCase = len(np.where(permCounts['case']>=nObsCase)[0])
-                pCase = nPermCase / len(permCounts)
+                pCase = (nPermCase+1) / (len(permCounts)+1)
                 nPermCtrl = len(np.where(permCounts['control']>=nObsCtrl)[0])
-                pCtrl = nPermCtrl / len(permCounts)
+                pCtrl = (nPermCtrl+1) / (len(permCounts)+1)
                                 
                 # Plot the results
                 fig1, fig2 = self._draw_shiftDistPlot(permCounts, setName, nObsCase, nObsCtrl, pCase, pCtrl)
