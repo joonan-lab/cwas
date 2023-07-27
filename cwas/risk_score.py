@@ -179,6 +179,10 @@ class RiskScore(Runnable):
         return self.args.predict_only
     
     @property
+    def seed(self) -> int:
+        return self.args.seed
+    
+    @property
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
             self._sample_info = pd.read_table(
@@ -330,7 +334,7 @@ class RiskScore(Runnable):
             self.permute_pvalues()
         self.save_results()
         self.update_env()
-        log.print_progress("Complete")
+        log.print_progress("Done")
 
     def prepare(self):
         if not self._contain_same_index(
@@ -346,7 +350,7 @@ class RiskScore(Runnable):
         """Generate risk scores for various seeds """
         log.print_progress(self.risk_scores.__doc__)
         
-        seeds = np.arange(99, 99 + self.num_reg * 10, 10)
+        seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
         for seed in seeds:
             self.risk_score_per_category(result_dict=self._result_dict, seed=seed)
             
@@ -359,8 +363,8 @@ class RiskScore(Runnable):
             perm_sample_info['Perm_PHENOTYPE'] = np.random.permutation(self.sample_info['PHENOTYPE'])
             perm_sample_info = perm_sample_info.drop(columns=['PHENOTYPE', 'SET'])
             
-            perm_case_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
-            perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
+            perm_case_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self.case_f, random_state=seed).index
+            perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=seed).index
             perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'
             perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'
             perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
@@ -405,27 +409,26 @@ class RiskScore(Runnable):
         if cov.shape[1] == 0:
             log.print_warn(f"There are no rare categories (Seed: {seed}).")
             return
-        #y = np.where(response, 1.0, -1.0)
-        #test_y = np.where(test_response, 1.0, -1.0)
+
         y = np.where(response, 1.0, 0.0)
         test_y = np.where(test_response, 1.0, 0.0)
         log.print_progress(f"Running LassoCV (Seed: {seed})")
         
         if self.logistic == True:
             lasso_model = LogitNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-                                     scoring='mean_squared_error', random_state=seed)
+                                   scoring='mean_squared_error', random_state=seed)
         else:
             lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
                                      scoring='mean_squared_error', random_state=seed)
 
-        lasso_model.fit(cov, y, self.custom_cv_folds())
+        lasso_model.fit(cov, y, self.custom_cv_folds(seed=self.seed))
         opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
         coeffs = getattr(lasso_model, 'coef_path_')
         opt_coeff = np.zeros(len(rare_idx))
 
         if self.logistic == True:
             # coef_path_ : array, shape (n_classes, n_features, n_lambda_)
-            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx]
+            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx][0]
         else:
             # coef_path_ : array, shape (n_features, n_lambda_)
             opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
@@ -471,10 +474,10 @@ class RiskScore(Runnable):
                 if suppress_stderr:
                     sys.stderr = stderr
                     
-        seeds = np.arange(1001, 1001+self.n_permute)
+        seeds = np.arange(self.seed, self.seed+self.n_permute)
         for seed in tqdm(seeds):
             with nullify_output():
-                self.risk_score_per_category(result_dict=self._permutation_dict, seed=seed, swap_label=True)
+                self.risk_score_per_category(result_dict=self._permutation_dict, seed=self.seed, swap_label=True)
                 
 
     def save_results(self):
