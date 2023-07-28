@@ -66,24 +66,21 @@ class BurdenTest(Runnable):
 
     @property
     def result_path(self) -> Path:
+        results_name = self.cat_path.name.replace('categorization_result.txt.gz', 'burden_test.txt').replace('categorization_result.txt', 'burden_test.txt')
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'burden_test.txt')}"
+            f"{results_name}"
         )
 
     @property
     def counts_path(self) -> Path:
-        return Path(
-            f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'category_counts.txt')}"
-        )
+        counts_file_name = self.cat_path.name.replace('categorization_result.txt.gz', 'category_counts.txt').replace('categorization_result.txt', 'category_counts.txt')
+        return Path(f"{self.output_dir_path}/{counts_file_name}")
 
     @property
     def cat_info_path(self) -> Path:
-        return Path(
-            f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'category_info.txt')}"
-        )
+        cat_info_file_name = self.cat_path.name.replace('categorization_result.txt.gz', 'category_info.txt').replace('categorization_result.txt', 'category_info.txt')
+        return Path(f"{self.output_dir_path}/{cat_info_file_name}")
 
     @property
     def sample_info(self) -> pd.DataFrame:
