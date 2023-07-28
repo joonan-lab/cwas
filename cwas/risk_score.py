@@ -425,7 +425,7 @@ class RiskScore(Runnable):
 
         if self.logistic == True:
             # coef_path_ : array, shape (n_classes, n_features, n_lambda_)
-            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx]
+            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx][0]
         else:
             # coef_path_ : array, shape (n_features, n_lambda_)
             opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
@@ -434,7 +434,9 @@ class RiskScore(Runnable):
         n_select = np.sum(np.abs(opt_coeff) > 0.0)
         pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)
         mean_response = np.mean(test_y)
-        rsq = 1 - (np.sum((test_y - pred_responses) ** 2) / np.sum((test_y - mean_response) ** 2))
+        ssr = np.sum((pred_responses - mean_response) ** 2)
+        sst = np.sum((test_y - mean_response) ** 2)
+        rsq = ssr / sst
         result_dict['result'][seed] = [opt_lambda, rsq, n_select, opt_coeff]
         
         log.print_progress("Done")
