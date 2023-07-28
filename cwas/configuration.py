@@ -118,7 +118,7 @@ class Configuration(Runnable):
                     f'"{data_dir_symlink}" already exists, removing it and creating the symbolic link again.'
                 )
                 temp_link = Path(str(data_dir_symlink) + ".new")
-                os.remove(data_dir_symlink)
+                Path.rmdir(data_dir_symlink)
                 os.symlink(data_dir, temp_link)
                 os.rename(temp_link, data_dir_symlink)
             else:
