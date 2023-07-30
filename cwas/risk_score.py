@@ -425,7 +425,7 @@ class RiskScore(Runnable):
 
         if self.logistic == True:
             # coef_path_ : array, shape (n_classes, n_features, n_lambda_)
-            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx]
+            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx][0]
         else:
             # coef_path_ : array, shape (n_features, n_lambda_)
             opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
