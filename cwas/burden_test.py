@@ -121,6 +121,10 @@ class BurdenTest(Runnable):
     @property
     def plot_size(self) -> float:
         return self.args.plot_size
+    
+    @property
+    def plot_title(self) -> float:
+        return self.args.plot_title
 
     @property
     def categorization_result(self) -> pd.DataFrame:
