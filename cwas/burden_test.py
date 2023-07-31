@@ -2,9 +2,10 @@ import argparse
 from abc import abstractmethod
 from pathlib import Path
 from typing import Optional
-
+import polars as pl
 import numpy as np
 import pandas as pd
+import pickle
 
 from cwas.core.categorization.category import Category
 from cwas.core.common import cmp_two_arr
@@ -12,7 +13,7 @@ from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 from cwas.utils.log import print_arg, print_progress
-import polars as pl
+
 
 
 class BurdenTest(Runnable):
@@ -117,6 +118,10 @@ class BurdenTest(Runnable):
     @property
     def plot_size(self) -> float:
         return self.args.plot_size
+    
+    @property
+    def plot_title(self) -> float:
+        return self.args.plot_title
 
     @property
     def categorization_result(self) -> pd.DataFrame:
@@ -151,11 +156,8 @@ class BurdenTest(Runnable):
     @property
     def phenotypes(self) -> np.ndarray:
         if self._phenotypes is None:
-            self._phenotypes = np.vectorize(
-                lambda sample_id: self.sample_info.to_dict()["PHENOTYPE"][
-                    sample_id
-                ]
-            )(self.categorization_result.index.values)
+            self._phenotypes = np.array(self.sample_info.loc[self.categorization_result.index, 'PHENOTYPE'])
+            
         return self._phenotypes
 
     @property
@@ -266,6 +268,7 @@ class BurdenTest(Runnable):
 
     def calculate_relative_risk(self):
         print_progress("Calculate relative risks for each category")
+        np.seterr(divide='ignore')
         normalized_case_variant_cnt = self.case_variant_cnt / self.case_cnt
         normalized_ctrl_variant_cnt = self.ctrl_variant_cnt / self.ctrl_cnt
         self._result["Relative_Risk"] = (

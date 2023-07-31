@@ -185,7 +185,8 @@ class BurdenShift(Runnable):
         
         fig1 = plt.figure(figsize=(5,4))
         plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
-        ax = sns.kdeplot(ggpermCounts['N_signif_tests'], edgecolor='black', color='#EBEBEB', alpha=1, fill=True, linewidth=1)
+        ax = sns.kdeplot(ggpermCounts['N_signif_tests'], edgecolor='black', color='#EBEBEB',
+                         alpha=1, fill=True, linewidth=1, warn_singular=False)
         ymax = ax.get_ylim()[-1]
         plt.vlines(ymin=0, ymax=ymax, x=nObsCase, color='red', linestyles='--', linewidth=1)
         plt.text(nObsCase+larger*0.02, ymax*0.8, pCase, color='red', fontsize=ft_size)
@@ -199,13 +200,13 @@ class BurdenShift(Runnable):
         plt.tight_layout()
         plt.close()
 
-        df2 = pd.melt(df, var_name='type',value_name='value')
+        df2 = pd.melt(df, var_name='type')
         fig2 = plt.figure(figsize=(5,4))
         plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
         ax = sns.kdeplot(df2.loc[df2['type']=='case','value'], edgecolor='black', color='#ff8a89', 
-                        alpha=.6, fill=True, linewidth=1, label='Case')
+                        alpha=.6, fill=True, linewidth=1, label='Case', warn_singular=False)
         ax = sns.kdeplot(df2.loc[df2['type']=='control','value'], edgecolor='black', color='#8b8aff', 
-                        alpha=.6, fill=True, linewidth=1, label='Control')
+                        alpha=.6, fill=True, linewidth=1, label='Control', warn_singular=False)
         ymax = ax.get_ylim()[-1]
         plt.vlines(ymin=0, ymax=ymax, x=nObsCase, color='red', linestyles='--', linewidth=1)
         plt.text(nObsCase+larger*0.02, ymax*0.7, pCase, color='red', fontsize=ft_size)
@@ -249,7 +250,7 @@ class BurdenShift(Runnable):
             if len(res) == len(pre.split("&")):
                 return x
             
-    def _create_shiftResPlot_df(self, df):
+    def _create_shiftResPlot_df(self, df, isin_inf=False):
         main_domain = ['Coding', 'LoF', 'Missense', 'Damaging', 'Noncoding', 'Promoter', 'Intron', 'Intergenic', 'UTR', 'LincRNA']
         domain_order = ['Coding (All)','LoF','Missense','Coding w/o LoF','Noncoding (All)','Promoter','Intron','Intergenic','UTR','LincRNA','CRE','Others']
         
@@ -314,10 +315,12 @@ class BurdenShift(Runnable):
             topN_cats = df2.loc[df2.Phenotype=='Case'].sort_values(["-log10P","N_cats"], ascending=False)["Category_set"].tolist()[:self.n_cat_sets]
             query_df = df2.loc[df2["Category_set"].isin(topN_cats)]
 
-        max_lim = query_df.loc[~np.isinf(query_df["-log10P"]), "-log10P"].max() + 0.3
+        isin_inf = True if sum(np.isinf(query_df["-log10P"]))>0 else False
+        max_lim = df2.loc[~np.isinf(df2["-log10P"]), "-log10P"].max() + 0.5
         query_df.loc[np.isinf(query_df["-log10P"]), "-log10P"] = max_lim
-        query_df.sort_values(["Domain_order","Category_set"], ascending=False, inplace=True)
-        return query_df
+        query_df.sort_values(["Domain_order","Category_set"], ascending=False, inplace=True)   
+        
+        return (query_df, isin_inf)
     
 
     def burden_shift(self):
@@ -355,9 +358,9 @@ class BurdenShift(Runnable):
                                 
                 # Compare the observed counts to the permuted counts to calculate shift p-values
                 nPermCase = len(np.where(permCounts['case']>=nObsCase)[0])
-                pCase = nPermCase / len(permCounts)
+                pCase = (nPermCase+1) / (len(permCounts)+1)
                 nPermCtrl = len(np.where(permCounts['control']>=nObsCtrl)[0])
-                pCtrl = nPermCtrl / len(permCounts)
+                pCtrl = (nPermCtrl+1) / (len(permCounts)+1)
                                 
                 # Plot the results
                 fig1, fig2 = self._draw_shiftDistPlot(permCounts, setName, nObsCase, nObsCtrl, pCase, pCtrl)
@@ -383,15 +386,16 @@ class BurdenShift(Runnable):
     def draw_shiftResPlot(self):
         output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz','')
         plot_output = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.result_plot.pdf"
+        isin_inf = None
         
-        plot_df = self._create_shiftResPlot_df(self._obsTab)
+        plot_df, isin_inf = self._create_shiftResPlot_df(self._obsTab)
         case_df = plot_df.loc[plot_df.Phenotype=='Case'].reset_index(drop=True)
         ctrl_df = plot_df.loc[plot_df.Phenotype=='Control'].reset_index(drop=True)
 
         ## Draw plot
         plt.rcParams['font.size'] = self.fontsize
         h = len(plot_df)/2 * 0.7
-        fig, ax = plt.subplots(ncols=2, figsize=(14,h),
+        fig, ax = plt.subplots(ncols=2, figsize=(14, h),
                                width_ratios=[.5,13.5])
 
         ## main plot
@@ -405,7 +409,11 @@ class BurdenShift(Runnable):
         ax[1].vlines(ymin=y_min, ymax=y_max, x=-np.log10(0.05), color='red', linestyle='--', linewidth=1.5)
 
         x_max = ax[1].get_xlim()[-1]
+        xticks = np.arange(0,x_max+.5, 0.5)
+        xticklabels = [str(x) for x in xticks]
+        xticklabels[-2] = 'inf' if isin_inf else xticklabels[-2]
         ax[1].set_xticks(np.arange(0, x_max+.5, 0.5))
+        ax[1].set_xticklabels(xticklabels)
         ax[1].set_xlim(0-0.2, round(x_max,1)+0.2)
         ax[1].set_xlabel('P(-log10)')
 

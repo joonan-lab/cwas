@@ -315,10 +315,20 @@ def binomial_test() -> argparse.ArgumentParser:
     optional.add_argument(
         '-ps',
         '--plot_size',
+        dest="plot_size",
         required=False,
         type=float,
         default=7,
         help="Plot size of the volcano plot resulted from the binomial test, width and height are the same. (unit: inch) (default: 7)"
+    )
+    optional.add_argument(
+        "-pt",
+        "--plot_title",
+        dest="plot_title",
+        required=False,
+        type=str,
+        default="Binomial test result",
+        help="Title of volcano plot of binomial test result (default: Binomial test result)."
     )
     other.add_argument(
         '-h',
@@ -711,123 +721,6 @@ def burden_shift() -> argparse.ArgumentParser:
     )
     return result
 
-def dawn() -> argparse.ArgumentParser:
-    result = argparse.ArgumentParser(
-        prog="cwas dawn",
-        description="CWAS DAWN analysis",
-        formatter_class=argparse.RawTextHelpFormatter,
-        add_help=False
-    )
-    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
-    required = result.add_argument_group("Required arguments")
-    optional = result.add_argument_group("Optional arguments")
-    other = result.add_argument_group("Other")
-    required.add_argument(
-        "-i_dir",
-        "--input_directory",
-        dest="input_dir_path",
-        required=True,
-        type=Path,
-        help="Directory where input files stored. This directory must include three required input files.\n 1. Eigen vectors file (*eig_vecs*.txt.gz)\n 2. Category correlation matrix file (*correlation_matrix*.pkl)\n 3. Permutation test file (*permutation_test*.txt.gz)",
-    )
-    required.add_argument(
-        "-c_count",
-        "--cat_count",
-        dest="category_count_file",
-        required=True,
-        type=Path,
-        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
-    )
-    optional.add_argument(
-        "-p",
-        "--num_proc",
-        dest="num_proc",
-        required=False,
-        default=1,
-        type=int,
-        help="Number of worker processes for the DAWN (default: 1).",
-    )
-    optional.add_argument(
-        "-o_dir",
-        "--output_directory",
-        dest="output_dir_path",
-        required=False,
-        default=default_workspace,
-        type=Path,
-        help="Directory where output file will be saved (default: {}).".format(default_workspace),
-    )
-    optional.add_argument(
-        "-r",
-        "--range",
-        dest="k_range",
-        required=False,
-        default='2,100',
-        type=str,
-        help="Range from start and end to find K for k-means clustering, and start must be above 1. Start and end should be comma-separated. -r, and -k are mutually exclusive.\nIf you want to use range (-r) to find optimal K, -k must be None (default: 2,100).",
-    )
-    optional.add_argument(
-        "-k",
-        "--k_val",
-        dest="k_val",
-        required=False,
-        type=int,
-        default=None,
-        help="K for k-means clustering. -r, and -k are mutually exclusive. If -k is given, the value of -r is ignored (default: None).",
-    )
-    optional.add_argument(
-        "-s",
-        "--seed",
-        dest="seed",
-        required=False,
-        default=1,
-        type=int,
-        help="Seed value for t-SNE (default:).",
-    )
-    optional.add_argument(
-        "-t",
-        "--tag",
-        dest="tag",
-        required=False,
-        default=None,
-        type=str,
-        help="Tag used for the name of output files (e.g. intergenic, coding etc.) (default: None).",
-    )
-    optional.add_argument(
-        "-CT",
-        "--count_threshold",
-        dest="count_threshold",
-        required=False,
-        type=int,
-        default=20,
-        help="The threshold of variant (or sample) counts. The least amount of variants a category should have (default: 20).",
-    )
-    optional.add_argument(
-        "-CR",
-        "--corr_threshold",
-        dest="corr_threshold",
-        required=False,
-        type=float,
-        default=0.12,
-        help="The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster (default: 0.12).",
-    )
-    optional.add_argument(
-        "-S",
-        "--size_threshold",
-        dest="size_threshold",
-        required=False,
-        type=int,
-        default=2,
-        help="The threshold of the number of categories per cluster. The least amount of categories a cluster should have (default: 2).",
-    )
-    other.add_argument(
-        '-h',
-        '--help',
-        action="help",
-        default=argparse.SUPPRESS,
-        help="Show this help message and exit."
-    )    
-    return result
-
 def risk_score() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         prog="cwas risk_score",
@@ -963,6 +856,15 @@ def risk_score() -> argparse.ArgumentParser:
         default=1,
         help="No. worker processes for permutation (default: 1)"
     )
+    optional.add_argument(
+        '-S',
+        '--seed',
+        dest='seed',
+        required=False,
+        default=42,
+        type=int,
+        help="Seed of random state (default: 42)."
+    )
     other.add_argument(
         '-h',
         '--help',
@@ -971,4 +873,137 @@ def risk_score() -> argparse.ArgumentParser:
         help="Show this help message and exit."
     )
     return result
+
+def dawn() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        prog="cwas dawn",
+        description="CWAS DAWN analysis",
+        formatter_class=argparse.RawTextHelpFormatter,
+        add_help=False
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    required = result.add_argument_group("Required arguments")
+    optional = result.add_argument_group("Optional arguments")
+    other = result.add_argument_group("Other")
+    required.add_argument(
+        "-e",
+        "--eig_vector",
+        dest="eig_vector_file",
+        required=True,
+        type=Path,
+        help="File path of eigen vectors file resulted from effective number test (*eig_vecs*.txt.gz)."
+    )
+    required.add_argument(
+        "-c",
+        "--corr_mat",
+        dest="corr_mat_file",
+        type=Path,
+        help="File path of category correlation matrix file resulted from categorization (*correlation_matrix*.pkl)."
+    )
+    required.add_argument(
+        "-pe",
+        "--permut_test",
+        dest="permut_test_file",
+        required=True,
+        type=Path,
+        help="File path of permutation test file resulted from permutation test (*permutation_test*.txt.gz)."
+    )
+    required.add_argument(
+        "-c_count",
+        "--cat_count",
+        dest="category_count_file",
+        required=True,
+        type=Path,
+        help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
+    )
+    optional.add_argument(
+        "-p",
+        "--num_proc",
+        dest="num_proc",
+        required=False,
+        default=1,
+        type=int,
+        help="Number of worker processes for the DAWN (default: 1).",
+    )
+    optional.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved (default: {}).".format(default_workspace),
+    )
+    optional.add_argument(
+        "-r",
+        "--range",
+        dest="k_range",
+        required=False,
+        default='2,100',
+        type=str,
+        help="Range from start and end to find K for k-means clustering, and start must be above 1. Start and end should be comma-separated. -r, and -k are mutually exclusive.\nIf you want to use range (-r) to find optimal K, -k must be None (default: 2,100).",
+    )
+    optional.add_argument(
+        "-k",
+        "--k_val",
+        dest="k_val",
+        required=False,
+        type=int,
+        default=None,
+        help="K for k-means clustering. -r, and -k are mutually exclusive. If -k is given, the value of -r is ignored (default: None).",
+    )
+    optional.add_argument(
+        "-s",
+        "--seed",
+        dest="seed",
+        required=False,
+        default=42,
+        type=int,
+        help="Seed value for t-SNE (default: 42).",
+    )
+    optional.add_argument(
+        "-t",
+        "--tag",
+        dest="tag",
+        required=False,
+        default=None,
+        type=str,
+        help="Tag used for the name of output files (e.g. intergenic, coding etc.) (default: None).",
+    )
+    optional.add_argument(
+        "-CT",
+        "--count_threshold",
+        dest="count_threshold",
+        required=False,
+        type=int,
+        default=20,
+        help="The threshold of variant (or sample) counts. The least amount of variants a category should have (default: 20).",
+    )
+    optional.add_argument(
+        "-CR",
+        "--corr_threshold",
+        dest="corr_threshold",
+        required=False,
+        type=float,
+        default=0.12,
+        help="The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster (default: 0.12).",
+    )
+    optional.add_argument(
+        "-S",
+        "--size_threshold",
+        dest="size_threshold",
+        required=False,
+        type=int,
+        default=2,
+        help="The threshold of the number of categories per cluster. The least amount of categories a cluster should have (default: 2).",
+    )
+    other.add_argument(
+        '-h',
+        '--help',
+        action="help",
+        default=argparse.SUPPRESS,
+        help="Show this help message and exit."
+    )    
+    return result
+
 
