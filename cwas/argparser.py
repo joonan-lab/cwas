@@ -315,10 +315,20 @@ def binomial_test() -> argparse.ArgumentParser:
     optional.add_argument(
         '-ps',
         '--plot_size',
+        dest="plot_size",
         required=False,
         type=float,
         default=7,
         help="Plot size of the volcano plot resulted from the binomial test, width and height are the same. (unit: inch) (default: 7)"
+    )
+    optional.add_argument(
+        "-pt",
+        "--plot_title",
+        dest="plot_title",
+        required=False,
+        type=str,
+        default="Binomial test result",
+        help="Title of volcano plot of binomial test result (default: Binomial test result)."
     )
     other.add_argument(
         '-h',
@@ -876,12 +886,27 @@ def dawn() -> argparse.ArgumentParser:
     optional = result.add_argument_group("Optional arguments")
     other = result.add_argument_group("Other")
     required.add_argument(
-        "-i_dir",
-        "--input_directory",
-        dest="input_dir_path",
+        "-e",
+        "--eig_vector",
+        dest="eig_vector_file",
         required=True,
         type=Path,
-        help="Directory where input files stored. This directory must include three required input files.\n 1. Eigen vectors file (*eig_vecs*.txt.gz)\n 2. Category correlation matrix file (*correlation_matrix*.pkl)\n 3. Permutation test file (*permutation_test*.txt.gz)",
+        help="File path of eigen vectors file resulted from effective number test (*eig_vecs*.txt.gz)."
+    )
+    required.add_argument(
+        "-c",
+        "--corr_mat",
+        dest="corr_mat_file",
+        type=Path,
+        help="File path of category correlation matrix file resulted from categorization (*correlation_matrix*.pkl)."
+    )
+    required.add_argument(
+        "-pe",
+        "--permut_test",
+        dest="permut_test_file",
+        required=True,
+        type=Path,
+        help="File path of permutation test file resulted from permutation test (*permutation_test*.txt.gz)."
     )
     required.add_argument(
         "-c_count",
@@ -932,9 +957,9 @@ def dawn() -> argparse.ArgumentParser:
         "--seed",
         dest="seed",
         required=False,
-        default=1,
+        default=42,
         type=int,
-        help="Seed value for t-SNE (default:).",
+        help="Seed value for t-SNE (default: 42).",
     )
     optional.add_argument(
         "-t",
