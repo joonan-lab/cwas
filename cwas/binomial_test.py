@@ -69,7 +69,7 @@ class BinomialTest(BurdenTest):
             for t in tags:
                 fig, axes = plt.subplots(figsize=(self.plot_size, self.plot_size))
 
-                plt.title("Binomial test result", fontsize=self.font_size, loc='left', pad=5)
+                plt.title(self.plot_title, fontsize=self.font_size, loc='left', pad=5)
                 axes.vlines(x=0, ymin=-0.5, ymax=max(burden_res['-log_P'])+0.5, linestyles='-', color='lightgray', linewidth=1.25, zorder=1)
                 axes.scatter(x=burden_res['log2_RR'].apply(lambda x: replace_inf(x, max_x)), y=burden_res['-log_P'],
                             marker='o', color='silver', s=self.marker_size, label='Others', edgecolor='black', linewidth=0.5, zorder=2)
@@ -101,7 +101,7 @@ class BinomialTest(BurdenTest):
         else:
             fig, axes = plt.subplots(figsize=(self.plot_size, self.plot_size))
 
-            plt.title("Binomial test result", fontsize=self.font_size, loc='left', pad=5)
+            plt.title(self.plot_title, fontsize=self.font_size, loc='left', pad=5)
             axes.vlines(x=0, ymin=-0.5, ymax=max(burden_res['-log_P'])+0.5, linestyles='-', color='lightgray', linewidth=1.25, zorder=1)
             axes.scatter(x=burden_res['log2_RR'].apply(lambda x: replace_inf(x, max_x)), y=burden_res['-log_P'],
                         marker='o', color='silver', s=self.marker_size, edgecolor='black', linewidth=0.5, zorder=2)
