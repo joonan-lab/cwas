@@ -475,6 +475,6 @@ class BurdenShift(Runnable):
         plt.savefig(os.path.join(self.output_dir_path, plot_output), bbox_inches='tight')    
 
     def run(self):
-        #self.burden_shift()
+        self.burden_shift()
         self.draw_shiftResPlot()
         print_progress("Done")
