@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 ****************************************
-Welcome to CWAS-Plus's documentation!
+Welcome to CWAS-Plus documentation!
 ****************************************
 
 CWAS-Plus (Category-Wide Association Study) is a data analysis tool designed to conduct rigorous association tests for discovering noncoding associations in complex genomic disorders. It runs category-based burden tests using variants from whole-genome sequencing data and various annotation datasets. CWAS-Plus provides a user-friendly interface for efficient hypothesis testing and has promising implications for uncovering the pathophysiology of various genomic disorders.
@@ -39,18 +39,16 @@ CWAS-Plus workflow
 
 .. toctree::
    :maxdepth: 1
-   :caption: CWAS-Plus requirements
+   :caption: CWAS-Plus installation
 
-   required/installation.rst
+   install/installation.rst
 
 .. toctree::
    :maxdepth: 1
-   :caption: CWAS-Plus datasets
+   :caption: CWAS-Plus requirements
 
-   dataset/overview_dataset.rst
-   dataset/genelist.rst
-   dataset/functional_annotations.rst
-   dataset/functional_scores.rst
+   required/input.rst
+   required/annotations.rst
 
 .. toctree::
    :maxdepth: 1
