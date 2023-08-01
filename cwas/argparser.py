@@ -901,7 +901,7 @@ def dawn() -> argparse.ArgumentParser:
         help="File path of category correlation matrix file resulted from categorization (*correlation_matrix*.pkl)."
     )
     required.add_argument(
-        "-pe",
+        "-P",
         "--permut_test",
         dest="permut_test_file",
         required=True,
@@ -941,7 +941,9 @@ def dawn() -> argparse.ArgumentParser:
         required=False,
         default='2,100',
         type=str,
-        help="Range from start and end to find K for k-means clustering, and start must be above 1. Start and end should be comma-separated. -r, and -k are mutually exclusive.\nIf you want to use range (-r) to find optimal K, -k must be None (default: 2,100).",
+        help="Range from start and end to find K for k-means clustering, and start must be above 1.\n"\
+             "Start and end should be comma-separated. -r, and -k are mutually exclusive.\n"\
+             "If you want to use range (-r) to find optimal K, -k must be None (default: 2,100).",
     )
     optional.add_argument(
         "-k",
@@ -950,7 +952,8 @@ def dawn() -> argparse.ArgumentParser:
         required=False,
         type=int,
         default=None,
-        help="K for k-means clustering. -r, and -k are mutually exclusive. If -k is given, the value of -r is ignored (default: None).",
+        help="K for k-means clustering. -r, and -k are mutually exclusive.\n"\
+             "If `-k` is given, the value of -r is ignored (default: None).",
     )
     optional.add_argument(
         "-s",
@@ -962,6 +965,17 @@ def dawn() -> argparse.ArgumentParser:
         help="Seed value for t-SNE (default: 42).",
     )
     optional.add_argument(
+        '-T',
+        '--tsen_method',
+        dest='tsne_method',
+        required=False,
+        type=str,
+        default='exact',
+        choices=['barnes_hut','exact'],
+        help="Gradient calculation algorithm for t-SNE, which is used in TSNE of sklearn (default: exact).\n"\
+             "If the dataset is large, 'barnes_hut' is recommended."
+    )
+    optional.add_argument(
         "-t",
         "--tag",
         dest="tag",
@@ -971,16 +985,16 @@ def dawn() -> argparse.ArgumentParser:
         help="Tag used for the name of output files (e.g. intergenic, coding etc.) (default: None).",
     )
     optional.add_argument(
-        "-CT",
+        "-C",
         "--count_threshold",
         dest="count_threshold",
         required=False,
         type=int,
         default=20,
-        help="The threshold of variant (or sample) counts. The least amount of variants a category should have (default: 20).",
+        help="The threshold of variant (or sample) counts, which is the least amount of variants a category should have (default: 20).",
     )
     optional.add_argument(
-        "-CR",
+        "-R",
         "--corr_threshold",
         dest="corr_threshold",
         required=False,

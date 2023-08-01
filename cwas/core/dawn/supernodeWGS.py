@@ -19,10 +19,12 @@ import multiprocessing as mp
 from concurrent.futures import ProcessPoolExecutor
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+from matplotlib import cm
+from adjustText import adjust_text
 
 
 class supernodeWGS_func:
-    def __init__(self, corr_mat: pd.DataFrame, fit_res, max_cluster: int, cores: int,
+    def __init__(self, corr_mat: pd.DataFrame, fit_res: pd.DataFrame, max_cluster: int, cores: int,
                  output_dir_path: str, tag: str, seed: int, verbose=True) -> None:
         self._corr_mat = corr_mat
         self._fit_res = fit_res
@@ -104,7 +106,7 @@ class supernodeWGS_func:
         return (idx1, idx2)
 
     def dawn_preprocess(self, category_count, permut_test, count_threshold_, size_threshold_):
-        cluster_names = self.fit_res['annotation'].tolist()
+        cluster_names = self.fit_res['annotation']
 
         cat_count_permut_ = pd.merge(category_count, permut_test, on='Category').set_index(pd.Index(list(range(1, len(permut_test)+1))))
         category_names = cat_count_permut_.Category.tolist()
@@ -116,14 +118,14 @@ class supernodeWGS_func:
         idx = list(map(int, idx))
 
         cat_count_permut_ = cat_count_permut_.loc[idx] # sort by index matched cluster to category
-        cat_count_permut_['flag'] = cat_count_permut_.raw_counts.apply(lambda x: True if x < count_threshold_ else False) # Categories with variants less than 20 are TRUE
+        cat_count_permut_['flag'] = cat_count_permut_['Raw_counts'].apply(lambda x: True if x < count_threshold_ else False) # Categories with variants less than 20 are TRUE
         cat_count_permut_.loc[cat_count_permut_.P.isna(), 'flag'] = True # So we will going to remove categories that are TRUE in this index.
 
         if self.tag != 'coding':
             bool_screen = self._screen_name_(cluster_names) # Check if there are coding regions included
             cat_count_permut_.loc[np.array(bool_screen)==0, 'flag'] = True # if bool_screen == False, categories_flag <- True
 
-        cluster_size = self._cluster_size_(np.array(cat_count_permut_['P']), np.array(self.clusters), np.array(cat_count_permut_['flag'])) # The size of the cluster. The number of categories in each cluster.
+        cluster_size = self._cluster_size_(np.array(cat_count_permut_['P']), self.clusters, np.array(cat_count_permut_['flag'])) # The size of the cluster. The number of categories in each cluster.
         cluster_idx = np.where(np.array(cluster_size) >= size_threshold_)[0] + 1 # Minimum number of categories. # R-indexed (1-based)
         self.cluster_size_ = cluster_size
         self.cluster_idx_ = cluster_idx
@@ -133,7 +135,7 @@ class supernodeWGS_func:
         max_zscore = abs(cat_count_permut_.loc[(cat_count_permut_.P.notna()) & (~np.isinf(cat_count_permut_.P)), 'P'].max()) # The max value of finite z-score. This is to set the infinite value as the max value among z-scores.
         # Convert infinite values into finite values.
         cat_count_permut_.loc[(np.isinf(cat_count_permut_.P))&(cat_count_permut_.P > 0), 'P'] = 1.1 * max_zscore
-        cat_count_permut_.loc[(np.isinf(cat_count_permut_.P))&(cat_count_permut_.P > 0), 'P'] = -1.1 * max_zscore
+        cat_count_permut_.loc[(np.isinf(cat_count_permut_.P))&(cat_count_permut_.P < 0), 'P'] = -1.1 * max_zscore
         cat_count_permut_['Relative_Risk'] = cat_count_permut_['Relative_Risk'].apply(np.log) # Relative risk in log scale. Now, positive risks are case-enriched.
         cat_count_permut_['flag2'] = cat_count_permut_.flag
         cat_count_permut_.loc[np.isinf(cat_count_permut_.Relative_Risk), 'flag2'] = True # Categories with infinite relative risks are set to TRUE.
@@ -149,9 +151,10 @@ class supernodeWGS_func:
         vec[idx] = np.vectorize(dict(zip(name2, range(1, len(name2) + 1))).get)(name1[idx])
         return vec
 
-    def _screen_name_(self, vec ,position=4, stopwords=None):
-        stopwords = ["Any", "CodingRegion", "FrameshiftRegion", "LoFRegion", "MissenseRegion", "SilentRegion", "MissenseHVARDRegionSimple"]
-        bool_vec = [not any(np.in1d(np.array(stopwords), np.array(x.split('_')[position-1]))) for x in vec]
+    def _screen_name_(self, vec ,position=3, stopwords=None):
+        stopwords = ["Any", "CodingRegion", "FrameshiftRegion", "LoFRegion",
+                     "MissenseRegion", "SilentRegion", "MissenseHVARDRegionSimple"]
+        bool_vec = [not any(np.in1d(np.array(stopwords), np.array(x.split('_')[position]))) for x in vec]
         return bool_vec
 
     def _cluster_size_(self, vec, clustering, flag_vec):
@@ -257,7 +260,11 @@ class supernodeWGS_func:
         i_vec = np.array(i_vec)[sorted(idx)]
         posterior = np.array(posterior)[sorted(idx)]
 
-        return {'Iupdate': i_vec, 'post': posterior, 'b': b, 'c': c, 'mu1': mu1, 'mu2': mu2, 'sigma1': sigma1, 'sigma2': sigma2}
+        return {'Iupdate': i_vec,
+                'post': posterior,
+                'b': b, 'c': c,
+                'mu1': mu1, 'mu2': mu2,
+                'sigma1': sigma1, 'sigma2': sigma2}
 
 
     def _partial_likelihood_(self, b, c, graph_term, i_vec):
@@ -303,7 +310,7 @@ class supernodeWGS_func:
         flocalfdr = np.array(localfdr)[rankp-1]
 
         return pd.DataFrame({"Name":vec, "p.value":pvalue, "FDR":flocalfdr, "indicator":Iupdate})
-    
+       
     def dawn_plot(self, g, zval, annot):
         random.seed(self.seed)
 
@@ -313,8 +320,13 @@ class supernodeWGS_func:
         
         maxz = max(zval)
         minz = min(zval)
-        node_col = list(map(lambda x: self._node_color_(maxz=maxz, minz=minz, x=x), zval))
-
+        #node_col = list(map(lambda x: self._node_color_(maxz=maxz, minz=minz, x=x), zval))      
+        
+        cmap = cm.get_cmap('Reds', 256)
+        new_cmap = cmap(np.linspace(0, 1, 256))
+        node_col = list(map(lambda x: self._value_to_color(cmap=new_cmap, maxz=maxz, minz=minz, x=x), zval))
+        node_col_hex = list(map(mcolors.to_hex, node_col))
+        
         layout = g.layout(layout='auto')
         layout_mat = pd.DataFrame(layout[:], columns=['X.pos','Y.pos'])
         layout_mat = pd.concat([pd.DataFrame({'Cluster.index':g.vs['name']}), layout_mat, pd.DataFrame({"node.size":node_size, "node.color":node_col})], axis=1)
@@ -328,51 +340,73 @@ class supernodeWGS_func:
         comm_cat["Represent_term"] = comm_cat["Category"].apply(lambda x: self._term_freq(x))
         cluster_df = pd.merge(cluster_df, comm_cat.loc[:,["Community","Represent_term"]], on="Community")
 
-        x_pos_list = cluster_df.groupby('Community')["X.pos"].max()
+        x_pos_list = cluster_df.groupby('Community')["X.pos"].mean()
         y_pos_list = cluster_df.groupby('Community')["Y.pos"].mean()
 
-        fig, ax = plt.subplots(figsize=(7,7))
+        ## graph with community
+        plt.figure(figsize=(7,7))
+        grid = plt.GridSpec(14, 7, wspace=0.5, hspace=0.5)
+        ax = plt.subplot(grid[1:, :])
         igraph.plot(comm_leiden,
                     mark_groups=True,
-                    vertex_size=node_size*5*10e-3,
+                    vertex_size=node_size*6*10e-3,
                     vertex_label=None,
-                    vertex_color=node_col,
-                    edge_width=.7,
+                    vertex_color=node_col_hex,
+                    edge_width=.5,
+                    edge_color='#707070',
                     layout=layout,
                     bbox=(300,300),
                     margin=20,
                     target=ax)
+        texts=[]
         for i in cluster_df["Community"].unique():
-            ax.annotate(cluster_df.loc[cluster_df["Community"]==i, "Represent_term"].values[0], (x_pos_list[i]+.1,y_pos_list[i]+.1), fontsize=10)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_community.pdf".format(self.tag)))
+            texts.append(ax.annotate(cluster_df.loc[cluster_df["Community"]==i, "Represent_term"].values[0], (x_pos_list[i]+.1,y_pos_list[i]+.1), fontsize=10))
+        adjust_text(texts)
+                    
+        cbar = plt.subplot(grid[0, :3])
+        cbar = self._create_cbar(cbar, new_cmap, zval)
+        #plt.tight_layout()
+        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_community.pdf".format(self.tag)), bbox_inches='tight')
+        plt.close()
         print("(1/4) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_community.pdf".format(self.tag))))
 
-        fig, ax = plt.subplots(figsize=(7,7))
+        ## normal graph
+        plt.figure(figsize=(7,7))
+        grid = plt.GridSpec(14, 7, wspace=0.5, hspace=0.5)
+        ax = plt.subplot(grid[1:, :])
         igraph.plot(g,
-                    vertex_size=node_size*5*10e-3,
-                    vertex_color=node_col,
+                    vertex_size=node_size*6*10e-3,
+                    vertex_color=node_col_hex,
                     vertex_label=None,
-                    edge_width=.7,
+                    edge_width=.5,
+                    edge_color='#707070',
                     layout=layout,
                     bbox=(300,300),
                     target=ax)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph.pdf".format(self.tag)))      
+        cbar = plt.subplot(grid[0, :3])
+        cbar = self._create_cbar(cbar, new_cmap, zval)
+        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph.pdf".format(self.tag)), bbox_inches='tight')
+        plt.close()
         print("(2/4) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph.pdf".format(self.tag)))) 
 
-        fig, ax = plt.subplots(figsize=(7,7))
+        ## graph with cluster number
+        plt.figure(figsize=(7,7))
+        grid = plt.GridSpec(14, 7, wspace=0.5, hspace=0.5)
+        ax = plt.subplot(grid[1:, :])
         igraph.plot(g,
-                    vertex_size=node_size*5*10e-3,
-                    vertex_color=node_col,
+                    vertex_size=node_size*6*10e-3,
+                    vertex_color=node_col_hex,
                     vertex_label=g.vs['name'],
-                    vertex_label_size=10,
-                    edge_width=.7,
+                    vertex_label_size=7,
+                    edge_width=.5,
+                    edge_color='#707070',
                     layout=layout,
                     bbox=(300,300),
                     target=ax)
-        plt.tight_layout()
-        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_number.pdf".format(self.tag)))      
+        cbar = plt.subplot(grid[0, :3])
+        cbar = self._create_cbar(cbar, new_cmap, zval)
+        plt.savefig(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_number.pdf".format(self.tag)), bbox_inches='tight')
+        plt.close()
         print("(3/4) {} saved!".format(os.path.join(self.output_dir_path, "{}.iplot.igraph_with_number.pdf".format(self.tag))))  
         
         layout_mat.to_csv(os.path.join(self.output_dir_path, "{}.graph_layout.csv".format(self.tag)), index=False)      
@@ -384,21 +418,60 @@ class supernodeWGS_func:
         except_terms = ["All","Any","SNV","Indel"]
 
         for t in tmp:
-            if (not t in except_terms) and (not self.tag in t.lower()):
+            if (not t in except_terms):
                 if not t in word_count.index:
                     word_count.loc[t, 'cnt'] = 1
                 else:
                     word_count.loc[t, 'cnt'] = word_count.loc[t, 'cnt'] + 1
 
+        if not self.tag is None:
+            word_count = word_count.loc[~word_count.index.str.lower().str.contains(self.tag.lower())]
+            
         max_cnt = word_count.cnt.max()
-        rep_term = '&'.join(word_count.loc[word_count['cnt'] == max_cnt].index.tolist())
+        rep_term = '\n&'.join(word_count.loc[word_count['cnt'] == max_cnt].index.tolist()) if max_cnt > 1 else ''
         return rep_term
 
     def _node_color_(self, maxz, minz, x):
         tmp = (maxz - x) / (maxz-minz)
         tmp = 1 / (1 + np.exp(-10 * (tmp - 0.2)))
         return mcolors.to_hex((1, tmp, tmp))
+    
+    def _value_to_color(self, cmap, maxz, minz, x):
+        n_cols = len(cmap)
+        val_pos = float((x-minz)/(maxz-minz))
+        idx = int(val_pos*(n_cols-1))    
+        return cmap[idx]
 
+    def _create_cbar(self, ax, cmap, vals):
+        minv, maxv = min(vals), max(vals)
+        n_cols = len(cmap)
+        col_y = [0] * len(cmap)
+        bar_x = np.linspace(minv, maxv, n_cols)
+        bar_width = bar_x[1] - bar_x[0]
+        ax.bar(
+            x=bar_x,
+            width=bar_width,
+            height=[5] * n_cols,
+            bottom=col_y,
+            color=cmap,
+            linewidth=.5,
+            edgecolor=cmap     
+        )
+        ax.set_title('Z-score', fontsize=10)
+        ax.set_xlim(minv, maxv)
+        ax.set_ylim(0,1)
+        ax.grid(False)
+        ax.set_facecolor('white')
+        ax.set_xticks(list(map(lambda x: round(x, 1), np.linspace(minv, maxv, 5))))
+        ax.set_yticks([])
+        ax.tick_params(axis='x', size=5, width=1, pad=5, labelsize=10)
+        ax.xaxis.tick_bottom()
+        ax.spines['right'].set_linewidth(0)
+        ax.spines['left'].set_linewidth(0)
+        ax.spines['top'].set_linewidth(0)
+        ax.spines['bottom'].set_linewidth(0)
+        return ax
+        
 
 class data_collection:
     def __init__(self, path: str, cores: int, max_cluster=None, verbose=True) -> None:
@@ -480,7 +553,7 @@ class data_collection:
         res = pd.DataFrame(pool.map(self._test_func_, cluster_vec))
         return res
 
-    def _test_func_(self, i):          
+    def _test_func_(self, i):            
         cluster_idx_tmp = np.where(np.array(self._clustering) == i)[0]
         testvec = np.array(self._vec)[cluster_idx_tmp]
         testflag = np.array(self._flag_vec)[cluster_idx_tmp]
@@ -496,11 +569,13 @@ class data_collection:
             return {'vec':np.nan, 'index':np.nan, 'sparsity':np.nan}
 
         eig = self._extract_eigenvector_(cor_block, sparse=self._sparse, sumabsv=self._sumabsv)
-        unsigned = np.sqrt((eig @ testvec) ** 2 / (eig @ cor_block @ eig))
-        sign = self._determine_sign_(np.outer(np.array(eig),np.array(eig)) @ testvec)
+        unsigned = np.sqrt(np.float64(np.dot(eig, testvec)**2 / np.dot(eig.T, np.dot(cor_block, eig))))
+        sign = self._determine_sign_(np.dot(eig, np.dot(eig.T, testvec)))
 
         assert len(eig) == len(keep_idx)
-        return {'vec':sign*unsigned, 'index':cluster_idx_tmp[np.array(keep_idx)[np.where(np.abs(eig) >= 1e-5)[0]]],'sparsity':len(np.array(keep_idx)[np.where(np.abs(eig) >= 1e-5)[0]])/len(eig)}
+        return {'vec':sign*unsigned,
+                'index':cluster_idx_tmp[np.array(keep_idx)[np.where(np.abs(eig) >= 1e-5)[0]]],
+                'sparsity':len(np.array(keep_idx)[np.where(np.abs(eig) >= 1e-5)[0]])/len(eig)}
 
     def _determine_sign_(self, vec):
         pos = len(np.where(vec > 0)[0])
@@ -511,7 +586,9 @@ class data_collection:
             return -1
         return np.random.binomial(1, 0.5) * 2 - 1
     
-    def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):
+    def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):      
+        mat = mat.astype(np.float64) 
+         
         if sparse & (len(mat.columns)>sumabsv**2):
             mat = np.array(mat)
             mat = numpy2ri.py2rpy(mat)
@@ -519,6 +596,8 @@ class data_collection:
             eig_res = dict(zip(eig.names, list(eig)))
             return eig_res['v'].flatten()
         else:
-            eig = np.linalg.eig(mat)
-            eig_vectors = eig[1] * (-1)
-            return [x[0] for x in eig_vectors]
+            _, eig_vectors = np.linalg.eig(mat)
+            max_idx = np.argmax(np.abs(_))
+            eigvectors = eig_vectors[:, max_idx].real
+            return eigvectors
+            

@@ -30,11 +30,8 @@ class Dawn(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
         self._eig_vector = None
-        self._eig_vector_file = None
         self._corr_mat = None
-        self._corr_mat_file = None
         self._permut_test = None
-        self._permut_test_file = None
         self._category_set = None
         self._k_val = None
         self.kmeans_r = importr('stats').kmeans
@@ -45,17 +42,31 @@ class Dawn(Runnable):
             "No. worker processes for the DAWN",
             f"{args.num_proc: ,d}",
         )
+<<<<<<< HEAD
+        print_arg("Eigen vector file in input files", args.eig_vector_file)
+        print_arg("Correlation matrix file in input files", args.corr_mat_file)
+        print_arg("Permutation test file in input files", args.permut_test_file)
+        print_arg("Category variant (or sample) counts file (burden test result) in input files: ", args.category_count_file)
+        print_arg("Output directory", args.output_dir_path)
+=======
         print_arg("Input files directory: ", args.input_dir_path)
         print_arg("Output directory: ", args.output_dir_path)
         print_arg("Using variant (or sample) counts file: ", args.category_count_file)
+>>>>>>> 7ae4b7b33fd061facee8528fdd4b84008b0e0c5c
         print_arg("Thresholds of count / correlation / size: ", ", ".join(list(map(str, [args.count_threshold, args.corr_threshold, args.size_threshold]))))
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
-        check_is_dir(args.input_dir_path)
-        check_is_dir(args.output_dir_path)
+        check_is_file(args.eig_vector_file)
+        check_is_file(args.corr_mat_file)
+        check_is_file(args.permut_test_file)
         check_is_file(args.category_count_file)
+<<<<<<< HEAD
+        check_is_dir(args.output_dir_path)
+        #check_is_file(args.category_set_file)
+=======
+>>>>>>> 7ae4b7b33fd061facee8528fdd4b84008b0e0c5c
     
     @property
     def num_proc(self):
@@ -67,9 +78,7 @@ class Dawn(Runnable):
     
     @property
     def eig_vector_file(self):
-        if self._eig_vector_file is None:
-            self._eig_vector_file = self._get_input_file("*eig_vecs*.txt.gz")
-        return self._eig_vector_file
+        return self.args.eig_vector_file
     
     @property
     def eig_vector(self):
@@ -77,32 +86,27 @@ class Dawn(Runnable):
             self._eig_vector = pl.read_csv(self.eig_vector_file, separator='\t', has_header=False).to_pandas()
             self._eig_vector.index = self._eig_vector.iloc[:,0].tolist()
             self._eig_vector = self._eig_vector.iloc[:,1:]
-            #self._eig_vector = pd.read_table(self.eig_vector_file, compression='gzip', index_col=0)
         return self._eig_vector
     
     @property
     def corr_mat_file(self):
-        if self._corr_mat_file is None:
-            self._corr_mat_file = self._get_input_file("*correlation_matrix*.pkl")
-        return self._corr_mat_file
+        return self.args.corr_mat_file
 
     @property
     def corr_mat(self):
         if self._corr_mat is None:
             self._corr_mat = pd.read_pickle(self.corr_mat_file)
+            self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
         return self._corr_mat
 
     @property
     def permut_test_file(self):
-        if self._permut_test_file is None:
-            self._permut_test_file = self._get_input_file("*permutation_test*.txt.gz")           
-        return self._permut_test_file
+        return self.args.permut_test_file
 
     @property
     def permut_test(self):
         if self._permut_test is None:
             self._permut_test = pd.read_table(self.permut_test_file, compression='gzip', sep="\t")
-            
         return self._permut_test
     
     @property
@@ -129,17 +133,19 @@ class Dawn(Runnable):
                 
             ## k 입력이 있는 경우 k_range를 무시하고 k를 사용함, k와 k_range 값이 둘 다 있으면 k가 우선됨
             print_arg("K for K-means clustering algorithm", self._k_val)
-
         return self._k_val      
 
-    
     @property
     def seed(self):
         return self.args.seed
 
     @property
-    def tag(self):
-        return self.args.tag
+    def tsne_method(self):
+        return self.args.tsne_method
+
+    @property
+    def tag(self) -> str:
+        return str(self.args.tag)
 
     @property
     def category_set(self):
@@ -164,20 +170,6 @@ class Dawn(Runnable):
     def size_threshold(self):
         return self.args.size_threshold
 
-    def _get_input_file(self, infix: str) -> Path:
-        input_file = glob.glob(os.path.join(self.input_dir_path, infix))
-
-        if len(input_file) == 0:
-            raise FileNotFoundError(
-                "'{}' cannot be found. The input file named '{}' must exist in the input file directory. Check the directory of input files.".format(infix, infix)
-            )
-        if len(input_file) > 1:
-            raise Exception(
-                "Too many files with '{}'. There must be one file in the input directory with this name. Check the directory of input files.".format(infix)
-            )
-
-        return input_file[0]
-
     def run(self):
         self.tsne_projection()
         self.kmeans_clustering()
@@ -190,15 +182,21 @@ class Dawn(Runnable):
 
         # self.eig_vector = pd.read_table(self._eig_vector, compression='gzip')
 
-        if type(self.eig_vector.iloc[0,0]) == np.complex128:
-            self.eig_vector = self.eig_vector.astype(np.float128)
+        if type(self.eig_vector.iloc[0,0]) != np.float64:
+            self.eig_vector = self.eig_vector.astype(np.float64)
 
         U_pick = self.eig_vector.iloc[:, 1:50]
         scaler = StandardScaler(with_mean=False, with_std=False)
         scale_factor = np.sqrt(np.sum(U_pick**2, axis=1))
         U_norm = scaler.fit_transform(U_pick.T / scale_factor).T
 
-        tsne_res = TSNE(n_components=2, perplexity=30, n_iter=500, random_state=self.seed, init='pca', method='exact').fit_transform(U_norm)
+        tsne_res = TSNE(n_components=2, 
+                        perplexity=30,
+                        n_iter=500,
+                        random_state=self.seed,
+                        init='pca',
+                        method=self.tsne_method,
+                        n_jobs=self.num_proc).fit_transform(U_norm)
 
         self._U_norm = U_norm
         self._tsne_out = pd.DataFrame(tsne_res, columns=['t-SNE1', 't-SNE2'])
@@ -213,15 +211,8 @@ class Dawn(Runnable):
         # initial centers of clusters are given
         fit = self.kmeans_r(self._U_norm, centers=self._U_norm[i_init_pt,], iter_max=100)
         fit_res = dict(zip(fit.names, list(fit)))
-        fit_res['annotation'] = self.corr_mat.columns
+        fit_res['annotation'] = self.category_set
         self._fit_res = fit_res
-
-        category_tsne = pd.DataFrame({"category": self.corr_mat.columns,
-                                      "cluster": fit_res['cluster'],
-                                      "tsne1": self._tsne_out['t-SNE1'],
-                                      "tsne2": self._tsne_out['t-SNE2']})        
-        category_tsne['is_center'] = 0
-        category_tsne.loc[category_tsne.index.isin(i_init_pt), 'is_center'] = 1
         
     def dawn_analysis(self):
         random.seed(self.seed)
@@ -255,14 +246,17 @@ class Dawn(Runnable):
                                                                                            self.size_threshold)
         print_progress("[DAWN] Compute graph on correlation matrix and form graph")
         form_data = data_collection(path=os.path.join(self.output_dir_path, "supernodeWGS_results", "blocks_"+self.tag),
-                                    cores=30, max_cluster=self.k_val, verbose=True)
+                                    cores=self.num_proc,
+                                    max_cluster=self.k_val,
+                                    verbose=True)
         cor_mat = form_data.form_correlation(k=cluster_idx)
         g = supernodeWGS_process.form_graph_from_correlation(cor_mat,
                                                              func=lambda x: x>self.corr_threshold,
                                                              k=cluster_idx)
         adj_mat = pd.DataFrame(np.array(g.get_adjacency().data), index=g.vs['name'], columns=g.vs['name'])
         adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.ipvalue_fdr_igraph.csv".format(self.tag)), sep=",")
-                
+        
+        
         print_progress("[DAWN] Compute the test statistics with z-scores")
         testvec_res = form_data.form_testvec(vec=cat_count_permut['P'],
                                              clustering=clusters,
@@ -271,7 +265,7 @@ class Dawn(Runnable):
                                              sparse=True,
                                              sumabsv=5.25)
         zval_supernode = testvec_res['vec']
-                
+       
         print_progress("[DAWN] Compute the test statistics with relative risks")
         riskvec_res = form_data.form_testvec(vec=cat_count_permut['Relative_Risk'],
                                              clustering=clusters,
@@ -281,6 +275,7 @@ class Dawn(Runnable):
         tmp = tmp.copy()
         tmp.loc[np.isnan(tmp)] = 0
         risk_supernode = np.exp(tmp)
+        
         
         ## apply dawn to clusters
         print_progress("[DAWN] Apply DAWN to clusters and calculate p-values and FDR")
@@ -302,7 +297,6 @@ class Dawn(Runnable):
         mat = pd.DataFrame({"Cluster.idx":g.vs['name'], "Pval.cluster":cluster_pval, "Risk":risk_supernode})
         mat.to_csv(os.path.join(self.output_dir_path, "{}.ipvalue_fdr_ipvalue_risk.csv".format(self.tag)), sep=",", index=False)
 
-
         ## save dawn plots and tables
         ### annotation table
         print_progress("[DAWN] Save DAWN clusters with annotations")
@@ -314,7 +308,7 @@ class Dawn(Runnable):
 
         for i in range(len(cluster_indices)):
             node_idx = testvec_res['index'][tmp_idx[i]]
-            node_nam = self._fit_res['annotation'][node_idx]
+            node_nam = np.array(self._fit_res['annotation'])[node_idx]
 
             assert len(set(np.array(clusters)[node_idx])) == 1, "Stop if they don't belong in the same cluster"
             assert len(node_idx) <= cluster_size[cluster_indices[i]-1], "Stop if the number of categories in the cluster is bigger than the size of the cluster."
