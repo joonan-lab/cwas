@@ -7,7 +7,6 @@ from math import ceil
 from pathlib import Path
 import parmap
 from cwas.core.common import chunk_list
-import polars as pl
 from tqdm import tqdm
 
 import pandas as pd
@@ -25,8 +24,6 @@ from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
-
-import dotenv
 
 lock = mp.Lock()
 

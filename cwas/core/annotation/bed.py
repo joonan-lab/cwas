@@ -2,6 +2,7 @@ from collections import deque
 import multiprocessing as mp ## test multiprocessing
 import pysam
 import itertools
+import gzip
 
 class annotate:
     def __init__(self, in_vcf_gz_path: str,
@@ -27,7 +28,7 @@ class annotate:
     def bed_custom_annotate(self):
         with pysam.TabixFile(self.in_vcf_gz_path) as in_vcf_file, pysam.TabixFile(
             self.annot_bed_path
-        ) as annot_bed_file, open(self.out_vcf_path, "w") as out_vcf_file:
+        ) as annot_bed_file, gzip.open(self.out_vcf_path, "wt") as out_vcf_file:
             # Make and write headers
             vcf_headers = in_vcf_file.header
             annot_key_str = annot_bed_file.header[0].split("=")[1]
