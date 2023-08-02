@@ -57,6 +57,7 @@ class Dawn(Runnable):
         check_is_file(args.permut_test_file)
         check_is_file(args.category_count_file)
         check_is_dir(args.output_dir_path)
+
     
     @property
     def num_proc(self):
