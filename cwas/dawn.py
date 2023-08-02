@@ -42,17 +42,11 @@ class Dawn(Runnable):
             "No. worker processes for the DAWN",
             f"{args.num_proc: ,d}",
         )
-<<<<<<< HEAD
         print_arg("Eigen vector file in input files", args.eig_vector_file)
         print_arg("Correlation matrix file in input files", args.corr_mat_file)
         print_arg("Permutation test file in input files", args.permut_test_file)
         print_arg("Category variant (or sample) counts file (burden test result) in input files: ", args.category_count_file)
         print_arg("Output directory", args.output_dir_path)
-=======
-        print_arg("Input files directory: ", args.input_dir_path)
-        print_arg("Output directory: ", args.output_dir_path)
-        print_arg("Using variant (or sample) counts file: ", args.category_count_file)
->>>>>>> 7ae4b7b33fd061facee8528fdd4b84008b0e0c5c
         print_arg("Thresholds of count / correlation / size: ", ", ".join(list(map(str, [args.count_threshold, args.corr_threshold, args.size_threshold]))))
 
     @staticmethod
@@ -62,11 +56,7 @@ class Dawn(Runnable):
         check_is_file(args.corr_mat_file)
         check_is_file(args.permut_test_file)
         check_is_file(args.category_count_file)
-<<<<<<< HEAD
         check_is_dir(args.output_dir_path)
-        #check_is_file(args.category_set_file)
-=======
->>>>>>> 7ae4b7b33fd061facee8528fdd4b84008b0e0c5c
     
     @property
     def num_proc(self):
