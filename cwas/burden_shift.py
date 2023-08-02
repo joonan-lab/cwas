@@ -358,9 +358,9 @@ class BurdenShift(Runnable):
                                 
                 # Compare the observed counts to the permuted counts to calculate shift p-values
                 nPermCase = len(np.where(permCounts['case']>=nObsCase)[0])
-                pCase = (nPermCase+1) / (len(permCounts)+1)
+                pCase = nPermCase / len(permCounts)
                 nPermCtrl = len(np.where(permCounts['control']>=nObsCtrl)[0])
-                pCtrl = (nPermCtrl+1) / (len(permCounts)+1)
+                pCtrl = nPermCtrl / len(permCounts)
                                 
                 # Plot the results
                 fig1, fig2 = self._draw_shiftDistPlot(permCounts, setName, nObsCase, nObsCtrl, pCase, pCtrl)
