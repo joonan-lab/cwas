@@ -172,7 +172,7 @@ class supernodeWGS_func:
             assert len(cor_mat) == k*(k-1)//2
             idx_mat = list(itertools.combinations(list(np.arange(1, k+1)), 2))
         else: # k is list
-            assert len(cor_mat) == len(k)*((len(k)-1)//2)
+            assert len(cor_mat) == len(k)*(len(k)-1)//2
             num_node = len(k)
             idx_mat = list(itertools.combinations(list(np.arange(1, num_node+1)), 2))
         
