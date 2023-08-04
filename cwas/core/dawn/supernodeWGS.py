@@ -35,7 +35,6 @@ class supernodeWGS_func:
         self._clusters = None
         self._seed = seed
         self._verbose = verbose
-        self.PMA = importr('PMA')
 
     @property
     def corr_mat(self) -> pd.DataFrame:
@@ -479,6 +478,7 @@ class data_collection:
         self._cores = cores
         self._verbose = verbose
         self._max_cluster = max_cluster
+        self.PMA = importr('PMA')
     
     @property
     def path(self) -> str:
