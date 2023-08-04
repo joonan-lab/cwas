@@ -93,7 +93,7 @@ class BinomialTest(BurdenTest):
                 axes.spines['top'].set_visible(False)
                 axes.spines['right'].set_visible(False)
                 
-                output = self.result_path.name.replace(".txt.gz", f'.{t}.volcano_plot.pdf')
+                output = self.result_path.name.replace(".txt", f'.{t}.volcano_plot.pdf')
                 
                 plt.tight_layout()
                 plt.savefig(os.path.join(self.output_dir_path, output), bbox_inches='tight')
@@ -121,7 +121,7 @@ class BinomialTest(BurdenTest):
             axes.spines['top'].set_visible(False)
             axes.spines['right'].set_visible(False)
 
-            output = self.result_path.name.replace(".txt.gz", f'.volcano_plot.pdf')
+            output = self.result_path.name.replace(".txt", f'.volcano_plot.pdf')
 
             plt.tight_layout()
             plt.savefig(os.path.join(self.output_dir_path, output), bbox_inches='tight')
