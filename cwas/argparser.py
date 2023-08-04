@@ -624,7 +624,7 @@ def burden_shift() -> argparse.ArgumentParser:
         dest="input_path",
         required=True,
         type=Path,
-        help="Path to the input file which is the result of burden test from binomial test (*.burden_test.txt.gz)",
+        help="Path to the input file which is the result of burden test from binomial test (*.burden_test.txt)",
     )
     required.add_argument(
         '-b',
