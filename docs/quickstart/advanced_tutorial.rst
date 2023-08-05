@@ -88,7 +88,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The users can install CWAS-Plus through Github.
 
-  Create a conda environment with required installations through command below.
+  Create a conda environment with required installations through command below. Mamba can be used for faster installations.
 
   .. code-block:: solidity
     

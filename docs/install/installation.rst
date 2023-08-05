@@ -12,8 +12,9 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
 
 **1. Required installations**
 
-- **Conda**: CWAS-Plus is installed in a conda environment, so conda should be installed.
-- **VEP**: For variant annotation, VEP should be installed. Please refer to the `reference <https://ensembl.org/info/docs/tools/vep/script/vep_download.html>`_.
+- **Conda**: CWAS-Plus install packages using conda environment. Please install conda or mamba.
+- **VEP**: VEP is used for variant annotation. Please refer to the `reference <https://ensembl.org/info/docs/tools/vep/script/vep_download.html>`_ and install VEP.
+
 
 **2. VEP resources**
 
