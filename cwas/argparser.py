@@ -410,14 +410,14 @@ def permutation_test() -> argparse.ArgumentParser:
         action="store_true",
         help="Generate a file of binomial p-values for each burden-shifted data",
         )
-    optional.add_argument(
-        "-rr",
-        "--perm_rr",
-        dest="save_perm_rr",
-        required=False,
-        action="store_true",
-        help="Generate a file of relative risks (RRs) for each burden-shifted data",
-    )
+    #optional.add_argument(
+    #    "-rr",
+    #    "--perm_rr",
+    #    dest="save_perm_rr",
+    #    required=False,
+    #    action="store_true",
+    #    help="Generate a file of relative risks (RRs) for each burden-shifted data",
+    #)
     optional.add_argument(
         "-u",
         "--use_n_carrier",
@@ -640,7 +640,7 @@ def burden_shift() -> argparse.ArgumentParser:
         dest='cat_set_file',
         required=True,
         type=Path,
-        help='Path of the categories set file from permutation test (*.category_info.txt.gz).',
+        help='Path of the categories set file from permutation test (*.category_info.txt).',
     )
     required.add_argument(
         '-c_count',
@@ -648,7 +648,7 @@ def burden_shift() -> argparse.ArgumentParser:
         dest='cat_count_file',
         required=True,
         type=Path,
-        help='Path of the categories counts file from permutation test (*.category_counts.txt.gz).',
+        help='Path of the categories counts file from permutation test (*.category_counts.txt).',
     )
     optional.add_argument(
         "-o_dir",

@@ -4,6 +4,7 @@ import argparse
 
 import numpy as np
 import pandas as pd
+import re
 
 from collections import defaultdict
 from itertools import product
@@ -94,7 +95,7 @@ class ExtractVariant(Runnable):
             save_name = '.'.join([self.tag, 'extracted_variants.txt.gz'])
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', save_name)}"
+            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)}"
         )
     
     def annotate_variants(self):

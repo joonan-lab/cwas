@@ -88,7 +88,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The users can install CWAS-Plus through Github.
 
-  Create a conda environment with required installations through command below.
+  Create a conda environment with required installations through command below. Mamba can be used for faster installations.
 
   .. code-block:: solidity
     
@@ -442,7 +442,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - -n, --num_perm: Number of permutations for label-swapping. By default, 10000.
     - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
     - -b, --burden_shift: Generates an output file containing binomial p-values for each label-swapped permutation. By default, False.
-    - -rr, --perm_rr: Generates an output file containing relative risks for each label-swapped permutation. By default, False.
     - -u, --use_n_carrier: Enables the sample-level analysis (use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 
      .. code-block:: solidity

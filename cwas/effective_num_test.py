@@ -251,6 +251,7 @@ class EffectiveNumTest(Runnable):
             elif self.input_format == 'inter':
                 c1 = self.intersection_matrix.columns.tolist()
 
+        print_progress(f"Count threshold to filter categories is {self.count_thres}")
         c2 = self.category_count[self.category_count['Raw_counts'] > self.count_thres]['Category'].tolist()
         
         filtered_combs = [x for x in c1 if x in c2]

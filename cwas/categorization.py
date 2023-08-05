@@ -8,6 +8,7 @@ from pathlib import Path
 import parmap
 from cwas.core.common import chunk_list
 from tqdm import tqdm
+import re
 
 import pandas as pd
 import numpy as np
@@ -81,25 +82,23 @@ class Categorization(Runnable):
 
     @property
     def result_path(self) -> Path:
-        suffix = '' if self.input_path.suffix == '.gz' else '.gz'
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
-            f"{suffix}"
+            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'categorization_result.txt.gz', self.input_path.name)}"
         )
 
     @property
     def matrix_path(self) -> Path:
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'correlation_matrix.pkl')}"
+            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'correlation_matrix.pkl', self.input_path.name)}"
         )
 
     @property
     def intersection_matrix_path(self) -> Path:
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'intersection_matrix.pkl')}"
+            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'intersection_matrix.pkl', self.input_path.name)}"
         )
 
     @property
