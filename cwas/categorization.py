@@ -81,25 +81,23 @@ class Categorization(Runnable):
 
     @property
     def result_path(self) -> Path:
-        suffix = '' if self.input_path.suffix == '.gz' else '.gz'
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
-            f"{suffix}"
+            f"{self.input_path.name.replace('annotated.vcf.gz', 'categorization_result.txt.gz').replace('annotated.vcf', 'categorization_result.txt.gz')}"
         )
 
     @property
     def matrix_path(self) -> Path:
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'correlation_matrix.pkl')}"
+            f"{self.input_path.name.replace('annotated.vcf.gz', 'correlation_matrix.pkl').replace('annotated.vcf', 'correlation_matrix.pkl')}"
         )
 
     @property
     def intersection_matrix_path(self) -> Path:
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'intersection_matrix.pkl')}"
+            f"{self.input_path.name.replace('annotated.vcf.gz', 'intersection_matrix.pkl').replace('annotated.vcf', 'intersection_matrix.pkl')}"
         )
 
     @property

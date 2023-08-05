@@ -78,7 +78,7 @@ class BurdenShift(Runnable):
     @property
     def cat_counts(self) -> Path:
         if self._cat_counts is None:
-            self._cat_counts = pd.read_csv(self.args.cat_count_file.resolve(), sep='\t', compression='gzip')
+            self._cat_counts = pd.read_csv(self.args.cat_count_file.resolve(), sep='\t')
         return self._cat_counts
     
     @property
@@ -117,7 +117,7 @@ class BurdenShift(Runnable):
     def _create_category_sets(self):
         print_progress("Create category sets combined all of regions, biotypes, and gene list")
         
-        catsets = pd.read_csv(self.cat_set_file, sep="\t", compression='gzip')
+        catsets = pd.read_csv(self.cat_set_file, sep="\t")
         catsets_dict = catsets.to_dict('list')
         
         genesets = sorted(list(set(catsets['gene_list'].unique()) - set(["Any"])))
@@ -379,12 +379,12 @@ class BurdenShift(Runnable):
         
         self._obsTab = obsTab
         
-        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz','')
+        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz', '').replace('burden_test.txt', '')
         obsFile = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.txt"    
         obsTab.to_csv(os.path.join(self.output_dir_path, obsFile), sep="\t", index=False)
         
     def draw_shiftResPlot(self):
-        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz','')
+        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz', '').replace('burden_test.txt', '')
         plot_output = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.result_plot.pdf"
         isin_inf = None
         
