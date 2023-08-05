@@ -379,12 +379,12 @@ class BurdenShift(Runnable):
         
         self._obsTab = obsTab
         
-        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz', '').replace('burden_test.txt', '')
+        output_name = re.sub(r'burden_test\.txt\.gz|burden_test\.txt', '', os.path.basename(self.input_file))
         obsFile = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.txt"    
         obsTab.to_csv(os.path.join(self.output_dir_path, obsFile), sep="\t", index=False)
         
     def draw_shiftResPlot(self):
-        output_name = os.path.basename(self.input_file).replace('burden_test.txt.gz', '').replace('burden_test.txt', '')
+        output_name = re.sub(r'burden_test\.txt\.gz|burden_test\.txt', '', os.path.basename(self.input_file))
         plot_output = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.result_plot.pdf"
         isin_inf = None
         
