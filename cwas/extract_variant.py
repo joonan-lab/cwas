@@ -10,12 +10,10 @@ from collections import defaultdict
 from itertools import product
 
 from cwas.runnable import Runnable
-from cwas.utils.log import print_arg, print_log, print_progress
+from cwas.utils.log import print_progress
 from cwas.core.categorization.parser import (
     parse_annotated_vcf)
 from cwas.utils.check import check_is_file, check_is_dir
-
-import dotenv
 
 class ExtractVariant(Runnable):
     def __init__(self, args: Optional[argparse.Namespace] = None):

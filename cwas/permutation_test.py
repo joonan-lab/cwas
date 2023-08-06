@@ -5,6 +5,7 @@ from typing import Optional
 from multiprocessing import Pool
 import numpy as np
 import pandas as pd
+import re
 
 from cwas.runnable import Runnable
 
@@ -46,7 +47,7 @@ class PermutationTest(BurdenTest):
     def result_path(self) -> Path:
         self._result_path = Path(
             f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_test.txt')}"
+            f"{re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'permutation_test.txt.gz', self.cat_path.name)}"
         )
         return self._result_path
     
@@ -55,7 +56,7 @@ class PermutationTest(BurdenTest):
         if self._perm_rrs_path is None:
             self._perm_rrs_path = Path(
                 f"{self.output_dir_path}/"
-                f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_RRs.txt')}"
+                f"{re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'permutation_RRs.txt.gz', self.cat_path.name)}"
             )
         return self._perm_rrs_path
     
@@ -64,7 +65,7 @@ class PermutationTest(BurdenTest):
         if self._binom_pvals_path is None:
             self._binom_pvals_path = Path(
                 f"{self.output_dir_path}/"
-                f"{self.cat_path.name.replace('categorization_result.txt', 'binom_pvals.txt')}"
+                f"{re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'binom_pvals.txt.gz', self.cat_path.name)}"
             )
         return self._binom_pvals_path
     

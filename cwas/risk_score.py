@@ -13,6 +13,7 @@ from contextlib import contextmanager
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import polars as pl
+import re
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -104,7 +105,7 @@ class RiskScore(Runnable):
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf')
+            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf', str(self.categorization_result_path.name))}"
         )
 
     @property
@@ -308,7 +309,9 @@ class RiskScore(Runnable):
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt')
+            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))}"
+
+
         )
     
     @property
@@ -316,7 +319,7 @@ class RiskScore(Runnable):
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_results_{tag}thres_{self.ctrl_thres}.txt')
+            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_results_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))}"
         )
 
     @property
@@ -324,7 +327,7 @@ class RiskScore(Runnable):
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
         return Path(
             f"{self.out_dir}/" +
-            str(self.categorization_result_path.name).replace('.categorization_result.txt.gz', f'.lasso_null_models_{tag}thres_{self.ctrl_thres}.txt')
+            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_null_models_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))}"
         )
 
     def run(self):
