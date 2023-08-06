@@ -91,9 +91,10 @@ class ExtractVariant(Runnable):
             save_name = 'extracted_variants.txt.gz'
         else:
             save_name = '.'.join([self.tag, 'extracted_variants.txt.gz'])
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)}"
+            f"{self.output_dir_path}/" +
+            f"{f_name}"
         )
     
     def annotate_variants(self):
