@@ -478,7 +478,6 @@ class data_collection:
         self._cores = cores
         self._verbose = verbose
         self._max_cluster = max_cluster
-        self.PMA = importr('PMA')
     
     @property
     def path(self) -> str:
@@ -518,7 +517,7 @@ class data_collection:
             idx_mat = list(itertools.combinations(list(np.arange(1,len(k)+1)), 2))
             combn_mat = [(k[x[0]-1], k[x[1]-1]) for x in idx_mat]
             
-        self._combn_mat = combn_mat
+        self._combn_mat = combn_mat.copy()
         results = list(pool.map(self._cor_func_, range(len(combn_mat))))
 
         return results
@@ -587,12 +586,13 @@ class data_collection:
         return np.random.binomial(1, 0.5) * 2 - 1
     
     def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):      
-        mat = mat.astype(np.float64) 
+        mat = mat.astype(np.float64)
+        PMA = importr('PMA')
          
         if sparse & (len(mat.columns)>sumabsv**2):
             mat = np.array(mat)
             mat = numpy2ri.py2rpy(mat)
-            eig = self.PMA.SPC(mat, trace=robjects.BoolVector([False]), sumabsv=sumabsv)
+            eig = PMA.SPC(mat, trace=robjects.BoolVector([False]), sumabsv=sumabsv)
             eig_res = dict(zip(eig.names, list(eig)))
             return eig_res['v'].flatten()
         else:
