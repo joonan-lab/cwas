@@ -204,7 +204,7 @@ class EffectiveNumTest(Runnable):
     def run(self):
         print_arg("Number of simulations", self.num_eig)
         if self.eff_num_test:
-            self.eigen_decomposition()
+            #self.eigen_decomposition()
             self.get_n_etests()
             self.update_env()
         else:
