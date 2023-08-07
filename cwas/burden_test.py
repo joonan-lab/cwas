@@ -65,31 +65,28 @@ class BurdenTest(Runnable):
             else None
         )
 
-    
-    
-    
-
-
-
     @property
     def result_path(self) -> Path:
+        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'burden_test.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
-            f"{re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'burden_test.txt', self.cat_path.name)}"
+            f"{f_name}"
         )
 
     @property
     def counts_path(self) -> Path:
+        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_counts.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
-            f"{re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_counts.txt', self.cat_path.name)}"
+            f"{f_name}"
         )
 
     @property
     def cat_info_path(self) -> Path:
+        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_info.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
-            f"{re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_info.txt', self.cat_path.name)}"
+            f"{f_name}"
         )
 
     @property
