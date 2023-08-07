@@ -159,9 +159,10 @@ class EffectiveNumTest(Runnable):
             save_name = '.correlation_matrix.pickle'
         else:
             save_name = '.'.join(['.correlation_matrix', self.tag, 'pickle'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/"
-            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
+            f"{f_name}"
         )
         
     @property
@@ -170,9 +171,10 @@ class EffectiveNumTest(Runnable):
             save_name = '.neg_lap.pickle'
         else:
             save_name = '.'.join(['.neg_lap', self.tag, 'pickle'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
+            f"{f_name}"
         )
 
     @property
@@ -181,9 +183,10 @@ class EffectiveNumTest(Runnable):
             save_name = '.eig_vals.pickle'
         else:
             save_name = '.'.join(['.eig_vals', self.tag, 'pickle'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
+            f"{f_name}"
         )
 
     @property
@@ -192,15 +195,16 @@ class EffectiveNumTest(Runnable):
             save_name = '.eig_vecs.txt.gz'
         else:
             save_name = '.'.join(['.eig_vecs', self.tag, 'txt.gz'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
+            f"{f_name}"
         )
 
     def run(self):
         print_arg("Number of simulations", self.num_eig)
         if self.eff_num_test:
-            self.eigen_decomposition()
+            #self.eigen_decomposition()
             self.get_n_etests()
             self.update_env()
         else:

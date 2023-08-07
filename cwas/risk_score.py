@@ -103,9 +103,10 @@ class RiskScore(Runnable):
     @property
     def plot_path(self) -> Optional[Path]:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
-            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf', str(self.categorization_result_path.name))}"
+            f"{f_name}"
         )
 
     @property
@@ -307,27 +308,28 @@ class RiskScore(Runnable):
     @property
     def coef_path(self) -> Path:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
-            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))}"
-
-
+            f"{f_name}"
         )
     
     @property
     def result_path(self) -> Path:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_results_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
-            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_results_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))}"
+            f"{f_name}"
         )
 
     @property
     def null_model_path(self) -> Path:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_null_models_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
-            f"{re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_null_models_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))}"
+            f"{f_name}"
         )
 
     def run(self):
