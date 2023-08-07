@@ -10,12 +10,10 @@ from collections import defaultdict
 from itertools import product
 
 from cwas.runnable import Runnable
-from cwas.utils.log import print_arg, print_log, print_progress
+from cwas.utils.log import print_progress
 from cwas.core.categorization.parser import (
     parse_annotated_vcf)
 from cwas.utils.check import check_is_file, check_is_dir
-
-import dotenv
 
 class ExtractVariant(Runnable):
     def __init__(self, args: Optional[argparse.Namespace] = None):
@@ -93,9 +91,10 @@ class ExtractVariant(Runnable):
             save_name = 'extracted_variants.txt.gz'
         else:
             save_name = '.'.join([self.tag, 'extracted_variants.txt.gz'])
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)}"
+            f"{self.output_dir_path}/" +
+            f"{f_name}"
         )
     
     def annotate_variants(self):

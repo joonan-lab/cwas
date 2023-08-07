@@ -82,23 +82,26 @@ class Categorization(Runnable):
 
     @property
     def result_path(self) -> Path:
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'categorization_result.txt.gz', self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'categorization_result.txt.gz', self.input_path.name)}"
+            f"{self.output_dir_path}/" + 
+            f"{f_name}"
         )
 
     @property
     def matrix_path(self) -> Path:
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'correlation_matrix.pkl', self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'correlation_matrix.pkl', self.input_path.name)}"
+            f"{self.output_dir_path}/" +
+            f"{f_name}"
         )
 
     @property
     def intersection_matrix_path(self) -> Path:
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'intersection_matrix.pkl', self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'intersection_matrix.pkl', self.input_path.name)}"
+            f"{self.output_dir_path}/" +
+            f"{f_name}"
         )
 
     @property

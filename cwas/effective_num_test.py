@@ -4,8 +4,9 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from typing import Optional
+import re
 
-from cwas.utils.log import print_progress, print_arg, print_warn, print_log
+from cwas.utils.log import print_progress, print_arg, print_log
 from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
@@ -145,11 +146,11 @@ class EffectiveNumTest(Runnable):
     def replace_term(self) -> str:
         if self._replace_term is None:
             if 'correlation_matrix.pkl' in str(self.input_path):
-                self._replace_term = '.correlation_matrix.pkl'
+                self._replace_term = r'\.correlation_matrix\.pkl\.gz|\.correlation_matrix\.pkl'
             elif 'intersection_matrix.pkl' in str(self.input_path):
-                self._replace_term = '.intersection_matrix.pkl'
+                self._replace_term = r'\.intersection_matrix\.pkl\.gz|\.intersection_matrix\.pkl'
             else:
-                self._replace_term = '.txt.gz'
+                self._replace_term = r'\.txt\.gz|\.txt'
         return self._replace_term
 
     @property
@@ -159,8 +160,8 @@ class EffectiveNumTest(Runnable):
         else:
             save_name = '.'.join(['.correlation_matrix', self.tag, 'pickle'])
         return Path(
-            f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{self.output_dir_path}/"
+            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
         )
         
     @property
@@ -171,7 +172,7 @@ class EffectiveNumTest(Runnable):
             save_name = '.'.join(['.neg_lap', self.tag, 'pickle'])
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
         )
 
     @property
@@ -182,7 +183,7 @@ class EffectiveNumTest(Runnable):
             save_name = '.'.join(['.eig_vals', self.tag, 'pickle'])
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
         )
 
     @property
@@ -193,7 +194,7 @@ class EffectiveNumTest(Runnable):
             save_name = '.'.join(['.eig_vecs', self.tag, 'txt.gz'])
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{re.sub(self.replace_term, save_name, self.input_path.name)}"
         )
 
     def run(self):
