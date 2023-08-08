@@ -48,6 +48,10 @@ class BurdenShift(Runnable):
     @property
     def input_file(self) -> Path:
         return self.args.input_path.resolve()
+
+    @property
+    def plot_title(self) -> float:
+        return self.args.plot_title
     
     @property
     def burden_res(self):
@@ -399,7 +403,7 @@ class BurdenShift(Runnable):
                                width_ratios=[.5,13.5])
 
         ## main plot
-        ax[1].set_title('Burdenshift: Overrepresented terms', weight='bold', loc='left', pad=5)
+        ax[1].set_title(self.plot_title, weight='bold', loc='left', pad=5)
         ax[1].scatter(case_df['-log10P'], case_df['new_name'],
                       s=case_df['Size']*20, label='case', color='#ff8a89', edgecolor='black', linewidth=0.5)
         ax[1].scatter(ctrl_df['-log10P'], ctrl_df['new_name'],

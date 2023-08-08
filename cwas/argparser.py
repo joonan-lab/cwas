@@ -704,6 +704,15 @@ def burden_shift() -> argparse.ArgumentParser:
         help="The number of the category sets contained in the main output plot. Top N category sets will be contain in main output plot (default: 10)."   
     )
     optional.add_argument(
+        "-pt",
+        "--plot_title",
+        dest="plot_title",
+        required=False,
+        type=str,
+        default='Burdenshift: Overrepresented terms',
+        help="Title of summarized plot of burden shift result (default: Burdenshift: Overrepresented terms)."
+    )
+    optional.add_argument(
         "-fs",
         "--fontsize",
         dest='fontsize',
