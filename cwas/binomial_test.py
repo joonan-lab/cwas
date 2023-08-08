@@ -6,12 +6,23 @@ import os
 from cwas.burden_test import BurdenTest
 from cwas.core.burden_test.binomial import binom_one_tail, binom_two_tail
 from cwas.utils.log import print_progress
+from scipy.stats import binomtest
 
 
 class BinomialTest(BurdenTest):
     @property
     def binom_p(self) -> float:
         return self.case_cnt / (self.case_cnt + self.ctrl_cnt)
+    
+    @property
+    def count_thres(self) -> int:
+        if self.count_thres is None:
+            m = 1
+            while True:
+                p_value = binomtest(m-1, m, self.binom_p, alternative='greater').pvalue
+                if p_value < 0.05:
+                    return m
+                m += 1
 
     def run_burden_test(self):
         print_progress("Run binomial test")
@@ -41,6 +52,9 @@ class BinomialTest(BurdenTest):
         burden_res = self._result.copy()
         burden_res['log2_RR'] = burden_res['Relative_Risk'].apply(lambda x: np.log2(x))
         burden_res['-log_P'] = burden_res['P'].apply(lambda x: -np.log10(x))
+        
+        selected_categories = self._raw_counts[self._raw_counts['Raw_counts'] > cutoff]['Category']
+        burden_res = burden_res[burden_res['Category'].isin(selected_categories)]
         
         threshold = -np.log10(0.05)
         max_rr = max(burden_res.loc[burden_res.log2_RR!=np.inf, 'log2_RR'])

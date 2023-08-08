@@ -10,7 +10,7 @@ from cwas.utils.log import print_progress, print_arg, print_log
 from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
-from scipy.stats import binom_test
+from scipy.stats import binomtest
 
 class EffectiveNumTest(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -108,7 +108,7 @@ class EffectiveNumTest(Runnable):
         if self.args.count_thres is None:
             m = 1
             while True:
-                p_value = binom_test(m-1, m, self.binom_p, alternative='greater')
+                p_value = binomtest(m-1, m, self.binom_p, alternative='greater').pvalue
                 if p_value < 0.05:
                     return m
                 m += 1
