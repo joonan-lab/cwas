@@ -53,7 +53,8 @@ class BinomialTest(BurdenTest):
         burden_res['log2_RR'] = burden_res['Relative_Risk'].apply(lambda x: np.log2(x))
         burden_res['-log_P'] = burden_res['P'].apply(lambda x: -np.log10(x))
         
-        selected_categories = self._raw_counts[self._raw_counts['Raw_counts'] > cutoff]['Category']
+        print_progress(f"Volcano plot will display categories with at least {self.count_thres} counts")
+        selected_categories = self._raw_counts[self._raw_counts['Raw_counts'] >= self.count_thres]['Category'].tolist()        
         burden_res = burden_res[burden_res['Category'].isin(selected_categories)]
         
         threshold = -np.log10(0.05)

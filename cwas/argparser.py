@@ -587,7 +587,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=int,
-        help="The number of variants (or samples) to filter categories",
+        help="The number of variants (or samples) to filter categories (counts≥threshold)",
     )
     optional.add_argument(
         "-ef",
