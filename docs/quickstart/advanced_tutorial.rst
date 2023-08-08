@@ -347,7 +347,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
 
 
-1. :ref:`Categorization <categorization>`
+5. :ref:`Categorization <categorization>`
 ############################################
 
   Categorize variants into groups based on the annotation datasets. A single category is a combination of five domains (i.e., variant type, gene biotype, gene list, functional annotation and functional score). Details are provided in the :ref:`Overview of annotation datasets <overview>`.
