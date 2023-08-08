@@ -111,7 +111,7 @@ cwas start
 
 As default, this command creates _CWAS workspace_ in your home directory. The path is `$HOME/.cwas`. `$HOME/.cwas/configuration.txt` has also generated.
 
-Alternatively, _CWAS workspace_ can be specified with `-w` argument. The `configuration.txt` will also be generated in the specified _CWAS workspace_.
+Alternatively, _CWAS workspace_ can be specified with `-w` option. The `configuration.txt` will also be generated in the specified _CWAS workspace_.
 
 ```bash
 .cwas
@@ -220,13 +220,36 @@ After running this, you will get...
 
 #### 6. Burden Test (Binomial Test)
 
-This step runs category-based burden tests using the categorization result. A type of this burden test is binomial test. Run this command.
+This step is for calculation of relative risks and p-values for each category. As a default, these tests are based on variant-level analysis. The `--use_n_carrier` option can be used for sample-level analysis.
+
+##### Binomial test
+
+This step runs category-based burden test using the categorization result. The type of the test is binomial test. Run this command.
 
 ```bash
-cwas binomial_test -s /path/to/your/samples [-a /path/to/your/adj_factors]
+cwas binomial_test -i /path/to/your/categorization/result -s /path/to/your/samples [-a /path/to/your/adj_factors]
 ```
 
-`[]` means that this is optional. If `-a` option does not specified, this step will bypass the adjustment step.
+`[]` means that this is optional. If `-a` option is not specified, this step will bypass the adjustment step.
+
+After running this, you will get...
+
+```bash
+.cwas
+...
+├── {Your VCF filename}.burden_test.txt
+...
+```
+
+##### Permutation test
+
+This step runs category-based permutations using the categorization result. Run this command.
+
+```bash
+cwas permutation_test -i /path/to/your/categorization/result -s /path/to/your/samples [-a /path/to/your/adj_factors] [-b]
+```
+
+If `-b` option is specified, this step will generate binomial p-values for each permutation. This p-values will be used for burden shift and DAWN analysis.
 
 After running this, you will get...
 
