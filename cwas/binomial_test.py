@@ -91,8 +91,8 @@ class BinomialTest(BurdenTest):
                 axes.vlines(x=0, ymin=-0.5, ymax=max(burden_res['-log_P'])+0.5, linestyles='-', color='lightgray', linewidth=1.25, zorder=1)
                 axes.scatter(x=burden_res['log2_RR'].apply(lambda x: replace_inf(x, max_x)), y=burden_res['-log_P'],
                             marker='o', color='silver', s=self.marker_size, label='Others', edgecolor='black', linewidth=0.5, zorder=2)
-                axes.scatter(x=burden_res.loc[(burden_res.index.str.contains(t))&(burden_res['-log_P']>threshold)&(burden_res['log2_RR']>0), 'log2_RR'], 
-                             y=burden_res.loc[(burden_res.index.str.contains(t))&(burden_res['-log_P']>threshold)&(burden_res['log2_RR']>0),'-log_P'],
+                axes.scatter(x=burden_res.loc[(burden_res.index.str.contains(t))&(burden_res['-log_P']>threshold), 'log2_RR'], 
+                             y=burden_res.loc[(burden_res.index.str.contains(t))&(burden_res['-log_P']>threshold), '-log_P'],
                              marker='o', label=t, facecolor='#3d62a1', s=self.marker_size, alpha=.7, edgecolor='black', linewidth=0.5, zorder=3)
                 axes.hlines(y=threshold, xmin=-(max_x+1), xmax=max_x+1, linestyles='--', linewidth=1.25, color='black')
                 axes.text(-(max_x+1)+0.1, threshold+0.1, 'P=0.05', size=self.font_size*0.85, color='black')
