@@ -32,5 +32,5 @@ setuptools.setup(
         ]
     },
     install_requires=["numpy", "pandas", "scipy", "tqdm", "glmnet", "igraph", "matplotlib", "rpy2", "seaborn", "parmap",
-                      "polars", "pyvcf", "scikit-learn", "pysam", "tabix", "pyyaml", "python-dotenv", "pytest"]
+                      "polars", "pyvcf", "scikit-learn", "pysam", "pytabix", "pyyaml", "python-dotenv", "pytest"]
 )
