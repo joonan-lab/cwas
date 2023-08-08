@@ -13,7 +13,10 @@ setuptools.setup(
     author="Minwoo Jeong",
     author_email="jeongmwj@gmail.com",
     description=__doc__,
-    url="https://github.com/mwjjeong/cwas",
+    url="https://github.com/joonan-lab/cwas",
+    project_urls={
+        "Bug Tracker": "https://github.com/joonan-lab/cwas/issues",
+    },
     packages=setuptools.find_packages(),
     package_data={'': ['*.r', '*.R']},
     include_package_data=True,
