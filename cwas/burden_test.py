@@ -114,6 +114,10 @@ class BurdenTest(Runnable):
         return self.args.tag
 
     @property
+    def eff_test(self) -> int:
+        return self.args.eff_test
+
+    @property
     def marker_size(self) -> float:
         return self.args.marker_size
 

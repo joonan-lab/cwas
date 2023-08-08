@@ -295,6 +295,15 @@ def binomial_test() -> argparse.ArgumentParser:
         help="Tags of category queried for highlighting points on the volcano plot. If you use multiple tags, concatenate by ','. (e.g. CRE,CHD8) (default: None)"
     )
     optional.add_argument(
+        "-num_ef",
+        "--num_effective_test",
+        dest="eff_test",
+        required=False,
+        type=int,
+        default=False,
+        help="Number of effective tests (default: False)",
+    )
+    optional.add_argument(
         "-ms",
         "--marker_size",
         dest="marker_size",
