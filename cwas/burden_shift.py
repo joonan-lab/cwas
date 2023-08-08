@@ -187,8 +187,12 @@ class BurdenShift(Runnable):
         max_cnts = round(ggpermCounts['N_signif_tests'].max())
         xticks = np.arange(max_cnts/4, (max_cnts/4)*4+1, max_cnts/4) if max_cnts > 0 else [max_cnts]
         
+        plot_title = setName.replace('is_', '').capitalize()
+        subtitle = f'No. cats in Cases: {nObsCase}, No. cats in Controls: {nObsCtrl}'
+        
         fig1 = plt.figure(figsize=(5,4))
-        plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
+        plt.title(plot_title, fontsize=ft_size, loc='left', weight='bold')
+        plt.suptitle(subtitle, fontsize=ft_size, y=0.92)
         ax = sns.kdeplot(ggpermCounts['N_signif_tests'], edgecolor='black', color='#EBEBEB',
                          alpha=1, fill=True, linewidth=1, warn_singular=False)
         ymax = ax.get_ylim()[-1]
@@ -206,7 +210,8 @@ class BurdenShift(Runnable):
 
         df2 = pd.melt(df, var_name='type')
         fig2 = plt.figure(figsize=(5,4))
-        plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
+        plt.title(plot_title, fontsize=ft_size, loc='left', weight='bold')
+        plt.suptitle(subtitle, fontsize=ft_size, y=0.92)
         ax = sns.kdeplot(df2.loc[df2['type']=='case','value'], edgecolor='black', color='#ff8a89', 
                         alpha=.6, fill=True, linewidth=1, label='Case', warn_singular=False)
         ax = sns.kdeplot(df2.loc[df2['type']=='control','value'], edgecolor='black', color='#8b8aff', 
@@ -292,11 +297,12 @@ class BurdenShift(Runnable):
         df2["Category_term"] = df2["Category_term"].str.replace("CHD8Common", "CHD8 targets")
         df2["Category_term"] = df2["Category_term"].str.replace("FMRPDarnel", "FMRP targets")
         df2["Category_term"] = df2["Category_term"].str.replace("L23", "L2/3")
-        df2["Category_term"] = df2["Category_term"].str.replace("L56", "L5/6")	
+        df2["Category_term"] = df2["Category_term"].str.replace("L56", "L5/6")
         df2["Category_term"] = df2["Category_term"].str.replace("WillseyUnion", "ASD coexpression")
         df2["Category_term"] = df2["Category_term"].str.replace("ASDTADAFDR03", "ASD risk")
-        df2["Category_term"] = df2["Category_term"].str.replace("LOEUF35", "Constrained genes")
+        df2["Category_term"] = df2["Category_term"].str.replace("LOEUF37", "Constrained genes")
         df2["Category_term"] = df2["Category_term"].str.replace("Micro", "Microglia")
+        df2["Category_term"] = df2["Category_term"].str.replace("Astro", "Astrocytes")
         df2['Category_term'] = df2['Category_term'].str[0].str.upper() + df2['Category_term'].str[1:]
 
         df2["new_name"] = df2["Category_term"] + "::" + df2["Domain2"]
