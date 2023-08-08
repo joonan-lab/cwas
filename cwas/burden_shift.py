@@ -119,23 +119,29 @@ class BurdenShift(Runnable):
     
 
     def _create_category_sets(self):
-        print_progress("Create category sets combined all of regions, biotypes, and gene list")
+        print_progress("Create category sets combined all of GENCODE, regions, and gene list")
         
         catsets = pd.read_csv(self.cat_set_file, sep="\t")
         catsets_dict = catsets.to_dict('list')
         
         genesets = sorted(list(set(catsets['gene_list'].unique()) - set(["Any"])))
-        biotypes = ['coding','noncoding','promoter','UTR','intergenic','intron','lincRNA']
+        gencodes = ['coding','noncoding','promoter','UTR','intergenic','intron','lincRNA']
+
+        ## all gencodes
+        for b in gencodes:
+            col = f'is_{b}'
+            catsets_dict[col] = list((catsets[f'is_{b}'] == 1).astype(int))
+
         ## for all genesets
         for g in genesets:
             col = f'is_{g}'
             catsets_dict[col] = list((catsets['gene_list'] == g).astype(int))
             
-            # all genesets & all biotypes (except coding)
-            for b in biotypes:
-                if b != 'coding':
-                    col = f'is_{b}_{g}'
-                    catsets_dict[col] = list(((catsets['gene_list']==g)&(catsets[f'is_{b}']==1)).astype(int))
+            # all genesets & all gencodes
+            for b in gencodes:
+                #if b != 'coding':
+                col = f'is_{b}_{g}'
+                catsets_dict[col] = list(((catsets['gene_list']==g)&(catsets[f'is_{b}']==1)).astype(int))
             
         ## for all regions
         regions = sorted(list(set(catsets['region'].unique()) - set(["Any"])))
@@ -143,27 +149,33 @@ class BurdenShift(Runnable):
             col = f'is_{r}'
             catsets_dict[col] = list((catsets['region'] == r).astype(int))
             
+            ## all regions
+            for b in gencodes:
+                #if 'lincRNA' != b:
+                col = f'is_{b}_{r}'
+                catsets_dict[col] = list(((catsets['region'] == r)&(catsets[f'is_{b}'] == 1)).astype(int))
+
             ## all regions & all genesets
             for g in genesets:
                 col = f'is_{r}_{g}'
                 catsets_dict[col] = list(((catsets['region'] == r)&(catsets['gene_list'] == g)).astype(int))
-            
-            ## all regions & all biotypes (except lincRNA)
-            for b in biotypes:
-                if 'lincRNA' != b:
-                    col = f'is_{b}_{r}'
-                    catsets_dict[col] = list(((catsets['region'] == r)&(catsets[f'is_{b}'] == 1)).astype(int))
-                    
-                if 'coding' != b:
-                    for g in genesets:
-                        col = f'is_{b}_{r}_{g}'
-                        catsets_dict[col] = list(((catsets['region'] == r)&(catsets[f'is_{b}'] == 1)&(catsets['gene_list'] == g)).astype(int))
 
         ## for all conserved
         conservation = sorted(list(set(catsets['conservation'].unique()) - set(["All"])))
         for c in conservation:
             col = f'is_{c}'
             catsets_dict[col] = list((catsets['conservation'] == c).astype(int))
+
+            ## all conserved & all gencodes
+            for b in gencodes:
+                #if 'lincRNA' != b:
+                col = f'is_{b}_{c}'
+                catsets_dict[col] = list(((catsets['conservation'] == c)&(catsets[f'is_{b}'] == 1)).astype(int))
+
+            ## all conserved & all genesets
+            for g in genesets:
+                col = f'is_{r}_{g}'
+                catsets_dict[col] = list(((catsets['conservation'] == c)&(catsets['gene_list'] == g)).astype(int))
 
         for key in ['variant_type', 'gene_list', 'conservation', 'gencode', 'region']:
             del catsets_dict[key]
