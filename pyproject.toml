@@ -16,6 +16,31 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: Linux",
 ]
+dependencies = [
+    'python_version>="3.9"',
+    'numpy',
+    'pandas',
+    'scipy',
+    'tqdm',
+    'glmnet',
+    'igraph',
+    'matplotlib',
+    'rpy2',
+    'seaborn',
+    'parmap',
+    'polars',
+    'pyvcf',
+    'scikit-learn',
+    'pysam',
+    'tabix',
+    'pyyaml',
+    'python-dotenv'
+]
+
+[project.optional-dependencies]
+tests = [
+  'pytest',
+]
 
 [project.urls]
 "Homepage" = "https://github.com/joonan-lab/cwas"
