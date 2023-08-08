@@ -232,21 +232,22 @@ class BurdenShift(Runnable):
 
         return fig1, fig2        
     
-    def _burden_shift_size(self, x):
-        if x == 0:
+    def _burden_shift_size(self, x, bins):
+        if x <= bins[0]:
             return 1
-        elif x < 10:
+        elif bins[0] < x <= bins[1]:
             return 3
-        elif (x>=10) & (x<50):
+        elif bins[1] < x <= bins[2]:
             return 5
-        elif (x>=50) & (x<100):
+        elif bins[2] < x <= bins[3]:
             return 7
-        elif (x>=100) & (x<150):
+        elif bins[3] < x <= bins[4]:
             return 9
-        elif (x>=150) & (x<200):
+        elif bins[4] < x <= bins[5]:
             return 11
-        elif x>=200:
+        else:
             return 13
+
     
     def _change_cre_name(self, x):
         pat = re.search(r'([a-zA-Z]*CRE[a-zA-Z0-9]*)', x).group(1)
@@ -279,7 +280,20 @@ class BurdenShift(Runnable):
         df_ctrl['Phenotype'] = 'Control'
 
         df2 = pd.concat([df_case, df_ctrl])#.sort_values(['Category_set','Phenotype'])
-        df2['Size'] = df2['N_cats'].apply(lambda x: self._burden_shift_size(x))
+
+        maxs = df2['N_cats'].max()
+        mins = df2['N_cats'].min()
+        if maxs >= 12:
+            num_bins = 6
+        elif 6 <= maxs < 12:
+            num_bins = 3
+        elif 1 < maxs < 6:
+            num_bins = 2
+        else:
+            num_bins = 1
+        bins = np.arange(mins, maxs + 1, (maxs - mins) // num_bins)
+        df2['Size'] = df2['N_cats'].apply(lambda x: self._burden_shift_size(x, bins))
+
         df2.loc[~df2.Domain.isin(main_domain), 'Domain'] = 'Others'
         df2["Domain2"] = df2["Domain"]
         df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] = df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] + " (All)"
