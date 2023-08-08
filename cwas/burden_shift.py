@@ -335,7 +335,8 @@ class BurdenShift(Runnable):
         ## Loop through categories specified in the catsets object
         print_progress("Compare burden test and permutation test")
         obsTab = pd.DataFrame()
-        plot_output = f'plotDistr_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.pdf'
+        output_name = re.sub(r'burden_test\.txt\.gz|burden_test\.txt', '', os.path.basename(self.input_file))
+        plot_output = output_name + f'burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.dist_plot.pdf'
         pdfsave = PdfPages(os.path.join(self.output_dir_path, plot_output))
         for i in tqdm(range(len(filt_cat_sets.columns))):
             setName = None
