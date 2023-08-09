@@ -16,7 +16,6 @@ dependencies:
   - seaborn
   - parmap
   - polars
-  - pyvcf
   - scikit-learn
   - pysam
   - tabix
