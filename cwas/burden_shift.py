@@ -1,4 +1,4 @@
-import argparse, os, sys
+import argparse, os
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -13,7 +13,6 @@ import re
 
 from cwas.utils.log import print_progress, print_arg
 from cwas.runnable import Runnable
-from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
 
 pd.set_option('mode.chained_assignment',  None)
@@ -124,7 +123,7 @@ class BurdenShift(Runnable):
         catsets = pd.read_csv(self.cat_set_file, sep="\t")
         catsets_dict = catsets.to_dict('list')
         
-        genesets = sorted(list(set(catsets['gene_list'].unique()) - set(["Any"])))
+        genesets = sorted(list(set(catsets['gene_set'].unique()) - set(["Any"])))
         gencodes = ['coding','noncoding','promoter','UTR','intergenic','intron','lincRNA']
 
         ## all gencodes
@@ -135,49 +134,49 @@ class BurdenShift(Runnable):
         ## for all genesets
         for g in genesets:
             col = f'is_{g}'
-            catsets_dict[col] = list((catsets['gene_list'] == g).astype(int))
+            catsets_dict[col] = list((catsets['gene_set'] == g).astype(int))
             
             # all genesets & all gencodes
             for b in gencodes:
                 #if b != 'coding':
                 col = f'is_{b}_{g}'
-                catsets_dict[col] = list(((catsets['gene_list']==g)&(catsets[f'is_{b}']==1)).astype(int))
+                catsets_dict[col] = list(((catsets['gene_set']==g)&(catsets[f'is_{b}']==1)).astype(int))
             
-        ## for all regions
-        regions = sorted(list(set(catsets['region'].unique()) - set(["Any"])))
+        ## for all functional_annotations
+        regions = sorted(list(set(catsets['functional_annotation'].unique()) - set(["Any"])))
         for r in regions:
             col = f'is_{r}'
-            catsets_dict[col] = list((catsets['region'] == r).astype(int))
+            catsets_dict[col] = list((catsets['functional_annotation'] == r).astype(int))
             
             ## all regions
             for b in gencodes:
                 #if 'lincRNA' != b:
                 col = f'is_{b}_{r}'
-                catsets_dict[col] = list(((catsets['region'] == r)&(catsets[f'is_{b}'] == 1)).astype(int))
+                catsets_dict[col] = list(((catsets['functional_annotation'] == r)&(catsets[f'is_{b}'] == 1)).astype(int))
 
             ## all regions & all genesets
             for g in genesets:
                 col = f'is_{r}_{g}'
-                catsets_dict[col] = list(((catsets['region'] == r)&(catsets['gene_list'] == g)).astype(int))
+                catsets_dict[col] = list(((catsets['functional_annotation'] == r)&(catsets['gene_set'] == g)).astype(int))
 
         ## for all conserved
-        conservation = sorted(list(set(catsets['conservation'].unique()) - set(["All"])))
-        for c in conservation:
+        functional_score = sorted(list(set(catsets['functional_score'].unique()) - set(["All"])))
+        for c in functional_score:
             col = f'is_{c}'
-            catsets_dict[col] = list((catsets['conservation'] == c).astype(int))
+            catsets_dict[col] = list((catsets['functional_score'] == c).astype(int))
 
             ## all conserved & all gencodes
             for b in gencodes:
                 #if 'lincRNA' != b:
                 col = f'is_{b}_{c}'
-                catsets_dict[col] = list(((catsets['conservation'] == c)&(catsets[f'is_{b}'] == 1)).astype(int))
+                catsets_dict[col] = list(((catsets['functional_score'] == c)&(catsets[f'is_{b}'] == 1)).astype(int))
 
             ## all conserved & all genesets
             for g in genesets:
                 col = f'is_{r}_{g}'
-                catsets_dict[col] = list(((catsets['conservation'] == c)&(catsets['gene_list'] == g)).astype(int))
+                catsets_dict[col] = list(((catsets['functional_score'] == c)&(catsets['gene_set'] == g)).astype(int))
 
-        for key in ['variant_type', 'gene_list', 'conservation', 'gencode', 'region']:
+        for key in ['variant_type', 'gene_set', 'functional_score', 'gencode', 'functional_annotation']:
             del catsets_dict[key]
             
         _cat_sets = pd.DataFrame(catsets_dict)
