@@ -20,7 +20,7 @@ from cwas.utils.log import print_arg, print_log, print_progress
 
 import multiprocessing as mp
 from functools import partial
-import vcf
+from pysam import TabixFile
 
 
 class Annotation(Runnable):
@@ -169,7 +169,7 @@ class Annotation(Runnable):
         chr_list = []
         for chromosome in chromosomes:
             try:
-                vcf_reader = vcf.Reader(filename=str(self.vcf_path))
+                vcf_reader = TabixFile(str(self.vcf_path))
                 vcf_reader.fetch(chromosome)
                 chr_list.append(chromosome)
             except StopIteration:
