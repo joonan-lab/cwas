@@ -8,7 +8,7 @@ import setuptools
 
 setuptools.setup(
     name="cwas",
-    version="1.0.0",
+    version="0.0.1",
     license="MIT",
     author="Minwoo Jeong",
     author_email="jeongmwj@gmail.com",
