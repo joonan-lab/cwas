@@ -31,8 +31,8 @@ setuptools.setup(
             'cwas = cwas.__main__:main'
         ]
     },
-    install_requires=["glmnet", "pyvcf",
-                      "setuptools==57.5.0",
+    install_requires=["setuptools==57.5.0",
+                      "glmnet", "pyvcf",
                       "numpy", "pandas", "scipy", "tqdm", "igraph", "matplotlib", "rpy2", "seaborn", "parmap",
                       "polars", "scikit-learn", "pysam", "pytabix", "pyyaml", "python-dotenv", "pytest"]
 )
