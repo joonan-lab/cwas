@@ -208,7 +208,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
-  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory. The file should be as below.
+  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory.
+
+  .. code-block:: solidity
+    
+    cp $HOME/cwas-dataset/configuration.txt $HOME/.cwas/
+  
+  The file should be as below.
   
   .. code-block:: solidity
     
