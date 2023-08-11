@@ -17,7 +17,7 @@ class BinomialTest(BurdenTest):
     
     @property
     def count_thres(self) -> int:
-        if self.count_thres is None:
+        if self._count_thres is None:
             m = 1
             while True:
                 p_value = binomtest(m-1, m, self.binom_p, alternative='greater').pvalue
@@ -55,8 +55,8 @@ class BinomialTest(BurdenTest):
         burden_res['-log_P'] = burden_res['P'].apply(lambda x: -np.log10(x))
         
         print_progress(f"Volcano plot will display categories with at least {self.count_thres} counts")
-        selected_categories = self._raw_counts[self._raw_counts['Raw_counts'] >= self.count_thres]['Category'].tolist()        
-        burden_res = burden_res[burden_res['Category'].isin(selected_categories)]
+        selected_categories = self._raw_counts[self._raw_counts['Raw_counts'] >= self.count_thres].index.tolist()        
+        burden_res = burden_res[burden_res.index.isin(selected_categories)]
         
         threshold = -np.log10(0.05)
         if self.eff_test:
@@ -115,10 +115,11 @@ class BinomialTest(BurdenTest):
                 axes.spines['right'].set_visible(False)
                 
                 output = self.result_path.name.replace(".txt", f'.{t}.volcano_plot.pdf')
+                output_path = os.path.join(self.output_dir_path, output)
                 
                 plt.tight_layout()
-                plt.savefig(os.path.join(self.output_dir_path, output), bbox_inches='tight')
-                print_progress("Save the result to the volcano plot file {}".format(output))
+                plt.savefig(output_path, bbox_inches='tight')
+                print_progress("Save the result to the volcano plot file {}".format(output_path))
         else:
             fig, axes = plt.subplots(figsize=(self.plot_size, self.plot_size))
 
@@ -146,7 +147,8 @@ class BinomialTest(BurdenTest):
             axes.spines['right'].set_visible(False)
 
             output = self.result_path.name.replace(".txt", f'.volcano_plot.pdf')
+            output_path = os.path.join(self.output_dir_path, output)
 
             plt.tight_layout()
-            plt.savefig(os.path.join(self.output_dir_path, output), bbox_inches='tight')
-            print_progress("Save the result to the volcano plot file {}".format(output))
+            plt.savefig(output_path, bbox_inches='tight')
+            print_progress("Save the result to the volcano plot file {}".format(output_path))

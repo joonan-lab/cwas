@@ -28,6 +28,7 @@ class BurdenTest(Runnable):
         self._ctrl_variant_cnt = None
         self._case_carrier_cnt = None
         self._ctrl_carrier_cnt = None
+        self._count_thres = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -328,11 +329,13 @@ class BurdenTest(Runnable):
             else:
                 self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
             self._counts_table = pd.merge(self._raw_counts, self._adj_counts, on='Category')
+            print_progress(f"Save the category counts to the file {self.counts_path}")
             self._counts_table.to_csv(self.counts_path, sep="\t")
     
     def save_category_info(self):
-        cat_set = self._result.loc[:, ['variant_type', 'gene_list', 'conservation', 'gencode', 'region']]
+        cat_set = self._result.loc[:, ['variant_type', 'gene_set', 'functional_score', 'gencode', 'functional_annotation']]
         cat_set = apply_region_mapping(cat_set)
+        print_progress(f"Save the category information to the file {self.cat_info_path}")
         cat_set.to_csv(self.cat_info_path, sep="\t")
 
 
@@ -359,7 +362,7 @@ def apply_region_mapping(df: pd.DataFrame):
         'is_intron': lambda x: (x['gencode'] == 'IntronRegion').astype(int),
         'is_intergenic': lambda x: (x['gencode'] == 'IntergenicRegion').astype(int),
         'is_UTR': lambda x: (x['gencode'] == 'UTRsRegion').astype(int),
-        'is_lincRNA': lambda x: ((x['gene_list'] == 'lincRNA') | (x['gencode'] == 'lincRnaRegion')).astype(int)
+        'is_lincRNA': lambda x: ((x['gene_set'] == 'lincRNA') | (x['gencode'] == 'lincRnaRegion')).astype(int)
     }
 
     for col, condition in region_mapping.items():
