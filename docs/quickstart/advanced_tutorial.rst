@@ -706,6 +706,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     
     cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -thr 8 -if corr -n 10000 -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
 
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
+
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if -t TFBS corr -n 10000 -c $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
+
   This process uses all of the cores. With 40 cores, it takes about 90 minutes.
 
   Below are the output files generated.
@@ -910,35 +915,34 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The parameters of the command are as below:
 
-  - -i_dir, --input_directory: Path to the directory where the input files are stored. This directory must include three required files.
-
-    - Eigen vector file: This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.txt.gz``.
-    - Category correlation matrix file: This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.pkl``.
-    - Permutation test file: This is the output file from :ref:`burden test <permtest>`. The file name must have pattern ``*permutation_test*.txt.gz``.
-
+  - -e, --eig_vector: Eigen vector file. This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.txt.gz``.
+  - -c, --corr_mat: Category correlation matrix file. This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.pkl``.
+  - -P, --permut_test: Permutation test file. This is the output file from :ref:`burden test <permtest>`. The file name must have pattern ``*permutation_test*.txt.gz``.
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -r, --range: Range (i.e., (start,end)) to find optimal K for k-means clustering. It must contain two integers that are comma-separated. The first integer refers to the start number and must be above 1. The second integer refers to the end.
   - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -c_count, --cat_count: Path of the categories counts file from burden test.
-  - -CT, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
-  - -CR, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
+  - -C, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
+  - -R, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
   - -S, --size_threshold: The threshold of the number of categories per cluster. The least amount of categories a cluster should have.
   - -p, --num_proc: Number of worker processes that will be used for the DAWN analysis. By default, 1.
 
 
   .. code-block:: solidity
   
-      cwas dawn -i_dir INPUT_DIR \
+      cwas dawn -e INPUT_EIG_VEC \
+      -c INPUT_CORR_MATRIX \
+      -P INPUT_PERMUATION_RESULT \
       -o_dir OUTPUT_DIR \
       -r 2,500 \
       -s 123 \
       -t test \
       -c_count CATEGORY_COUNTS.txt \
-      -CT 2 \
-      -CR 0.7 \
-      -S 20 \
+      -C 20 \
+      -R 0.7 \
+      -S 2 \
       -p 8
 
 
@@ -949,15 +953,18 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
   
-      cwas dawn -i_dir $HOME/cwas_output \
+      cwas dawn \
+      -e $HOME/cwas_output/de_novo_variants.eig_vecs.TFBS.txt.gz \
+      -c $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl \
+      -P $HOME/cwas_output/de_novo_variants.permutation_test.txt.gz \
       -o_dir $HOME/cwas_output \
-      -r 2,500 \
+      -r 2,200 \
       -s 123 \
-      -t test \
+      -t TFBS.exact \
       -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
-      -CT 2 \
-      -CR 0.7 \
-      -S 20 \
+      -C 20 \
+      -R 0.7 \
+      -S 2 \
       -p 8
 
   The above example requires approximately ~ minutes using eight cores.
