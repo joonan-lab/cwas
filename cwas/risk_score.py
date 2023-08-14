@@ -62,7 +62,7 @@ class RiskScore(Runnable):
             "No. folds for CV",
             f"{args.fold: ,d}",
         )
-        log.print_arg("Use Logistic regression", args.logistic)
+        #log.print_arg("Use Logistic regression", args.logistic)
         log.print_arg(
             "No. permutation used to calculate the p-value",
             f"{args.n_permute: ,d}",
@@ -117,9 +117,9 @@ class RiskScore(Runnable):
             else None
         )
 
-    @property
-    def logistic(self) -> bool:
-        return self.args.logistic
+    #@property
+    #def logistic(self) -> bool:
+    #    return self.args.logistic
 
     @property
     def out_dir(self) -> Path:
@@ -419,25 +419,30 @@ class RiskScore(Runnable):
         test_y = np.where(test_response, 1.0, 0.0)
         log.print_progress(f"Running LassoCV (Seed: {seed})")
         
-        if self.logistic == True:
-            lasso_model = LogitNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-                                   scoring='mean_squared_error', random_state=seed)
-        else:
-            lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-                                     scoring='mean_squared_error', random_state=seed)
+        #if self.logistic == True:
+        #    lasso_model = LogitNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+        #                           scoring='mean_squared_error', random_state=seed)
+        #else:
+        #    lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+        #                             scoring='mean_squared_error', random_state=seed)
+
+        lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
+                                 scoring='mean_squared_error', random_state=seed)
 
         lasso_model.fit(cov, y, self.custom_cv_folds(seed=self.seed))
         opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
         coeffs = getattr(lasso_model, 'coef_path_')
         opt_coeff = np.zeros(len(rare_idx))
 
-        if self.logistic == True:
+        #if self.logistic == True:
             # coef_path_ : array, shape (n_classes, n_features, n_lambda_)
-            opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx][0]
-        else:
+        #    opt_coeff[rare_idx] = coeffs[:, :, opt_model_idx][0]
+        #else:
             # coef_path_ : array, shape (n_features, n_lambda_)
-            opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
+        #    opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
 
+        opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
+        
         opt_lambda = getattr(lasso_model, 'lambda_max_')
         n_select = np.sum(np.abs(opt_coeff) > 0.0)
         pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)

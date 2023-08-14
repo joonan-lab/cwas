@@ -843,13 +843,13 @@ def risk_score() -> argparse.ArgumentParser:
         type=int,
         help="Specify the number of folds in a `(Stratified)KFold` (default: 5)",
     )
-    optional.add_argument(
-        "-l",
-        "--logistic",
-        dest="logistic",
-        action="store_true",
-        help="Make a logistic model with L1 penalty. If use '-u (--use_n_carrier)', this option recommend.",
-    )
+    #optional.add_argument(
+    #    "-l",
+    #    "--logistic",
+    #    dest="logistic",
+    #    action="store_true",
+    #    help="Make a logistic model with L1 penalty. If use '-u (--use_n_carrier)', this option recommend.",
+    #)
     optional.add_argument(
         "-n",
         "--n_permute",
