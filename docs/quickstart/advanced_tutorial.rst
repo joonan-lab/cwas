@@ -783,8 +783,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    zcat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
-    zcat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
 
   Now run the below command.
 
@@ -873,7 +873,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -i, --input_file: Path to the input file which is the result of binomial burden test (\*.burden_test.txt).
   - -b, --burden_res: Path to the result of burden shift from permutation test (\*.binom_pvals.txt.gz).
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
-  - -c, --category_info: Path to the category information file from binomial burden test (\*.category_info.txt).
+  - -c_set, --cat_set: Path to the category information file from binomial burden test (\*.category_info.txt).
   - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -c_cutoff, --count_cutoff: The number of cutoff for category counts. It must be positive value. By default, 7.
@@ -884,7 +884,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas burden_shift -i INPUT.burden_test.txt \
     -b INPUT.binom_pvals.txt.gz \
     -o_dir OUTPUT_DIR \
-    -c INPUT.category_info.txt \
+    -c_set INPUT.category_info.txt \
     -c_count INPUT.category_counts.txt \
     -c_cutoff 7 \
     --pval 0.05
@@ -897,7 +897,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas burden_shift -i $HOME/cwas_output/de_novo_variants.burden_test.txt \
     -b $HOME/cwas_output/de_novo_variants.binom_pvals.txt.gz \
     -o_dir $HOME/cwas_output \
-    -c $HOME/cwas_output/de_novo_variants.category_info.txt \
+    -c_set $HOME/cwas_output/de_novo_variants.category_info.txt \
     -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
     -c_cutoff 7 \
     --pval 0.05
