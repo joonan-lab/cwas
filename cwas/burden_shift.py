@@ -1,4 +1,4 @@
-import argparse, os, sys
+import argparse, os
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -13,7 +13,6 @@ import re
 
 from cwas.utils.log import print_progress, print_arg
 from cwas.runnable import Runnable
-from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
 
 pd.set_option('mode.chained_assignment',  None)
@@ -48,6 +47,10 @@ class BurdenShift(Runnable):
     @property
     def input_file(self) -> Path:
         return self.args.input_path.resolve()
+
+    @property
+    def plot_title(self) -> float:
+        return self.args.plot_title
     
     @property
     def burden_res(self):
@@ -115,53 +118,65 @@ class BurdenShift(Runnable):
     
 
     def _create_category_sets(self):
-        print_progress("Create category sets combined all of regions, biotypes, and gene list")
+        print_progress("Create category sets combined all of GENCODE, regions, and gene list")
         
         catsets = pd.read_csv(self.cat_set_file, sep="\t")
         catsets_dict = catsets.to_dict('list')
         
-        genesets = sorted(list(set(catsets['gene_list'].unique()) - set(["Any"])))
-        biotypes = ['coding','noncoding','promoter','UTR','intergenic','intron','lincRNA']
+        genesets = sorted(list(set(catsets['gene_set'].unique()) - set(["Any"])))
+        gencodes = ['coding','noncoding','promoter','UTR','intergenic','intron','lincRNA']
+
+        ## all gencodes
+        for b in gencodes:
+            col = f'is_{b}'
+            catsets_dict[col] = list((catsets[f'is_{b}'] == 1).astype(int))
+
         ## for all genesets
         for g in genesets:
             col = f'is_{g}'
-            catsets_dict[col] = list((catsets['gene_list'] == g).astype(int))
+            catsets_dict[col] = list((catsets['gene_set'] == g).astype(int))
             
-            # all genesets & all biotypes (except coding)
-            for b in biotypes:
-                if b != 'coding':
-                    col = f'is_{b}_{g}'
-                    catsets_dict[col] = list(((catsets['gene_list']==g)&(catsets[f'is_{b}']==1)).astype(int))
+            # all genesets & all gencodes
+            for b in gencodes:
+                #if b != 'coding':
+                col = f'is_{b}_{g}'
+                catsets_dict[col] = list(((catsets['gene_set']==g)&(catsets[f'is_{b}']==1)).astype(int))
             
-        ## for all regions
-        regions = sorted(list(set(catsets['region'].unique()) - set(["Any"])))
+        ## for all functional_annotations
+        regions = sorted(list(set(catsets['functional_annotation'].unique()) - set(["Any"])))
         for r in regions:
             col = f'is_{r}'
-            catsets_dict[col] = list((catsets['region'] == r).astype(int))
+            catsets_dict[col] = list((catsets['functional_annotation'] == r).astype(int))
             
+            ## all regions
+            for b in gencodes:
+                #if 'lincRNA' != b:
+                col = f'is_{b}_{r}'
+                catsets_dict[col] = list(((catsets['functional_annotation'] == r)&(catsets[f'is_{b}'] == 1)).astype(int))
+
             ## all regions & all genesets
             for g in genesets:
                 col = f'is_{r}_{g}'
-                catsets_dict[col] = list(((catsets['region'] == r)&(catsets['gene_list'] == g)).astype(int))
-            
-            ## all regions & all biotypes (except lincRNA)
-            for b in biotypes:
-                if 'lincRNA' != b:
-                    col = f'is_{b}_{r}'
-                    catsets_dict[col] = list(((catsets['region'] == r)&(catsets[f'is_{b}'] == 1)).astype(int))
-                    
-                if 'coding' != b:
-                    for g in genesets:
-                        col = f'is_{b}_{r}_{g}'
-                        catsets_dict[col] = list(((catsets['region'] == r)&(catsets[f'is_{b}'] == 1)&(catsets['gene_list'] == g)).astype(int))
+                catsets_dict[col] = list(((catsets['functional_annotation'] == r)&(catsets['gene_set'] == g)).astype(int))
 
         ## for all conserved
-        conservation = sorted(list(set(catsets['conservation'].unique()) - set(["All"])))
-        for c in conservation:
+        functional_score = sorted(list(set(catsets['functional_score'].unique()) - set(["All"])))
+        for c in functional_score:
             col = f'is_{c}'
-            catsets_dict[col] = list((catsets['conservation'] == c).astype(int))
+            catsets_dict[col] = list((catsets['functional_score'] == c).astype(int))
 
-        for key in ['variant_type', 'gene_list', 'conservation', 'gencode', 'region']:
+            ## all conserved & all gencodes
+            for b in gencodes:
+                #if 'lincRNA' != b:
+                col = f'is_{b}_{c}'
+                catsets_dict[col] = list(((catsets['functional_score'] == c)&(catsets[f'is_{b}'] == 1)).astype(int))
+
+            ## all conserved & all genesets
+            for g in genesets:
+                col = f'is_{r}_{g}'
+                catsets_dict[col] = list(((catsets['functional_score'] == c)&(catsets['gene_set'] == g)).astype(int))
+
+        for key in ['variant_type', 'gene_set', 'functional_score', 'gencode', 'functional_annotation']:
             del catsets_dict[key]
             
         _cat_sets = pd.DataFrame(catsets_dict)
@@ -183,8 +198,12 @@ class BurdenShift(Runnable):
         max_cnts = round(ggpermCounts['N_signif_tests'].max())
         xticks = np.arange(max_cnts/4, (max_cnts/4)*4+1, max_cnts/4) if max_cnts > 0 else [max_cnts]
         
+        plot_title = setName.replace('is_', '').capitalize()
+        subtitle = f'No. cats in Cases: {nObsCase}, No. cats in Controls: {nObsCtrl}'
+        
         fig1 = plt.figure(figsize=(5,4))
-        plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
+        plt.title(plot_title, fontsize=ft_size, loc='left', weight='bold')
+        plt.suptitle(subtitle, fontsize=ft_size, y=0.92)
         ax = sns.kdeplot(ggpermCounts['N_signif_tests'], edgecolor='black', color='#EBEBEB',
                          alpha=1, fill=True, linewidth=1, warn_singular=False)
         ymax = ax.get_ylim()[-1]
@@ -202,7 +221,8 @@ class BurdenShift(Runnable):
 
         df2 = pd.melt(df, var_name='type')
         fig2 = plt.figure(figsize=(5,4))
-        plt.title(setName, fontsize=ft_size, loc='left', weight='bold')
+        plt.title(plot_title, fontsize=ft_size, loc='left', weight='bold')
+        plt.suptitle(subtitle, fontsize=ft_size, y=0.92)
         ax = sns.kdeplot(df2.loc[df2['type']=='case','value'], edgecolor='black', color='#ff8a89', 
                         alpha=.6, fill=True, linewidth=1, label='Case', warn_singular=False)
         ax = sns.kdeplot(df2.loc[df2['type']=='control','value'], edgecolor='black', color='#8b8aff', 
@@ -223,21 +243,22 @@ class BurdenShift(Runnable):
 
         return fig1, fig2        
     
-    def _burden_shift_size(self, x):
-        if x == 0:
+    def _burden_shift_size(self, x, bins):
+        if x <= bins[0]:
             return 1
-        elif x < 10:
+        elif bins[0] < x <= bins[1]:
             return 3
-        elif (x>=10) & (x<50):
+        elif bins[1] < x <= bins[2]:
             return 5
-        elif (x>=50) & (x<100):
+        elif bins[2] < x <= bins[3]:
             return 7
-        elif (x>=100) & (x<150):
+        elif bins[3] < x <= bins[4]:
             return 9
-        elif (x>=150) & (x<200):
+        elif bins[4] < x <= bins[5]:
             return 11
-        elif x>=200:
+        else:
             return 13
+
     
     def _change_cre_name(self, x):
         pat = re.search(r'([a-zA-Z]*CRE[a-zA-Z0-9]*)', x).group(1)
@@ -270,7 +291,20 @@ class BurdenShift(Runnable):
         df_ctrl['Phenotype'] = 'Control'
 
         df2 = pd.concat([df_case, df_ctrl])#.sort_values(['Category_set','Phenotype'])
-        df2['Size'] = df2['N_cats'].apply(lambda x: self._burden_shift_size(x))
+
+        maxs = df2['N_cats'].max()
+        mins = df2['N_cats'].min()
+        if maxs >= 12:
+            num_bins = 6
+        elif 6 <= maxs < 12:
+            num_bins = 3
+        elif 1 < maxs < 6:
+            num_bins = 2
+        else:
+            num_bins = 1
+        bins = np.arange(mins, maxs + 1, (maxs - mins) // num_bins)
+        df2['Size'] = df2['N_cats'].apply(lambda x: self._burden_shift_size(x, bins))
+
         df2.loc[~df2.Domain.isin(main_domain), 'Domain'] = 'Others'
         df2["Domain2"] = df2["Domain"]
         df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] = df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] + " (All)"
@@ -288,11 +322,12 @@ class BurdenShift(Runnable):
         df2["Category_term"] = df2["Category_term"].str.replace("CHD8Common", "CHD8 targets")
         df2["Category_term"] = df2["Category_term"].str.replace("FMRPDarnel", "FMRP targets")
         df2["Category_term"] = df2["Category_term"].str.replace("L23", "L2/3")
-        df2["Category_term"] = df2["Category_term"].str.replace("L56", "L5/6")	
+        df2["Category_term"] = df2["Category_term"].str.replace("L56", "L5/6")
         df2["Category_term"] = df2["Category_term"].str.replace("WillseyUnion", "ASD coexpression")
         df2["Category_term"] = df2["Category_term"].str.replace("ASDTADAFDR03", "ASD risk")
-        df2["Category_term"] = df2["Category_term"].str.replace("LOEUF35", "Constrained genes")
+        df2["Category_term"] = df2["Category_term"].str.replace("LOEUF37", "Constrained genes")
         df2["Category_term"] = df2["Category_term"].str.replace("Micro", "Microglia")
+        df2["Category_term"] = df2["Category_term"].str.replace("Astro", "Astrocytes")
         df2['Category_term'] = df2['Category_term'].str[0].str.upper() + df2['Category_term'].str[1:]
 
         df2["new_name"] = df2["Category_term"] + "::" + df2["Domain2"]
@@ -331,7 +366,8 @@ class BurdenShift(Runnable):
         ## Loop through categories specified in the catsets object
         print_progress("Compare burden test and permutation test")
         obsTab = pd.DataFrame()
-        plot_output = f'plotDistr_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.pdf'
+        output_name = re.sub(r'burden_test\.txt\.gz|burden_test\.txt', '', os.path.basename(self.input_file))
+        plot_output = output_name + f'burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.dist_plot.pdf'
         pdfsave = PdfPages(os.path.join(self.output_dir_path, plot_output))
         for i in tqdm(range(len(filt_cat_sets.columns))):
             setName = None
@@ -399,7 +435,7 @@ class BurdenShift(Runnable):
                                width_ratios=[.5,13.5])
 
         ## main plot
-        ax[1].set_title('Burdenshift: Overrepresented terms', weight='bold', loc='left', pad=5)
+        ax[1].set_title(self.plot_title, weight='bold', loc='left', pad=5)
         ax[1].scatter(case_df['-log10P'], case_df['new_name'],
                       s=case_df['Size']*20, label='case', color='#ff8a89', edgecolor='black', linewidth=0.5)
         ax[1].scatter(ctrl_df['-log10P'], ctrl_df['new_name'],

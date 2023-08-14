@@ -182,10 +182,10 @@ class Categorization(Runnable):
             "_".join(combination)
             for combination in product(
                 annotation_term_lists["variant_type"],
-                annotation_term_lists["gene_list"],
-                annotation_term_lists["conservation"],
+                annotation_term_lists["gene_set"],
+                annotation_term_lists["functional_score"],
                 annotation_term_lists["gencode"],
-                annotation_term_lists["region"],
+                annotation_term_lists["functional_annotation"],
             )
         }
 
@@ -316,6 +316,7 @@ class Categorization(Runnable):
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
+        log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 

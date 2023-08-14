@@ -14,8 +14,8 @@ dependencies:
   - matplotlib
   - rpy2
   - seaborn
+  - parmap
   - polars
-  - pyvcf
   - scikit-learn
   - pysam
   - tabix

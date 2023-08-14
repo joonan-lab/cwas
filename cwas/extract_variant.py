@@ -215,21 +215,21 @@ class ExtractVariant(Runnable):
         else:
             filtered_result = self._result[self._result['CLASS'].isin(['Deletion', 'Insertion'])]
 
-        if category['gene_list'] != 'Any':
-            filtered_result = filtered_result[filtered_result[category['gene_list']] == 1]
-        if category['conservation'] != 'All':
-            filtered_result = filtered_result[filtered_result[category['conservation']] == 1]
+        if category['gene_set'] != 'Any':
+            filtered_result = filtered_result[filtered_result[category['gene_set']] == 1]
+        if category['functional_score'] != 'All':
+            filtered_result = filtered_result[filtered_result[category['functional_score']] == 1]
         if category['gencode'] != 'Any':
             filtered_result = filtered_result[filtered_result['_'.join(['is', category['gencode']])] == 1]
-        if category['region'] != 'Any':
-            filtered_result = filtered_result[filtered_result[category['region']] == 1]
+        if category['functional_annotation'] != 'Any':
+            filtered_result = filtered_result[filtered_result[category['functional_annotation']] == 1]
         filtered_result['CATEGORY'] = category['Category']
     
         return(filtered_result)
 
     def filter_variants(self):
         print_progress(f"Filter variants in {self.category_set.shape[0]} categories")
-        self.category_set[['variant_type', 'gene_list', 'conservation', 'gencode', 'region']] = self.category_set['Category'].str.split('_', expand=True)
+        self.category_set[['variant_type', 'gene_set', 'functional_score', 'gencode', 'functional_annotation']] = self.category_set['Category'].str.split('_', expand=True)
         # Filter variants by categories and concatenate them vertically
         self._result = pd.concat(self.category_set.apply(lambda x: self.allocate_variants(category = x), axis=1).tolist(), axis=0)
     

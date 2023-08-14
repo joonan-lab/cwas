@@ -295,6 +295,15 @@ def binomial_test() -> argparse.ArgumentParser:
         help="Tags of category queried for highlighting points on the volcano plot. If you use multiple tags, concatenate by ','. (e.g. CRE,CHD8) (default: None)"
     )
     optional.add_argument(
+        "-num_ef",
+        "--num_effective_test",
+        dest="eff_test",
+        required=False,
+        type=int,
+        default=False,
+        help="Number of effective tests (default: False)",
+    )
+    optional.add_argument(
         "-ms",
         "--marker_size",
         dest="marker_size",
@@ -587,7 +596,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=int,
-        help="The number of variants (or samples) to filter categories",
+        help="The number of variants (or samples) to filter categories (counts≥threshold)",
     )
     optional.add_argument(
         "-ef",
@@ -702,6 +711,15 @@ def burden_shift() -> argparse.ArgumentParser:
         default=10,
         type=int,
         help="The number of the category sets contained in the main output plot. Top N category sets will be contain in main output plot (default: 10)."   
+    )
+    optional.add_argument(
+        "-pt",
+        "--plot_title",
+        dest="plot_title",
+        required=False,
+        type=str,
+        default='Burdenshift: Overrepresented terms',
+        help="Title of summarized plot of burden shift result (default: Burdenshift: Overrepresented terms)."
     )
     optional.add_argument(
         "-fs",
@@ -825,13 +843,13 @@ def risk_score() -> argparse.ArgumentParser:
         type=int,
         help="Specify the number of folds in a `(Stratified)KFold` (default: 5)",
     )
-    optional.add_argument(
-        "-l",
-        "--logistic",
-        dest="logistic",
-        action="store_true",
-        help="Make a logistic model with L1 penalty. If use '-u (--use_n_carrier)', this option recommend.",
-    )
+    #optional.add_argument(
+    #    "-l",
+    #    "--logistic",
+    #    dest="logistic",
+    #    action="store_true",
+    #    help="Make a logistic model with L1 penalty. If use '-u (--use_n_carrier)', this option recommend.",
+    #)
     optional.add_argument(
         "-n",
         "--n_permute",
