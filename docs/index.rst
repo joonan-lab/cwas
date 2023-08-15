@@ -15,9 +15,6 @@ Here are the reference papers:
 * `Genome-wide de novo risk score implicates promoter variation in autism spectrum disorder <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6432922/>`_ (An et al., 2018)
 * CWAS-Plus: Estimating genome-wide evaluation of noncoding variation from whole genome sequencing data. (Kim et al., in preperation)
 
-Here is the original CWAS repository: `sanderslab/cwas <https://github.com/sanderslab/cwas>`_
-
-
 
 CWAS-Plus workflow
 #####################
@@ -76,7 +73,7 @@ CWAS-Plus workflow
 
 .. toctree::
    :maxdepth: 1
-   :caption: Connect
+   :caption: Misc.
 
-   GitHub <https://github.com/joonan-lab/cwas>
+   Here is the original CWAS repository: `sanderslab/cwas <https://github.com/sanderslab/cwas>`_
 

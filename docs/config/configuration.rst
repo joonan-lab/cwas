@@ -40,6 +40,8 @@ Inside the CWAS-Plus workspace directory, there is a configuration file ``config
 
 After filling the configuration file, type the below command for configuration. This process will create a symlink to the annotation dataset directory, gene matrix and the annotation key file to the user's workspace. Also, based on the annotation key file, a category domain file and a redundant category file will be created. The category domain file contains all the inferior category groups that will be used for CWAS-Plus. The redundant category file contains the combination of categories that will be excluded in CWAS-Plus. This is for removing duplicated categories (for example, coding variants with all genes and coding variants with coding genes) and nonsense categories (for example, missense variants that are indels).
 
+To force configuration (overwrite previous configurations), use ``-f`` option.
+
 .. code-block:: solidity
 
     cwas configuration

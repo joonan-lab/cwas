@@ -41,7 +41,7 @@ CWAS-Plus utilizes categorized results to estimate the optimal predictor for the
 
 - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
 - -t, --tag: Tag used for the name of the output files. By default, None.
-- -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+- -u, --use_n_carrier: Enables the sample-level analysis (the use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 - -thr, --threshold: The number of variants in controls (or the number of control carriers) used to select rare categories. For example, if set to 3, categories with less than 3 variants in controls will be used for training. By default, 3.
 - -tf, --train_set_fraction: The fraction of the training set. For example, if set to 0.7, 70% of the samples will be used as training set and 30% will be used as test set. By default, 0.7.
 - -n_reg, --num_regression: Number of regression trials to calculate a mean of R squares. By default, 10.
@@ -54,16 +54,16 @@ CWAS-Plus utilizes categorized results to estimate the optimal predictor for the
 
 .. code-block:: solidity
   
-    cwas risk_score -i INPUT.categorization_result.txt.gz \
-    -o_dir OUTPUT_DIR \
-    -s SAMPLE_LIST.txt \
-    -a ADJUST_FACTOR.txt \
-    -c CATEGORY_SET.txt \
-    -thr 3 \
-    -tf 0.7 \
-    -n_reg 10 \
-    -f 5 \
-    -n 1000 \
-    -p 8
+  cwas risk_score -i INPUT.categorization_result.txt.gz \
+  -o_dir OUTPUT_DIR \
+  -s SAMPLE_LIST.txt \
+  -a ADJUST_FACTOR.txt \
+  -c CATEGORY_SET.txt \
+  -thr 3 \
+  -tf 0.7 \
+  -n_reg 10 \
+  -f 5 \
+  -n 1000 \
+  -p 8
 
 
