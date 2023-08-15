@@ -10,6 +10,7 @@ CWAS-Plus annotated variants using VEP and its own custom annotation algorithm. 
 - -p, --num_proc: Number of worker processes that will be used for the annotation process. By default, 1.
 - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
+
 .. code-block:: solidity
 
-    cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -p 8
+  cwas annotation -v INPUT.vcf -o_dir OUTPUT_DIR -p 8

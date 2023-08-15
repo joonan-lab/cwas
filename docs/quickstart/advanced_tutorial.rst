@@ -88,21 +88,15 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The users can install CWAS-Plus through Github.
 
-  Create a conda environment with required installations through command below. Mamba can be used for faster installations.
+  We recommend creating a conda environment with python installed. With this, users can avoid global installation. Mamba can be used for faster installations. If users want to force the installation, they can use ``-f`` option.
 
   .. code-block:: solidity
     
+    conda env create -n cwas python=3.10
+    conda activate cwas
     git clone https://github.com/joonan-lab/cwas.git
     cd cwas
-    conda env create -f environment.yml -n cwas
-
-
-  After creating conda environment, activate the environment and install CWAS-Plus. If users want to force the installation, they can use ``-f`` option.
-
-  .. code-block:: solidity
-    
-    conda activate cwas
-    python setup.py install
+    pip install .
 
 
   CWAS-Plus requires a working directory for efficiency. Users can create the working directory through command below.
@@ -264,7 +258,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     cwas configuration
 
-1. :ref:`Prepare annotation datasets <data-prep-label>`
+3. :ref:`Prepare annotation datasets <data-prep-label>`
 ############################################################
 
   Gather and merge functional annotations and scores into a single bed file. The annotation datasets in the *ANNOTATION_DATA_DIR* will be merged to a single bed file in the working directory.
@@ -330,10 +324,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ...
     ├── de_novo_variants.vep.vcf.gz
     ├── de_novo_variants.vep.vcf.gz.tbi
-    ├── de_novo_variants.annotated.vcf
+    ├── de_novo_variants.annotated.vcf.gz
     ...
 
-  The ``de_novo_variants.annotated.vcf`` looks like below. The number following ``ANNOT=`` in the ``INFO`` field indicates specific annotations associated with the variant, which will be decoded into binary code representing the relevant annotations.
+  The ``de_novo_variants.annotated.vcf.gz`` looks like below. The number following ``ANNOT=`` in the ``INFO`` field indicates specific annotations associated with the variant, which will be decoded into binary code representing the relevant annotations.
 
   .. code-block:: solidity
 
@@ -372,13 +366,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
 
-    cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8
+    cwas categorization -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -p 8
 
   Caculate the correlation matrix from the intersected number of variants (or samples) between every two categories.
 
   .. code-block:: solidity
 
-    cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8 -m variant
+    cwas categorization -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -p 8 -m variant
 
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.categorization_result.txt.gz``, ``.intersection_matrix.pkl``, ``.correlation_matrix.pkl``) in the file name as below will be found in the output directory.
@@ -392,7 +386,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
 
   In the above example, categorizing variants soley takes about 6 minutes. In addition to categorization, calculating the correlation matrix takes about 139 minutes with eight cores.
 
@@ -722,13 +716,16 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ├── de_novo_variants.neg_lap.pickle
     ├── de_novo_variants.eig_vals.pickle
     ├── de_novo_variants.eig_vecs.txt.gz
+    ├── de_novo_variants.neg_lap.TFBS.pickle
+    ├── de_novo_variants.eig_vals.TFBS.pickle
+    ├── de_novo_variants.eig_vecs.TFBS.txt.gz
     ...
 
   The number of effective tests will be shown like below.
 
   .. code-block:: solidity
     
-    [RESULT] The number of effective tests is 4088.
+    [RESULT] The number of effective tests is 2596.
 
 
 8.  :ref:`Risk score analysis <riskscore>`
@@ -753,7 +750,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -tf, --train_set_fraction: The fraction of the training set. For example, if set to 0.7, 70% of the samples will be used as training set and 30% will be used as test set. By default, 0.7.
   - -n_reg, --num_regression: Number of regression trials to calculate a mean of R squares. By default, 10.
   - -f, --fold: Number of folds for cross-validation.
-  - -l, --logistic:  Make a logistic model with L1 penalty (Lasso model). By default, False.
   - -n, --n_permute: The number of permutations used to calculate the p-value. By default, 1,000.
   - --predict_only: If set, only predict the risk score and skip the permutation process. By default, False.
   - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
@@ -784,7 +780,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Example run:
 
-  Create a category set with noncoding categories.
+  Create a category set with noncoding categories in ``EncodeTFBS`` region.
 
   .. code-block:: solidity
     
@@ -907,6 +903,20 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     -c_cutoff 7 \
     --pval 0.05
 
+  The above example requires approximately 2 minutes using eight cores.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.burdenshift_p0.05_cutoff7.dist_plot.pdf
+    ├── de_novo_variants.burdenshift_p0.05_cutoff7.result_plot.pdf
+    ├── de_novo_variants.burdenshift_p0.05_cutoff7.txt
+    ...
+
+
 
 10.  :ref:`DAWN analysis <dawn>`
 ##################################
@@ -967,7 +977,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -S 2 \
       -p 8
 
-  The above example requires approximately ~ minutes using eight cores.
+  The above example requires approximately 1 minute using eight cores.
 
   Below are the output files generated.
 
@@ -975,7 +985,15 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     $HOME/cwas_output
     ...
-    ├── 
+    ├── TFBS.exact.cluster_annotation.csv
+    ├── TFBS.exact.graph_layout.csv
+    ├── TFBS.exact.iplot.igraph.pdf
+    ├── TFBS.exact.iplot.igraph_with_community.pdf
+    ├── TFBS.exact.iplot.igraph_with_number.pdf
+    ├── TFBS.exact.ipvalue_fdr.txt
+    ├── TFBS.exact.ipvalue_fdr_igraph.csv
+    ├── TFBS.exact.ipvalue_fdr_ipvalue_risk.csv
+    ├── TFBS.exact_choose_K_silhouette_score_plot.pdf
     ...
 
 
