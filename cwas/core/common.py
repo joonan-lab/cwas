@@ -117,7 +117,8 @@ def swap_label(labels: np.ndarray, group_ids: np.ndarray) -> np.ndarray:
     return swap_labels
 
 
-def int_to_bit_arr(n: int, bit_arr_len: int) -> np.ndarray:
+def int_to_bit_arr(n0: float, bit_arr_len: int) -> np.ndarray:
+    n = int(n0)
     if n < 0 or bit_arr_len < 0:
         raise ValueError("A negative integer argument does not allowed.")
 
