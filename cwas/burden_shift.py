@@ -367,7 +367,10 @@ class BurdenShift(Runnable):
         print_progress("Compare burden test and permutation test")
         obsTab = pd.DataFrame()
         output_name = re.sub(r'burden_test\.txt\.gz|burden_test\.txt', '', os.path.basename(self.input_file))
-        plot_output = output_name + f'burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.dist_plot.pdf'
+        plot_output = output_name + f'burdenshift_p{self.pval}_cutoff{self.c_cutoff}'
+        if self.tag is not None:
+            plot_output += f".{self.tag}"
+        plot_output += ".dist_plot.pdf"
         pdfsave = PdfPages(os.path.join(self.output_dir_path, plot_output))
         for i in tqdm(range(len(filt_cat_sets.columns))):
             setName = None
@@ -416,12 +419,19 @@ class BurdenShift(Runnable):
         self._obsTab = obsTab
         
         output_name = re.sub(r'burden_test\.txt\.gz|burden_test\.txt', '', os.path.basename(self.input_file))
-        obsFile = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.txt"    
+        obsFile = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}"
+        if self.tag is not None:
+            obsFile += f".{self.tag}"
+        obsFile += ".txt"
+        
         obsTab.to_csv(os.path.join(self.output_dir_path, obsFile), sep="\t", index=False)
         
     def draw_shiftResPlot(self):
         output_name = re.sub(r'burden_test\.txt\.gz|burden_test\.txt', '', os.path.basename(self.input_file))
-        plot_output = output_name + f"burdenshift_p{self.pval}_cutoff{self.c_cutoff}.{self.tag}.result_plot.pdf"
+        plot_output = output_name + f'burdenshift_p{self.pval}_cutoff{self.c_cutoff}'
+        if self.tag is not None:
+            plot_output += f".{self.tag}"
+        plot_output += ".result_plot.pdf"
         isin_inf = None
         
         plot_df, isin_inf = self._create_shiftResPlot_df(self._obsTab)
