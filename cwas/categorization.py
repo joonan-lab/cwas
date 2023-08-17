@@ -262,7 +262,7 @@ class Categorization(Runnable):
                 if self.num_proc == 1
                 else self.get_intersection_matrix_with_mp()
             )
-                    
+        
         diag_sqrt = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")
         self._intersection_matrix = intersection_matrix
@@ -327,7 +327,7 @@ class Categorization(Runnable):
                 _get_intersection_matrix,
                 split_vcfs
             ))
-
+        
     @staticmethod
     def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
         return pd.DataFrame(
