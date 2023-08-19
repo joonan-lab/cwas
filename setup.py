@@ -33,5 +33,5 @@ setuptools.setup(
     },
     install_requires=["pandas", "scipy", "tqdm", "igraph", "matplotlib", "rpy2", "seaborn", "parmap",
                       "polars", "scikit-learn", "pysam", "pytabix", "pyyaml", "python-dotenv", "pytest", "pyarrow",
-                      "adjustText", "glmnet", "numpy<=1.25.2", "setuptools~=57.5.0"]
+                      "adjustText", "numpy<=1.25.2", "setuptools~=57.5.0", "glmnet"]
 )
