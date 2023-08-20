@@ -31,8 +31,7 @@ setuptools.setup(
             'cwas = cwas.__main__:main'
         ]
     },
-    install_requires=["glmnet",
-                      "numpy", "setuptools<58", "pandas", "scipy", "tqdm", "igraph", "matplotlib", "rpy2", "seaborn", "parmap",
+    install_requires=["pandas", "scipy", "tqdm", "igraph", "matplotlib", "rpy2", "seaborn", "parmap",
                       "polars", "scikit-learn", "pysam", "pytabix", "pyyaml", "python-dotenv", "pytest", "pyarrow",
-                      "adjustText"]
+                      "adjustText", "numpy<=1.25.2", "setuptools~=57.5.0", "glmnet"]
 )
