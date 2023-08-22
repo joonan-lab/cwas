@@ -21,6 +21,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from adjustText import adjust_text
+from sklearn.decomposition import SparsePCA
 
 
 class supernodeWGS_func:
@@ -587,14 +588,17 @@ class data_collection:
     
     def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):      
         mat = mat.astype(np.float64)
-        PMA = importr('PMA')
+        #PMA = importr('PMA')
          
         if sparse & (len(mat.columns)>sumabsv**2):
             mat = np.array(mat)
-            mat = numpy2ri.py2rpy(mat)
-            eig = PMA.SPC(mat, trace=robjects.BoolVector([False]), sumabsv=sumabsv)
-            eig_res = dict(zip(eig.names, list(eig)))
-            return eig_res['v'].flatten()
+            #mat = numpy2ri.py2rpy(mat)
+            #eig = PMA.SPC(mat, trace=robjects.BoolVector([False]), sumabsv=sumabsv)
+            #eig_res = dict(zip(eig.names, list(eig)))
+            #return eig_res['v'].flatten()
+            transformer = SparsePCA(n_components=5, random_state=0)
+            transformer.fit(mat)
+            return transformer.components_
         else:
             _, eig_vectors = np.linalg.eig(mat)
             max_idx = np.argmax(np.abs(_))
