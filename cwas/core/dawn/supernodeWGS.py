@@ -152,7 +152,7 @@ class supernodeWGS_func:
         return vec
 
     def _screen_name_(self, vec ,position=3, stopwords=None):
-        stopwords = ["Any", "CodingRegion", "FrameshiftRegion", "LoFRegion",
+        stopwords = ["Any", "CodingRegion", "FrameshiftRegion", "PTVRegion",
                      "MissenseRegion", "SilentRegion", "MissenseHVARDRegionSimple"]
         bool_vec = [not any(np.in1d(np.array(stopwords), np.array(x.split('_')[position]))) for x in vec]
         return bool_vec

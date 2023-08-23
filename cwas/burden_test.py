@@ -344,7 +344,7 @@ def _contain_same_index(table1: pd.DataFrame, table2: pd.DataFrame) -> bool:
     return cmp_two_arr(table1.index.values, table2.index.values)
 
 def apply_region_mapping(df: pd.DataFrame):
-    coding_region = ['CodingRegion', 'MissenseRegion', 'SilentRegion', 'LoFRegion',
+    coding_region = ['CodingRegion', 'MissenseRegion', 'SilentRegion', 'PTVRegion',
                      'InFrameRegion', 'DamagingMissenseRegion', 'FrameshiftRegion']
     noncoding_region = ['NoncodingRegion', 'IntronRegion', 'lincRnaRegion',
                         'IntergenicRegion', 'OtherTranscriptRegion', 'PromoterRegion',
@@ -352,8 +352,8 @@ def apply_region_mapping(df: pd.DataFrame):
     
     region_mapping = {
         'is_coding': lambda x: x['gencode'].isin(coding_region).astype(int),
-        'is_coding_no_ptv': lambda x: x['gencode'].isin(set(coding_region) - set(['CodingRegion', 'LoFRegion', 'FrameshiftRegion'])).astype(int),
-        'is_LoF': lambda x: (x['gencode'] == 'LoFRegion').astype(int),
+        'is_coding_no_ptv': lambda x: x['gencode'].isin(set(coding_region) - set(['CodingRegion', 'PTVRegion', 'FrameshiftRegion'])).astype(int),
+        'is_PTV': lambda x: (x['gencode'] == 'PTVRegion').astype(int),
         'is_missense': lambda x: (x['gencode'] == 'MissenseRegion').astype(int),
         'is_damaging_missense': lambda x: (x['gencode'] == 'DamagingMissenseRegion').astype(int),
         'is_noncoding': lambda x: x['gencode'].isin(noncoding_region).astype(int),
