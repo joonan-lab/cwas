@@ -596,7 +596,7 @@ class data_collection:
             #eig = PMA.SPC(mat, trace=robjects.BoolVector([False]), sumabsv=sumabsv)
             #eig_res = dict(zip(eig.names, list(eig)))
             #return eig_res['v'].flatten()
-            transformer = SparsePCA(n_components=5, random_state=0)
+            transformer = SparsePCA(random_state=0, n_jobs = self.cores)
             transformer.fit(mat)
             return transformer.components_
         else:
