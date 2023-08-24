@@ -489,7 +489,7 @@ class RiskScore(Runnable):
         seeds = np.arange(self.seed, self.seed+self.n_permute)
         for seed in tqdm(seeds):
             with nullify_output():
-                self.risk_score_per_category(result_dict=self._permutation_dict, seed=self.seed, swap_label=True)
+                self.risk_score_per_category(result_dict=self._permutation_dict, seed=seed, swap_label=True)
                 
 
     def save_results(self):
