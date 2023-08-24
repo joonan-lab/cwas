@@ -437,12 +437,11 @@ class RiskScore(Runnable):
                                    random_state = seed, verbose = False, n_alphas=100)
 
         lasso_model.fit(cov2, y)
-        opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
+        #opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
         #coeffs = getattr(lasso_model, 'coef_path_')
         coeffs = getattr(lasso_model, 'coef_')
         opt_coeff = np.zeros(len(rare_idx))
-
-        opt_coeff[rare_idx] = coeffs[:, opt_model_idx]
+        opt_coeff[rare_idx] = coeffs
         
         #opt_lambda = getattr(lasso_model, 'lambda_max_')
         opt_lambda = getattr(lasso_model, 'alpha_')
