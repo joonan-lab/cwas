@@ -586,16 +586,16 @@ class data_collection:
             return -1
         return np.random.binomial(1, 0.5) * 2 - 1
     
-    def soft(x, d):
+    def soft(self, x, d):
         return np.sign(x) * np.maximum(0, np.abs(x) - d)
 
-    def l2n(vec):
+    def l2n(self, vec):
         a = np.sqrt(np.sum(vec**2))
         if a == 0:
             a = 0.05
         return a
 
-    def safesvd(x):
+    def safesvd(self, x):
         i = 1
         while i < 10:
             try:
