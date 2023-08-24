@@ -630,7 +630,7 @@ class data_collection:
         return v
 
     def BinarySearch(self, argu, sumabs):
-        if self.l2n(argu) == 0 or np.sum(np.abs(argu / l2n(argu))) <= sumabs:
+        if self.l2n(argu) == 0 or np.sum(np.abs(argu / self.l2n(argu))) <= sumabs:
             return 0
         
         lam1 = 0
