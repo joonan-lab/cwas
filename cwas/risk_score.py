@@ -554,7 +554,7 @@ class RiskScore(Runnable):
                 r2_scores = np.array([self._permutation_dict[domain][seed][1]
                                     for seed in self._permutation_dict[domain].keys()])
                 null_models.append([domain, 'average', r2_scores.mean(), r2_scores.std()])
-                null_models.extend([domain, [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
+                null_models.extend([domain + [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
 
                 new_values = []
                 for row in result_df['R2']:
