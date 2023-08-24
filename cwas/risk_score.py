@@ -5,6 +5,7 @@ import cwas.utils.log as log
 from pathlib import Path
 from tqdm import tqdm
 from glmnet import ElasticNet, LogitNet
+from sklearn.metrics import r2_score
 from cwas.core.common import cmp_two_arr
 from cwas.utils.check import check_is_file, check_num_proc
 from cwas.runnable import Runnable
@@ -445,11 +446,11 @@ class RiskScore(Runnable):
         
         opt_lambda = getattr(lasso_model, 'lambda_max_')
         n_select = np.sum(np.abs(opt_coeff) > 0.0)
-        pred_responses = lasso_model.predict(test_cov, lamb=opt_lambda)
-        mean_response = np.mean(test_y)
-        ssr = np.sum((pred_responses - mean_response) ** 2)
-        sst = np.sum((test_y - mean_response) ** 2)
-        rsq = ssr / sst
+        y_pred = lasso_model.predict(test_cov, lamb=opt_lambda)
+        #mean_response = np.mean(test_y)
+        #ssr = np.sum((pred_responses - mean_response) ** 2)
+        #sst = np.sum((test_y - mean_response) ** 2)
+        rsq = r2_score(test_y, y_pred)
         result_dict['result'][seed] = [opt_lambda, rsq, n_select, opt_coeff]
         
         log.print_progress("Done")
