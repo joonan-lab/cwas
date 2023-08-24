@@ -531,7 +531,7 @@ class RiskScore(Runnable):
             #domain_df
 
             coef_df.to_csv(
-                f"{str(self.coef_path)}.{domain}.csv",
+                self.coef_path.replace('.csv', f'.{domain}.csv'),
                 sep="\t"
             )
 
@@ -605,7 +605,8 @@ class RiskScore(Runnable):
         plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
         plt.locator_params(axis='x', nbins=5)
 
-        plt.savefig(f"{str(self.plot_path)}.{domain}.csv")
+        plt.savefig(self.plot_path.replace('.pdf', f'.{domain}.pdf'))
+        
 
 
 
