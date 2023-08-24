@@ -559,7 +559,7 @@ class RiskScore(Runnable):
                                          r2 = float(result_df.loc[result_df['Seed'] == 'average']['R2'].values),
                                          perm_r2 = r2_scores)
             
-            pd.concat([fin_res, result_df], ignore_index=True)
+            fin_res = pd.concat([fin_res, result_df], ignore_index=True)
 
         fin_res.to_csv(self.result_path, sep="\t", index=False)
         if not self.predict_only:
