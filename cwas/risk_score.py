@@ -44,9 +44,7 @@ class RiskScore(Runnable):
         log.print_arg("Adjustment factor list", args.adj_factor_path)
         log.print_arg(
             "Category set file", 
-            args.category_set_path
-                if args.category_set_path
-                else "Not specified: all rare categories will be used")
+            args.category_set_path)
         if args.tag:
             log.print_arg("Output tag (prefix of output files)", args.tag)
         log.print_arg("If the number of carriers is used for calculating R2 or not", args.use_n_carrier)
@@ -141,6 +139,14 @@ class RiskScore(Runnable):
         return self.args.use_n_carrier
 
     @property
+    def domain_list(self) -> str:
+        if self.args.domain_list=='run_all':
+            return 'all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA'
+        else:
+            return self.args.domain_list
+        
+
+    @property
     def tag(self) -> str:
         return self.args.tag
 
@@ -155,15 +161,6 @@ class RiskScore(Runnable):
     @property
     def train_set_f(self) -> float:
         return self.args.train_set_f
-
-    @property
-    def filtered_combs(self) -> list:
-        if self.category_set_path:
-            self._filtered_combs = self.category_set["Category"]
-        else:
-            #self._filtered_combs = pd.Series([col for col in self.categorization_result.columns if col != 'SAMPLE'])
-            self._filtered_combs = pd.Series(self.categorization_result.columns)
-        return self._filtered_combs
 
     @property
     def fold(self) -> int:
@@ -355,12 +352,19 @@ class RiskScore(Runnable):
     def risk_scores(self):
         """Generate risk scores for various seeds """
         log.print_progress(self.risk_scores.__doc__)
-        
-        seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
-        for seed in seeds:
-            self.risk_score_per_category(result_dict=self._result_dict, seed=seed)
+
+        domain_values = [domain.strip() for domain in self.domain_list.split(',')]
+        for domain in domain_values:
+            if domain == 'all':
+                filtered_combs = pd.Series(self.categorization_result.columns)
+            else:
+                filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
             
-    def risk_score_per_category(self, result_dict: defaultdict, seed: int = 42, swap_label: bool = False):
+            seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
+            for seed in seeds:
+                self.risk_score_per_category(domain = domain, result_dict=self._result_dict, seed=seed, filtered_combs=filtered_combs)
+            
+    def risk_score_per_category(self, domain: str, result_dict: defaultdict, seed: int = 42, swap_label: bool = False, filtered_combs = None):
         """Lasso model selection """
         if swap_label:
             np.random.seed(seed)
@@ -393,24 +397,24 @@ class RiskScore(Runnable):
             test_covariates = self.categorization_result[datasets == "test"]
             
             ctrl_var_counts = pd.concat(
-                [covariates[self.filtered_combs][~response],
-                 test_covariates[self.filtered_combs][~test_response]],
+                [covariates[filtered_combs][~response],
+                 test_covariates[filtered_combs][~test_response]],
             ).sum()
             rare_idx = (ctrl_var_counts < self.ctrl_thres).values
             log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
-            cov = covariates[self.filtered_combs].iloc[:, rare_idx]
-            test_cov = test_covariates[self.filtered_combs].iloc[:, rare_idx]
+            cov = covariates[filtered_combs].iloc[:, rare_idx]
+            test_cov = test_covariates[filtered_combs].iloc[:, rare_idx]
         else:
             response, test_response = self.response, self.test_response
             
             ctrl_var_counts = pd.concat(
-                [self.covariates[self.filtered_combs][~response],
-                 self.test_covariates[self.filtered_combs][~test_response]],
+                [self.covariates[filtered_combs][~response],
+                 self.test_covariates[filtered_combs][~test_response]],
             ).sum()
             rare_idx = (ctrl_var_counts < self.ctrl_thres).values
             log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
-            cov = self.covariates[self.filtered_combs].iloc[:, rare_idx]
-            test_cov = self.test_covariates[self.filtered_combs].iloc[:, rare_idx]
+            cov = self.covariates[filtered_combs].iloc[:, rare_idx]
+            test_cov = self.test_covariates[filtered_combs].iloc[:, rare_idx]
 
         if cov.shape[1] == 0:
             log.print_warn(f"There are no rare categories (Seed: {seed}).")
@@ -451,7 +455,7 @@ class RiskScore(Runnable):
         #ssr = np.sum((pred_responses - mean_response) ** 2)
         #sst = np.sum((test_y - mean_response) ** 2)
         rsq = r2_score(test_y, y_pred)
-        result_dict['result'][seed] = [opt_lambda, rsq, n_select, opt_coeff]
+        result_dict[domain][seed] = [opt_lambda, rsq, n_select, opt_coeff]
         
         log.print_progress("Done")
             
@@ -488,67 +492,91 @@ class RiskScore(Runnable):
                     sys.stderr = stderr
                     
         seeds = np.arange(self.seed, self.seed+self.n_permute)
-        for seed in tqdm(seeds):
-            with nullify_output():
-                self.risk_score_per_category(result_dict=self._permutation_dict, seed=seed, swap_label=True)
+
+        domain_values = [domain.strip() for domain in self.domain_list.split(',')]
+        for domain in domain_values:
+            if domain == 'all':
+                filtered_combs = pd.Series(self.categorization_result.columns)
+            else:
+                filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
+
+            for seed in tqdm(seeds):
+                with nullify_output():
+                    self.risk_score_per_category(domain = domain, result_dict=self._permutation_dict, seed=seed, swap_label=True, filtered_combs=filtered_combs)
                 
 
     def save_results(self):
         """Save the results to a file """
         log.print_progress(self.save_results.__doc__)
-        result_table = []
-        cat = list(self._result_dict.keys())[0]
-        choose_idx = np.all([self._result_dict[cat][seed][3] != 0 
-                            for seed in self._result_dict[cat].keys()], axis=0)
-        ## Get the categories which are selected by the LassoCV for all seeds
-        coef_df = pd.DataFrame.from_dict(
-            {seed: self._result_dict[cat][seed][3][choose_idx]
-            for seed in self._result_dict[cat].keys()},
-            orient="index",
-            columns = self.filtered_combs[choose_idx]
-        )
-        coef_df.to_csv(
-            self.coef_path,
-            sep="\t"
-        )
-        parameter = np.mean([self._result_dict[cat][seed][0]
-                           for seed in self._result_dict[cat].keys()])
-        r2 = np.mean([self._result_dict[cat][seed][1]
-                      for seed in self._result_dict[cat].keys()])
+
+        domain_list = list(self._result_dict.keys())
+        null_models = []
+        fin_res = pd.DataFrame()
+
+        for domain in domain_list:
+            if domain == 'all':
+                filtered_combs = pd.Series(self.categorization_result.columns)
+            else:
+                filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
+
+            result_table = []
+
+            choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
+                                for seed in self._result_dict[domain].keys()], axis=0)
+            ## Get the categories which are selected by the LassoCV for all seeds
+            coef_df = pd.DataFrame.from_dict(
+                {seed: self._result_dict[domain][seed][3][choose_idx]
+                for seed in self._result_dict[domain].keys()},
+                orient="index",
+                columns = filtered_combs[choose_idx]
+            )
+
+            # Create the initial DataFrame with the 'Domain' column
+            #domain_column_data = {'Domain': ['noncoding'] * coef_df.shape[0]}
+            #domain_df = pd.DataFrame(domain_column_data)
+            #domain_df
+
+            coef_df.to_csv(
+                f"{str(self.coef_path)}.{domain}.csv"
+                sep="\t"
+            )
+
+            for seed in self._result_dict[domain].keys():
+                print(np.count_nonzero(self._result_dict[domain][seed][3]!=0))
+                result_table += [[domain] + [str(seed)] + self._result_dict[domain][seed][:-1]]
+                #[opt_lambda, rsq, n_select, opt_coeff]
+            result_df = pd.DataFrame(result_table, columns=["Domain", "Seed", "Parameter", "R2", "N_select"])
+            new_df = pd.DataFrame([domain, 'average', result_df['Parameter'].mean(), result_df['R2'].mean(), sum(choose_idx)]).T
+            new_df.columns = result_df.columns
+            result_df = pd.concat([new_df, result_df], ignore_index=True)
+
+            if not self.predict_only:
+                r2_scores = np.array([self._permutation_dict[domain][seed][1]
+                                    for seed in self._permutation_dict[domain].keys()])
+                null_models.append([domain, 'average', r2_scores.mean(), r2_scores.std()])
+                null_models.extend([domain, [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
+
+                new_values = []
+                for row in result_df['R2']:
+                    new_value = (np.sum(r2_scores >= row) + 1) / (len(r2_scores) + 1)
+                    new_values.append(new_value)
+
+                result_df['Perm_P'] = new_values
+                
+                self.draw_histogram_plot(domain=domain,
+                                         r2 = float(result_df.loc[result_df['Seed'] == 'average']['R2'].values),
+                                         perm_r2 = r2_scores)
             
+            pd.concat([fin_res, result_df], ignore_index=True)
+
+        fin_res.to_csv(self.result_path, sep="\t", index=False)
         if not self.predict_only:
-            null_models = []
-            cat2 = list(self._permutation_dict.keys())[0]
-            r2_scores = np.array([self._permutation_dict[cat2][seed][1]
-                                for seed in self._permutation_dict[cat2].keys()])
-            null_models.append(['avg', r2_scores.mean(), r2_scores.std()])
-            null_models.extend([[i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
             null_models = pd.DataFrame(
                 null_models,
-                columns=["N_perm", "R2", "std"]
+                columns=["Domain", "N_perm", "R2", "std"]
             )
             null_models.to_csv(self.null_model_path, sep="\t", index=False)
 
-            result_table.append([cat, 'avg', parameter, r2, sum(choose_idx), (sum(r2_scores>=r2)+1)/(len(r2_scores)+1)])
-            result_table += [[cat] + [str(seed)] + self._result_dict[cat][seed][:-1] + [(sum(r2_scores>=self._result_dict[cat][seed][1]+1))/(len(r2_scores)+1)]
-                             for seed in self._result_dict[cat].keys()]
-
-            result_table = pd.DataFrame(
-                result_table, columns=["Category", "seed", "parameter", "R2", "n_select", "perm_P"]
-            )
-            result_table.to_csv(self.result_path, sep="\t", index=False)
-            
-            self.draw_histogram_plot(r2, r2_scores)
-        else:
-            result_table.append([cat, 'avg', parameter, r2, sum(choose_idx)])
-            result_table += [[cat] + [str(seed)] + self._result_dict[cat][seed][:-1]
-                             for seed in self._result_dict[cat].keys()]
-
-            result_table = pd.DataFrame(
-                result_table, columns=["Category", "seed", "parameter", "R2", "n_select"]
-            )
-            result_table.to_csv(self.result_path, sep="\t", index=False)
-    
 
     def update_env(self):
         """Update the environment variables """
@@ -559,7 +587,7 @@ class RiskScore(Runnable):
             self.set_env("LASSO_NULL_MODELS", self.null_model_path)
         self.save_env()
         
-    def draw_histogram_plot(self, r2: float, perm_r2: np.ndarray):
+    def draw_histogram_plot(self, domain: str, r2: float, perm_r2: np.ndarray):
         log.print_progress("Save histogram plot")
         
         # Set the font size
@@ -583,5 +611,7 @@ class RiskScore(Runnable):
         plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
         plt.locator_params(axis='x', nbins=5)
 
-        plt.savefig(self.plot_path)
+        plt.savefig(f"{str(self.plot_path)}.{domain}.csv")
+
+
 
