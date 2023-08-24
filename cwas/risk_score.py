@@ -535,7 +535,6 @@ class RiskScore(Runnable):
             )
 
             for seed in self._result_dict[domain].keys():
-                print(np.count_nonzero(self._result_dict[domain][seed][3]!=0))
                 result_table += [[domain] + [str(seed)] + self._result_dict[domain][seed][:-1]]
                 #[opt_lambda, rsq, n_select, opt_coeff]
             result_df = pd.DataFrame(result_table, columns=["Domain", "Seed", "Parameter", "R2", "N_select"])
