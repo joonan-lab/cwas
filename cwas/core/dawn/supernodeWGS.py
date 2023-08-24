@@ -1,6 +1,8 @@
 '''
 - This code is based on the network analysis in An et al., 2018
 - Source : https://github.com/lingxuez/WGS-Analysis/tree/master/network/supernodeWGS
+- This code utilizes the Penalized Multivariate Analysis (PMA) functionality from the PMA R package
+- Source: https://github.com/bnaras/PMA
 '''
 
 import pandas as pd
@@ -9,9 +11,6 @@ import os
 from scipy.optimize import minimize_scalar
 from scipy.stats import norm
 from scipy.stats import rankdata
-import rpy2.robjects as robjects
-from rpy2.robjects.packages import importr
-from rpy2.robjects import numpy2ri
 import random
 import igraph
 import itertools
@@ -21,6 +20,8 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib import cm
 from adjustText import adjust_text
+from scipy.linalg import svd
+import warnings
 
 
 class supernodeWGS_func:
@@ -151,7 +152,7 @@ class supernodeWGS_func:
         return vec
 
     def _screen_name_(self, vec ,position=3, stopwords=None):
-        stopwords = ["Any", "CodingRegion", "FrameshiftRegion", "LoFRegion",
+        stopwords = ["Any", "CodingRegion", "FrameshiftRegion", "PTVRegion",
                      "MissenseRegion", "SilentRegion", "MissenseHVARDRegionSimple"]
         bool_vec = [not any(np.in1d(np.array(stopwords), np.array(x.split('_')[position]))) for x in vec]
         return bool_vec
@@ -585,19 +586,144 @@ class data_collection:
             return -1
         return np.random.binomial(1, 0.5) * 2 - 1
     
+    def soft(self, x, d):
+        return np.sign(x) * np.maximum(0, np.abs(x) - d)
+
+    def l2n(self, vec):
+        a = np.sqrt(np.sum(vec**2))
+        if a == 0:
+            a = 0.05
+        return a
+
+    def safesvd(self, x):
+        i = 1
+        while i < 10:
+            try:
+                out = svd(x, full_matrices=False)
+                break
+            except:
+                i += 1
+        else:
+            nrow, ncol = x.shape
+            rand_matrix = np.random.randn(nrow, ncol)
+            out = svd(rand_matrix, full_matrices=False)
+        
+        return out
+
+    def CheckPMDV(self, v, x, K):
+        if v is not None and isinstance(v, np.ndarray) and v.shape[1] >= K:
+            v = v[:, :K]
+        elif x.shape[1] > x.shape[0]:
+            x[np.isnan(x)] = np.nanmean(x)
+            svd_result = self.safesvd(x @ x.T)
+            v = x.T @ svd_result[2][:, :K]
+            if np.sum(np.isnan(v)) > 0:
+                svd_result = self.safesvd(x)
+                v = svd_result[2][:, :K]
+            v = v / np.apply_along_axis(self.l2n, 0, v)
+            if np.sum(np.isnan(v)) > 0:
+                raise ValueError("Some values are NA")
+        elif x.shape[1] <= x.shape[0]:
+            x[np.isnan(x)] = np.nanmean(x)
+            svd_result = self.safesvd(x.T @ x)
+            v = svd_result[2][:, :K]
+        return v
+
+    def BinarySearch(self, argu, sumabs):
+        if self.l2n(argu) == 0 or np.sum(np.abs(argu / self.l2n(argu))) <= sumabs:
+            return 0
+        
+        lam1 = 0
+        lam2 = np.max(np.abs(argu)) - 1e-5
+        iter = 1
+        while iter < 150:
+            su = self.soft(argu, (lam1 + lam2) / 2)
+            if np.sum(np.abs(su / self.l2n(su))) < sumabs:
+                lam2 = (lam1 + lam2) / 2
+            else:
+                lam1 = (lam1 + lam2) / 2
+            if (lam2 - lam1) < 1e-6:
+                return (lam1 + lam2) / 2
+            iter += 1
+        
+        warnings.warn("Didn't quite converge")
+        return (lam1 + lam2) / 2
+
+    def SMD(self, x, sumabsu, sumabsv, niter=20, trace=True, v=None, upos=False, uneg=False, vpos=False, vneg=False):
+        nas = np.isnan(x)
+        v_init = v
+        xoo = x.copy()
+        if nas.any():
+            xoo[nas] = np.nanmean(x[~nas])
+        oldv = np.random.randn(x.shape[1])
+        for iter in range(1, niter+1):
+            if np.sum(np.abs(oldv - v)) > 1e-7:
+                oldv = v.copy()
+                if trace:
+                    print(iter, end=" ")
+                # update u #
+                argu = xoo @ v
+                if upos:
+                    argu = np.maximum(argu, 0)
+                if uneg:
+                    argu = np.minimum(argu, 0)
+                lamu = self.BinarySearch(argu, sumabsu)
+                su = self.soft(argu, lamu)
+                u = (su / self.l2n(su)).reshape(-1, 1)
+                # done updating u #
+                # update v #
+                argv = u.T @ xoo
+                if vpos:
+                    argv = np.maximum(argv, 0)
+                if vneg:
+                    argv = np.minimum(argv, 0)
+                lamv = self.BinarySearch(argv, sumabsv)
+                sv = self.soft(argv, lamv)
+                v = (sv / self.l2n(sv)).reshape(-1, 1)
+                # done updating v #
+        d = float((u.T @ (xoo @ v)))
+        if trace:
+            print()
+        return {"d": d, "u": u, "v": v, "v.init": v_init}
+
+    def PMDL1L1(self, x, sumabs=0.4, sumabsu=None, sumabsv=None, niter=20, K=1, v=None, trace=True, orth=False, center=True, rnames=None, cnames=None, upos=None, uneg=None, vpos=None, vneg=None):
+        
+        meanx = np.nanmean(x)
+        x -= meanx
+        
+        if sumabsu is None or sumabsv is None:
+            sumabsu = np.sqrt(x.shape[0]) * sumabs
+            sumabsv = np.sqrt(x.shape[1]) * sumabs
+            
+        if trace and np.abs(np.nanmean(x)) > 1e-15:
+            print("PMDL1L1 was run without first subtracting out the mean of x.")
+        
+        if sumabsu is not None and (sumabsu < 1 or sumabsu > np.sqrt(x.shape[0])):
+            raise ValueError("sumabsu must be between 1 and sqrt(n)")
+        
+        if sumabsv is not None and (sumabsv < 1 or sumabsv > np.sqrt(x.shape[1])):
+            raise ValueError("sumabsv must be between 1 and sqrt(p)")
+        
+        v = self.CheckPMDV(v, x, K)
+        
+        if K == 1:
+            out = self.SMD(x, sumabsu=sumabsu, sumabsv=sumabsv, niter=niter, trace=trace, v=v, upos=upos, uneg=uneg, vpos=vpos, vneg=vneg)
+        
+        return out
+
+    def SPC(self, x, sumabsv=4, niter=20, K=1, orth=False, trace=True, v=None, center=True, cnames=None, vpos=False, vneg=False, compute_pve=True):
+        result = self.PMDL1L1(x, sumabsu=np.sqrt(x.shape[0]), sumabsv=sumabsv, niter=niter, K=K, orth=orth, trace=trace, v=v, center=center, cnames=cnames, upos=False, uneg=False, vpos=vpos, vneg=vneg)
+        return result
+    
     def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):      
         mat = mat.astype(np.float64)
-        PMA = importr('PMA')
          
         if sparse & (len(mat.columns)>sumabsv**2):
             mat = np.array(mat)
-            mat = numpy2ri.py2rpy(mat)
-            eig = PMA.SPC(mat, trace=robjects.BoolVector([False]), sumabsv=sumabsv)
-            eig_res = dict(zip(eig.names, list(eig)))
-            return eig_res['v'].flatten()
+            out = self.SPC(np.array(mat), trace = False, sumabsv = sumabsv)
+            return out['v'][:,0]
         else:
             _, eig_vectors = np.linalg.eig(mat)
-            max_idx = np.argmax(np.abs(_))
-            eigvectors = eig_vectors[:, max_idx].real
+            eigvectors = eig_vectors[:, 0].real
             return eigvectors
             

@@ -279,7 +279,7 @@ class Dawn(Runnable):
                                                   pvalue=1-norm.cdf(zval_supernode),
                                                   Iupdate=hmrf_res['Iupdate'])
         fdr.indicator = fdr.indicator.astype(int)
-        fdr.to_csv(os.path.join(self.output_dir_path, "{}.ipvalue_fdr.txt".format(self.tag)), sep="\t", index=False)
+        #fdr.to_csv(os.path.join(self.output_dir_path, "{}.ipvalue_fdr.txt".format(self.tag)), sep="\t", index=False)
         
         cluster_pval = np.empty(len(zval_supernode)) * np.nan
         cluster_pval[np.where(risk_supernode >= 1)[0]] = 1 - norm.cdf(zval_supernode[np.where(risk_supernode >= 1)[0]])

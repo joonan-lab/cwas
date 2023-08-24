@@ -212,14 +212,14 @@ class Categorizer:
                 and (lof == "HC")
                 and ((lof_flag=='SINGLE_EXON') or (lof_flag==""))
                 ):
-                    annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
+                    annotation_int += 2 ** gencode_annotation_idx["PTVRegion"]
                 elif ((
                     "frameshift_variant" in gencode
                 )
                 and (lof == "HC")
                 and ((lof_flag=='SINGLE_EXON') or (lof_flag==""))
                 ):
-                    annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
+                    annotation_int += 2 ** gencode_annotation_idx["PTVRegion"]
                     annotation_int += (
                         2 ** gencode_annotation_idx["FrameshiftRegion"]
                     )

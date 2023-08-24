@@ -272,12 +272,12 @@ class BurdenShift(Runnable):
                 return x
             
     def _create_shiftResPlot_df(self, df, isin_inf=False):
-        main_domain = ['Coding', 'LoF', 'Missense', 'Damaging', 'Noncoding', 'Promoter', 'Intron', 'Intergenic', 'UTR', 'LincRNA']
-        domain_order = ['Coding (All)','LoF','Missense','Coding w/o LoF','Noncoding (All)','Promoter','Intron','Intergenic','UTR','LincRNA','CRE','Others']
+        main_domain = ['Coding', 'PTV', 'Missense', 'Damaging', 'Noncoding', 'Promoter', 'Intron', 'Intergenic', 'UTR', 'LincRNA']
+        domain_order = ['Coding (All)','PTV','Missense','Coding w/o PTV','Noncoding (All)','Promoter','Intron','Intergenic','UTR','LincRNA','CRE','Others']
         
         ## modify dataframe as validated form
         df = df.loc[(df['Category_set'] != 'All')&(df['Category_set']!='is_lincRNA_lincRNA')]
-        df['Category_set'] = df['Category_set'].str.replace('ptv','LoF')
+        df['Category_set'] = df['Category_set'].str.replace('ptv','PTV')
         df['Category_set'] = df['Category_set'].str.replace('_no_','_w/o_')
         df['Category_set'] = df['Category_set'].str.replace('_wo_','_w/o_')
         df['Domain'] = df['Category_set'].str.split('_').str[1]
@@ -309,11 +309,11 @@ class BurdenShift(Runnable):
         df2["Domain2"] = df2["Domain"]
         df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] = df2.loc[df2['Domain2'].isin(["Coding","Noncoding"]), "Domain2"] + " (All)"
         df2.loc[df2['Domain2']=="Damaging", "Domain2"] = "Missense"
-        df2.loc[df2['Category_set']=="is_coding_w/o_promoter", "Domain2"] = "Coding w/o LoF"
+        df2.loc[df2['Category_set']=="is_coding_w/o_promoter", "Domain2"] = "Coding w/o PTV"
         df2['Domain_order'] = df2.Domain2.apply(lambda x: domain_order.index(x))
 
         df2["Category_term"] = df2["Category_set"].str.replace("is_","")
-        df2.loc[df2["Category_term"]=='coding_w/o_LoF', "Category_term"] = "coding w/o LoF"
+        df2.loc[df2["Category_term"]=='coding_w/o_PTV', "Category_term"] = "coding w/o PTV"
         df2.loc[df2["Category_term"].str.contains("CRE"), "Category_term"] = df2.loc[df2["Category_term"].str.contains("CRE"), "Category_term"].apply(lambda x: self._change_cre_name(x))
 
         df2.loc[df2['Domain2']=='Others', 'Category_term'] = df2.loc[df2['Domain2']=='Others', 'Category_term'].apply(lambda x: x.replace('_', "\n"))
