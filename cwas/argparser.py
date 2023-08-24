@@ -801,7 +801,7 @@ def risk_score() -> argparse.ArgumentParser:
         '--domain_list',
         dest="domain_list",
         required=False,
-        default=None,
+        default='all',
         type=str,
         help="Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested (default: all).\n"\
              "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
