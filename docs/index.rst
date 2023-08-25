@@ -71,9 +71,8 @@ CWAS-Plus workflow
 
    utils/extract_variants.rst
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Misc.
+Misc.
+######
 
-   Here is the original CWAS repository: `sanderslab/cwas <https://github.com/sanderslab/cwas>`_
+Here is the original CWAS repository: `sanderslab/cwas <https://github.com/sanderslab/cwas>`_
 

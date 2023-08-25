@@ -434,7 +434,7 @@ class RiskScore(Runnable):
         #                         scoring='mean_squared_error', random_state=seed)
         
         lasso_model = ElasticNetCV(l1_ratio=1, cv = self.custom_cv_folds(seed=seed), n_jobs = self.num_proc,
-                                   random_state = seed, verbose = False, n_alphas=100)
+                                   random_state = seed, verbose = False, n_alphas=100, selection='random')
 
         lasso_model.fit(cov2, y)
         #opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
