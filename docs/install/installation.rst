@@ -70,7 +70,7 @@ We recommend using a conda environment with python installed to avoid global ins
 
 .. code-block:: solidity
     
-    conda env create -n cwas python=3.10
+    conda create -n cwas python=3.10
     conda activate cwas
     git clone https://github.com/joonan-lab/cwas.git
     cd cwas
