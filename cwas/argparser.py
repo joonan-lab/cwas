@@ -543,7 +543,10 @@ def effective_num_test() -> argparse.ArgumentParser:
         default = 'corr',
         choices = ['corr', 'inter'],
         type=str,
-        help="Input format. If not specified, 'corr' will be used.\nAvailable options:\n * corr: a correlation matrix\n * inter: a matrix with intersected number of variants between categories",
+        help="Input format. If not specified, 'corr' will be used.\n"\
+             "Available options:\n"\
+             "* corr: a correlation matrix\n"\
+             "* inter: a matrix with intersected number of variants between categories",
     )
     optional.add_argument(
         "-o_dir",
@@ -791,16 +794,26 @@ def risk_score() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=Path,
-        help="Path to a text file containing categories for risk score analysis. If not specified, all categories will be used (default: None).",
+        help="Path to a text file category information (*.category_info.txt).",
+    )
+    optional.add_argument(
+        '-d',
+        '--domain_list',
+        dest="domain_list",
+        required=False,
+        default='all',
+        type=str,
+        help="Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested (default: all).\n"\
+             "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
     )
     optional.add_argument(
         "-t",
         "--tag",
         dest="tag",
         required=False,
-        default=None,
+        default='all',
         type=str,
-        help="Tag used for the name of the output file (default: None).",
+        help="Tag used for the name of output files",
     )
     optional.add_argument(
         "-u",
