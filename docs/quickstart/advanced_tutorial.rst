@@ -25,20 +25,20 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
      2. Sample information
 
-        Prepare the sample information in a text file, such as in txt or tsv format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
+        Prepare the sample information in a text file, such as in txt or tsv format. The file must be tab separated. It also must contain three columns, *SAMPLE* and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
         The values in the SAMPLE column are matched to the sample IDs of variants in the input vcf file.
 
-        +----------+--------+-----------+
-        |  SAMPLE  | FAMILY | PHENOTYPE |
-        +==========+========+===========+
-        | 11000.p1 | 11000  |   case    |
-        +----------+--------+-----------+
-        | 11000.s1 | 11000  |   ctrl    |
-        +----------+--------+-----------+
-        | 11002.p1 | 11002  |   case    |
-        +----------+--------+-----------+
-        | 11002.s1 | 11002  |   ctrl    |
-        +----------+--------+-----------+
+        +----------+-----------+
+        |  SAMPLE  | PHENOTYPE |
+        +==========+===========+
+        | 11000.p1 |   case    |
+        +----------+-----------+
+        | 11000.s1 |   ctrl    |
+        +----------+-----------+
+        | 11002.p1 |   case    |
+        +----------+-----------+
+        | 11002.s1 |   ctrl    |
+        +----------+-----------+
 
      3. Adjustment factors
 
@@ -86,17 +86,26 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 1. :ref:`Install CWAS-Plus <installation>`
 ############################################
 
-  The users can install CWAS-Plus through Github.
+  Users can install CWAS-Plus through pip or github. We recommend installing under conda environment to avoid global installation.
 
-  We recommend creating a conda environment with python installed. With this, users can avoid global installation. Mamba can be used for faster installations. If users want to force the installation, they can use ``-f`` option.
+  Github
+  ########
 
   .. code-block:: solidity
     
     conda create -n cwas python=3.10
     conda activate cwas
     git clone https://github.com/joonan-lab/cwas.git
-    cd cwas
-    pip install .
+    pip install cwas
+
+  pip
+  ########
+
+  .. code-block:: solidity
+    
+    conda create -n cwas python=3.10
+    conda activate cwas
+    pip install cwas
 
 
   CWAS-Plus requires a working directory for efficiency. Users can create the working directory through command below.
@@ -114,7 +123,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   The command ``cwas start``, also creates a configuration file inside the working directory. If there is a pre-installed VEP, the path of the VEP in the configuration file will be automatically set.
 
 
-2. :ref:`Configuration <configuration>`
+1. :ref:`Configuration <configuration>`
 ############################################
 
   Inside the CWAS working directory, there is a configuration file (``configuration.txt``). This file is needed for retrieving the path of specific files needed for CWAS-Plus run.

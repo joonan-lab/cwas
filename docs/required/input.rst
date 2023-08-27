@@ -21,22 +21,22 @@ Prepare sorted variants in `vcf <https://samtools.github.io/hts-specs/VCFv4.2.pd
 2. Sample information
 ###################################
 
-Prepare the sample information in a text file, such as in txt or tsv format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
+Prepare the sample information in a text file, such as in txt or tsv format. The file must be tab separated. It also must contain three columns, *SAMPLE* and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
 The values in the SAMPLE column are matched to the sample IDs of variants in the input vcf file.
 
-+----------+--------+-----------+
-|  SAMPLE  | FAMILY | PHENOTYPE |
-+==========+========+===========+
-| 11000.p1 | 11000  |   case    |
-+----------+--------+-----------+
-| 11000.s1 | 11000  |   ctrl    |
-+----------+--------+-----------+
-| 11002.p1 | 11002  |   case    |
-+----------+--------+-----------+
-| 11002.s1 | 11002  |   ctrl    |
-+----------+--------+-----------+
++----------+-----------+
+|  SAMPLE  | PHENOTYPE |
++==========+===========+
+| 11000.p1 |   case    |
++----------+-----------+
+| 11000.s1 |   ctrl    |
++----------+-----------+
+| 11002.p1 |   case    |
++----------+-----------+
+| 11002.s1 |   ctrl    |
++----------+-----------+
   
-3. Adjustment factors
+1. Adjustment factors
 ###################################
 
 Adjustment factors are required if the users want to adjust the number of variants for each sample in CWAS-Plus. The file must be tab separated and must contain two columns, *SAMPLE* and *AdjustFactor*. A value in the *AdjustFactor* must be a float.

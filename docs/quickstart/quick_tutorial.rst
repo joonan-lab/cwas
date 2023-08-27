@@ -9,17 +9,29 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 1. :ref:`Install CWAS-Plus <installation>`
 ###########################################
 
-  The users can install CWAS-Plus through Github. Create a conda environment and install the package.
+  Users can install CWAS-Plus through pip or github. We recommend installing under conda environment to avoid global installation.
   
   ``cwas start`` command creates a working directory (``-w``) along with a configuration file.
+
+  Github
+  ########
 
   .. code-block:: solidity
     
     conda create -n cwas python=3.10
     conda activate cwas
     git clone https://github.com/joonan-lab/cwas.git
-    cd cwas
-    pip install .
+    pip install cwas
+    cwas start
+
+  pip
+  ########
+
+  .. code-block:: solidity
+    
+    conda create -n cwas python=3.10
+    conda activate cwas
+    pip install cwas
     cwas start
 
 
@@ -31,7 +43,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     git clone https://github.com/joonan-lab/cwas-input-example.git
 
 
-2. :ref:`Configuration <configuration>`
+1. :ref:`Configuration <configuration>`
 ###########################################
 
   Inside the CWAS working directory, there is a configuration file (``configuration.txt``). Fill in the file with paths of the required tools and data.
