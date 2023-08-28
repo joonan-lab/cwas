@@ -295,12 +295,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 ############################################
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
-  When using more than one worker processes, CWAS-Plus automatically gzip and indexes non-gzipped input files for efficient multiprocessing.
+  When using more than one worker processes, CWAS-Plus automatically bgzip and indexes non-gzipped input files for efficient multiprocessing.
   Output files are stored in the designated output directory (``-o_dir``) or, by default, in the working directory (``$CWAS_WORKSPACE``).
 
   The parameters of the command are as below:
 
-   - -v, --vcf_file: Path to the input vcf file. This file could be gzipped or not.
+   - -v, --vcf_file: Path to the input vcf file. This file could be bgzipped or not.
    - -p, --num_proc: Number of worker processes that will be used for the annotation process. By default, 1.
    - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
