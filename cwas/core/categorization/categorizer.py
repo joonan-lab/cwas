@@ -61,9 +61,7 @@ class Categorizer:
       num_variants = annotated_vcf.shape[0]
       num_categories = len(category_combinations)
       matrix = np.zeros((num_variants, num_categories), dtype=int)
-      print(num_variants)
-      print(num_categories)
-
+      
       # Create a dictionary to map categories to matrix column indices
       category_to_index = {category: index for index, category in enumerate(category_combinations)}
 
