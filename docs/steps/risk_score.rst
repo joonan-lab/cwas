@@ -39,7 +39,8 @@ CWAS-Plus utilizes categorized results to estimate the optimal predictor for the
   | 11002.s1 | 1.113        |
   +----------+--------------+
 
-- -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
+- -c, --category_set: Path to a text file category information (`*.category_info.txt`).
+- -d, --domain_list: Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested. Available options are `run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA`. By default, all.
 - -t, --tag: Tag used for the name of the output files. By default, None.
 - -u, --use_n_carrier: Enables the sample-level analysis (the use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 - -thr, --threshold: The number of variants in controls (or the number of control carriers) used to select rare categories. For example, if set to 3, categories with less than 3 variants in controls will be used for training. By default, 3.
