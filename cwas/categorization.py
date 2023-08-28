@@ -264,8 +264,9 @@ class Categorization(Runnable):
             #    else self.get_intersection_matrix_with_mp()
             #)
             # Split the column range into evenly sized chunks based on the number of workers
-            chunks = chunk_list(range(pre_intersection_matrix.shape[1]), self.num_proc)
-            result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=self.num_proc)
+            log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
+            chunks = chunk_list(range(pre_intersection_matrix.shape[1]), (self.num_proc//3 + 1))
+            result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=(self.num_proc//3 + 1))
             # Concatenate the count values
             intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
         
