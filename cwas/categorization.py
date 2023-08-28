@@ -257,11 +257,17 @@ class Categorization(Runnable):
 
         elif self.generate_matrix == "variant":
             log.print_progress("Get an intersection matrix between categories using the number of variants")
-            intersection_matrix = (
-                self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
-                if self.num_proc == 1
-                else self.get_intersection_matrix_with_mp()
-            )
+            pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf)
+            #intersection_matrix = (
+            #    self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
+            #    if self.num_proc == 1
+            #    else self.get_intersection_matrix_with_mp()
+            #)
+            # Split the column range into evenly sized chunks based on the number of workers
+            chunks = chunk_list(range(pre_intersection_matrix.shape[1]), self.num_proc)
+            result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=self.num_proc)
+            # Concatenate the count values
+            intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
         
         diag_sqrt = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")

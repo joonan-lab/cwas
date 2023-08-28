@@ -49,6 +49,37 @@ class Categorizer:
 
         return result
 
+    def get_intersection_variant_level(self, annotated_vcf):
+      # Generate unique category combinations
+      #category_combinations = set()
+      #for annotation_term_lists in annotate_each_variant(annotated_vcf):
+      #    for combination in product(*annotation_term_lists):
+      #        category_combinations.add("_".join(combination))
+      
+      category_combinations = self._result.columns.tolist()
+      # Create a matrix with zeros
+      num_variants = annotated_vcf.shape[0]
+      num_categories = len(category_combinations)
+      matrix = np.zeros((num_variants, num_categories), dtype=int)
+      print(num_variants)
+      print(num_categories)
+
+      # Create a dictionary to map categories to matrix column indices
+      category_to_index = {category: index for index, category in enumerate(category_combinations)}
+
+      # Populate the matrix
+      for variant_index, annotation_term_lists in enumerate(self.annotate_each_variant(annotated_vcf)):
+          for combination in product(*annotation_term_lists):
+              category = "_".join(combination)
+              if category in category_to_index:
+                  category_index = category_to_index[category]
+                  matrix[variant_index, category_index] = 1
+
+      df = pd.DataFrame(matrix, columns=category_combinations)
+
+      return df
+
+
     def annotate_each_variant(self, annotated_vcf):
         """Newly annotated each variant using CWAS annotation terms.
         In order to annotate each variant with multiple annotation terms
