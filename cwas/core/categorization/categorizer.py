@@ -49,14 +49,13 @@ class Categorizer:
 
         return result
 
-    def get_intersection_variant_level(self, annotated_vcf):
+    def get_intersection_variant_level(self, annotated_vcf, category_combinations):
       # Generate unique category combinations
       #category_combinations = set()
       #for annotation_term_lists in annotate_each_variant(annotated_vcf):
       #    for combination in product(*annotation_term_lists):
       #        category_combinations.add("_".join(combination))
       
-      category_combinations = self._result.columns.tolist()
       # Create a matrix with zeros
       num_variants = annotated_vcf.shape[0]
       num_categories = len(category_combinations)

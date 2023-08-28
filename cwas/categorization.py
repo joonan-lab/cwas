@@ -257,7 +257,7 @@ class Categorization(Runnable):
 
         elif self.generate_matrix == "variant":
             log.print_progress("Get an intersection matrix between categories using the number of variants")
-            pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf)
+            pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
             #intersection_matrix = (
             #    self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
             #    if self.num_proc == 1
