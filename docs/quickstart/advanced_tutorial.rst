@@ -88,8 +88,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Users can install CWAS-Plus through pip or github. We recommend installing under conda environment to avoid global installation.
 
-  Github
-  ########
+  - Github
 
   .. code-block:: solidity
     
@@ -98,8 +97,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     git clone https://github.com/joonan-lab/cwas.git
     pip install cwas
 
-  pip
-  ########
+  - pip
 
   .. code-block:: solidity
     

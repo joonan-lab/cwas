@@ -13,8 +13,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
   
   ``cwas start`` command creates a working directory (``-w``) along with a configuration file.
 
-  Github
-  ########
+  - Github
 
   .. code-block:: solidity
     
@@ -24,8 +23,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     pip install cwas
     cwas start
 
-  pip
-  ########
+  - pip
 
   .. code-block:: solidity
     
