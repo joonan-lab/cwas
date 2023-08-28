@@ -320,14 +320,14 @@ class Categorizer:
 
             region_vals = annotated_vcf[region].values.astype(np.int32)
             annotation_int_conv_func = (
-                lambda x: 2 ** region_annotation_idx[region] * x
+                lambda x: 2 ** region_annotation_idx[region] * int(x)
             )
             annotation_floats += np.vectorize(annotation_int_conv_func, otypes=[float])(
                 region_vals
             )
 
-        annotation_floats += 2 ** region_annotation_idx["Any"]
         annotation_ints = np.array([int(x) for x in annotation_floats])
+        annotation_ints += 2 ** region_annotation_idx["Any"]
 
         return annotation_ints
 
