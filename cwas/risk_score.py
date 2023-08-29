@@ -429,11 +429,16 @@ class RiskScore(Runnable):
         y = np.where(response, 1.0, 0.0)
         test_y = np.where(test_response, 1.0, 0.0)
         log.print_progress(f"Running LassoCV (Seed: {seed})")
+
+        if swap_label:
+            n_jobs = 1
+        else:
+            n_jobs = self.num_proc
         
         #lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
         #                         scoring='mean_squared_error', random_state=seed)
         
-        lasso_model = ElasticNetCV(l1_ratio=1, cv = self.custom_cv_folds(seed=seed), n_jobs = self.num_proc,
+        lasso_model = ElasticNetCV(l1_ratio=1, cv = self.custom_cv_folds(seed=seed), n_jobs = n_jobs,
                                    random_state = seed, verbose = False, n_alphas=100, selection='random')
 
         lasso_model.fit(cov2, y)

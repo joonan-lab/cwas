@@ -88,8 +88,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Users can install CWAS-Plus through pip or github. We recommend installing under conda environment to avoid global installation.
 
-  Github
-  ########
+  - Github
 
   .. code-block:: solidity
     
@@ -98,8 +97,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     git clone https://github.com/joonan-lab/cwas.git
     pip install cwas
 
-  pip
-  ########
+  - pip
 
   .. code-block:: solidity
     
@@ -297,12 +295,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 ############################################
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
-  When using more than one worker processes, CWAS-Plus automatically gzip and indexes non-gzipped input files for efficient multiprocessing.
+  When using more than one worker processes, CWAS-Plus automatically bgzip and indexes non-gzipped input files for efficient multiprocessing.
   Output files are stored in the designated output directory (``-o_dir``) or, by default, in the working directory (``$CWAS_WORKSPACE``).
 
   The parameters of the command are as below:
 
-   - -v, --vcf_file: Path to the input vcf file. This file could be gzipped or not.
+   - -v, --vcf_file: Path to the input vcf file. This file could be bgzipped or not.
    - -p, --num_proc: Number of worker processes that will be used for the annotation process. By default, 1.
    - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
@@ -752,7 +750,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
   - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
-  - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
+  - -c, --category_set: Path to a text file category information (`*.category_info.txt`).
+  - -d, --domain_list: Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested. Available options are `run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA`. By default, all.
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -u, --use_n_carrier: Enables the sample-level analysis (the use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
   - -thr, --threshold: The number of variants in controls (or the number of control carriers) used to select rare categories. For example, if set to 3, categories with less than 3 variants in controls will be used for training. By default, 3.
@@ -873,7 +872,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
 
-9.  :ref:`Burden shift analysis <burdenshift>`
+1.  :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
