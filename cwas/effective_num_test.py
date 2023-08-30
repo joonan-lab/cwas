@@ -4,12 +4,13 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from typing import Optional
+import re
 
-from cwas.utils.log import print_progress, print_arg, print_warn, print_log
+from cwas.utils.log import print_progress, print_arg, print_log
 from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
-from scipy.stats import binom_test
+from scipy.stats import binomtest
 
 class EffectiveNumTest(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -107,7 +108,7 @@ class EffectiveNumTest(Runnable):
         if self.args.count_thres is None:
             m = 1
             while True:
-                p_value = binom_test(m-1, m, self.binom_p, alternative='greater')
+                p_value = binomtest(m-1, m, self.binom_p, alternative='greater').pvalue
                 if p_value < 0.05:
                     return m
                 m += 1
@@ -145,11 +146,11 @@ class EffectiveNumTest(Runnable):
     def replace_term(self) -> str:
         if self._replace_term is None:
             if 'correlation_matrix.pkl' in str(self.input_path):
-                self._replace_term = '.correlation_matrix.pkl'
+                self._replace_term = r'\.correlation_matrix\.pkl\.gz|\.correlation_matrix\.pkl'
             elif 'intersection_matrix.pkl' in str(self.input_path):
-                self._replace_term = '.intersection_matrix.pkl'
+                self._replace_term = r'\.intersection_matrix\.pkl\.gz|\.intersection_matrix\.pkl'
             else:
-                self._replace_term = '.txt.gz'
+                self._replace_term = r'\.txt\.gz|\.txt'
         return self._replace_term
 
     @property
@@ -158,9 +159,10 @@ class EffectiveNumTest(Runnable):
             save_name = '.correlation_matrix.pickle'
         else:
             save_name = '.'.join(['.correlation_matrix', self.tag, 'pickle'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{self.output_dir_path}/"
+            f"{f_name}"
         )
         
     @property
@@ -169,9 +171,10 @@ class EffectiveNumTest(Runnable):
             save_name = '.neg_lap.pickle'
         else:
             save_name = '.'.join(['.neg_lap', self.tag, 'pickle'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{f_name}"
         )
 
     @property
@@ -180,9 +183,10 @@ class EffectiveNumTest(Runnable):
             save_name = '.eig_vals.pickle'
         else:
             save_name = '.'.join(['.eig_vals', self.tag, 'pickle'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{f_name}"
         )
 
     @property
@@ -191,15 +195,16 @@ class EffectiveNumTest(Runnable):
             save_name = '.eig_vecs.txt.gz'
         else:
             save_name = '.'.join(['.eig_vecs', self.tag, 'txt.gz'])
+        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.input_path.name.replace(self.replace_term, save_name)}"
+            f"{f_name}"
         )
 
     def run(self):
         print_arg("Number of simulations", self.num_eig)
         if self.eff_num_test:
-            self.eigen_decomposition()
+            #self.eigen_decomposition()
             self.get_n_etests()
             self.update_env()
         else:
@@ -251,7 +256,8 @@ class EffectiveNumTest(Runnable):
             elif self.input_format == 'inter':
                 c1 = self.intersection_matrix.columns.tolist()
 
-        c2 = self.category_count[self.category_count['Raw_counts'] > self.count_thres]['Category'].tolist()
+        print_progress(f"Categories with at least {self.count_thres} counts will be used")
+        c2 = self.category_count[self.category_count['Raw_counts'] >= self.count_thres]['Category'].tolist()
         
         filtered_combs = [x for x in c1 if x in c2]
         

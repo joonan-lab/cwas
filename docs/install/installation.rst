@@ -1,7 +1,7 @@
 .. _installation:
 
 *********************************
-Installation
+CWAS-Plus installation
 *********************************
 
 
@@ -12,8 +12,9 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
 
 **1. Required installations**
 
-- **Conda**: CWAS-Plus is installed in a conda environment, so conda should be installed.
-- **VEP**: After creating a conda environment for CWAS-Plus, VEP should be installed. If VEP is installed through conda, the users need to install VEP in the same environment with CWAS-Plus.
+- **Conda**: CWAS-Plus install packages using conda environment. Please install conda or mamba.
+- **VEP**: VEP is used for variant annotation. Please refer to the `reference <https://ensembl.org/info/docs/tools/vep/script/vep_download.html>`_ and install VEP.
+
 
 **2. VEP resources**
 
@@ -63,22 +64,24 @@ Install CWAS-Plus
 ####################
 
 
-To install CWAS-Plus, git clone the repository from github or download the package. Create a conda environment with installing required packages in the environment.
+Users can instasll CWAS-Plus through pip or github. We recommend installing under a conda environment to avoid global installation.
 
+- Github
 
 .. code-block:: solidity
     
-    git clone https://github.com/joonan-lab/cwas.git
-    cd cwas
-    conda env create -f environment.yml -n cwas
+    conda create -n cwas python=3.10
     conda activate cwas
+    git clone https://github.com/joonan-lab/cwas.git
+    pip install cwas
 
-
-After activating the conda environment, install CWAS-Plus. Type the command below inside the cwas directory. Use ``-f`` option when overwriting the package.
+- pip
 
 .. code-block:: solidity
     
-    python setup.py install
+    conda create -n cwas python=3.10
+    conda activate cwas
+    pip install cwas
 
 
 To start CWAS-Plus, type the command below. This will create a workspace (``.cwas``) for CWAS-Plus in home directory. You can specify the directory that will be used as a working directory. As a default, ``$HOME/.cwas`` will be set. If you have a pre-installed VEP, this process will find it automatically and type it to the configuration file.

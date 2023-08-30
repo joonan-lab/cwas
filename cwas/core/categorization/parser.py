@@ -7,6 +7,7 @@ algorithm.
 from io import TextIOWrapper
 import pathlib
 import re
+import gzip
 
 import numpy as np
 import pandas as pd
@@ -26,8 +27,9 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     annot_field_names = []  # Custom annotation field names
 
     # Read and parse the input VCF
-    with vcf_path.open("r") as vep_vcf_file:
-        for line in vep_vcf_file:
+    with gzip.open(vcf_path, "rb") as vep_vcf_file:
+        for line_bytes in vep_vcf_file:
+            line = line_bytes.decode("utf-8")
             if line.startswith("#"):  # Comments
                 if line.startswith("##INFO=<ID=CSQ"):
                     csq_field_names = _parse_vcf_info_field(line)
@@ -129,7 +131,7 @@ def _parse_annot_column(
     """ Parse the annotation integer in the ANNOT column and make a
     pd.DataFrame object
     """
-    annot_ints = annot_column.values.astype(int)
+    annot_ints = annot_column.values.astype(float)
     annot_field_cnt = len(annot_field_names)
     annot_records = list(
         map(

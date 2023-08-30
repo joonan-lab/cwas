@@ -2,9 +2,10 @@ import argparse
 from abc import abstractmethod
 from pathlib import Path
 from typing import Optional
-
+import polars as pl
 import numpy as np
 import pandas as pd
+import re
 
 from cwas.core.categorization.category import Category
 from cwas.core.common import cmp_two_arr
@@ -12,7 +13,7 @@ from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 from cwas.utils.log import print_arg, print_progress
-import polars as pl
+
 
 
 class BurdenTest(Runnable):
@@ -27,6 +28,7 @@ class BurdenTest(Runnable):
         self._ctrl_variant_cnt = None
         self._case_carrier_cnt = None
         self._ctrl_carrier_cnt = None
+        self._count_thres = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -66,23 +68,26 @@ class BurdenTest(Runnable):
 
     @property
     def result_path(self) -> Path:
+        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'burden_test.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'burden_test.txt')}"
+            f"{f_name}"
         )
 
     @property
     def counts_path(self) -> Path:
+        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_counts.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'category_counts.txt')}"
+            f"{f_name}"
         )
 
     @property
     def cat_info_path(self) -> Path:
+        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_info.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'category_info.txt')}"
+            f"{f_name}"
         )
 
     @property
@@ -110,6 +115,10 @@ class BurdenTest(Runnable):
         return self.args.tag
 
     @property
+    def eff_test(self) -> int:
+        return self.args.eff_test
+
+    @property
     def marker_size(self) -> float:
         return self.args.marker_size
 
@@ -120,6 +129,10 @@ class BurdenTest(Runnable):
     @property
     def plot_size(self) -> float:
         return self.args.plot_size
+    
+    @property
+    def plot_title(self) -> float:
+        return self.args.plot_title
 
     @property
     def categorization_result(self) -> pd.DataFrame:
@@ -154,11 +167,8 @@ class BurdenTest(Runnable):
     @property
     def phenotypes(self) -> np.ndarray:
         if self._phenotypes is None:
-            self._phenotypes = np.vectorize(
-                lambda sample_id: self.sample_info.to_dict()["PHENOTYPE"][
-                    sample_id
-                ]
-            )(self.categorization_result.index.values)
+            self._phenotypes = np.array(self.sample_info.loc[self.categorization_result.index, 'PHENOTYPE'])
+            
         return self._phenotypes
 
     @property
@@ -269,6 +279,7 @@ class BurdenTest(Runnable):
 
     def calculate_relative_risk(self):
         print_progress("Calculate relative risks for each category")
+        np.seterr(divide='ignore')
         normalized_case_variant_cnt = self.case_variant_cnt / self.case_cnt
         normalized_ctrl_variant_cnt = self.ctrl_variant_cnt / self.ctrl_cnt
         self._result["Relative_Risk"] = (
@@ -318,11 +329,13 @@ class BurdenTest(Runnable):
             else:
                 self._adj_counts = pd.DataFrame({'Adj_counts': self._result['Case_DNV_Count'] + self._result['Ctrl_DNV_Count']})
             self._counts_table = pd.merge(self._raw_counts, self._adj_counts, on='Category')
+            print_progress(f"Save the category counts to the file {self.counts_path}")
             self._counts_table.to_csv(self.counts_path, sep="\t")
     
     def save_category_info(self):
-        cat_set = self._result.loc[:, ['variant_type', 'gene_list', 'conservation', 'gencode', 'region']]
+        cat_set = self._result.loc[:, ['variant_type', 'gene_set', 'functional_score', 'gencode', 'functional_annotation']]
         cat_set = apply_region_mapping(cat_set)
+        print_progress(f"Save the category information to the file {self.cat_info_path}")
         cat_set.to_csv(self.cat_info_path, sep="\t")
 
 
@@ -331,7 +344,7 @@ def _contain_same_index(table1: pd.DataFrame, table2: pd.DataFrame) -> bool:
     return cmp_two_arr(table1.index.values, table2.index.values)
 
 def apply_region_mapping(df: pd.DataFrame):
-    coding_region = ['CodingRegion', 'MissenseRegion', 'SilentRegion', 'LoFRegion',
+    coding_region = ['CodingRegion', 'MissenseRegion', 'SilentRegion', 'PTVRegion',
                      'InFrameRegion', 'DamagingMissenseRegion', 'FrameshiftRegion']
     noncoding_region = ['NoncodingRegion', 'IntronRegion', 'lincRnaRegion',
                         'IntergenicRegion', 'OtherTranscriptRegion', 'PromoterRegion',
@@ -339,8 +352,8 @@ def apply_region_mapping(df: pd.DataFrame):
     
     region_mapping = {
         'is_coding': lambda x: x['gencode'].isin(coding_region).astype(int),
-        'is_coding_no_ptv': lambda x: x['gencode'].isin(set(coding_region) - set(['CodingRegion', 'LoFRegion', 'FrameshiftRegion'])).astype(int),
-        'is_LoF': lambda x: (x['gencode'] == 'LoFRegion').astype(int),
+        'is_coding_no_ptv': lambda x: x['gencode'].isin(set(coding_region) - set(['CodingRegion', 'PTVRegion', 'FrameshiftRegion'])).astype(int),
+        'is_PTV': lambda x: (x['gencode'] == 'PTVRegion').astype(int),
         'is_missense': lambda x: (x['gencode'] == 'MissenseRegion').astype(int),
         'is_damaging_missense': lambda x: (x['gencode'] == 'DamagingMissenseRegion').astype(int),
         'is_noncoding': lambda x: x['gencode'].isin(noncoding_region).astype(int),
@@ -349,7 +362,7 @@ def apply_region_mapping(df: pd.DataFrame):
         'is_intron': lambda x: (x['gencode'] == 'IntronRegion').astype(int),
         'is_intergenic': lambda x: (x['gencode'] == 'IntergenicRegion').astype(int),
         'is_UTR': lambda x: (x['gencode'] == 'UTRsRegion').astype(int),
-        'is_lincRNA': lambda x: ((x['gene_list'] == 'lincRNA') | (x['gencode'] == 'lincRnaRegion')).astype(int)
+        'is_lincRNA': lambda x: ((x['gene_set'] == 'lincRNA') | (x['gencode'] == 'lincRnaRegion')).astype(int)
     }
 
     for col, condition in region_mapping.items():

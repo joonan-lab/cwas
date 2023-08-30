@@ -4,17 +4,16 @@ import argparse
 
 import numpy as np
 import pandas as pd
+import re
 
 from collections import defaultdict
 from itertools import product
 
 from cwas.runnable import Runnable
-from cwas.utils.log import print_arg, print_log, print_progress
+from cwas.utils.log import print_progress
 from cwas.core.categorization.parser import (
     parse_annotated_vcf)
 from cwas.utils.check import check_is_file, check_is_dir
-
-import dotenv
 
 class ExtractVariant(Runnable):
     def __init__(self, args: Optional[argparse.Namespace] = None):
@@ -92,9 +91,10 @@ class ExtractVariant(Runnable):
             save_name = 'extracted_variants.txt.gz'
         else:
             save_name = '.'.join([self.tag, 'extracted_variants.txt.gz'])
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', save_name)}"
+            f"{self.output_dir_path}/" +
+            f"{f_name}"
         )
     
     def annotate_variants(self):
@@ -117,12 +117,12 @@ class ExtractVariant(Runnable):
         merged_df['is_CodingRegion'] = np.where(merged_df['ProteinCoding'] == 1, merged_df['is_CodingRegion'], 0)
         ## Noncoding
         merged_df['is_NoncodingRegion'] = np.where(merged_df['is_CodingRegion'] == 1, 0, 1)
-        ## LoF
+        ## PTV
         # Define the list of string patterns to search for
         patterns = ['stop_gained', 'splice_donor', 'splice_acceptor', 'frameshift_variant']
         # Use str.contains() to search for each pattern in the Consequence column
-        merged_df['is_LoFRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
-        merged_df['is_LoFRegion'] = np.where((merged_df['is_CodingRegion'] == 1) & (merged_df['LoF'] == 'HC') & ((merged_df['LoF_flags'] == 'SINGLE_EXON') | (merged_df['LoF_flags'] == '')), merged_df['is_LoFRegion'], 0)
+        merged_df['is_PTVRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
+        merged_df['is_PTVRegion'] = np.where((merged_df['is_CodingRegion'] == 1) & (merged_df['LoF'] == 'HC') & ((merged_df['LoF_flags'] == 'SINGLE_EXON') | (merged_df['LoF_flags'] == '')), merged_df['is_PTVRegion'], 0)
         ## Frameshift
         # Define the list of string patterns to search for
         patterns = ['frameshift_variant']
@@ -130,22 +130,22 @@ class ExtractVariant(Runnable):
         exclude_patterns = ['stop_gained', 'splice_donor', 'splice_acceptor']
         merged_df['is_FrameshiftRegion'] = ((merged_df['Consequence'].str.contains('|'.join(patterns))) 
                                             & (~merged_df['Consequence'].str.contains('|'.join(exclude_patterns)))).astype(int)
-        merged_df['is_FrameshiftRegion'] = np.where(merged_df['is_LoFRegion'] == 1, merged_df['is_FrameshiftRegion'], 0)
+        merged_df['is_FrameshiftRegion'] = np.where(merged_df['is_PTVRegion'] == 1, merged_df['is_FrameshiftRegion'], 0)
         ## Missense
         patterns = ['missense_variant', 'protein_altering_variant', 'start_lost', 'stop_lost']
         merged_df['is_MissenseRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
-        merged_df['is_MissenseRegion'] = np.where((merged_df['is_CodingRegion'] == 1) & (merged_df['is_LoFRegion'] == 0), merged_df['is_MissenseRegion'], 0)
+        merged_df['is_MissenseRegion'] = np.where((merged_df['is_CodingRegion'] == 1) & (merged_df['is_PTVRegion'] == 0), merged_df['is_MissenseRegion'], 0)
         ## Damaging missense
         merged_df['is_DamagingMissenseRegion'] = np.where((merged_df['is_MissenseRegion'] == 1) & (pd.to_numeric(merged_df["MisDb_" + self.mis_info_key], errors='coerce').fillna(0) >= self.mis_thres), 1, 0)
         # Define the list of string patterns to search for
         patterns = ['inframe_deletion', 'inframe_insertion']
         merged_df['is_InFrameRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
-        merged_df['is_InFrameRegion'] = np.where((merged_df['is_CodingRegion'] == 1) & (merged_df['is_LoFRegion'] == 0) & (merged_df['is_MissenseRegion'] == 0), merged_df['is_InFrameRegion'], 0)
+        merged_df['is_InFrameRegion'] = np.where((merged_df['is_CodingRegion'] == 1) & (merged_df['is_PTVRegion'] == 0) & (merged_df['is_MissenseRegion'] == 0), merged_df['is_InFrameRegion'], 0)
         ## Silent
         patterns = ['synonymous_variant']
         merged_df['is_SilentRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
         merged_df['is_SilentRegion'] = np.where((merged_df['is_CodingRegion'] == 1) &
-                                                (merged_df['is_LoFRegion'] == 0) &
+                                                (merged_df['is_PTVRegion'] == 0) &
                                                 (merged_df['is_MissenseRegion'] == 0) &
                                                 (merged_df['is_InFrameRegion'] == 0),
                                                 merged_df['is_SilentRegion'], 0)
@@ -215,21 +215,21 @@ class ExtractVariant(Runnable):
         else:
             filtered_result = self._result[self._result['CLASS'].isin(['Deletion', 'Insertion'])]
 
-        if category['gene_list'] != 'Any':
-            filtered_result = filtered_result[filtered_result[category['gene_list']] == 1]
-        if category['conservation'] != 'All':
-            filtered_result = filtered_result[filtered_result[category['conservation']] == 1]
+        if category['gene_set'] != 'Any':
+            filtered_result = filtered_result[filtered_result[category['gene_set']] == 1]
+        if category['functional_score'] != 'All':
+            filtered_result = filtered_result[filtered_result[category['functional_score']] == 1]
         if category['gencode'] != 'Any':
             filtered_result = filtered_result[filtered_result['_'.join(['is', category['gencode']])] == 1]
-        if category['region'] != 'Any':
-            filtered_result = filtered_result[filtered_result[category['region']] == 1]
+        if category['functional_annotation'] != 'Any':
+            filtered_result = filtered_result[filtered_result[category['functional_annotation']] == 1]
         filtered_result['CATEGORY'] = category['Category']
     
         return(filtered_result)
 
     def filter_variants(self):
         print_progress(f"Filter variants in {self.category_set.shape[0]} categories")
-        self.category_set[['variant_type', 'gene_list', 'conservation', 'gencode', 'region']] = self.category_set['Category'].str.split('_', expand=True)
+        self.category_set[['variant_type', 'gene_set', 'functional_score', 'gencode', 'functional_annotation']] = self.category_set['Category'].str.split('_', expand=True)
         # Filter variants by categories and concatenate them vertically
         self._result = pd.concat(self.category_set.apply(lambda x: self.allocate_variants(category = x), axis=1).tolist(), axis=0)
     

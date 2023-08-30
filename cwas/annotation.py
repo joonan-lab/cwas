@@ -20,7 +20,7 @@ from cwas.utils.log import print_arg, print_log, print_progress
 
 import multiprocessing as mp
 from functools import partial
-import vcf
+from pysam import TabixFile
 
 
 class Annotation(Runnable):
@@ -91,7 +91,7 @@ class Annotation(Runnable):
 
     @property
     def annotated_vcf_path(self):
-        return self.vep_output_vcf_gz_path.replace('.vep.vcf.gz', '.annotated.vcf')
+        return self.vep_output_vcf_gz_path.replace('.vep.vcf.gz', '.annotated.vcf.gz')
 
     def run(self):
         self.annotate_using_vep()
@@ -169,7 +169,7 @@ class Annotation(Runnable):
         chr_list = []
         for chromosome in chromosomes:
             try:
-                vcf_reader = vcf.Reader(filename=str(self.vcf_path))
+                vcf_reader = TabixFile(str(self.vcf_path))
                 vcf_reader.fetch(chromosome)
                 chr_list.append(chromosome)
             except StopIteration:

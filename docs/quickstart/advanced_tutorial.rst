@@ -6,98 +6,104 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
 
-0. Data requirements
+0. Requirements
 #####################
 
-  1. Input vcf file (variant list)
+  1. Input
 
-  Prepare sorted variants in vcf format. The order of the columns should follow the specification of `vcf <https://samtools.github.io/hts-specs/VCFv4.2.pdf>`_. The INFO field must contain a sample ID of each variant with this format ``SAMPLE={sample_id}``.
+     1. Input vcf file (variant list)
 
-  .. code-block:: solidity
+        Prepare sorted variants in `vcf <https://samtools.github.io/hts-specs/VCFv4.2.pdf>`_ format. The INFO field in each entry includes a sample ID in ``SAMPLE={sample_id}`` format.
 
-    #CHROM  POS ID  REF ALT QUAL    FILTER  INFO
-    chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1;BATCH=P231
-    chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1;BATCH=P231
-    chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
+        .. code-block:: solidity
 
-
-  2. Sample information
-
-  Prepare sample information in txt format. The file must be tab separated. It also must contain three columns, *SAMPLE*, *FAMILY*, and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
-  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
-
-  +----------+--------+-----------+
-  |  SAMPLE  | FAMILY | PHENOTYPE |
-  +==========+========+===========+
-  | 11000.p1 | 11000  |   case    |
-  +----------+--------+-----------+
-  | 11000.s1 | 11000  |   ctrl    |
-  +----------+--------+-----------+
-  | 11002.p1 | 11002  |   case    |
-  +----------+--------+-----------+
-  | 11002.s1 | 11002  |   ctrl    |
-  +----------+--------+-----------+
-
-  3. Adjustment factors
-
-  Adjustment factors are required if the users want to adjust the number of variants for each sample in CWAS-Plus. The file must be tab separated and must contain two columns, *SAMPLE* and *AdjustFactor*. A value in the *AdjustFactor* must be a float.
-  The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
-
-  +----------+--------------+
-  | SAMPLE   | AdjustFactor |
-  +==========+==============+
-  | 11000.p1 | 0.932        |
-  +----------+--------------+
-  | 11000.s1 | 1.082        |
-  +----------+--------------+
-  | 11002.p1 | 0.895        |
-  +----------+--------------+
-  | 11002.s1 | 1.113        |
-  +----------+--------------+
+            #CHROM  POS ID  REF ALT QUAL    FILTER  INFO
+            chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1
+            chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1
+            chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1
 
 
-  For example run, the above data are available at `joonan-lab/cwas-input-example <https://github.com/joonan-lab/cwas-input-example>`_.
+     2. Sample information
 
-  .. code-block:: solidity
+        Prepare the sample information in a text file, such as in txt or tsv format. The file must be tab separated. It also must contain three columns, *SAMPLE* and *PHENOTYPE*. A value in the *PHENOTYPE* muse be *case* or *ctrl*.
+        The values in the SAMPLE column are matched to the sample IDs of variants in the input vcf file.
 
-    cd $HOME
-    git clone https://github.com/joonan-lab/cwas-input-example.git
+        +----------+-----------+
+        |  SAMPLE  | PHENOTYPE |
+        +==========+===========+
+        | 11000.p1 |   case    |
+        +----------+-----------+
+        | 11000.s1 |   ctrl    |
+        +----------+-----------+
+        | 11002.p1 |   case    |
+        +----------+-----------+
+        | 11002.s1 |   ctrl    |
+        +----------+-----------+
+
+     3. Adjustment factors
+
+        Adjustment factors are required if the users want to adjust the number of variants for each sample in CWAS-Plus. The file must be tab separated and must contain two columns, *SAMPLE* and *AdjustFactor*. A value in the *AdjustFactor* must be a float.
+        The values in the SAMPLE column must be matched to the sample IDs of variants in the input vcf file.
+
+        +----------+--------------+
+        | SAMPLE   | AdjustFactor |
+        +==========+==============+
+        | 11000.p1 | 0.932        |
+        +----------+--------------+
+        | 11000.s1 | 1.082        |
+        +----------+--------------+
+        | 11002.p1 | 0.895        |
+        +----------+--------------+
+        | 11002.s1 | 1.113        |
+        +----------+--------------+
 
 
+        For example run, the above data are available at `joonan-lab/cwas-input-example <https://github.com/joonan-lab/cwas-input-example>`_.
 
-  4. Annotation dataset
+        .. code-block:: solidity
+            
+            cd $HOME
+            git clone https://github.com/joonan-lab/cwas-input-example.git
 
-  CWAS-Plus requires annotation dataset to annotate and categorize variants. Users can customize their own annotation dataset based on ther interest.
-  For example run, annotation datasets for investigating autism spectrum disorder are available at `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_.
 
-  .. code-block:: solidity
+  2. Annotation dataset
 
-    cd $HOME
-    git clone https://github.com/joonan-lab/cwas-dataset.git
+    CWAS-Plus requires annotation dataset to annotate and categorize variants. Users can customize their own annotation dataset based on ther interest.
+    For example run, annotation datasets for investigating autism spectrum disorder are available at `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_.
+
+    .. code-block:: solidity
+
+        cd $HOME
+        git clone https://github.com/joonan-lab/cwas-dataset.git
   
 
+  3. Required installations
+
+   - **Conda**: CWAS-Plus is installed in a conda environment, so conda should be installed.
+   - **VEP**: For variant annotation, VEP should be installed. Please refer to the `reference <https://ensembl.org/info/docs/tools/vep/script/vep_download.html>`_.
 
 
 1. :ref:`Install CWAS-Plus <installation>`
 ############################################
 
-  The users can install CWAS-Plus through Github.
+  Users can install CWAS-Plus through pip or github. We recommend installing under conda environment to avoid global installation.
 
-  Create a conda environment with required installations through command below.
-
-  .. code-block:: solidity
-    
-    git clone https://github.com/joonan-lab/cwas.git
-    cd cwas
-    conda env create -f environment.yml -n cwas
-
-
-  After creating conda environment, activate the environment and install CWAS-Plus. If users want to force the installation, they can use ``-f`` option.
+  - Github
 
   .. code-block:: solidity
     
+    conda create -n cwas python=3.10
     conda activate cwas
-    python setup.py install
+    git clone https://github.com/joonan-lab/cwas.git
+    pip install cwas
+
+  - pip
+
+  .. code-block:: solidity
+    
+    conda create -n cwas python=3.10
+    conda activate cwas
+    pip install cwas
 
 
   CWAS-Plus requires a working directory for efficiency. Users can create the working directory through command below.
@@ -115,7 +121,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   The command ``cwas start``, also creates a configuration file inside the working directory. If there is a pre-installed VEP, the path of the VEP in the configuration file will be automatically set.
 
 
-2. :ref:`Configuration <configuration>`
+1. :ref:`Configuration <configuration>`
 ############################################
 
   Inside the CWAS working directory, there is a configuration file (``configuration.txt``). This file is needed for retrieving the path of specific files needed for CWAS-Plus run.
@@ -170,12 +176,6 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   By default, CWAS-Plus provides all of the data above (except for VEP) and configuration file (``configuration.txt``) through `joonan-lab/cwas-dataset <https://github.com/joonan-lab/cwas-dataset>`_. Please note that the provided data serves as default examples, which users can customize to their specific needs.
   
-  - *VEP* can be installed through github or conda. The command to install VEP through conda is as below.
-
-  .. code-block:: solidity
-
-    conda install -c bioconda ensembl-vep
-
   
   To use VEP, users need cache file matching to the VEP version. The cache file can be found `here <https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache>`_. Please download the file in the *VEP_CACHE_DIR*.
 
@@ -186,6 +186,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cd $HOME
     git clone https://github.com/joonan-lab/cwas-dataset.git
     cd cwas-dataset
+    git lfs pull
     tar -zxvf functional_annotations.tar.gz # Decompress bed files
     mv functional_annotations/* . # Move bed files to the parent directory
     sh download_vep_resources.sh
@@ -208,7 +209,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
-  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory. The file should be as below.
+  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory.
+
+  .. code-block:: solidity
+    
+    cp $HOME/cwas-dataset/configuration.txt $HOME/.cwas/
+  
+  The file should be as below.
   
   .. code-block:: solidity
     
@@ -252,7 +259,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory.
-  The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. 
+  The command will also add environment variables for CWAS-Plus in the ``.cwas_env`` file in the home directory. To force configuration (overwrite previous configurations), use ``-f`` option.
 
   .. code-block:: solidity
 
@@ -288,12 +295,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 ############################################
 
   Annotate the input VCF file with VEP and bed custom annotation algorithm.
-  When using more than one worker processes, CWAS-Plus automatically gzip and indexes non-gzipped input files for efficient multiprocessing.
+  When using more than one worker processes, CWAS-Plus automatically bgzip and indexes non-gzipped input files for efficient multiprocessing.
   Output files are stored in the designated output directory (``-o_dir``) or, by default, in the working directory (``$CWAS_WORKSPACE``).
 
   The parameters of the command are as below:
 
-   - -v, --vcf_file: Path to the input vcf file. This file could be gzipped or not.
+   - -v, --vcf_file: Path to the input vcf file. This file could be bgzipped or not.
    - -p, --num_proc: Number of worker processes that will be used for the annotation process. By default, 1.
    - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 
@@ -324,10 +331,10 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ...
     ├── de_novo_variants.vep.vcf.gz
     ├── de_novo_variants.vep.vcf.gz.tbi
-    ├── de_novo_variants.annotated.vcf
+    ├── de_novo_variants.annotated.vcf.gz
     ...
 
-  The ``de_novo_variants.annotated.vcf`` looks like below. The number following ``ANNOT=`` in the ``INFO`` field indicates specific annotations associated with the variant, which will be decoded into binary code representing the relevant annotations.
+  The ``de_novo_variants.annotated.vcf.gz`` looks like below. The number following ``ANNOT=`` in the ``INFO`` field indicates specific annotations associated with the variant, which will be decoded into binary code representing the relevant annotations.
 
   .. code-block:: solidity
 
@@ -342,9 +349,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ##INFO=<ID=MisDb_MPC,Number=.,Type=String,Description="MPC field from /home/cwas_testing/cwas-dataset/MPC_hg38.vcf.bgz">
     ##INFO=<ID=ANNOT,Key=phastCons46way|phyloP46way|ChmE1|ChmE10|ChmE11|ChmE12|ChmE13|ChmE14|ChmE15|ChmE2|ChmE3|ChmE4|ChmE5|ChmE6|ChmE7|ChmE8|ChmE9|EpiDNase|EpiH3K27ac|EpiH3K27me3|EpiH3K36me3|EpiH3K4me1|EpiH3K4me3|EpiH3K9ac|EpiH3K9me3|MidFetalH3K27ac|YaleH3K27acCBC|YaleH3K27acDFC|MidFetalATAC|EncodeDNase|EncodeTFBS|EnhancerVista|EnhancerFantom|HARs>
     #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
-    chr1	822758	chr1:822758:C:T	C	T	.	.	SAMPLE=11299.s1;BATCH=WGS519;CSQ=T|intron_variant&non_coding_transcript_variant|MODIFIER||ENSG00000230021|Transcript|ENST00000635509|processed_transcript||1/3||||||||||-1|||||SAMD11||||||;ANNOT=33313024
-    chr1	842732	chr1:842732:G:A	G	A	.	.	SAMPLE=13373.p1;BATCH=P231;CSQ=A|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||1807|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=764418304
-    chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;BATCH=WGS519;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
+    chr1	822758	chr1:822758:C:T	C	T	.	.	SAMPLE=11299.s1;CSQ=T|intron_variant&non_coding_transcript_variant|MODIFIER||ENSG00000230021|Transcript|ENST00000635509|processed_transcript||1/3||||||||||-1|||||SAMD11||||||;ANNOT=33313024
+    chr1	842732	chr1:842732:G:A	G	A	.	.	SAMPLE=13373.p1;CSQ=A|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||1807|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=764418304
+    chr1	843980	chr1:843980:A:G	A	G	.	.	SAMPLE=13807.s1;CSQ=G|non_coding_transcript_exon_variant|MODIFIER|LINC01128|ENSG00000228794|Transcript|ENST00000670780|lncRNA|3/8||||3055|||||||1||HGNC|HGNC:49377||SAMD11||||||;ANNOT=754716928
 
 
 5. :ref:`Categorization <categorization>`
@@ -366,13 +373,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
 
-    cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8
+    cwas categorization -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -p 8
 
   Caculate the correlation matrix from the intersected number of variants (or samples) between every two categories.
 
   .. code-block:: solidity
 
-    cwas categorization -i INPUT.annotated.vcf -o_dir OUTPUT_DIR -p 8 -m variant
+    cwas categorization -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -p 8 -m variant
 
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.categorization_result.txt.gz``, ``.intersection_matrix.pkl``, ``.correlation_matrix.pkl``) in the file name as below will be found in the output directory.
@@ -386,7 +393,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf -o_dir $HOME/cwas_output -p 8 -m variant
+    cwas categorization -i $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -p 8 -m variant
 
   In the above example, categorizing variants soley takes about 6 minutes. In addition to categorization, calculating the correlation matrix takes about 139 minutes with eight cores.
 
@@ -428,7 +435,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
     - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
-    - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+    - -u, --use_n_carrier: Enables the sample-level analysis (use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 
      .. code-block:: solidity
 
@@ -443,16 +450,15 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - -n, --num_perm: Number of permutations for label-swapping. By default, 10000.
     - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
     - -b, --burden_shift: Generates an output file containing binomial p-values for each label-swapped permutation. By default, False.
-    - -rr, --perm_rr: Generates an output file containing relative risks for each label-swapped permutation. By default, False.
-    - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+    - -u, --use_n_carrier: Enables the sample-level analysis (use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
 
      .. code-block:: solidity
 
         cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
 
-  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.burden_test.txt.gz``, ``.permutation_test.txt.gz``, ``.binom_pvals.txt.gz``) in the file name as below will be found in the output directory.
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.burden_test.txt``, ``.permutation_test.txt.gz``, ``.binom_pvals.txt.gz``) in the file name as below will be found in the output directory.
 
-  - OUTPUT.burden_test.txt.gz: The final output file containing relative risk, two-sided binomial p-value and one-sided binomial p-value of each category.
+  - OUTPUT.burden_test.txt: The final output file containing relative risk, two-sided binomial p-value and one-sided binomial p-value of each category.
   - OUTPUT.permutation_test.txt.gz: The final output file containing p-values calculated from permutations. This file will be used for :ref:`DAWN analysis <dawn>`.
   - OUTPUT.binom_pvals.txt.gz: The matrix containing binomial p-values generated from each permutation. This file will be generated only with ``-b`` option given.
 
@@ -475,9 +481,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     $HOME/cwas_output
     ...
     ├── de_novo_variants.burden_test.volcano_plot.pdf
-    ├── de_novo_variants.burden_test.txt.gz
-    ├── de_novo_variants.category_counts.txt.gz
-    ├── de_novo_variants.category_info.txt.gz
+    ├── de_novo_variants.burden_test.txt
+    ├── de_novo_variants.category_counts.txt
+    ├── de_novo_variants.category_info.txt
     ...
 
   The ``de_novo_variants.burden_test.volcano_plot.pdf`` looks like below. Each dot in the plot is a category. The x axis refers to two-sided binomial p-values in -|log10| format. The y axis refers to the relative risk in |log2| format. The red dashed line represents a p-value threshold of 0.05.
@@ -492,7 +498,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     :align: center
 
 
-  The ``de_novo_variants.burden_test.txt.gz`` looks like below. This output file contains the burden and significance of each category resulted from burden test.
+  The ``de_novo_variants.burden_test.txt`` looks like below. This output file contains the burden and significance of each category resulted from burden test.
 
   .. code-block:: solidity
     
@@ -519,7 +525,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - Z_1side: Z-score calculated from the one-sided binomial p-value.
 
 
-  The ``de_novo_variants.category_counts.txt.gz`` looks like below. This output file contains the number of variants in each category.
+  The ``de_novo_variants.category_counts.txt`` looks like below. This output file contains the number of variants in each category.
 
   .. code-block:: solidity
     
@@ -538,7 +544,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - Adj_counts: The adjusted number of variants in the category.
 
 
-  The ``de_novo_variants.category_info.txt.gz`` looks like below. This output file contains the additional information about the category that are useful to the users. Specifically, columns starting with ``is_`` indicate the respective group to which each category belongs, based on the gene biotype domain.
+  The ``de_novo_variants.category_info.txt`` looks like below. This output file contains the additional information about the category that are useful to the users. Specifically, columns starting with ``is_`` indicate the respective group to which each category belongs, based on the gene biotype domain.
 
   For instance, categories that have ``1`` in ``is_coding`` colmn are coding categories.
 
@@ -640,7 +646,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
     - -n, --num_sim: Number of eigen values to use in calculating the number of effective tests. The maximum number is equivalent to the number of categories. By default, 10000.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter`` or ``-thr`` is not given. By default, None.
-    - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt.gz).
+    - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
     - -t, --tag: Tag used for the name of the output files. By default, None.
     - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
 
@@ -660,19 +666,19 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     1. Find the number of effective tests
 
-      - Use all categories with the number of variants (or samples) greater than the cutoff. The cutoff is used to select informative significant tests with a sufficient number of variants (or samples).
+      - Only categories with a value (number of variants or samples) greater than or equal to cutoff are used. The cutoff is used to select informative significant tests with a sufficient number of variants (or samples).
         
-        - With specified cutoff: Categories with a number of variants (or samples) exceeding the **specified cutoff** are used.
+        - With specified cutoff: Categories with a value (number of variants or samples) greater than or equal to **specified cutoff** are used.
 
         .. code-block:: solidity
             
-            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 7 -c_count INPUT.category_counts.txt.gz
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 8 -c_count INPUT.category_counts.txt
 
-        - Without specified cutoff: The cutoff is automatically calculated and applied to filter categories that surpass its value. The cutoff represents the minimum number of variants (or samples) required for a one-sided binomial test with p\<0.05, assuming the null hypothesis is a Binomial(m, No. cases/No. total samples) distribution with 1 mutation in controls and m-1 mutations in cases.
+        - Without specified cutoff: The cutoff is automatically calculated and applied to filter categories with a value (number of variants or samples) greater than or equal to cutoff. The cutoff represents the minimum number of variants (or samples) required for a one-sided binomial test with p\<0.05, assuming the null hypothesis is a Binomial(m, No. cases/No. total samples) distribution with 1 mutation in controls and m-1 mutations in cases.
 
         .. code-block:: solidity
             
-            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -c_count INPUT.category_counts.txt.gz
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -c_count INPUT.category_counts.txt
 
     2. Generate inputs for DAWN analysis
 
@@ -680,7 +686,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
         .. code-block:: solidity
             
-            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt -c_count INPUT.category_counts.txt.gz
+            cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt -c_count INPUT.category_counts.txt
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.neg_lap.*.pickle``, ``.eig_vals.*.pickle``, ``.eig_vecs.*.txt.gz``) in the file name as below will be found in the output directory. If users set tag, the tag will be inserted in the file name like this: ``OUTPUT.eig_vecs.tag.txt.gz``.
 
@@ -699,7 +705,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -thr 7 -if corr -n 10000 -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -thr 8 -if corr -n 10000 -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
+
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
+
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if -t TFBS corr -n 10000 -c $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
 
   This process uses all of the cores. With 40 cores, it takes about 90 minutes.
 
@@ -712,16 +723,19 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     ├── de_novo_variants.neg_lap.pickle
     ├── de_novo_variants.eig_vals.pickle
     ├── de_novo_variants.eig_vecs.txt.gz
+    ├── de_novo_variants.neg_lap.TFBS.pickle
+    ├── de_novo_variants.eig_vals.TFBS.pickle
+    ├── de_novo_variants.eig_vecs.TFBS.txt.gz
     ...
 
   The number of effective tests will be shown like below.
 
   .. code-block:: solidity
     
-    [RESULT] The number of effective tests is 4088.
+    [RESULT] The number of effective tests is 2596.
 
 
-1.  :ref:`Risk score analysis <riskscore>`
+8.  :ref:`Risk score analysis <riskscore>`
 ############################################
 
   Identify the best predictor of the phenotype by training Lasso regression model with the number of variants within each category across samples.
@@ -736,14 +750,14 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
   - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
-  - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
+  - -c, --category_set: Path to a text file category information (`*.category_info.txt`).
+  - -d, --domain_list: Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested. Available options are `run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA`. By default, all.
   - -t, --tag: Tag used for the name of the output files. By default, None.
-  - -u, --use_n_carrier: Enables the use of the number of samples with variants in each category for burden test instead of the number of variants. With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
+  - -u, --use_n_carrier: Enables the sample-level analysis (the use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
   - -thr, --threshold: The number of variants in controls (or the number of control carriers) used to select rare categories. For example, if set to 3, categories with less than 3 variants in controls will be used for training. By default, 3.
   - -tf, --train_set_fraction: The fraction of the training set. For example, if set to 0.7, 70% of the samples will be used as training set and 30% will be used as test set. By default, 0.7.
   - -n_reg, --num_regression: Number of regression trials to calculate a mean of R squares. By default, 10.
   - -f, --fold: Number of folds for cross-validation.
-  - -l, --logistic:  Make a logistic model with L1 penalty (Lasso model). By default, False.
   - -n, --n_permute: The number of permutations used to calculate the p-value. By default, 1,000.
   - --predict_only: If set, only predict the risk score and skip the permutation process. By default, False.
   - -p, --num_proc: Number of worker processes that will be used for the permutation process. By default, 1.
@@ -774,12 +788,12 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   Example run:
 
-  Create a category set with noncoding categories.
+  Create a category set with noncoding categories in ``EncodeTFBS`` region.
 
   .. code-block:: solidity
     
-    zcat $HOME/cwas_output/de_novo_variants.category_info.txt.gz | head -1 > $HOME/cwas_output/subset_categories.txt
-    zcat $HOME/cwas_output/de_novo_variants.category_info.txt.gz | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
+    cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
 
   Now run the below command.
 
@@ -858,29 +872,29 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
 
 
-9.  :ref:`Burden shift analysis <burdenshift>`
+1.  :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
 
   The parameters of the command are as below:
 
-  - -i, --input_file: Path to the input file which is the result of binomial burden test (\*.burden_test.txt.gz).
+  - -i, --input_file: Path to the input file which is the result of binomial burden test (\*.burden_test.txt).
   - -b, --burden_res: Path to the result of burden shift from permutation test (\*.binom_pvals.txt.gz).
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
-  - -c, --category_info: Path to the category information file from binomial burden test (\*.category_info.txt.gz).
-  - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt.gz).
+  - -c_set, --cat_set: Path to the category information file from binomial burden test (\*.category_info.txt).
+  - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -c_cutoff, --count_cutoff: The number of cutoff for category counts. It must be positive value. By default, 7.
   - --pval: P-value threshold. By default, 0.05.
 
   .. code-block:: solidity
     
-    cwas burden_shift -i INPUT.burden_test.txt.gz \
+    cwas burden_shift -i INPUT.burden_test.txt \
     -b INPUT.binom_pvals.txt.gz \
     -o_dir OUTPUT_DIR \
-    -c INPUT.category_info.txt.gz \
-    -c_count INPUT.category_counts.txt.gz \
+    -c_set INPUT.category_info.txt \
+    -c_count INPUT.category_counts.txt \
     -c_cutoff 7 \
     --pval 0.05
 
@@ -889,13 +903,27 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   .. code-block:: solidity
     
-    cwas burden_shift -i $HOME/cwas_output/de_novo_variants.burden_test.txt.gz \
+    cwas burden_shift -i $HOME/cwas_output/de_novo_variants.burden_test.txt \
     -b $HOME/cwas_output/de_novo_variants.binom_pvals.txt.gz \
     -o_dir $HOME/cwas_output \
-    -c $HOME/cwas_output/de_novo_variants.category_info.txt.gz \
-    -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
+    -c_set $HOME/cwas_output/de_novo_variants.category_info.txt \
+    -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
     -c_cutoff 7 \
     --pval 0.05
+
+  The above example requires approximately 2 minutes using eight cores.
+
+  Below are the output files generated.
+
+  .. code-block:: solidity
+
+    $HOME/cwas_output
+    ...
+    ├── de_novo_variants.burdenshift_p0.05_cutoff7.dist_plot.pdf
+    ├── de_novo_variants.burdenshift_p0.05_cutoff7.result_plot.pdf
+    ├── de_novo_variants.burdenshift_p0.05_cutoff7.txt
+    ...
+
 
 
 10.  :ref:`DAWN analysis <dawn>`
@@ -905,37 +933,34 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The parameters of the command are as below:
 
-  - -i_dir, --input_directory: Path to the directory where the input files are stored. This directory must include three required files.
-
-    - Eigen vector file: This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.txt.gz``.
-    - Category correlation matrix file: This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.pkl``.
-    - Permutation test file: This is the output file from :ref:`burden test <permtest>`. The file name must have pattern ``*permutation_test*.txt.gz``.
-
+  - -e, --eig_vector: Eigen vector file. This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.txt.gz``.
+  - -c, --corr_mat: Category correlation matrix file. This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.pkl``.
+  - -P, --permut_test: Permutation test file. This is the output file from :ref:`burden test <permtest>`. The file name must have pattern ``*permutation_test*.txt.gz``.
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -r, --range: Range (i.e., (start,end)) to find optimal K for k-means clustering. It must contain two integers that are comma-separated. The first integer refers to the start number and must be above 1. The second integer refers to the end.
   - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
   - -t, --tag: Tag used for the name of the output files. By default, None.
-  - -c, --category_set: Path to a text file containing categories for training. If not specified, all of the categories categorization file will be used. This file must contain ``Category`` column with the name of categories to be used.
   - -c_count, --cat_count: Path of the categories counts file from burden test.
-  - -CT, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
-  - -CR, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
+  - -C, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
+  - -R, --corr_threshold: The threshold of correlation values between clusters. Computed by the mean value of correlation values of categories within a cluster.
   - -S, --size_threshold: The threshold of the number of categories per cluster. The least amount of categories a cluster should have.
   - -p, --num_proc: Number of worker processes that will be used for the DAWN analysis. By default, 1.
 
 
   .. code-block:: solidity
   
-      cwas dawn -i_dir INPUT_DIR \
+      cwas dawn -e INPUT_EIG_VEC \
+      -c INPUT_CORR_MATRIX \
+      -P INPUT_PERMUATION_RESULT \
       -o_dir OUTPUT_DIR \
       -r 2,500 \
       -s 123 \
       -t test \
-      -c CATEGORY_SET.txt \
       -c_count CATEGORY_COUNTS.txt \
-      -CT 2 \
-      -CR 0.7 \
-      -S 20 \
+      -C 20 \
+      -R 0.7 \
+      -S 2 \
       -p 8
 
 
@@ -946,19 +971,21 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
   
-      cwas dawn -i_dir $HOME/cwas_output \
+      cwas dawn \
+      -e $HOME/cwas_output/de_novo_variants.eig_vecs.TFBS.txt.gz \
+      -c $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl \
+      -P $HOME/cwas_output/de_novo_variants.permutation_test.txt.gz \
       -o_dir $HOME/cwas_output \
-      -r 2,500 \
+      -r 2,200 \
       -s 123 \
-      -t test \
-      -c $HOME/cwas_output/subset_categories.txt \
-      -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt.gz \
-      -CT 2 \
-      -CR 0.7 \
-      -S 20 \
+      -t TFBS.exact \
+      -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
+      -C 20 \
+      -R 0.7 \
+      -S 2 \
       -p 8
 
-  The above example requires approximately ~ minutes using eight cores.
+  The above example requires approximately 1 minute using eight cores.
 
   Below are the output files generated.
 
@@ -966,7 +993,15 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     $HOME/cwas_output
     ...
-    ├── 
+    ├── TFBS.exact.cluster_annotation.csv
+    ├── TFBS.exact.graph_layout.csv
+    ├── TFBS.exact.iplot.igraph.pdf
+    ├── TFBS.exact.iplot.igraph_with_community.pdf
+    ├── TFBS.exact.iplot.igraph_with_number.pdf
+    ├── TFBS.exact.ipvalue_fdr.txt
+    ├── TFBS.exact.ipvalue_fdr_igraph.csv
+    ├── TFBS.exact.ipvalue_fdr_ipvalue_risk.csv
+    ├── TFBS.exact_choose_K_silhouette_score_plot.pdf
     ...
 
 

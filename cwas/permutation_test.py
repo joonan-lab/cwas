@@ -5,15 +5,14 @@ from typing import Optional
 from multiprocessing import Pool
 import numpy as np
 import pandas as pd
+import re
 
 from cwas.runnable import Runnable
-import dotenv
 
 from cwas.burden_test import BurdenTest
 from cwas.utils.log import print_progress, print_arg
 from cwas.utils.check import check_num_proc
 from cwas.core.burden_test.binomial import binom_two_tail
-import polars as pl
 
 class PermutationTest(BurdenTest):
     def __init__(self, args: Optional[argparse.Namespace] = None):
@@ -29,7 +28,7 @@ class PermutationTest(BurdenTest):
         print_arg(f"Number of permutations", args.num_perm)
         print_arg(f"Number of processes", args.num_proc)
         print_arg(f"Generate binomial p values for burden-shifted data", args.burden_shift)
-        print_arg(f"Generate relative risks (RRs) for burden-shifted data", args.save_perm_rr)
+        #print_arg(f"Generate relative risks (RRs) for burden-shifted data", args.save_perm_rr)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -46,27 +45,30 @@ class PermutationTest(BurdenTest):
 
     @property
     def result_path(self) -> Path:
+        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'permutation_test.txt.gz', self.cat_path.name)
         self._result_path = Path(
             f"{self.output_dir_path}/"
-            f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_test.txt')}"
+            f"{f_name}"
         )
         return self._result_path
     
     @property
     def perm_rrs_path(self) -> Path:
         if self._perm_rrs_path is None:
+            f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'permutation_RRs.txt.gz', self.cat_path.name)
             self._perm_rrs_path = Path(
                 f"{self.output_dir_path}/"
-                f"{self.cat_path.name.replace('categorization_result.txt', 'permutation_RRs.txt')}"
+                f"{f_name}"
             )
         return self._perm_rrs_path
     
     @property
     def binom_pvals_path(self) -> Path:
         if self._binom_pvals_path is None:
+            f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'binom_pvals.txt.gz', self.cat_path.name)
             self._binom_pvals_path = Path(
                 f"{self.output_dir_path}/"
-                f"{self.cat_path.name.replace('categorization_result.txt', 'binom_pvals.txt')}"
+                f"{f_name}"
             )
         return self._binom_pvals_path
     
@@ -74,9 +76,9 @@ class PermutationTest(BurdenTest):
     def burden_shift(self) -> bool:
         return self.args.burden_shift
 
-    @property
-    def save_perm_rr(self) -> bool:
-        return self.args.save_perm_rr
+    #@property
+    #def save_perm_rr(self) -> bool:
+    #    return self.args.save_perm_rr
 
     @property
     def use_n_carrier(self) -> bool:
@@ -117,10 +119,10 @@ class PermutationTest(BurdenTest):
             rr = self._result.loc[low_P_idx]["Relative_Risk"].values
         )
         ## Make a dataframe of permutation RRs
-        if self.save_perm_rr:
-            self._perm_rrs = pd.DataFrame(perm_rrs, columns=self.categorization_result.columns)
-            self._perm_rrs.index += 1
-            self._perm_rrs.index.name = 'Trial'
+        #if self.save_perm_rr:
+        #    self._perm_rrs = pd.DataFrame(perm_rrs, columns=self.categorization_result.columns)
+        #    self._perm_rrs.index += 1
+        #    self._perm_rrs.index.name = 'Trial'
         
         ## Make a dataframe of binomial p values
         if self.burden_shift:
@@ -217,9 +219,9 @@ class PermutationTest(BurdenTest):
         
     def save_result(self):
         super().save_result()
-        if self.save_perm_rr:
-            print_progress(f"Save the permutation RRs to the file {self.perm_rrs_path}")
-            self._perm_rrs.to_csv(self.perm_rrs_path, sep='\t', compression='gzip')
+        #if self.save_perm_rr:
+        #    print_progress(f"Save the permutation RRs to the file {self.perm_rrs_path}")
+        #    self._perm_rrs.to_csv(self.perm_rrs_path, sep='\t', compression='gzip')
         if self.burden_shift:
             print_progress(f"Save the binomial p values to the file {self.binom_pvals_path}")
             self._binom_pvals.to_csv(self.binom_pvals_path, sep='\t', compression='gzip')

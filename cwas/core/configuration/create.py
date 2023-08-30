@@ -44,9 +44,9 @@ def create_category_domain_list(
         gene_list_domains = columns[2:]  # Remove 'gene_id' and 'gene_name'
 
     domains = get_default_domains()
-    domains["region"] += region_domains
-    domains["conservation"] += cons_domains
-    domains["gene_list"] += gene_list_domains
+    domains["functional_annotation"] += region_domains
+    domains["functional_score"] += cons_domains
+    domains["gene_set"] += gene_list_domains
 
     _save_as_yaml(domain_list_path, domains)
 

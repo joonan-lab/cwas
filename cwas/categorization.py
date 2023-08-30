@@ -7,8 +7,8 @@ from math import ceil
 from pathlib import Path
 import parmap
 from cwas.core.common import chunk_list
-import polars as pl
 from tqdm import tqdm
+import re
 
 import pandas as pd
 import numpy as np
@@ -25,8 +25,6 @@ from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
-
-import dotenv
 
 lock = mp.Lock()
 
@@ -84,25 +82,26 @@ class Categorization(Runnable):
 
     @property
     def result_path(self) -> Path:
-        suffix = '' if self.input_path.suffix == '.gz' else '.gz'
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'categorization_result.txt.gz', self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'categorization_result.txt')}"
-            f"{suffix}"
+            f"{self.output_dir_path}/" + 
+            f"{f_name}"
         )
 
     @property
     def matrix_path(self) -> Path:
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'correlation_matrix.pkl', self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'correlation_matrix.pkl')}"
+            f"{self.output_dir_path}/" +
+            f"{f_name}"
         )
 
     @property
     def intersection_matrix_path(self) -> Path:
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'intersection_matrix.pkl', self.input_path.name)
         return Path(
-            f"{self.output_dir_path}/"
-            f"{self.input_path.name.replace('annotated.vcf', 'intersection_matrix.pkl')}"
+            f"{self.output_dir_path}/" +
+            f"{f_name}"
         )
 
     @property
@@ -183,10 +182,10 @@ class Categorization(Runnable):
             "_".join(combination)
             for combination in product(
                 annotation_term_lists["variant_type"],
-                annotation_term_lists["gene_list"],
-                annotation_term_lists["conservation"],
+                annotation_term_lists["gene_set"],
+                annotation_term_lists["functional_score"],
                 annotation_term_lists["gencode"],
-                annotation_term_lists["region"],
+                annotation_term_lists["functional_annotation"],
             )
         }
 
@@ -258,12 +257,22 @@ class Categorization(Runnable):
 
         elif self.generate_matrix == "variant":
             log.print_progress("Get an intersection matrix between categories using the number of variants")
-            intersection_matrix = (
-                self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
-                if self.num_proc == 1
-                else self.get_intersection_matrix_with_mp()
-            )
-                    
+            pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
+            #intersection_matrix = (
+            #    self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
+            #    if self.num_proc == 1
+            #    else self.get_intersection_matrix_with_mp()
+            #)
+            if self.num_proc == 1:
+                intersection_matrix = self.process_columns_single(column_range = range(pre_intersection_matrix.shape[1]), matrix=pre_intersection_matrix)
+            else:
+                # Split the column range into evenly sized chunks based on the number of workers
+                log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
+                chunks = chunk_list(range(pre_intersection_matrix.shape[1]), (self.num_proc//3 + 1))
+                result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=(self.num_proc//3 + 1))
+                # Concatenate the count values
+                intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
+        
         diag_sqrt = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")
         self._intersection_matrix = intersection_matrix
@@ -317,6 +326,7 @@ class Categorization(Runnable):
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
+        log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 
@@ -327,7 +337,7 @@ class Categorization(Runnable):
                 _get_intersection_matrix,
                 split_vcfs
             ))
-
+        
     @staticmethod
     def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
         return pd.DataFrame(

@@ -8,10 +8,10 @@ There are currently 5 groups of annotation terms.
 
 --- The groups of the annotation terms for CWAS ---
     1. Variant types (variant_type)
-    2. Conservation (conservation)
-    3. Gene lists (gene_list)
+    2. Functional score (functional_score)
+    3. Gene lists (gene_set)
     4. GENCODE annotation categories (gencode)
-    5. Functional annotation categories (region)
+    5. Functional annotation categories (functional_annotation)
 
 """
 from collections import defaultdict
@@ -49,6 +49,34 @@ class Categorizer:
 
         return result
 
+    def get_intersection_variant_level(self, annotated_vcf, category_combinations):
+      # Generate unique category combinations
+      #category_combinations = set()
+      #for annotation_term_lists in annotate_each_variant(annotated_vcf):
+      #    for combination in product(*annotation_term_lists):
+      #        category_combinations.add("_".join(combination))
+      
+      # Create a matrix with zeros
+      num_variants = annotated_vcf.shape[0]
+      num_categories = len(category_combinations)
+      matrix = np.zeros((num_variants, num_categories), dtype=int)
+      
+      # Create a dictionary to map categories to matrix column indices
+      category_to_index = {category: index for index, category in enumerate(category_combinations)}
+
+      # Populate the matrix
+      for variant_index, annotation_term_lists in enumerate(self.annotate_each_variant(annotated_vcf)):
+          for combination in product(*annotation_term_lists):
+              category = "_".join(combination)
+              if category in category_to_index:
+                  category_index = category_to_index[category]
+                  matrix[variant_index, category_index] = 1
+
+      df = pd.DataFrame(matrix, columns=category_combinations)
+
+      return df
+
+
     def annotate_each_variant(self, annotated_vcf):
         """Newly annotated each variant using CWAS annotation terms.
         In order to annotate each variant with multiple annotation terms
@@ -62,21 +90,21 @@ class Categorizer:
         the variant is annotated as 'A', 'B' and 'D'.
         """
         variant_type_annotation_ints = self.annotate_variant_type(annotated_vcf)
-        conservation_annotation_ints = self.annotate_conservation(annotated_vcf)
-        gene_list_annotation_ints = self.annotate_gene_list(annotated_vcf)
+        functional_score_annotation_ints = self.annotate_functional_score(annotated_vcf)
+        gene_set_annotation_ints = self.annotate_gene_set(annotated_vcf)
         gencode_annotation_ints = self.annotate_gencode(annotated_vcf)
         region_annotation_ints = self.annotate_region(annotated_vcf)
 
         for (
             variant_type_annotation_int,
-            conservation_annotation_int,
-            gene_list_annotation_int,
+            functional_score_annotation_int,
+            gene_set_annotation_int,
             gencode_annotation_int,
             region_annotation_int,
         ) in zip(
             variant_type_annotation_ints,
-            conservation_annotation_ints,
-            gene_list_annotation_ints,
+            functional_score_annotation_ints,
+            gene_set_annotation_ints,
             gencode_annotation_ints,
             region_annotation_ints,
         ):
@@ -85,13 +113,13 @@ class Categorizer:
                     variant_type_annotation_int, "variant_type",
                 ),
                 self.parse_annotation_int(
-                    gene_list_annotation_int, "gene_list"
+                    gene_set_annotation_int, "gene_set"
                 ),
                 self.parse_annotation_int(
-                    conservation_annotation_int, "conservation",
+                    functional_score_annotation_int, "functional_score",
                 ),
                 self.parse_annotation_int(gencode_annotation_int, "gencode"),
-                self.parse_annotation_int(region_annotation_int, "region"),
+                self.parse_annotation_int(region_annotation_int, "functional_annotation"),
             )
 
     def annotate_variant_type(self, annotated_vcf: pd.DataFrame) -> list:
@@ -114,31 +142,31 @@ class Categorizer:
 
         return annotation_ints
 
-    def annotate_conservation(self, annotated_vcf: pd.DataFrame) -> list:
-        conservation_annotation_idx = get_idx_dict(
-            self._category_domain["conservation"]
+    def annotate_functional_score(self, annotated_vcf: pd.DataFrame) -> list:
+        functional_score_annotation_idx = get_idx_dict(
+            self._category_domain["functional_score"]
         )
         annotation_ints = np.zeros(len(annotated_vcf.index), dtype=int)
 
-        for score in conservation_annotation_idx:
+        for score in functional_score_annotation_idx:
             if score == "All":
                 continue
 
             score_vals = annotated_vcf[score].values.astype(np.int32)
             annotation_int_conv_func = (
-                lambda x: 2 ** conservation_annotation_idx[score] * x
+                lambda x: 2 ** functional_score_annotation_idx[score] * x
             )
             annotation_ints += np.vectorize(annotation_int_conv_func)(
                 score_vals
             )
 
-        annotation_ints += 2 ** conservation_annotation_idx["All"]
+        annotation_ints += 2 ** functional_score_annotation_idx["All"]
 
         return annotation_ints
 
-    def annotate_gene_list(self, annotated_vcf: pd.DataFrame) -> list:
-        gene_list_annotation_idx = get_idx_dict(
-            self._category_domain["gene_list"]
+    def annotate_gene_set(self, annotated_vcf: pd.DataFrame) -> list:
+        gene_set_annotation_idx = get_idx_dict(
+            self._category_domain["gene_set"]
         )
         gene_symbols = annotated_vcf["SYMBOL"].values
         gene_nearests = annotated_vcf["NEAREST"].values
@@ -159,19 +187,19 @@ class Categorizer:
             annotation_int = annotation_int_dict.get(gene, 0)
 
             if annotation_int == 0:
-                gene_list_set = self._gene_matrix.get(gene, set())
+                gene_set_ = self._gene_matrix.get(gene, set())
 
-                if gene_list_set:
-                    for gene_cat in gene_list_annotation_idx:
-                        if gene_cat in gene_list_set:
+                if gene_set_:
+                    for gene_cat in gene_set_annotation_idx:
+                        if gene_cat in gene_set_:
                             annotation_int += (
-                                2 ** gene_list_annotation_idx[gene_cat]
+                                2 ** gene_set_annotation_idx[gene_cat]
                             )
 
             annotation_int_list.append(annotation_int)
 
         annotation_ints = np.asarray(annotation_int_list)
-        annotation_ints += 2 ** gene_list_annotation_idx["Any"]
+        annotation_ints += 2 ** gene_set_annotation_idx["Any"]
 
         return annotation_ints
 
@@ -195,11 +223,11 @@ class Categorizer:
                 or "intergenic_variant" in gencode
                 else symbol
             )
-            gene_list_set = self._gene_matrix.get(gene, set())
+            gene_set_ = self._gene_matrix.get(gene, set())
             annotation_int = 0
             is_in_coding = False
 
-            if "ProteinCoding" in gene_list_set:
+            if "ProteinCoding" in gene_set_:
                 is_in_coding = True
                 annotation_int += 2 ** gencode_annotation_idx["CodingRegion"]
 
@@ -212,14 +240,14 @@ class Categorizer:
                 and (lof == "HC")
                 and ((lof_flag=='SINGLE_EXON') or (lof_flag==""))
                 ):
-                    annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
+                    annotation_int += 2 ** gencode_annotation_idx["PTVRegion"]
                 elif ((
                     "frameshift_variant" in gencode
                 )
                 and (lof == "HC")
                 and ((lof_flag=='SINGLE_EXON') or (lof_flag==""))
                 ):
-                    annotation_int += 2 ** gencode_annotation_idx["LoFRegion"]
+                    annotation_int += 2 ** gencode_annotation_idx["PTVRegion"]
                     annotation_int += (
                         2 ** gencode_annotation_idx["FrameshiftRegion"]
                     )
@@ -293,8 +321,8 @@ class Categorizer:
                     annotation_int += (
                         2 ** gencode_annotation_idx["IntergenicRegion"]
                     )
-                elif "ProteinCoding" not in gene_list_set:
-                    if "lincRNA" in gene_list_set:
+                elif "ProteinCoding" not in gene_set_:
+                    if "lincRNA" in gene_set_:
                         annotation_int += (
                             2 ** gencode_annotation_idx["lincRnaRegion"]
                         )
@@ -311,8 +339,8 @@ class Categorizer:
         return annotation_ints
 
     def annotate_region(self, annotated_vcf: pd.DataFrame) -> list:
-        region_annotation_idx = get_idx_dict(self._category_domain["region"])
-        annotation_ints = np.zeros(len(annotated_vcf.index), dtype=int)
+        region_annotation_idx = get_idx_dict(self._category_domain["functional_annotation"])
+        annotation_floats = np.zeros(len(annotated_vcf.index), dtype=float)
 
         for region in region_annotation_idx:
             if region == "Any":
@@ -320,12 +348,13 @@ class Categorizer:
 
             region_vals = annotated_vcf[region].values.astype(np.int32)
             annotation_int_conv_func = (
-                lambda x: 2 ** region_annotation_idx[region] * x
+                lambda x: 2 ** region_annotation_idx[region] * int(x)
             )
-            annotation_ints += np.vectorize(annotation_int_conv_func)(
+            annotation_floats += np.vectorize(annotation_int_conv_func, otypes=[float])(
                 region_vals
             )
 
+        annotation_ints = np.array([int(x) for x in annotation_floats])
         annotation_ints += 2 ** region_annotation_idx["Any"]
 
         return annotation_ints

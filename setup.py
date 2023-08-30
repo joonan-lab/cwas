@@ -8,12 +8,15 @@ import setuptools
 
 setuptools.setup(
     name="cwas",
-    version="1.0.0",
+    version="0.0.1",
     license="MIT",
     author="Minwoo Jeong",
     author_email="jeongmwj@gmail.com",
     description=__doc__,
-    url="https://github.com/mwjjeong/cwas",
+    url="https://github.com/joonan-lab/cwas",
+    project_urls={
+        "Bug Tracker": "https://github.com/joonan-lab/cwas/issues",
+    },
     packages=setuptools.find_packages(),
     package_data={'': ['*.r', '*.R']},
     include_package_data=True,
@@ -27,5 +30,8 @@ setuptools.setup(
         'console_scripts': [
             'cwas = cwas.__main__:main'
         ]
-    }
+    },
+    install_requires=["pandas", "scipy", "tqdm", "igraph", "matplotlib", "rpy2", "seaborn", "parmap",
+                      "polars", "scikit-learn", "pysam", "pytabix", "pyyaml", "python-dotenv", "pytest", "pyarrow",
+                      "adjustText", "numpy"]
 )

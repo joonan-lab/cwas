@@ -8,6 +8,7 @@ CWAS was used in the following papers.
 
 - [An analytical framework for whole genome sequence association studies and its implications for autism spectrum disorder](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5961723/) (Werling _et al._, 2018)
 - [Genome-wide de novo risk score implicates promoter variation in autism spectrum disorder](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6432922/) (An _et al._, 2018)
+- CWAS-Plus: Estimating genome-wide evaluation of noncoding variation from whole genome sequencing data. (Kim et al., in preperation)
 
 Here is _the original CWAS repository: [sanderslab/cwas](https://github.com/sanderslab/cwas)_
 
@@ -75,16 +76,26 @@ Due to the sizes of BigWig files for conservation scores, you must install them 
 
 ### Installation
 
-CWAS uses _[conda virtual environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)_ to build environment for CWAS. Run the following statements in your shell.
+We recomment using _[conda virtual environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)_ to build environment for CWAS. Installing CWAS-Plus within a conda environment will prevent its installation in the global environment. When creating a conda environment, also install Python to enable local installations using pip. Run the following statements in your shell.
+
+##### pip
 
 ```bash
-# In your directory where CWAS is installed
+conda env create -n cwas python=3.9
+conda activate cwas
+pip install cwas_plus
+```
+
+##### github
+
+```bash
+conda env create -n cwas python=3.9
+conda activate cwas
 git clone https://github.com/joonan-lab/cwas.git
 cd cwas
-conda env create -f environment.yml -n cwas
-conda activate cwas
-python setup.py install
+pip install .
 ```
+
 
 In addition, you must install _[Variant Effect Predictor (VEP)](https://www.ensembl.org/vep)_.
 
@@ -98,7 +109,9 @@ Run this command.
 cwas start
 ```
 
-This command creates _CWAS workspace_ in your home directory. The path is `$HOME/.cwas`. `$HOME/.cwas/configuration.txt` has also generated.
+As default, this command creates _CWAS workspace_ in your home directory. The path is `$HOME/.cwas`. `$HOME/.cwas/configuration.txt` has also generated.
+
+Alternatively, _CWAS workspace_ can be specified with `-w` option. The `configuration.txt` will also be generated in the specified _CWAS workspace_.
 
 ```bash
 .cwas
@@ -113,11 +126,20 @@ Write the following information in the `$HOME/.cwas/configuration.txt`.
 ANNOTATION_DATA_DIR=/path/to/your/dir
 GENE_MATRIX=/path/to/your/file
 ANNOTATION_KEY_CONFIG=/path/to/your/file
-BIGWIG_CUTOFF_CONFIG=/path/to/your/file
 VEP=/path/to/your/vep
+VEP_CACHE_DIR=/path/to/your/vep/cache/dir
+VEP_CONSERVATION_FILE=/path/to/your/vep/resource
+VEP_LOFTEE=/path/to/your/vep/resource
+VEP_HUMAN_ANCESTOR_FA=/path/to/your/vep/resource
+VEP_GERP_BIGWIG=/path/to/your/vep/resource
+VEP_MIS_DB=/path/to/your/missense/database
+VEP_MIS_INFO_KEY=
+VEP_MIS_THRES=
 ```
 
-The `ANNOTATION_DATA` is a directory that contains all the BED files and BigWig files from **[joonan-lab/cwas-dataset](https://github.com/joonan-lab/cwas-dataset)**.
+The `ANNOTATION_DATA` is a directory that contains all the BED files from **[joonan-lab/cwas-dataset](https://github.com/joonan-lab/cwas-dataset)**.
+The `VEP_MIS_DB` is a database that is used to define damaging missense variants. The `VEP_MIS_INFO_KEY` is an user-defined name of the database used to annotate variants. The `VEP_MIS_THRES` is a threshold for missense variants (missense variants with value>=threshold are defined as damaging missense variants).
+
 
 After writing the above file, run this command.
 
@@ -125,14 +147,12 @@ After writing the above file, run this command.
 cwas configuration
 ```
 
-Following files will be generated in your home directory.
+Following files will be generated in your home directory as default. If you specify _CWAS workspace_, the files will be located in the same directory as the `configuration.txt`.
 
 ```bash
 .cwas
 ├── annotation-data
-├── annotation_cutoff_bw.yaml
-├── annotation_key_bed.yaml
-├── annotation_key_bw.yaml
+├── annotation_keys.yaml
 ├── category_domain.yaml
 ├── configuration.txt
 ├── gene_matrix.txt
@@ -150,7 +170,7 @@ cwas preparation -p 4
 
 `4` is the number of worker processes. You can adjust this.
 
-After running this, Merged BED file and its index will be generated in your CWAS workspace.
+After running this, merged BED file and its index will be generated in your _CWAS workspace_.
 
 ```bash
 .cwas
@@ -165,15 +185,17 @@ After running this, Merged BED file and its index will be generated in your CWAS
 This step annotate your VCF file using _VEP_. Run this command.
 
 ```bash
-cwas annotation -v /path/to/your/vcf
+cwas annotation -v /path/to/your/vcf -p 4
 ```
+
+`4` is the number of worker processes. You can adjust this.
 
 Here is the result file.
 
 ```bash
 .cwas
 ...
-├── {Your VCF filename}.annotated.vcf
+├── {Your VCF filename}.annotated.vcf.gz
 ...
 ```
 
@@ -182,7 +204,7 @@ Here is the result file.
 This step categorize your variants using the annotation datasets. Run this command.
 
 ```bash
-cwas categorization -p 4
+cwas categorization -i /path/to/your/annotated/vcf -p 4
 ```
 
 `4` is the number of worker processes. You can adjust this.
@@ -192,19 +214,23 @@ After running this, you will get...
 ```bash
 .cwas
 ...
-├── {Your VCF filename}.categorization_result.txt
+├── {Your VCF filename}.categorization_result.txt.gz
 ...
 ```
 
 #### 6. Burden Test (Binomial Test)
 
-This step runs category-based burden tests using the categorization result. A type of this burden test is binomial test. Run this command.
+This step is for calculation of relative risks and p-values for each category. As a default, these tests are based on variant-level analysis. The `--use_n_carrier` option can be used for sample-level analysis.
+
+##### Binomial test
+
+This step runs category-based burden test using the categorization result. The type of the test is binomial test. Run this command.
 
 ```bash
-cwas binomial_test -s /path/to/your/samples [-a /path/to/your/adj_factors]
+cwas binomial_test -i /path/to/your/categorization/result -s /path/to/your/samples [-a /path/to/your/adj_factors]
 ```
 
-`[]` means that this is optional. If `-a` option does not specified, this step will bypass the adjustment step.
+`[]` means that this is optional. If `-a` option is not specified, this step will bypass the adjustment step.
 
 After running this, you will get...
 
@@ -212,5 +238,28 @@ After running this, you will get...
 .cwas
 ...
 ├── {Your VCF filename}.burden_test.txt
+├── {Your VCF filename}.burden_test.volcano_plot.pdf
+├── {Your VCF filename}.category_counts.txt
+├── {Your VCF filename}.category_info.txt
+...
+```
+
+##### Permutation test
+
+This step runs category-based permutations using the categorization result. Run this command.
+
+```bash
+cwas permutation_test -i /path/to/your/categorization/result -s /path/to/your/samples [-a /path/to/your/adj_factors] [-b]
+```
+
+If `-b` option is specified, this step will generate binomial p-values for each permutation. This p-values will be used for burden shift and DAWN analysis.
+
+After running this, you will get...
+
+```bash
+.cwas
+...
+├── {Your VCF filename}.permutation_test.txt
+├── {Your VCF filename}.binom_pvals.txt.gz
 ...
 ```
