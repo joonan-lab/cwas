@@ -9,7 +9,7 @@ dependencies:
   - pandas
   - scipy
   - tqdm
-  - glmnet
+#  - glmnet
   - igraph
   - matplotlib
   - rpy2
@@ -22,11 +22,13 @@ dependencies:
   - pyyaml
   - python-dotenv
   - pytest
-  - perl
-  - perl-dbi
-  - perl-dbd-mysql
-  - perl-set-intervaltree
-  - perl-bio-bigfile
-  - perl-dbd-sqlite
-  - perl-bio-db-hts
-  - perl-bioperl
+  - pyarrow
+  - adjustText
+#  - perl
+#  - perl-dbi
+#  - perl-dbd-mysql
+#  - perl-set-intervaltree
+#  - perl-bio-bigfile
+#  - perl-dbd-sqlite
+#  - perl-bio-db-hts
+#  - perl-bioperl
