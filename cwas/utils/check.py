@@ -6,6 +6,7 @@ being shut down unexpectedly.
 import multiprocessing as mp
 from pathlib import Path
 from typing import Union
+import gzip
 
 
 def check_is_file(file_path: Union[Path, str]):
