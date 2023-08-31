@@ -363,6 +363,8 @@ class RiskScore(Runnable):
             if domain == 'all':
                 filtered_combs = pd.Series(self.categorization_result.columns)
             else:
+                print(domain)
+                print('is_'+domain)
                 filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
             
             seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
