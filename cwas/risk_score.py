@@ -143,14 +143,13 @@ class RiskScore(Runnable):
     @property
     def domain_list(self) -> str:
         if self.args.domain_list=='run_all':
-            joined_string = ','.join(col[3:] for col in self.category_set.columns if col.startswith('is_'))
+            joined_string = ','.join(['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')])
             return joined_string
         else:
             first_list = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
             second_list = self.args.domain_list.split(',')
             matching_values = [value for value in first_list if value.lower() in map(str.lower, second_list)]
             return ','.join(matching_values)
-        
 
     @property
     def tag(self) -> str:
