@@ -146,7 +146,10 @@ class RiskScore(Runnable):
             joined_string = ','.join(col[3:] for col in self.category_set.columns if col.startswith('is_'))
             return joined_string
         else:
-            return self.args.domain_list
+            first_list = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+            second_list = self.args.domain_list.split(',')
+            matching_values = [value for value in first_list if value.lower() in map(str.lower, second_list)]
+            return matching_values
         
 
     @property
