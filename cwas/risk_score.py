@@ -47,6 +47,9 @@ class RiskScore(Runnable):
         log.print_arg(
             "Category set file", 
             args.category_set_path)
+        log.print_arg(
+            "Domain list", 
+            args.domain_list)        
         if args.tag:
             log.print_arg("Output tag (prefix of output files)", args.tag)
         log.print_arg("If the number of carriers is used for calculating R2 or not", args.use_n_carrier)
