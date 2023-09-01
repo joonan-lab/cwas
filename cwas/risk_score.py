@@ -4,7 +4,6 @@ import numpy as np
 import cwas.utils.log as log
 from pathlib import Path
 from tqdm import tqdm
-#from glmnet import ElasticNet, LogitNet
 from sklearn.linear_model import ElasticNetCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
@@ -12,11 +11,12 @@ from cwas.core.common import cmp_two_arr
 from cwas.utils.check import check_is_file, check_num_proc
 from cwas.runnable import Runnable
 from typing import Optional, Tuple
-from contextlib import contextmanager
+from functools import partial
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import polars as pl
 import re
+import parmap
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -47,6 +47,9 @@ class RiskScore(Runnable):
         log.print_arg(
             "Category set file", 
             args.category_set_path)
+        log.print_arg(
+            "Domain list", 
+            args.domain_list)        
         if args.tag:
             log.print_arg("Output tag (prefix of output files)", args.tag)
         log.print_arg("If the number of carriers is used for calculating R2 or not", args.use_n_carrier)
@@ -143,10 +146,13 @@ class RiskScore(Runnable):
     @property
     def domain_list(self) -> str:
         if self.args.domain_list=='run_all':
-            return 'all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA'
+            joined_string = ','.join(['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')])
+            return joined_string
         else:
-            return self.args.domain_list
-        
+            first_list = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+            second_list = self.args.domain_list.split(',')
+            matching_values = [value for value in first_list if value.lower() in map(str.lower, second_list)]
+            return ','.join(matching_values)
 
     @property
     def tag(self) -> str:
@@ -363,11 +369,13 @@ class RiskScore(Runnable):
                 filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
             
             seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
-            for seed in seeds:
-                self.risk_score_per_category(domain = domain, result_dict=self._result_dict, seed=seed, filtered_combs=filtered_combs)
             
-    def risk_score_per_category(self, domain: str, result_dict: defaultdict, seed: int = 42, swap_label: bool = False, filtered_combs = None):
+            for seed in seeds:
+                self._result_dict[domain].update(self.risk_score_per_category(seed=seed, swap_label = False, filtered_combs=filtered_combs))
+            
+    def risk_score_per_category(self, seed: int = 42, swap_label: bool = False, filtered_combs = None):
         """Lasso model selection """
+        output_dict = defaultdict(dict)
         if swap_label:
             np.random.seed(seed)
             
@@ -403,7 +411,6 @@ class RiskScore(Runnable):
                  test_covariates[filtered_combs][~test_response]],
             ).sum()
             rare_idx = (ctrl_var_counts < self.ctrl_thres).values
-            log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
             cov = covariates[filtered_combs].iloc[:, rare_idx]
             test_cov = test_covariates[filtered_combs].iloc[:, rare_idx]
         else:
@@ -419,7 +426,8 @@ class RiskScore(Runnable):
             test_cov = self.test_covariates[filtered_combs].iloc[:, rare_idx]
 
         if cov.shape[1] == 0:
-            log.print_warn(f"There are no rare categories (Seed: {seed}).")
+            if not swap_label:
+                log.print_warn(f"There are no rare categories (Seed: {seed}).")
             return
         
         scaler = StandardScaler().fit(cov)
@@ -428,34 +436,32 @@ class RiskScore(Runnable):
 
         y = np.where(response, 1.0, 0.0)
         test_y = np.where(test_response, 1.0, 0.0)
-        log.print_progress(f"Running LassoCV (Seed: {seed})")
+        if not swap_label:
+            log.print_progress(f"Running LassoCV (Seed: {seed})")
 
         if swap_label:
             n_jobs = 1
         else:
             n_jobs = self.num_proc
         
-        #lasso_model = ElasticNet(alpha=1, n_lambda=100, standardize=True, n_splits=self.fold, n_jobs=self.num_proc,
-        #                         scoring='mean_squared_error', random_state=seed)
-        
         lasso_model = ElasticNetCV(l1_ratio=1, cv = self.custom_cv_folds(seed=seed), n_jobs = n_jobs,
                                    random_state = seed, verbose = False, n_alphas=100, selection='random')
 
         lasso_model.fit(cov2, y)
-        #opt_model_idx = np.argmax(getattr(lasso_model, 'cv_mean_score_'))
-        #coeffs = getattr(lasso_model, 'coef_path_')
         coeffs = getattr(lasso_model, 'coef_')
         opt_coeff = np.zeros(len(rare_idx))
         opt_coeff[rare_idx] = coeffs
         
-        #opt_lambda = getattr(lasso_model, 'lambda_max_')
         opt_lambda = getattr(lasso_model, 'alpha_')
         n_select = np.sum(np.abs(opt_coeff) != 0.0)
         y_pred = lasso_model.predict(test_cov2)
         rsq = r2_score(test_y, y_pred)
-        result_dict[domain][seed] = [opt_lambda, rsq, n_select, opt_coeff]
+        output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
         
-        log.print_progress("Done")
+        if not swap_label:
+            log.print_progress("Done")
+        
+        return output_dict
             
     def custom_cv_folds(self, seed: int = 42) -> Tuple[np.ndarray, np.ndarray]:
         np.random.seed(seed)
@@ -471,23 +477,6 @@ class RiskScore(Runnable):
     def permute_pvalues(self):
         """Run LassoCV to get permutated pvalues"""
         log.print_progress(self.permute_pvalues.__doc__)
-        
-        @contextmanager
-        def nullify_output(suppress_stdout: bool=True, suppress_stderr: bool=True):
-            stdout = sys.stdout
-            stderr = sys.stderr
-            devnull = open(os.devnull, "w")
-            try:
-                if suppress_stdout:
-                    sys.stdout = devnull
-                if suppress_stderr:
-                    sys.stderr = devnull
-                yield
-            finally:
-                if suppress_stdout:
-                    sys.stdout = stdout
-                if suppress_stderr:
-                    sys.stderr = stderr
                     
         seeds = np.arange(self.seed, self.seed+self.n_permute)
 
@@ -497,11 +486,13 @@ class RiskScore(Runnable):
                 filtered_combs = pd.Series(self.categorization_result.columns)
             else:
                 filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
-
-            for seed in tqdm(seeds):
-                with nullify_output():
-                    self.risk_score_per_category(domain = domain, result_dict=self._permutation_dict, seed=seed, swap_label=True, filtered_combs=filtered_combs)
                 
+            _risk_score_per_category = partial(self.risk_score_per_category,
+                                               swap_label = True,
+                                               filtered_combs = filtered_combs)
+            
+            map_result = parmap.map(_risk_score_per_category, seeds, pm_pbar=True, pm_processes=self.num_proc)
+            self._permutation_dict[domain] = {key: value for x in map_result for key, value in x.items()}
 
     def save_results(self):
         """Save the results to a file """
