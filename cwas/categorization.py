@@ -356,13 +356,13 @@ class Categorization(Runnable):
         #        split_vcfs
         #    ))
         
-    #@staticmethod
-    #def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
-    #    return pd.DataFrame(
-    #        categorizer.get_intersection(annotated_vcf), 
-    #        index=categories, 
-    #        columns=categories
-    #    ).fillna(0).astype(int)
+    @staticmethod
+    def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
+        return pd.DataFrame(
+            categorizer.get_intersection(annotated_vcf), 
+            index=categories, 
+            columns=categories
+        ).fillna(0).astype(int)
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
