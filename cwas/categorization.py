@@ -328,8 +328,14 @@ class Categorization(Runnable):
         ## use only one third of the cores to avoid memory error
         log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
+
+        pool = mp.Pool(processes=self.num_proc//3 + 1)
         
-        split_results = parmap.map(self.categorizer.get_intersection, split_vcfs, pm_pbar=True, pm_processes=self.num_proc//3 + 1)
+        split_results = pool.map(self.categorizer.get_intersection, split_vcfs)
+
+        # Close and join the pool to ensure all processes are finished
+        pool.close()
+        pool.join()
 
         # Initialize a variable to store the final summed DataFrame
         summed_df = None
