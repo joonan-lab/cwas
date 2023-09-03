@@ -257,21 +257,21 @@ class Categorization(Runnable):
 
         elif self.generate_matrix == "variant":
             log.print_progress("Get an intersection matrix between categories using the number of variants")
-            pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
-            #intersection_matrix = (
-            #    self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
-            #    if self.num_proc == 1
-            #    else self.get_intersection_matrix_with_mp()
-            #)
-            if self.num_proc == 1:
-                intersection_matrix = self.process_columns_single(column_range = range(pre_intersection_matrix.shape[1]), matrix=pre_intersection_matrix)
-            else:
-                # Split the column range into evenly sized chunks based on the number of workers
-                log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
-                chunks = chunk_list(range(pre_intersection_matrix.shape[1]), (self.num_proc//3 + 1))
-                result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=(self.num_proc//3 + 1))
-                # Concatenate the count values
-                intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
+            #pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
+            intersection_matrix = (
+                self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
+                if self.num_proc == 1
+                else self.get_intersection_matrix_with_mp()
+            )
+            #if self.num_proc == 1:
+            #    intersection_matrix = self.process_columns_single(column_range = range(pre_intersection_matrix.shape[1]), matrix=pre_intersection_matrix)
+            #else:
+            #    # Split the column range into evenly sized chunks based on the number of workers
+            #    log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
+            #    chunks = chunk_list(range(pre_intersection_matrix.shape[1]), (self.num_proc//3 + 1))
+            #    result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=(self.num_proc//3 + 1))
+            #    # Concatenate the count values
+            #    intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
         
         diag_sqrt = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")
@@ -328,23 +328,41 @@ class Categorization(Runnable):
         ## use only one third of the cores to avoid memory error
         log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
-        _get_intersection_matrix = partial(self.get_intersection_matrix,
-                                           categorizer=self.categorizer, 
-                                           categories=self._result.columns)
         
-        with mp.Pool(self.num_proc//3 + 1) as pool:
-            return sum(pool.map(
-                _get_intersection_matrix,
-                split_vcfs
-            ))
+        split_results = parmap.map(self.categorizer.get_intersection, split_vcfs, pm_processes=(self.num_proc//3 + 1))
+
+        # Initialize a variable to store the final summed DataFrame
+        summed_df = None
+
+        log.print_progress(f"Gather multiprocessed outputs")
+
+        # Loop through the list of dictionaries
+        for result_dict in split_results:
+            # Convert the dictionary into a DataFrame
+            df = pd.DataFrame(result_dict,
+                              index=self._result.columns,
+                              columns=self._result.columns).fillna(0).astype(int)
+            
+            # Sum the DataFrame with the existing summed DataFrame
+            if summed_df is None:
+                summed_df = df
+            else:
+                summed_df = summed_df.add(df, fill_value=0)
         
-    @staticmethod
-    def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
-        return pd.DataFrame(
-            categorizer.get_intersection(annotated_vcf), 
-            index=categories, 
-            columns=categories
-        ).fillna(0).astype(int)
+        return summed_df
+        #with mp.Pool(self.num_proc//3 + 1) as pool:
+        #    return sum(pool.map(
+        #        _get_intersection_matrix,
+        #        split_vcfs
+        #    ))
+        
+    #@staticmethod
+    #def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
+    #    return pd.DataFrame(
+    #        categorizer.get_intersection(annotated_vcf), 
+    #        index=categories, 
+    #        columns=categories
+    #    ).fillna(0).astype(int)
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
