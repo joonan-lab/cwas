@@ -329,7 +329,7 @@ class Categorization(Runnable):
         log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         
-        split_results = parmap.map(self.categorizer.get_intersection, split_vcfs, pm_processes=(self.num_proc//3 + 1))
+        split_results = parmap.map(self.categorizer.get_intersection, split_vcfs, pm_pbar=True, pm_processes=self.num_proc//3 + 1)
 
         # Initialize a variable to store the final summed DataFrame
         summed_df = None
