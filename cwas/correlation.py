@@ -99,8 +99,14 @@ class Correlation(Runnable):
             if self.num_proc == 1:
                 intersection_matrix = self.process_columns_single(column_range = range(self.categorization_result.shape[1]), matrix=self.categorization_result)
             else:
+                start = 0
+                end = self.categorization_result.shape[1]
+                step = 300
+                
+                chunks = [range(i, min(i + step, end)) for i in range(start, end, step)]
+                
                 # Split the column range into evenly sized chunks based on the number of workers
-                chunks = chunk_list(range(self.categorization_result.shape[1]), self.num_proc)
+                #chunks = chunk_list(range(self.categorization_result.shape[1]), self.num_proc)
                 result = parmap.map(self.process_columns, chunks, matrix=self.categorization_result, pm_pbar=True, pm_processes=self.num_proc)
                 # Concatenate the count values
                 intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
@@ -117,9 +123,11 @@ class Correlation(Runnable):
     @staticmethod
     def process_columns(column_range, matrix: pd.DataFrame) -> list:
         results = []
+
+        pbar = tqdm(column_range, desc='Processing')
     
         # Iterate over the column range
-        for i in column_range:
+        for i in pbar:
             # Multiply the i-th column with values in the matrix
             df_multiplied = matrix.mul(matrix.iloc[:, i], axis=0)
             
@@ -131,6 +139,8 @@ class Correlation(Runnable):
             
             results.append(count_values_gt_zero)
         
+        pbar.close()
+
         return results
 
     @staticmethod
