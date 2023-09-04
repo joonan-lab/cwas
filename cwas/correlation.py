@@ -219,8 +219,6 @@ class Correlation(Runnable):
         ).fillna(0).astype(int)
 
     def save_result(self):
-        log.print_progress(f"Save the result to the file {self.result_path}")
-        self.categorization_result.to_csv(self.result_path, sep="\t")
         if self._correlation_matrix is not None:
             log.print_progress("Save the intersection matrix to file")
             pickle.dump(self._intersection_matrix, open(self.intersection_matrix_path, 'wb'), protocol=5)
@@ -228,7 +226,6 @@ class Correlation(Runnable):
             pickle.dump(self._correlation_matrix, open(self.matrix_path, 'wb'), protocol=5)
 
     def update_env(self):
-        self.set_env("CATEGORIZATION_RESULT", self.result_path)
         self.save_env()
 
 def get_intersection_matrix_(annotated_vcf: pd.DataFrame, categorizer: Categorizer): 
