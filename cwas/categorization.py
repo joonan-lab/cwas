@@ -26,8 +26,6 @@ from cwas.utils.check import check_num_proc
 from cwas.utils.check import check_is_file
 from cwas.utils.check import check_is_dir
 
-lock = mp.Lock()
-
 class Categorization(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
