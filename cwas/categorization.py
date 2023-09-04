@@ -259,11 +259,7 @@ class Categorization(Runnable):
             log.print_progress("Get an intersection matrix between categories using the number of variants")
             #pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
             if self.num_proc == 1:
-                intersection_matrix = pd.DataFrame(
-                    self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns), 
-                    index=self._result.columns,
-                    columns=self._result.columns
-                    ).fillna(0).astype(int)
+                intersection_matrix = self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
             else:
                 self.get_intersection_matrix_with_mp()
             #intersection_matrix = (
@@ -337,7 +333,7 @@ class Categorization(Runnable):
         log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         
-        _get_intersection_matrix = partial(self.get_intersection_matrix,
+        _get_intersection_matrix = partial(get_intersection_matrix_,
                                            categorizer=self.categorizer)
 
         #pool = mp.Pool(processes=self.num_proc//3 + 1)
@@ -373,13 +369,12 @@ class Categorization(Runnable):
         #    ))
         
     @staticmethod
-    def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer): 
-        return categorizer.get_intersection(annotated_vcf)
-        #return pd.DataFrame(
-        #    categorizer.get_intersection(annotated_vcf), 
-        #    index=categories, 
-        #    columns=categories
-        #).fillna(0).astype(int)
+    def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
+        return pd.DataFrame(
+            categorizer.get_intersection(annotated_vcf), 
+            index=categories, 
+            columns=categories
+        ).fillna(0).astype(int)
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
@@ -393,3 +388,6 @@ class Categorization(Runnable):
     def update_env(self):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)
         self.save_env()
+
+def get_intersection_matrix_(annotated_vcf: pd.DataFrame, categorizer: Categorizer): 
+    return categorizer.get_intersection(annotated_vcf)
