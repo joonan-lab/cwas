@@ -1,9 +1,5 @@
 import argparse
 import multiprocessing as mp
-import multiprocessing.shared_memory as shm
-from functools import reduce
-from itertools import product
-from math import ceil
 from pathlib import Path
 import parmap
 from cwas.core.common import chunk_list
@@ -13,15 +9,11 @@ import polars as pl
 
 import pandas as pd
 import numpy as np
-import yaml, pickle
+import pickle
 from functools import partial
 
 import cwas.utils.log as log
 from cwas.core.categorization.categorizer import Categorizer
-from cwas.core.categorization.parser import (
-    parse_annotated_vcf,
-    parse_gene_matrix,
-)
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc
 from cwas.utils.check import check_is_file
@@ -97,16 +89,6 @@ class Correlation(Runnable):
         self.update_env()
         log.print_progress("Done")
 
-    def categorize_vcf_for_each_sample_with_mp(self):
-        sample_vcfs = self.annotated_vcf_split_by_sample
-        with mp.Pool(self.num_proc) as pool:
-            log.print_progress("Categorize your input variants")
-            return pool.map(
-                self.categorizer.categorize_variant,
-                sample_vcfs,
-                chunksize=ceil(len(sample_vcfs) / self.num_proc),
-            )
-
     def generate_correlation_matrix(self):
         if self.generate_matrix is None:
             return
@@ -115,35 +97,17 @@ class Correlation(Runnable):
             log.print_progress("Get an intersection matrix between categories using the number of samples")
 
             if self.num_proc == 1:
-                intersection_matrix = self.process_columns_single(column_range = range(self._result.shape[1]), matrix=self._result)
+                intersection_matrix = self.process_columns_single(column_range = range(self.categorization_result.shape[1]), matrix=self.categorization_result)
             else:
                 # Split the column range into evenly sized chunks based on the number of workers
-                chunks = chunk_list(range(self._result.shape[1]), self.num_proc)
-                result = parmap.map(self.process_columns, chunks, matrix=self._result, pm_pbar=True, pm_processes=self.num_proc)
+                chunks = chunk_list(range(self.categorization_result.shape[1]), self.num_proc)
+                result = parmap.map(self.process_columns, chunks, matrix=self.categorization_result, pm_pbar=True, pm_processes=self.num_proc)
                 # Concatenate the count values
                 intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
 
         elif self.generate_matrix == "variant":
-            log.print_progress("Get an intersection matrix between categories using the number of variants")
-            #pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
-            if self.num_proc == 1:
-                intersection_matrix = self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
-            else:
-                self.get_intersection_matrix_with_mp()
-            #intersection_matrix = (
-            #    self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
-            #    if self.num_proc == 1
-            #    else self.get_intersection_matrix_with_mp()
-            #)
-            #if self.num_proc == 1:
-            #    intersection_matrix = self.process_columns_single(column_range = range(pre_intersection_matrix.shape[1]), matrix=pre_intersection_matrix)
-            #else:
-            #    # Split the column range into evenly sized chunks based on the number of workers
-            #    log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
-            #    chunks = chunk_list(range(pre_intersection_matrix.shape[1]), (self.num_proc//3 + 1))
-            #    result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=(self.num_proc//3 + 1))
-            #    # Concatenate the count values
-            #    intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
+            log.print_progress("Not prepared")
+            return
         
         diag_sqrt = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")
@@ -220,8 +184,8 @@ class Correlation(Runnable):
         for result_dict in split_results:
             # Convert the dictionary into a DataFrame
             df = pd.DataFrame(result_dict,
-                              index=self._result.columns,
-                              columns=self._result.columns).fillna(0).astype(int)
+                              index=self.categorization_result.columns,
+                              columns=self.categorization_result.columns).fillna(0).astype(int)
             
             # Sum the DataFrame with the existing summed DataFrame
             if summed_df is None:
@@ -246,7 +210,7 @@ class Correlation(Runnable):
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
-        self._result.to_csv(self.result_path, sep="\t")
+        self.categorization_result.to_csv(self.result_path, sep="\t")
         if self._correlation_matrix is not None:
             log.print_progress("Save the intersection matrix to file")
             pickle.dump(self._intersection_matrix, open(self.intersection_matrix_path, 'wb'), protocol=5)
