@@ -347,10 +347,6 @@ class Categorization(Runnable):
         
         #split_results = pool.map(_get_intersection_matrix, split_vcfs)
 
-        # Close and join the pool to ensure all processes are finished
-        pool.close()
-        pool.join()
-
         # Initialize a variable to store the final summed DataFrame
         summed_df = None
 
