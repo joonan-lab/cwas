@@ -340,9 +340,12 @@ class Categorization(Runnable):
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer)
 
-        pool = mp.Pool(processes=self.num_proc//3 + 1)
+        #pool = mp.Pool(processes=self.num_proc//3 + 1)
+
+        with mp.Pool(processes=self.num_proc//3 + 1) as pool:
+            split_results = pool.map(_get_intersection_matrix, split_vcfs)
         
-        split_results = pool.map(_get_intersection_matrix, split_vcfs)
+        #split_results = pool.map(_get_intersection_matrix, split_vcfs)
 
         # Close and join the pool to ensure all processes are finished
         pool.close()
