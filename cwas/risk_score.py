@@ -440,7 +440,7 @@ class RiskScore(Runnable):
             log.print_progress(f"Running LassoCV (Seed: {seed})")
 
         if swap_label:
-            n_jobs = 1
+            n_jobs = 5
         else:
             n_jobs = self.num_proc
         
