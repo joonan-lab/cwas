@@ -332,7 +332,8 @@ class Categorization(Runnable):
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         
         _get_intersection_matrix = partial(self.get_intersection_matrix_mp,
-                                           categorizer=self.categorizer)
+                                           categorizer=self.categorizer,
+                                           categories=self._result.columns)
 
         with mp.Pool(processes=self.num_proc//3 + 1) as pool:
             split_results = pool.map(_get_intersection_matrix, split_vcfs)
@@ -371,8 +372,13 @@ class Categorization(Runnable):
         ).fillna(0).astype(int)
 
     @staticmethod
-    def get_intersection_matrix_mp(annotated_vcf: pd.DataFrame, categorizer: Categorizer): 
-        intersection_result = categorizer.get_intersection(annotated_vcf)
+    def get_intersection_matrix_mp(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
+        intersection_result = pd.DataFrame(
+            categorizer.get_intersection(annotated_vcf), 
+            index=categories, 
+            columns=categories
+        ).fillna(0).astype(int)
+        #intersection_result = categorizer.get_intersection(annotated_vcf)
         return intersection_result
 
     def save_result(self):
