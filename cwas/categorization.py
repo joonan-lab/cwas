@@ -331,16 +331,12 @@ class Categorization(Runnable):
         log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         
-        _get_intersection_matrix = partial(get_intersection_matrix_,
+        _get_intersection_matrix = partial(self.categorizer.get_intersection,
                                            categorizer=self.categorizer)
-
-        #pool = mp.Pool(processes=self.num_proc//3 + 1)
 
         with mp.Pool(processes=self.num_proc//3 + 1) as pool:
             split_results = pool.map(_get_intersection_matrix, split_vcfs)
         
-        #split_results = pool.map(_get_intersection_matrix, split_vcfs)
-
         # Initialize a variable to store the final summed DataFrame
         summed_df = None
 
@@ -387,5 +383,3 @@ class Categorization(Runnable):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)
         self.save_env()
 
-def get_intersection_matrix_(annotated_vcf: pd.DataFrame, categorizer: Categorizer): 
-    return categorizer.get_intersection(annotated_vcf)
