@@ -331,9 +331,8 @@ class Categorization(Runnable):
         log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         
-        _get_intersection_matrix = partial(self.get_intersection_matrix,
-                                           categorizer=self.categorizer,
-                                           categories=self._result.columns)
+        _get_intersection_matrix = partial(self.get_intersection_matrix_mp,
+                                           categorizer=self.categorizer)
 
         with mp.Pool(processes=self.num_proc//3 + 1) as pool:
             split_results = pool.map(_get_intersection_matrix, split_vcfs)
@@ -373,7 +372,8 @@ class Categorization(Runnable):
 
     @staticmethod
     def get_intersection_matrix_mp(annotated_vcf: pd.DataFrame, categorizer: Categorizer): 
-        return categorizer.get_intersection(annotated_vcf)
+        intersection_result = categorizer.get_intersection(annotated_vcf)
+        return intersection_result
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
