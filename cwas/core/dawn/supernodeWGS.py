@@ -121,9 +121,9 @@ class supernodeWGS_func:
         cat_count_permut_['flag'] = cat_count_permut_['Raw_counts'].apply(lambda x: True if x < count_threshold_ else False) # Categories with variants less than 20 are TRUE
         cat_count_permut_.loc[cat_count_permut_.P.isna(), 'flag'] = True # So we will going to remove categories that are TRUE in this index.
 
-        if self.tag != 'coding':
-            bool_screen = self._screen_name_(cluster_names) # Check if there are coding regions included
-            cat_count_permut_.loc[np.array(bool_screen)==0, 'flag'] = True # if bool_screen == False, categories_flag <- True
+        #if self.tag != 'coding':
+        #    bool_screen = self._screen_name_(cluster_names) # Check if there are coding regions included
+        #    cat_count_permut_.loc[np.array(bool_screen)==0, 'flag'] = True # if bool_screen == False, categories_flag <- True
 
         cluster_size = self._cluster_size_(np.array(cat_count_permut_['P']), self.clusters, np.array(cat_count_permut_['flag'])) # The size of the cluster. The number of categories in each cluster.
         cluster_idx = np.where(np.array(cluster_size) >= size_threshold_)[0] + 1 # Minimum number of categories. # R-indexed (1-based)
