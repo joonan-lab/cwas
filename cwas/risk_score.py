@@ -393,7 +393,6 @@ class RiskScore(Runnable):
             
             perm_case_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self.case_f, random_state=seed).index
             perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=seed).index
-            print(perm_sample_info['Perm_SET'].dtype)
             perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'
             print(perm_sample_info['Perm_SET'].dtype)
             perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'
