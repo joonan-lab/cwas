@@ -225,9 +225,11 @@ class RiskScore(Runnable):
                 
                 case_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
                 ctrl_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
+                self._sample_info['SET'] = ''
                 self._sample_info.loc[case_test_idx, 'SET'] = 'training'
                 self._sample_info.loc[ctrl_test_idx, 'SET'] = 'training'
-                self._sample_info["SET"] = self._sample_info['SET'].fillna('test')
+                self._sample_info.loc[self._sample_info['SET'] == '', 'SET'] = 'test'
+                #self._sample_info["SET"] = self._sample_info['SET'].fillna('test')
                 
                 #self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
                 #test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
@@ -393,10 +395,12 @@ class RiskScore(Runnable):
             
             perm_case_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self.case_f, random_state=seed).index
             perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=seed).index
-            perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'.astype(str)
-            log.print_warn(perm_sample_info['Perm_SET'].dtype)
-            perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'.astype(str)
-            perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
+            
+            perm_sample_info['Perm_SET'] = ''
+            perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'
+            perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'
+            perm_sample_info.loc[perm_sample_info['Perm_SET'] == '', 'Perm_SET'] = 'test'
+            #perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
 
             #test_idx = perm_sample_info.groupby('Perm_PHENOTYPE').sample(n=self.min_size, random_state=seed).index
             #perm_sample_info["Perm_SET"] = np.where(perm_sample_info.index.isin(test_idx), "test", "training")
