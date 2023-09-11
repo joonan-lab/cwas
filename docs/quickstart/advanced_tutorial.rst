@@ -959,7 +959,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -t test \
       -c_count CATEGORY_COUNTS.txt \
       -C 20 \
-      -R 0.7 \
+      -R 0.12 \
       -S 2 \
       -p 8
 
@@ -981,7 +981,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
       -t TFBS.exact \
       -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
       -C 20 \
-      -R 0.7 \
+      -R 0.12 \
       -S 2 \
       -p 8
 

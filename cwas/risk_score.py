@@ -4,19 +4,26 @@ import numpy as np
 import cwas.utils.log as log
 from pathlib import Path
 from tqdm import tqdm
-from sklearn.linear_model import ElasticNetCV
+#from glmnet import ElasticNet, LogitNet
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 from cwas.core.common import cmp_two_arr
 from cwas.utils.check import check_is_file, check_num_proc
 from cwas.runnable import Runnable
 from typing import Optional, Tuple
-from functools import partial
+from contextlib import contextmanager
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import polars as pl
 import re
 import parmap
+from functools import partial
+
+import numpy as np
+import rpy2.robjects as ro
+from rpy2.robjects import numpy2ri
+from rpy2.robjects.packages import importr
+from sklearn.metrics import r2_score
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -34,6 +41,7 @@ class RiskScore(Runnable):
         self._result_dict = defaultdict(dict)
         self._permutation_dict = defaultdict(dict)
         self._filtered_combs = None
+        self.cv_glmnet = importr("glmnet").cv_glmnet
     
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -217,9 +225,11 @@ class RiskScore(Runnable):
                 
                 case_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
                 ctrl_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
+                self._sample_info['SET'] = ''
                 self._sample_info.loc[case_test_idx, 'SET'] = 'training'
                 self._sample_info.loc[ctrl_test_idx, 'SET'] = 'training'
-                self._sample_info["SET"] = self._sample_info['SET'].fillna('test')
+                self._sample_info.loc[self._sample_info['SET'] == '', 'SET'] = 'test'
+                #self._sample_info["SET"] = self._sample_info['SET'].fillna('test')
                 
                 #self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
                 #test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
@@ -385,9 +395,12 @@ class RiskScore(Runnable):
             
             perm_case_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self.case_f, random_state=seed).index
             perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=seed).index
+            
+            perm_sample_info['Perm_SET'] = ''
             perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'
             perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'
-            perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
+            perm_sample_info.loc[perm_sample_info['Perm_SET'] == '', 'Perm_SET'] = 'test'
+            #perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
 
             #test_idx = perm_sample_info.groupby('Perm_PHENOTYPE').sample(n=self.min_size, random_state=seed).index
             #perm_sample_info["Perm_SET"] = np.where(perm_sample_info.index.isin(test_idx), "test", "training")
@@ -430,32 +443,44 @@ class RiskScore(Runnable):
                 log.print_warn(f"There are no rare categories (Seed: {seed}).")
             return
         
-        scaler = StandardScaler().fit(cov)
-        cov2 = scaler.transform(cov)
-        test_cov2 = scaler.transform(test_cov)
+        #scaler = StandardScaler().fit(cov)
+        #cov2 = scaler.transform(cov)
+        #test_cov2 = scaler.transform(test_cov)
 
         y = np.where(response, 1.0, 0.0)
         test_y = np.where(test_response, 1.0, 0.0)
         if not swap_label:
             log.print_progress(f"Running LassoCV (Seed: {seed})")
-
-        if swap_label:
-            n_jobs = 1
-        else:
-            n_jobs = self.num_proc
         
-        lasso_model = ElasticNetCV(l1_ratio=1, cv = self.custom_cv_folds(seed=seed), n_jobs = n_jobs,
-                                   random_state = seed, verbose = False, n_alphas=100, selection='random')
+        # Convert numpy arrays to R objects
+        numpy2ri.activate()
+        X_r = ro.r.matrix(cov.values, nrow=cov.shape[0], ncol=cov.shape[1])
+        y_r = ro.FloatVector(y)
+        # Create a glmnet model
+        cvfit = self.cv_glmnet(x=X_r, y=y_r, alpha=1, foldid = numpy2ri.py2rpy(self.custom_cv_folds(seed=seed)),
+                               type_measure="deviance", standardize=True, nlambda=100)
+        # Get the lambda with the minimum mean cross-validated error
+        opt_lambda = cvfit.rx2("lambda.min")[0]
+        # The index is 1-based.
+        lambda_values = np.array(cvfit.rx2("lambda"))
+        i_choose = np.where(lambda_values == opt_lambda)[0][0]
 
-        lasso_model.fit(cov2, y)
-        coeffs = getattr(lasso_model, 'coef_')
+        # Get lasso coefficients
+        full_glmnet = cvfit.rx2("glmnet.fit")
+        beta_matrix = ro.r["as.matrix"](ro.r["coef"](full_glmnet, s=opt_lambda))
+
         opt_coeff = np.zeros(len(rare_idx))
-        opt_coeff[rare_idx] = coeffs
+        # beta_matrix includes the intercept term, resulting in one additional column compared to your original input data.
+        opt_coeff[rare_idx] = beta_matrix[1:, 0]
         
-        opt_lambda = getattr(lasso_model, 'alpha_')
         n_select = np.sum(np.abs(opt_coeff) != 0.0)
-        y_pred = lasso_model.predict(test_cov2)
-        rsq = r2_score(test_y, y_pred)
+
+        # Compute the predictive R-squared using the test set
+        predict_function = ro.r["predict"]
+        predicted_values = predict_function(full_glmnet, newx=test_cov.values)
+        predict_y = predicted_values[:, i_choose]
+        rsq = r2_score(test_y, predict_y)
+
         output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
         
         if not swap_label:
@@ -473,6 +498,7 @@ class RiskScore(Runnable):
             idx_val = rand_idx[np.arange(nobs * (i - 1) / self.fold, nobs * i / self.fold, dtype=int)]
             foldid[idx_val] = i
             i+=1
+        return foldid
     
     def permute_pvalues(self):
         """Run LassoCV to get permutated pvalues"""
