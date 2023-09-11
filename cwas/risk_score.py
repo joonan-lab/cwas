@@ -234,6 +234,9 @@ class RiskScore(Runnable):
             else:
               self.case_f = sum((self._sample_info['PHENOTYPE'] == 'case') & (self._sample_info['SET'] == 'training'))
               self.ctrl_f = sum((self._sample_info['PHENOTYPE'] == 'ctrl') & (self._sample_info['SET'] == 'training'))
+              log.print_log("LOG",
+                            "Use {} cases and {} controls for training set".format(self.case_f, self.ctrl_f)
+                            )
         return self._sample_info
 
     @property
@@ -379,9 +382,15 @@ class RiskScore(Runnable):
                 filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
             
             seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
+
+            _risk_score_per_category = partial(self.risk_score_per_category,
+                                               swap_label = False,
+                                               filtered_combs = filtered_combs)
             
-            for seed in seeds:
-                self._result_dict[domain].update(self.risk_score_per_category(seed=seed, swap_label = False, filtered_combs=filtered_combs))
+            map_result = parmap.map(_risk_score_per_category, seeds, pm_pbar=True, pm_processes=self.num_proc)
+            self._result_dict[domain] = {key: value for x in map_result for key, value in x.items()}
+            #for seed in seeds:
+            #    self._result_dict[domain].update(self.risk_score_per_category(seed=seed, swap_label = False, filtered_combs=filtered_combs))
             
     def risk_score_per_category(self, seed: int = 42, swap_label: bool = False, filtered_combs = None):
         """Lasso model selection """
