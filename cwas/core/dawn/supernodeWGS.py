@@ -22,6 +22,7 @@ from matplotlib import cm
 from adjustText import adjust_text
 from scipy.linalg import svd
 import warnings
+from statistics import variance
 
 
 class supernodeWGS_func:
@@ -121,9 +122,9 @@ class supernodeWGS_func:
         cat_count_permut_['flag'] = cat_count_permut_['Raw_counts'].apply(lambda x: True if x < count_threshold_ else False) # Categories with variants less than 20 are TRUE
         cat_count_permut_.loc[cat_count_permut_.P.isna(), 'flag'] = True # So we will going to remove categories that are TRUE in this index.
 
-        if self.tag != 'coding':
-            bool_screen = self._screen_name_(cluster_names) # Check if there are coding regions included
-            cat_count_permut_.loc[np.array(bool_screen)==0, 'flag'] = True # if bool_screen == False, categories_flag <- True
+        #if self.tag != 'coding':
+        #    bool_screen = self._screen_name_(cluster_names) # Check if there are coding regions included
+        #    cat_count_permut_.loc[np.array(bool_screen)==0, 'flag'] = True # if bool_screen == False, categories_flag <- True
 
         cluster_size = self._cluster_size_(np.array(cat_count_permut_['P']), self.clusters, np.array(cat_count_permut_['flag'])) # The size of the cluster. The number of categories in each cluster.
         cluster_idx = np.where(np.array(cluster_size) >= size_threshold_)[0] + 1 # Minimum number of categories. # R-indexed (1-based)
@@ -202,13 +203,15 @@ class supernodeWGS_func:
         seedindex = np.array(seedindex)[idx]
 
         i_vec = np.int64(z > norm.ppf(1-pthres, loc=null_mean, scale=(1 if np.isnan(null_sigma) else null_sigma)))
+        assert sum(i_vec) == 0, "There is no risk category"
+        
         b = 0; c = 0
 
         mu2 = np.mean(z[(i_vec==1) & (seedindex==0)])
         mu1 = null_mean
 
         if np.isnan(null_sigma):
-            sigma2 = np.var(z)
+            sigma2 = variance(z)
             sigma1 = sigma2
         else:
             sigma2 = null_sigma
@@ -301,13 +304,13 @@ class supernodeWGS_func:
     def report_results(self, vec, posterior, pvalue, Iupdate):
         assert len(vec) == len(posterior) and len(vec) == len(pvalue) and len(vec) == len(Iupdate)
 
-        d = len(1-posterior)
-        rankpost = sorted(1-posterior)
+        d = len(posterior)
+        rankpost = np.sort(posterior)
         localfdr = list(map(lambda x: np.mean(rankpost[:x]), range(1, d+1)))
 
-        flocalfdr = [0 for x in range(d)]
-        rankp = np.int64(rankdata(1-posterior, method="average"))
-        flocalfdr = np.array(localfdr)[rankp-1]
+        flocalfdr = np.zeros(d)
+        rankp = np.argsort(posterior)
+        flocalfdr[rankp] = localfdr
 
         return pd.DataFrame({"Name":vec, "p.value":pvalue, "FDR":flocalfdr, "indicator":Iupdate})
        
@@ -724,6 +727,7 @@ class data_collection:
             return out['v'][:,0]
         else:
             _, eig_vectors = np.linalg.eig(mat)
-            eigvectors = eig_vectors[:, 0].real
+            max_idx = np.argmax(_)
+            eigvectors = eig_vectors[:, max_idx].real
             return eigvectors
             
