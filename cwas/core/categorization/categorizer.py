@@ -340,7 +340,8 @@ class Categorizer:
 
     def annotate_region(self, annotated_vcf: pd.DataFrame) -> list:
         region_annotation_idx = get_idx_dict(self._category_domain["functional_annotation"])
-        annotation_floats = np.zeros(len(annotated_vcf.index), dtype=float)
+        #annotation_floats = np.zeros(len(annotated_vcf.index), dtype=float)
+        annotation_ints = np.zeros(len(annotated_vcf.index), dtype=int)
 
         for region in region_annotation_idx:
             if region == "Any":
@@ -348,13 +349,14 @@ class Categorizer:
 
             region_vals = annotated_vcf[region].values.astype(np.int32)
             annotation_int_conv_func = (
-                lambda x: 2 ** region_annotation_idx[region] * int(x)
+                lambda x: 2 ** int(region_annotation_idx[region]) * int(x)
             )
-            annotation_floats += np.vectorize(annotation_int_conv_func, otypes=[float])(
-                region_vals
-            )
+            annotation_ints = annotation_ints + np.vectorize(annotation_int_conv_func)(region_vals)
+            #annotation_floats += np.vectorize(annotation_int_conv_func, otypes=[float])(
+            #    region_vals
+            #)
 
-        annotation_ints = np.array([int(x) for x in annotation_floats])
+        #annotation_ints = np.array([int(x) for x in annotation_floats])
         annotation_ints += 2 ** region_annotation_idx["Any"]
 
         return annotation_ints
