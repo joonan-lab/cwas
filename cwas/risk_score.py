@@ -219,9 +219,6 @@ class RiskScore(Runnable):
                 log.print_log("LOG",
                               "Use {} cases and {} controls for training set".format(self.case_f, self.ctrl_f)
                               )
-                              #"Use {} samples from each phenotype as training set."
-                              #.format(self.min_size))
-                
                 
                 case_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
                 ctrl_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
@@ -234,6 +231,9 @@ class RiskScore(Runnable):
                 #self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
                 #test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
                 #self._sample_info["SET"] = np.where(self._sample_info.index.isin(test_idx), "test", "training")
+            else:
+              self.case_f = sum((self._sample_info['PHENOTYPE'] == 'case') & (self._sample_info['SET'] == 'training'))
+              self.ctrl_f = sum((self._sample_info['PHENOTYPE'] == 'ctrl') & (self._sample_info['SET'] == 'training'))
         return self._sample_info
 
     @property
