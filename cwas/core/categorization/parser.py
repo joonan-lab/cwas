@@ -131,7 +131,7 @@ def _parse_annot_column(
     """ Parse the annotation integer in the ANNOT column and make a
     pd.DataFrame object
     """
-    annot_ints = annot_column.values.astype(float)
+    annot_ints = np.array([int(x) for x in annot_column])
     annot_field_cnt = len(annot_field_names)
     annot_records = list(
         map(
