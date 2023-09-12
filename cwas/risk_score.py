@@ -561,7 +561,7 @@ class RiskScore(Runnable):
             #domain_df
 
             coef_df.to_csv(
-                str(self.coef_path).replace('.csv', f'.{domain}.csv'),
+                str(self.coef_path).replace('.txt', f'.{domain}.txt'),
                 sep="\t"
             )
 
