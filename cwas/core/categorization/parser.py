@@ -49,7 +49,7 @@ def parse_annotated_vcf(vcf_path: pathlib.Path) -> pd.DataFrame:
     result = pd.DataFrame(variant_rows, columns=variant_col_names)
     try:
         info_df = _parse_info_column(
-            result["INFO"], csq_field_names, annot_field_names
+            result["INFO"], csq_field_names
         )
     except KeyError:
         print_err(
