@@ -77,7 +77,6 @@ class Categorizer:
 
       return df
 
-
     def annotate_each_variant(self, annotated_vcf):
         """Newly annotated each variant using CWAS annotation terms.
         In order to annotate each variant with multiple annotation terms
@@ -91,10 +90,11 @@ class Categorizer:
         the variant is annotated as 'A', 'B' and 'D'.
         """
         variant_type_annotation_ints = self.annotate_variant_type(annotated_vcf)
-        functional_score_annotation_ints = self.annotate_functional_score(annotated_vcf)
+        #functional_score_annotation_ints = self.annotate_functional_score(annotated_vcf)
         gene_set_annotation_ints = self.annotate_gene_set(annotated_vcf)
         gencode_annotation_ints = self.annotate_gencode(annotated_vcf)
-        region_annotation_ints = self.annotate_region(annotated_vcf)
+        #region_annotation_ints = self.annotate_region(annotated_vcf)
+        functional_ints = annotated_vcf['ANNOT']
 
         for (
             variant_type_annotation_int,
@@ -104,10 +104,10 @@ class Categorizer:
             region_annotation_int,
         ) in zip(
             variant_type_annotation_ints,
-            functional_score_annotation_ints,
+            functional_ints,
             gene_set_annotation_ints,
             gencode_annotation_ints,
-            region_annotation_ints,
+            functional_ints,
         ):
             yield (
                 self.parse_annotation_int(
@@ -116,11 +116,11 @@ class Categorizer:
                 self.parse_annotation_int(
                     gene_set_annotation_int, "gene_set"
                 ),
-                self.parse_annotation_int(
+                self.parse_annotation_int_(
                     functional_score_annotation_int, "functional_score",
                 ),
                 self.parse_annotation_int(gencode_annotation_int, "gencode"),
-                self.parse_annotation_int(region_annotation_int, "functional_annotation"),
+                self.parse_annotation_int_(region_annotation_int, "functional_annotation"),
             )
 
     def annotate_variant_type(self, annotated_vcf: pd.DataFrame) -> list:
@@ -371,3 +371,20 @@ class Categorizer:
         return extract_sublist_by_int(
             self._category_domain[annotation_term_type], annotation_int
         )
+
+    def parse_annotation_int_(
+        self, annotation_int: int, annotation_term_type: str
+    ) -> list:
+        """ Parse the annotation integer and
+        choose the appropriate subset from the specific annotation terms.
+        """
+        cat_list = [*self._category_domain['functional_score'], *self._category_domain['functional_annotation']]
+        cat_list = [item for item in cat_list if item not in ['Any', 'All']]
+        labels = extract_sublist_by_int(
+            cat_list, int(annotation_int)
+        )
+        if annotation_term_type == 'functional_score':
+            return ['All'] + [item for item in labels if item in self._category_domain['functional_score']]
+        elif annotation_term_type == 'functional_annotation':
+            return ['Any'] + [item for item in labels if item in self._category_domain['functional_annotation']]
+        

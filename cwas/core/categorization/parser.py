@@ -86,16 +86,16 @@ def _parse_vcf_header_line(line):
 
 
 def _parse_info_column(
-    info_column: pd.Series, csq_field_names: list, annot_field_names: list
+    info_column: pd.Series, csq_field_names: list
 ) -> pd.DataFrame:
     """ Parse the INFO column and make a pd.DataFrame object """
     info_values = info_column.values
     info_dicts = list(map(_parse_info_str, info_values))
     info_df = pd.DataFrame(info_dicts)
     csq_df = _parse_csq_column(info_df["CSQ"], csq_field_names)
-    annot_df = _parse_annot_column(info_df["ANNOT"], annot_field_names)
-    info_df.drop(columns=["CSQ", "ANNOT"], inplace=True)
-    info_df = pd.concat([info_df, csq_df, annot_df], axis="columns")
+    #annot_df = _parse_annot_column(info_df["ANNOT"], annot_field_names)
+    info_df.drop(columns=["CSQ"], inplace=True)
+    info_df = pd.concat([info_df, csq_df], axis="columns")
 
     return info_df
 
