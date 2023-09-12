@@ -219,9 +219,6 @@ class RiskScore(Runnable):
                 log.print_log("LOG",
                               "Use {} cases and {} controls for training set".format(self.case_f, self.ctrl_f)
                               )
-                              #"Use {} samples from each phenotype as training set."
-                              #.format(self.min_size))
-                
                 
                 case_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
                 ctrl_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
@@ -234,6 +231,12 @@ class RiskScore(Runnable):
                 #self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
                 #test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
                 #self._sample_info["SET"] = np.where(self._sample_info.index.isin(test_idx), "test", "training")
+            else:
+              self.case_f = sum((self._sample_info['PHENOTYPE'] == 'case') & (self._sample_info['SET'] == 'training'))
+              self.ctrl_f = sum((self._sample_info['PHENOTYPE'] == 'ctrl') & (self._sample_info['SET'] == 'training'))
+              log.print_log("LOG",
+                            "Use {} cases and {} controls for training set".format(self.case_f, self.ctrl_f)
+                            )
         return self._sample_info
 
     @property
@@ -379,9 +382,15 @@ class RiskScore(Runnable):
                 filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
             
             seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
+
+            _risk_score_per_category = partial(self.risk_score_per_category,
+                                               swap_label = False,
+                                               filtered_combs = filtered_combs)
             
-            for seed in seeds:
-                self._result_dict[domain].update(self.risk_score_per_category(seed=seed, swap_label = False, filtered_combs=filtered_combs))
+            map_result = parmap.map(_risk_score_per_category, seeds, pm_pbar=True, pm_processes=self.num_proc)
+            self._result_dict[domain] = {key: value for x in map_result for key, value in x.items()}
+            #for seed in seeds:
+            #    self._result_dict[domain].update(self.risk_score_per_category(seed=seed, swap_label = False, filtered_combs=filtered_combs))
             
     def risk_score_per_category(self, seed: int = 42, swap_label: bool = False, filtered_combs = None):
         """Lasso model selection """
@@ -624,6 +633,7 @@ class RiskScore(Runnable):
         plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='black')
         plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
         plt.locator_params(axis='x', nbins=5)
+        plt.tight_layout()
 
         plt.savefig(str(self.plot_path).replace('.pdf', f'.{domain}.pdf'))
         
