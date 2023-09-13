@@ -245,7 +245,7 @@ class Dawn(Runnable):
                                                              func=lambda x: x>self.corr_threshold,
                                                              k=cluster_idx)
         adj_mat = pd.DataFrame(np.array(g.get_adjacency().data), index=g.vs['name'], columns=g.vs['name'])
-        adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.ipvalue_fdr_igraph.csv".format(self.tag)), sep=",")
+        adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.adjacency_matrix.csv".format(self.tag)), sep=",")
         
         
         print_progress("[DAWN] Compute the test statistics with z-scores")
