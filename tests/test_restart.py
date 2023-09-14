@@ -44,7 +44,9 @@ def create_env_early(cwas_env_path: Path, env: dict):
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(args: list, create_config_early, create_env_early):
-    inst = Start.get_instance(args)
+    sys.argv = ['cwas', 'start', *args]
+    inst = cwas.cli.main()
+    #inst = Start.get_instance(args)
     inst.run()
 
 
