@@ -16,4 +16,5 @@ def main():
     cwas_obj = cwas_factory.runnable
     print_log("LOG", f"Current step: {cwas_obj.__name__}")
     cwas_inst = cwas_obj(cwas_args)
-    cwas_inst.run()
+    return cwas_inst
+    #cwas_inst.run()
