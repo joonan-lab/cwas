@@ -11,8 +11,7 @@ import zarr
 from cwas.core.categorization.category import Category
 from cwas.core.common import cmp_two_arr
 from cwas.runnable import Runnable
-from cwas.utils.check import check_is_file
-from cwas.utils.check import check_is_dir
+from cwas.utils.check import check_is_file, check_is_dir
 from cwas.utils.log import print_arg, print_progress
 
 
@@ -41,7 +40,7 @@ class BurdenTest(Runnable):
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        check_is_file(args.cat_path)
+        check_is_dir(args.cat_path)
         check_is_dir(args.output_dir_path)
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:

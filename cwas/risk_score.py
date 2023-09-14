@@ -8,7 +8,7 @@ from tqdm import tqdm
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 from cwas.core.common import cmp_two_arr
-from cwas.utils.check import check_is_file, check_num_proc
+from cwas.utils.check import check_is_file, check_num_proc, check_is_dir
 from cwas.runnable import Runnable
 from typing import Optional, Tuple
 from contextlib import contextmanager
@@ -18,6 +18,7 @@ import polars as pl
 import re
 import parmap
 from functools import partial
+import zarr
 
 import numpy as np
 import rpy2.robjects as ro
@@ -90,7 +91,7 @@ class RiskScore(Runnable):
         check_is_file(args.sample_info_path)
         check_num_proc(args.num_proc)
         if args.categorization_result_path:
-            check_is_file(args.categorization_result_path)
+            check_is_dir(args.categorization_result_path)
         if args.adj_factor_path is not None:
             check_is_file(args.adj_factor_path)
         if args.category_set_path:
@@ -115,7 +116,7 @@ class RiskScore(Runnable):
     @property
     def plot_path(self) -> Optional[Path]:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
-        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf', str(self.categorization_result_path.name))
+        f_name = re.sub(r'.categorization_result\.zarr\.gz|.categorization_result\.zarr', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
             f"{f_name}"
@@ -251,10 +252,12 @@ class RiskScore(Runnable):
     def categorization_result(self) -> pd.DataFrame:
         if self._categorization_result is None:
             log.print_progress("Load the categorization result")
-            self._categorization_result = pl.read_csv(
-                self.categorization_result_path, dtypes={"SAMPLE": str}, separator = '\t'
-            )
-            self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
+            
+            root = zarr.open(self.categorization_result_path, mode='r')
+            self._categorization_result = pd.DataFrame(data=root['data'],
+                              index=root['metadata'].attrs['sample_id'],
+                              columns=root['metadata'].attrs['category'])
+            self._categorization_result.index.name = 'SAMPLE'            
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
             if self.use_n_carrier:
@@ -327,7 +330,7 @@ class RiskScore(Runnable):
     @property
     def coef_path(self) -> Path:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
-        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
+        f_name = re.sub(r'.categorization_result\.zarr\.gz|.categorization_result\.zarr', f'.lasso_coef_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
             f"{f_name}"
@@ -336,7 +339,7 @@ class RiskScore(Runnable):
     @property
     def result_path(self) -> Path:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
-        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_results_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
+        f_name = re.sub(r'.categorization_result\.zarr\.gz|.categorization_result\.zarr', f'.lasso_results_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
             f"{f_name}"
@@ -345,7 +348,7 @@ class RiskScore(Runnable):
     @property
     def null_model_path(self) -> Path:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
-        f_name = re.sub(r'.categorization_result\.txt\.gz|.categorization_result\.txt', f'.lasso_null_models_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
+        f_name = re.sub(r'.categorization_result\.zarr\.gz|.categorization_result\.zarr', f'.lasso_null_models_{tag}thres_{self.ctrl_thres}.txt', str(self.categorization_result_path.name))
         return Path(
             f"{self.out_dir}/" +
             f"{f_name}"
