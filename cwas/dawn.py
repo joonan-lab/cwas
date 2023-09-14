@@ -21,9 +21,7 @@ import polars as pl
 from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection
 from cwas.runnable import Runnable
-from cwas.utils.check import check_is_file
-from cwas.utils.check import check_is_dir
-from cwas.utils.check import check_num_proc
+from cwas.utils.check import check_is_file, check_is_dir, check_num_proc
 from cwas.utils.log import print_arg, print_progress
 
 class Dawn(Runnable):
@@ -245,7 +243,7 @@ class Dawn(Runnable):
                                                              func=lambda x: x>self.corr_threshold,
                                                              k=cluster_idx)
         adj_mat = pd.DataFrame(np.array(g.get_adjacency().data), index=g.vs['name'], columns=g.vs['name'])
-        adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.ipvalue_fdr_igraph.csv".format(self.tag)), sep=",")
+        adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.adjacency_matrix.csv".format(self.tag)), sep=",")
         
         
         print_progress("[DAWN] Compute the test statistics with z-scores")

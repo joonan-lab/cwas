@@ -9,6 +9,7 @@ import parmap
 from cwas.core.common import chunk_list
 from tqdm import tqdm
 import re
+import zarr
 
 import pandas as pd
 import numpy as np
@@ -82,7 +83,7 @@ class Categorization(Runnable):
 
     @property
     def result_path(self) -> Path:
-        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'categorization_result.txt.gz', self.input_path.name)
+        f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', 'categorization_result.zarr', self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" + 
             f"{f_name}"
@@ -348,7 +349,11 @@ class Categorization(Runnable):
 
     def save_result(self):
         log.print_progress(f"Save the result to the file {self.result_path}")
-        self._result.to_csv(self.result_path, sep="\t")
+        root = zarr.open(self.result_path, mode='w')
+        root.create_group('metadata')
+        root['metadata'].attrs['sample_id'] = self._result.index.tolist()
+        root['metadata'].attrs['category'] = self._result.columns.tolist()
+        root.create_dataset('data', data=self._result, chunks=(1000, 1000), dtype='i4')
         if self._correlation_matrix is not None:
             log.print_progress("Save the intersection matrix to file")
             pickle.dump(self._intersection_matrix, open(self.intersection_matrix_path, 'wb'), protocol=5)

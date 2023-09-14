@@ -45,7 +45,7 @@ class PermutationTest(BurdenTest):
 
     @property
     def result_path(self) -> Path:
-        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'permutation_test.txt.gz', self.cat_path.name)
+        f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'permutation_test.txt.gz', self.cat_path.name)
         self._result_path = Path(
             f"{self.output_dir_path}/"
             f"{f_name}"
@@ -55,7 +55,7 @@ class PermutationTest(BurdenTest):
     @property
     def perm_rrs_path(self) -> Path:
         if self._perm_rrs_path is None:
-            f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'permutation_RRs.txt.gz', self.cat_path.name)
+            f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'permutation_RRs.txt.gz', self.cat_path.name)
             self._perm_rrs_path = Path(
                 f"{self.output_dir_path}/"
                 f"{f_name}"
@@ -65,7 +65,7 @@ class PermutationTest(BurdenTest):
     @property
     def binom_pvals_path(self) -> Path:
         if self._binom_pvals_path is None:
-            f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'binom_pvals.txt.gz', self.cat_path.name)
+            f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'binom_pvals.txt.gz', self.cat_path.name)
             self._binom_pvals_path = Path(
                 f"{self.output_dir_path}/"
                 f"{f_name}"

@@ -16,7 +16,7 @@ Binomial test
 
 For binomial tests, two types of tests are used: two-sided binomial tests and one-sided binomial tests with an alternative hypothesis of "greater".
 
-- -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+- -i, --input_file: Path to the categorized zarr directory, resulted from categorization process.
 - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
 
@@ -72,7 +72,7 @@ In another example, when permutated 10,000 times, category **B** with relative r
 
 The parameters of the command are as below:
 
-- -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+- -i, --input_file: Path to the categorized zarr directory, resulted from categorization process.
 - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
 - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
