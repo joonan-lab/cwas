@@ -6,12 +6,12 @@ import polars as pl
 import numpy as np
 import pandas as pd
 import re
+import zarr
 
 from cwas.core.categorization.category import Category
 from cwas.core.common import cmp_two_arr
 from cwas.runnable import Runnable
-from cwas.utils.check import check_is_file
-from cwas.utils.check import check_is_dir
+from cwas.utils.check import check_is_file, check_is_dir
 from cwas.utils.log import print_arg, print_progress
 
 
@@ -40,7 +40,7 @@ class BurdenTest(Runnable):
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        check_is_file(args.cat_path)
+        check_is_dir(args.cat_path)
         check_is_dir(args.output_dir_path)
         check_is_file(args.sample_info_path)
         if args.adj_factor_path is not None:
@@ -68,7 +68,7 @@ class BurdenTest(Runnable):
 
     @property
     def result_path(self) -> Path:
-        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'burden_test.txt', self.cat_path.name)
+        f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'burden_test.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
             f"{f_name}"
@@ -76,7 +76,7 @@ class BurdenTest(Runnable):
 
     @property
     def counts_path(self) -> Path:
-        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_counts.txt', self.cat_path.name)
+        f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'category_counts.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
             f"{f_name}"
@@ -84,7 +84,7 @@ class BurdenTest(Runnable):
 
     @property
     def cat_info_path(self) -> Path:
-        f_name = re.sub(r'categorization_result\.txt\.gz|categorization_result\.txt', 'category_info.txt', self.cat_path.name)
+        f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'category_info.txt', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/"
             f"{f_name}"
@@ -138,10 +138,12 @@ class BurdenTest(Runnable):
     def categorization_result(self) -> pd.DataFrame:
         if self._categorization_result is None:
             print_progress("Load the categorization result")
-            self._categorization_result = pl.read_csv(
-                self.cat_path, separator="\t", dtypes={"SAMPLE": str}
-            )
-            self._categorization_result = self._categorization_result.to_pandas().set_index("SAMPLE")
+            root = zarr.open(self.cat_path, mode='r')
+            self._categorization_result = pd.DataFrame(data=root['data'],
+                              index=root['metadata'].attrs['sample_id'],
+                              columns=root['metadata'].attrs['category'])
+            self._categorization_result.index.name = 'SAMPLE'
+            
             self.save_counts_table(form = 'raw')
             if self.adj_factor is not None:
                 self._adjust_categorization_result()

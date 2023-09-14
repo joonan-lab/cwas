@@ -382,9 +382,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     cwas categorization -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -p 8 -m variant
 
 
-  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.categorization_result.txt.gz``, ``.intersection_matrix.pkl``, ``.correlation_matrix.pkl``) in the file name as below will be found in the output directory.
+  The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.categorization_result.zarr``, ``.intersection_matrix.pkl``, ``.correlation_matrix.pkl``) in the file name as below will be found in the output directory.
 
-  - OUTPUT.categorization_result.txt.gz: The final output file containing the number of variants in each category across samples. This file will be used as input in the burden test process.
+  - OUTPUT.categorization_result.zarr: The final output file containing the number of variants in each category across samples. This file will be used as input in the burden test process.
   - OUTPUT.intersection_matrix.pkl: The matrix containing the number of intersected variants (or samples) between every two categories. This file will be generated only with ``-m`` option given.
   - OUTPUT.correlation_matrix.pkl: The matrix containing the correlation values between every two categories. This file will be generated only with ``-m`` option given. This file will be used for :ref:`calculating the number of effective tests <effnumtest>`. This file will be used as an input for :ref:`DAWN analysis <dawn>`.
 
@@ -403,13 +403,13 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
     $HOME/cwas_output
     ...
-    ├── de_novo_variants.categorization_result.txt.gz
+    ├── de_novo_variants.categorization_result.zarr
     ├── de_novo_variants.intersection_matrix.pkl
     ├── de_novo_variants.correlation_matrix.pkl
     ...
 
 
-  The ``de_novo_variants.categorization_result.txt.gz`` looks like below. The "SAMPLE" column refers to the sample ID. Each of the other columns corresponds to a specific category. The values in these columns represent the number of variants within each category, specifically for each sample.
+  The ``de_novo_variants.categorization_result.zarr`` looks like below. The "SAMPLE" column refers to the sample ID. Each of the other columns corresponds to a specific category. The values in these columns represent the number of variants within each category, specifically for each sample.
 
   .. code-block:: solidity
     
@@ -431,7 +431,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
    
   - Binomial test
 
-    - -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+    - -i, --input_file: Path to the categorized zarr directory, resulted from categorization process.
     - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
     - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
@@ -439,11 +439,11 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
      .. code-block:: solidity
 
-        cwas binomial_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
+        cwas binomial_test -i INPUT.categorization_result.zarr -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
 
   - Permutation test
    
-    - -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+    - -i, --input_file: Path to the categorized zarr directory, resulted from categorization process.
     - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
     - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
@@ -454,7 +454,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
      .. code-block:: solidity
 
-        cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
+        cwas permutation_test -i INPUT.categorization_result.zarr -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
 
   The specific descriptions of the output files are as below. Each output file containing a specific pattern (i.e., ``.burden_test.txt``, ``.permutation_test.txt.gz``, ``.binom_pvals.txt.gz``) in the file name as below will be found in the output directory.
 
@@ -467,9 +467,9 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt
+    cwas binomial_test -i $HOME/cwas_output/de_novo_variants.categorization_result.zarr -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt
     
-    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
+    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.zarr -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
   In the above example, binomial burden test takes about 4 minutes.
@@ -575,7 +575,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
+    cwas permutation_test -i $HOME/cwas_output/de_novo_variants.categorization_result.zarr -o_dir $HOME/cwas_output -s $HOME/cwas-input-example/samples.txt -a $HOME/cwas-input-example/adj_factors.txt -n 10000 -p 8 -b
 
 
   In the above example, permutation test takes about 628 minutes using 8 cores.
@@ -746,7 +746,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   The parameters of the command are as below:
   
-  - -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+  - -i, --input_file: Path to the categorized zarr directory, resulted from categorization process.
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
   - -a, --adjustment_factor: Path to the txt file containing the adjust factors for each sample. This is optional. With this option, CWAS-Plus multiplies the number of variants (or carriers, in -u option) with the adjust factor per sample.
@@ -765,7 +765,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
 
-    cwas risk_score -i INPUT.categorization_result.txt.gz \
+    cwas risk_score -i INPUT.categorization_result.zarr \
     -o_dir OUTPUT_DIR \
     -s SAMPLE_LIST.txt \
     -a ADJUST_FACTOR.txt \
@@ -799,7 +799,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    cwas risk_score -i $HOME/cwas_output/de_novo_variants.categorization_result.txt.gz \
+    cwas risk_score -i $HOME/cwas_output/de_novo_variants.categorization_result.zarr \
     -o_dir $HOME/cwas_output \
     -s $HOME/cwas-input-example/samples.txt \
     -a $HOME/cwas-input-example/adj_factors.txt \

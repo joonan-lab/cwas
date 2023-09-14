@@ -9,7 +9,7 @@ CWAS-Plus utilizes categorized results to estimate the optimal predictor for the
 .. |R2| replace:: R\ :sup:`2`
 
 
-- -i, --input_file: Path to the categorized txt file, resulted from categorization process. This file could be gzipped or not.
+- -i, --input_file: Path to the categorized zarr directory, resulted from categorization process.
 - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name.
 
