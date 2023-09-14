@@ -253,8 +253,10 @@ def test_env_after_run_configuration(
         "VEP_LOFTEE",
         "VEP_HUMAN_ANCESTOR_FA",
         "VEP_GERP_BIGWIG",
-        "VEP_MPC",
+        "VEP_MIS_DB",
+        "VEP_MIS_INFO_KEY",
         "ANNOTATION_BED_KEY",
+        "VEP_MIS_THRES",
         "CATEGORY_DOMAIN",
         "REDUNDANT_CATEGORY",
     ]
