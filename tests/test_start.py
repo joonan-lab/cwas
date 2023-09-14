@@ -5,6 +5,8 @@ from pathlib import Path
 
 import pytest
 from cwas.start import Start
+import cwas.cli
+import sys
 
 
 @pytest.fixture(scope="module")
@@ -14,7 +16,9 @@ def args(cwas_workspace: Path) -> list:
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(args: list):
-    inst = Start.get_instance(args)
+    sys.argv = ['cwas', 'start', *args]
+    inst = cwas.cli.main()
+    #inst = Start.get_instance(args)
     inst.run()
 
 
@@ -41,19 +45,29 @@ def test_config_keys(cwas_workspace: Path):
         for line in config_file:
             config_key, _ = line.strip().split("=")
             config_key_set.add(config_key)
+            print(config_key)
 
     expected_key_set = {
         "ANNOTATION_DATA_DIR",
         "GENE_MATRIX",
         "ANNOTATION_KEY_CONFIG",
-        "BIGWIG_CUTOFF_CONFIG",
         "VEP",
+        "VEP_CACHE_DIR",
+        "VEP_CONSERVATION_FILE",
+        "VEP_LOFTEE",
+        "VEP_HUMAN_ANCESTOR_FA",
+        "VEP_GERP_BIGWIG",
+        "VEP_MIS_DB",
+        "VEP_MIS_INFO_KEY",
+        "VEP_MIS_THRES",
     }
     assert config_key_set == expected_key_set
 
 
 def test_init_without_args():
-    inst = Start.get_instance()
+    sys.argv = ['cwas', 'start']
+    inst = cwas.cli.main()
+    #inst = Start.get_instance()
     expect_default_workspace = Path.home() / ".cwas"
     actual_workspace = getattr(inst, "workspace")
     assert expect_default_workspace == actual_workspace

@@ -9,6 +9,10 @@ def test_make_class_name():
     assert cwas.factory.make_class_name("categorization") == "Categorization"
     assert cwas.factory.make_class_name("annotation") == "Annotation"
     assert cwas.factory.make_class_name("burden_test") == "BurdenTest"
+    assert cwas.factory.make_class_name("permutation_test") == "PermutationTest"
+    assert cwas.factory.make_class_name("burden_shift") == "BurdenShift"
+    assert cwas.factory.make_class_name("risk_score") == "RiskScore"
+    assert cwas.factory.make_class_name("dawn") == "Dawn"
 
 
 def test_create_factory():

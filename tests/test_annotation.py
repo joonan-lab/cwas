@@ -26,7 +26,7 @@ def setup(cwas_workspace, annotation_dir, vcf_path):
     cwas_workspace.mkdir()
     set_env(cwas_workspace, annotation_dir)
     create_vcf_file(vcf_path)
-    create_annotation_key_yaml(annotation_dir / "annotation_keys.yaml")
+    create_annotation_key_yaml(cwas_workspace / "annotation_keys.yaml")
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -53,12 +53,12 @@ def set_env(cwas_workspace, annotation_dir):
 def create_annotation_key_yaml(annot_key_path):
     key_data = {
         "functional_score": {
-            "test1.bed.gz": "test1",
-            "test2.bed.gz": "test2"
+            "bed_annot1.bed.gz": "bed1",
+            "bed.annot2.bed": "bed2"
         },
         "functional_annotation": {
-            "test3.bed.gz": "test3",
-            "test4.bed.gz": "test4"
+            "bed.annot3.bed": "bed3",
+            "bed_annot4.bed.gz": "bed4"
         }
     }
     with annot_key_path.open("w") as outfile:

@@ -1,7 +1,9 @@
 import pandas as pd
 import pytest
 from cwas.binomial_test import BinomialTest
-
+import sys
+import cwas.cli
+import zarr
 
 class BinomialTestMock(BinomialTest):
     """This class do not make outputs"""
@@ -12,6 +14,24 @@ class BinomialTestMock(BinomialTest):
     def update_env(self):
         pass
 
+@pytest.fixture(scope="module")
+def cat_path(cwas_workspace):
+    return cwas_workspace / "categorized.zarr"
+
+@pytest.fixture
+def create_zarr_group(cat_path, categorization_result):
+    # TODO: Add VCF entries (variants)
+    root = zarr.open(cat_path, mode='w')
+    root.create_group('metadata')
+    root['metadata'].attrs['sample_id'] = categorization_result.index.tolist()
+    root['metadata'].attrs['category'] = categorization_result.columns.tolist()
+    root.create_dataset('data', data=categorization_result, chunks=(1000, 1000), dtype='i4')
+
+@pytest.fixture
+def setup(cwas_workspace, annotation_dir, cat_path, categorization_result):
+    #cwas_workspace.mkdir()
+    #set_env(cwas_workspace, annotation_dir)
+    create_zarr_group(cat_path, categorization_result)
 
 @pytest.fixture
 def categorization_result():
@@ -29,12 +49,12 @@ def categorization_result():
 @pytest.fixture
 def sample_info():
     samples = [
-        {"SAMPLE": "Sample1", "FAMILY": "F1", "PHENOTYPE": "case"},
-        {"SAMPLE": "Sample2", "FAMILY": "F1", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample3", "FAMILY": "F2", "PHENOTYPE": "case"},
-        {"SAMPLE": "Sample4", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample5", "FAMILY": "F3", "PHENOTYPE": "ctrl"},
-        {"SAMPLE": "Sample6", "FAMILY": "F3", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample1", "PHENOTYPE": "case"},
+        {"SAMPLE": "Sample2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample3", "PHENOTYPE": "case"},
+        {"SAMPLE": "Sample4", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample5", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "Sample6", "PHENOTYPE": "ctrl"},
     ]
     return pd.DataFrame(samples).set_index("SAMPLE")
 
@@ -55,8 +75,8 @@ def adjustment_factor():
 @pytest.fixture
 def sample_info_other_sample():
     samples = [
-        {"SAMPLE": "SampleA", "FAMILY": "F1", "PHENOTYPE": "case"},
-        {"SAMPLE": "SampleB", "FAMILY": "F2", "PHENOTYPE": "ctrl"},
+        {"SAMPLE": "SampleA", "PHENOTYPE": "case"},
+        {"SAMPLE": "SampleB", "PHENOTYPE": "ctrl"},
     ]
     return pd.DataFrame(samples).set_index("SAMPLE")
 
@@ -72,10 +92,12 @@ def adjustment_factor_other_sample():
 
 @pytest.fixture
 def binomial_test(
-    categorization_result, sample_info, adjustment_factor,
+    cat_path, categorization_result, sample_info, adjustment_factor,
 ):
     # This is not an appropriate usage.
-    inst = BinomialTestMock()
+    sys.argv = ['cwas', 'binomial_test', '-i', str(cat_path), '-s', sample_info, '-a', adjustment_factor]
+    binom_inst = cwas.cli.main()
+    inst = BinomialTestMock(binom_inst)
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info
     inst._adj_factor = adjustment_factor
@@ -89,7 +111,10 @@ def binomial_test_with_inconsistent_sample(
     adjustment_factor_other_sample,
 ):
     # This is not an appropriate usage.
-    inst = BinomialTestMock()
+    sys.argv = ['cwas', 'binomial_test', '-i', categorization_result, '-s', sample_info_other_sample, '-a', adjustment_factor_other_sample]
+    binom_inst = cwas.cli.main()
+    inst = BinomialTestMock(binom_inst)
+    #inst = BinomialTestMock()
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info_other_sample
     inst._adj_factor = adjustment_factor_other_sample

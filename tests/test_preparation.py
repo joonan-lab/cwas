@@ -30,7 +30,6 @@ def setup(cwas_workspace: Path, annotation_dir: Path):
     cwas_workspace.mkdir()
     set_env(cwas_workspace, annotation_dir)
 
-
 @pytest.fixture(scope="module", autouse=True)
 def teardown(cwas_workspace: Path):
     yield

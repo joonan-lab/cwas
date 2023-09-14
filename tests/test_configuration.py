@@ -23,6 +23,25 @@ def setup(cwas_workspace: Path, vep_mock: Path):
     vep_mock.chmod(0o755)
     set_env(cwas_workspace)
 
+@pytest.fixture(scope="module", autouse=True)
+def create_vep_dir(
+    vep_dir, vep_conserv, vep_loftee, vep_msdb, vep_ances, vep_gerp
+):
+    vep_dir.mkdir()
+    #create_vep_conserv(vep_conserv)
+    #create_misdb(vep_msdb)
+    Path(vep_conserv).touch()
+    Path(vep_msdb).touch()
+    Path(vep_loftee).mkdir()
+    Path(vep_ances).touch()
+    Path(vep_gerp).touch()
+    print("[TEST] Temporary VEP directory has created.")
+    yield
+    Path(vep_loftee).rmdir()
+    for f in vep_dir.glob("*"):
+        f.unlink()
+    vep_dir.rmdir()
+    print("[TEST] Temporary VEP directory has deleted.")
 
 @pytest.fixture(scope="module", autouse=True)
 def teardown(cwas_workspace: Path, vep_mock: Path):
@@ -91,10 +110,11 @@ def create_incomplete_cwas_config_file(cwas_workspace, cwas_config):
     _create_cwas_config_file(cwas_workspace, cwas_config)
 
 
-@pytest.fixture
-def create_cwas_config_file_without_optional(cwas_workspace, cwas_config):
-    _unset_optional_config(cwas_config)
-    _create_cwas_config_file(cwas_workspace, cwas_config)
+#optional?
+#@pytest.fixture
+#def create_cwas_config_file_without_optional(cwas_workspace, cwas_config):
+#    _unset_optional_config(cwas_config)
+#    _create_cwas_config_file(cwas_workspace, cwas_config)
 
 
 @pytest.fixture
@@ -162,7 +182,7 @@ def _set_invalid_vep_path(cwas_config, invalid_vep_path):
 
 @pytest.fixture
 def configuration_inst():
-    sys.argv = ['cwas', 'configuration', '-f']
+    sys.argv = ['cwas', 'configuration']
     inst = cwas.cli.main()
     #inst = Configuration.get_instance()
     return inst

@@ -257,7 +257,7 @@ class RiskScore(Runnable):
             self._categorization_result = pd.DataFrame(data=root['data'],
                               index=root['metadata'].attrs['sample_id'],
                               columns=root['metadata'].attrs['category'])
-            self._categorization_result.index.name = 'SAMPLE'            
+            self._categorization_result.index.name = 'SAMPLE'
             if self.adj_factor is not None:
                 self._adjust_categorization_result()
             if self.use_n_carrier:
