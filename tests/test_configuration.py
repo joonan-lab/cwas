@@ -7,6 +7,8 @@ from pathlib import Path
 import pytest
 from cwas.configuration import Configuration
 from cwas.env import Env
+import cwas.cli
+import sys
 
 
 @pytest.fixture(scope="module")
@@ -129,21 +131,23 @@ def _create_cwas_config_file(cwas_workspace, cwas_config):
 
 def _unset_required_config(cwas_config):
     random_config_key = random.choice(
-        ["GENE_MATRIX", "ANNOTATION_DATA_DIR", "VEP"]
+        ["GENE_MATRIX", "ANNOTATION_DATA_DIR", "VEP", "VEP_CACHE_DIR", "VEP_CONSERVATION_FILE",
+         "VEP_LOFTEE", "VEP_HUMAN_ANCESTOR_FA", "VEP_GERP_BIGWIG", "VEP_MIS_DB", "VEP_MIS_INFO_KEY",
+         "VEP_MIS_THRES"]
     )
     cwas_config[random_config_key] = ""
 
 
 def _unset_optional_config(cwas_config):
     random_config_key = random.choice(
-        ["ANNOTATION_KEY_CONFIG", "BIGWIG_CUTOFF_CONFIG"]
+        ["ANNOTATION_KEY_CONFIG"]
     )
     cwas_config[random_config_key] = ""
 
 
 def _set_invalid_file_path(cwas_config, invalid_file_path):
     random_file_key = random.choice(
-        ["GENE_MATRIX", "ANNOTATION_KEY_CONFIG", "BIGWIG_CUTOFF_CONFIG"]
+        ["GENE_MATRIX", "ANNOTATION_KEY_CONFIG"]
     )
     cwas_config[random_file_key] = invalid_file_path
 
@@ -158,7 +162,9 @@ def _set_invalid_vep_path(cwas_config, invalid_vep_path):
 
 @pytest.fixture
 def configuration_inst():
-    inst = Configuration.get_instance()
+    sys.argv = ['cwas', 'configuration', '-f']
+    inst = cwas.cli.main()
+    #inst = Configuration.get_instance()
     return inst
 
 
@@ -242,9 +248,13 @@ def test_env_after_run_configuration(
         "CWAS_WORKSPACE",
         "ANNOTATION_DATA",
         "GENE_MATRIX",
+        "VEP_CACHE_DIR",
+        "VEP_CONSERVATION_FILE",
+        "VEP_LOFTEE",
+        "VEP_HUMAN_ANCESTOR_FA",
+        "VEP_GERP_BIGWIG",
+        "VEP_MPC",
         "ANNOTATION_BED_KEY",
-        "ANNOTATION_BW_KEY",
-        "ANNOTATION_BW_CUTOFF",
         "CATEGORY_DOMAIN",
         "REDUNDANT_CATEGORY",
     ]
@@ -255,7 +265,8 @@ def test_env_after_run_configuration(
 def test_get_inst_without_env():
     _make_env_empty()
     with pytest.raises(RuntimeError):
-        Configuration.get_instance()
+        cwas.cli.main()
+        #Configuration.get_instance()
 
 
 def _make_env_empty():
