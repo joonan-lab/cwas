@@ -267,6 +267,7 @@ def test_env_after_run_configuration(
 def test_get_inst_without_env():
     _make_env_empty()
     with pytest.raises(RuntimeError):
+        sys.argv = ['cwas', 'configuration']
         cwas.cli.main()
         #Configuration.get_instance()
 

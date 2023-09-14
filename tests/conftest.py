@@ -35,6 +35,10 @@ def cwas_input_dir():
     _tmp_input_dir = Path.home() / f".cwas-test-input-{_rand_n}"
     return _tmp_input_dir
 
+@pytest.fixture(scope="package")
+def vep_dir():
+    _tmp_vep_dir = Path.home() / f".vep-test-{_rand_n}"
+    return _tmp_vep_dir
 
 @pytest.fixture(scope="package")
 def annotation_dir(cwas_input_dir):
@@ -43,43 +47,43 @@ def annotation_dir(cwas_input_dir):
 
 @pytest.fixture(scope="package")
 def vep_cache():
-    _vep_cache = Path.home() / ".vep"
+    _vep_cache = vep_dir
     return _vep_cache
 
 @pytest.fixture(scope="package")
 def vep_conserv():
-    _vep_conserv = Path.home() / ".vep/loftee.sql"
+    _vep_conserv = vep_dir / ".vep/loftee.sql"
     return _vep_conserv
 
 @pytest.fixture(scope="package")
 def vep_loftee():
-    _vep_loftee = Path.home() / ".vep/Plugins/loftee"
+    _vep_loftee = vep_dir / ".vep/Plugins/loftee"
     return _vep_loftee
 
 @pytest.fixture(scope="package")
 def vep_ances():
-    _vep_ances = Path.home() / ".vep/human_ancestor.fa.gz"
+    _vep_ances = vep_dir / ".vep/human_ancestor.fa.gz"
     return _vep_ances
 
 @pytest.fixture(scope="package")
 def vep_gerp():
-    _vep_gerp = Path.home() / ".vep/gerp_conservation_scores.homo_sapiens.GRCh38.bw"
+    _vep_gerp = vep_dir / ".vep/gerp_conservation.bw"
     return _vep_gerp
 
 @pytest.fixture(scope="package")
 def vep_msdb():
-    _vep_msdb = Path.home() / ".vep/MPC_hg38.vcf.bgz"
+    _vep_msdb = vep_dir / ".vep/msdb.vcf.bgz"
     return _vep_msdb
 
 @pytest.fixture(scope="package")
 def vep_mskey():
     _vep_mskey = 'MPC'
-    return _vep_mskey
+    return str(_vep_mskey)
 
 @pytest.fixture(scope="package")
 def vep_msthr():
     _vep_msthr = 2
-    return _vep_msthr
+    return int(_vep_msthr)
 
 @pytest.fixture(scope="package")
 def annotation_key_conf(cwas_input_dir):
@@ -106,6 +110,18 @@ def create_cwas_input_dir(
     cwas_input_dir.rmdir()
     print("[TEST] Temporary CWAS input directory has deleted.")
 
+@pytest.fixture(scope="package", autouse=True)
+def create_vep_dir(
+    vep_dir, gene_matrix, annotation_key_conf
+):
+    vep_dir.mkdir()
+    create_misdb(gene_matrix)
+    print("[TEST] Temporary VEP directory has created.")
+    yield
+    for f in vep_dir.glob("*"):
+        f.unlink()
+    vep_dir.rmdir()
+    print("[TEST] Temporary VEP directory has deleted.")
 
 @pytest.fixture(scope="package", autouse=True)
 def create_annotation_dir(create_cwas_input_dir, annotation_dir):
@@ -151,3 +167,16 @@ def create_annotation_key_conf(annotation_key_conf):
     with annotation_key_conf.open("w") as out_f:
         yaml.safe_dump(annot_key_dict, out_f)
 
+def create_misdb(vep_msdb):
+    vep_msdb_header = [
+        "#CHROM",
+        "POS",
+        "ID",
+        "REF",
+        "ALT",
+        "QUAL",
+        "FILTER",
+        "INFO",
+    ]
+    with vep_msdb.open("w") as out_f:
+        print(*vep_msdb_header, sep="\t", file=out_f)
