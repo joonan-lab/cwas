@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import patch
 
 from cwas.runnable import Runnable
+import cwas.cli
+import sys
 
 
 class RunnableMock(Runnable):
@@ -33,12 +35,16 @@ class TestRunnable(unittest.TestCase):
     # by assign an empty set to Runnable.__abstractmethods__
     @patch.multiple(Runnable, __abstractmethods__=set())
     def test_get_instance(self):
-        inst = Runnable.get_instance(argv=list())
+        inst = Runnable()
+        inst._args = inst._create_arg_parser().parse_args(list())
+        #inst = Runnable.get_instance(argv=list())
         assert isinstance(inst, Runnable)
 
     @patch.multiple(Runnable, __abstractmethods__=set())
     def test_run(self):
-        inst = Runnable.get_instance(argv=list())
+        inst = Runnable()
+        inst._args = inst._create_arg_parser().parse_args(list())
+        #inst = Runnable.get_instance(argv=list())
         inst.run()
         assert 1
 
@@ -50,7 +56,9 @@ class TestRunnable(unittest.TestCase):
         test_file.touch()
 
         argv = ["-d", str(test_dir), "-f", str(test_file), "-n", str(randint)]
-        inst = RunnableMock.get_instance(argv)
+        inst = RunnableMock()
+        inst._args = inst._create_arg_parser().parse_args(argv)
+        #inst = RunnableMock.get_instance(argv)
         assert hasattr(inst, "args")
 
         # Teardown

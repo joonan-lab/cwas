@@ -41,18 +41,50 @@ def annotation_dir(cwas_input_dir):
     _annotation_dir = cwas_input_dir / "annotation-data"
     return _annotation_dir
 
+@pytest.fixture(scope="package")
+def vep_cache():
+    _vep_cache = Path.home() / ".vep"
+    return _vep_cache
+
+@pytest.fixture(scope="package")
+def vep_conserv():
+    _vep_conserv = Path.home() / ".vep/loftee.sql"
+    return _vep_conserv
+
+@pytest.fixture(scope="package")
+def vep_loftee():
+    _vep_loftee = Path.home() / ".vep/Plugins/loftee"
+    return _vep_loftee
+
+@pytest.fixture(scope="package")
+def vep_ances():
+    _vep_ances = Path.home() / ".vep/human_ancestor.fa.gz"
+    return _vep_ances
+
+@pytest.fixture(scope="package")
+def vep_gerp():
+    _vep_gerp = Path.home() / ".vep/gerp_conservation_scores.homo_sapiens.GRCh38.bw"
+    return _vep_gerp
+
+@pytest.fixture(scope="package")
+def vep_msdb():
+    _vep_msdb = Path.home() / ".vep/MPC_hg38.vcf.bgz"
+    return _vep_msdb
+
+@pytest.fixture(scope="package")
+def vep_mskey():
+    _vep_mskey = 'MPC'
+    return _vep_mskey
+
+@pytest.fixture(scope="package")
+def vep_msthr():
+    _vep_msthr = 2
+    return _vep_msthr
 
 @pytest.fixture(scope="package")
 def annotation_key_conf(cwas_input_dir):
-    _annotation_key_conf = cwas_input_dir / "annotation_key.yaml"
+    _annotation_key_conf = cwas_input_dir / "annotation_keys.yaml"
     return _annotation_key_conf
-
-
-@pytest.fixture(scope="package")
-def bw_cutoff_conf(cwas_input_dir):
-    _bw_cutoff_conf = cwas_input_dir / "user_def_bigwig_cutoff.yaml"
-    return _bw_cutoff_conf
-
 
 @pytest.fixture(scope="package")
 def gene_matrix(cwas_input_dir):
@@ -62,12 +94,11 @@ def gene_matrix(cwas_input_dir):
 
 @pytest.fixture(scope="package", autouse=True)
 def create_cwas_input_dir(
-    cwas_input_dir, gene_matrix, annotation_key_conf, bw_cutoff_conf
+    cwas_input_dir, gene_matrix, annotation_key_conf
 ):
     cwas_input_dir.mkdir()
     create_gene_matrix(gene_matrix)
     create_annotation_key_conf(annotation_key_conf)
-    create_bw_cutoff_conf(bw_cutoff_conf)
     print("[TEST] Temporary CWAS input directory has created.")
     yield
     for f in cwas_input_dir.glob("*"):
@@ -83,9 +114,6 @@ def create_annotation_dir(create_cwas_input_dir, annotation_dir):
         annotation_dir / "bed_annot1.bed.gz",
         annotation_dir / "bed.annot2.bed.gz",
         annotation_dir / "bed.annot3.bed",
-        annotation_dir / "bw_annot1.bw",
-        annotation_dir / "bw.annot2.bw",
-        annotation_dir / "bw.annot3.bw.gz",
     ]
     for annot_filepath in annot_filepaths:
         annot_filepath.touch()
@@ -111,22 +139,15 @@ def create_gene_matrix(gene_matrix):
 
 def create_annotation_key_conf(annotation_key_conf):
     annot_key_dict = {
-        "bed_annot1.bed.gz": "bed1",
-        "bed.annot2.bed.gz": "bed2",
-        "bed.annot3.bed": "bed3",
-        "bw_annot1.bw": "bw1",
-        "bw.annot2.bw": "bw2",
-        "bw.annot3.bw.gz": "bw3",
+        "functional_score": {
+            "test1.bed.gz": "test1",
+            "test2.bed.gz": "test2"
+        },
+        "functional_annotation": {
+            "test3.bed.gz": "test3",
+            "test4.bed.gz": "test4"
+        }
     }
     with annotation_key_conf.open("w") as out_f:
         yaml.safe_dump(annot_key_dict, out_f)
 
-
-def create_bw_cutoff_conf(bw_cutoff_conf):
-    bw_cutoff_dict = {
-        "bw_annot1.bw": 1.0,
-        "bw.annot2.bw": -2.2,
-        "bw.annot3.bw.gz": 3.3,
-    }
-    with bw_cutoff_conf.open("w") as out_f:
-        yaml.safe_dump(bw_cutoff_dict, out_f)
