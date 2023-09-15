@@ -1,6 +1,5 @@
 import argparse
 import multiprocessing as mp
-import multiprocessing.shared_memory as shm
 from functools import reduce
 from itertools import product
 from math import ceil
@@ -23,11 +22,7 @@ from cwas.core.categorization.parser import (
     parse_gene_matrix,
 )
 from cwas.runnable import Runnable
-from cwas.utils.check import check_num_proc
-from cwas.utils.check import check_is_file
-from cwas.utils.check import check_is_dir
-
-lock = mp.Lock()
+from cwas.utils.check import check_num_proc, check_is_file, check_is_dir
 
 class Categorization(Runnable):
     def __init__(self, args: argparse.Namespace):
