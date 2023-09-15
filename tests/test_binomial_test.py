@@ -19,21 +19,6 @@ def cat_path(cwas_workspace):
     return cwas_workspace / "categorized.zarr"
 
 @pytest.fixture
-def create_zarr_group(cat_path, categorization_result):
-    # TODO: Add VCF entries (variants)
-    root = zarr.open(cat_path, mode='w')
-    root.create_group('metadata')
-    root['metadata'].attrs['sample_id'] = categorization_result.index.tolist()
-    root['metadata'].attrs['category'] = categorization_result.columns.tolist()
-    root.create_dataset('data', data=categorization_result, chunks=(1000, 1000), dtype='i4')
-
-@pytest.fixture
-def setup(cwas_workspace, annotation_dir, cat_path, categorization_result):
-    #cwas_workspace.mkdir()
-    #set_env(cwas_workspace, annotation_dir)
-    create_zarr_group(cat_path, categorization_result)
-
-@pytest.fixture
 def categorization_result():
     results = [
         {"SAMPLE": "Sample1", "A_B_C_D_E": 5, "a_b_c_d_e": 4},
@@ -45,6 +30,21 @@ def categorization_result():
     ]
     return pd.DataFrame(results).set_index("SAMPLE")
 
+
+@pytest.fixture
+def create_zarr_group(cat_path, categorization_result):
+    # TODO: Add VCF entries (variants)
+    root = zarr.open(cat_path, mode='w')
+    root.create_group('metadata')
+    root['metadata'].attrs['sample_id'] = categorization_result.index.tolist()
+    root['metadata'].attrs['category'] = categorization_result.columns.tolist()
+    root.create_dataset('data', data=categorization_result, chunks=(1000, 1000), dtype='i4')
+
+@pytest.fixture
+def setup(cat_path, categorization_result):
+    #cwas_workspace.mkdir()
+    #set_env(cwas_workspace, annotation_dir)
+    create_zarr_group(cat_path, categorization_result)
 
 @pytest.fixture
 def sample_info():
