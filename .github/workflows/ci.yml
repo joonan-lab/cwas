@@ -22,7 +22,9 @@ jobs:
     - name: Install dependencies
       run: |
         conda update conda
-        conda env update --file environment.yml --name base
+        python -m pip install --upgrade pip
+        pip install build
+        pip install .
     - name: Lint with flake8
       run: |
         conda install flake8
@@ -32,5 +34,4 @@ jobs:
         flake8 cwas --count --exit-zero --max-line-length=80 --statistics --extend-ignore=E203
     - name: Test with pytest
       run: |
-        conda install pytest
         pytest tests
