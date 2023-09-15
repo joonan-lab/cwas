@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 from cwas.env import Env
-from cwas.start import Start
 import cwas.cli
 import sys
 

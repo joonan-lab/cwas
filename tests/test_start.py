@@ -4,7 +4,6 @@ Tests of the 'Start' step
 from pathlib import Path
 
 import pytest
-from cwas.start import Start
 import cwas.cli
 import sys
 
