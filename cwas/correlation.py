@@ -98,9 +98,11 @@ class Correlation(Runnable):
             log.print_progress("Get an intersection matrix between categories using the number of samples")
             
             categorization_result_ = np.where(self.categorization_result > 0, 1, self.categorization_result)
-            sparse_matrix = coo_matrix(categorization_result_)
-            transposed_matrix = sparse_matrix.transpose()
-            intersection_matrix = transposed_matrix.dot(sparse_matrix)
+            log.print_progress("Calculate a correlation matrix")
+            categorization_result_ = categorization_result_.astype('float32')
+            categorization_result_tp = np.transpose(categorization_result_)
+            intersection_matrix = np.matmul(categorization_result_tp, categorization_result_)
+            
 
         elif self.generate_matrix == "variant":
             log.print_progress("Not prepared")
