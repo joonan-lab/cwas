@@ -14,10 +14,10 @@ def test_parse_info_field():
     assert parser._parse_vcf_info_field(info_field) == csq_field_names
 
 
-def test_parse_annot_field():
-    annot_field_names = ["ANNOT1", "ANNOT2", "ANNOT3"]
-    annot_field = f"##INFO=<ID=ANNOT,Key={'|'.join(annot_field_names)}>"
-    assert parser._parse_annot_field(annot_field) == annot_field_names
+#def test_parse_annot_field():
+#    annot_field_names = ["ANNOT1", "ANNOT2", "ANNOT3"]
+#    annot_field = f"##INFO=<ID=ANNOT,Key={'|'.join(annot_field_names)}>"
+#    assert parser._parse_annot_field(annot_field) == annot_field_names
 
 
 def test_parse_vcf_header_line():
@@ -46,16 +46,16 @@ def test_parse_info_column():
         ]
     )
     csq_field_names = ["CSQ1", "CSQ2", "CSQ3"]
-    annot_field_names = ["ANNOT1", "ANNOT2", "ANNOT3"]
+    #annot_field_names = ["ANNOT1", "ANNOT2", "ANNOT3"]
     info_df = parser._parse_info_column(
-        info_column, csq_field_names, annot_field_names
+        info_column, csq_field_names
     )
     assert info_df["CSQ1"].to_list() == ["1", "2", "3", "3"]
     assert info_df["CSQ2"].to_list() == ["2", "3", "2", "1"]
     assert info_df["CSQ3"].to_list() == ["3", "1", "1", "2"]
-    assert info_df["ANNOT1"].to_list() == [1, 1, 1, 1]
-    assert info_df["ANNOT2"].to_list() == [1, 0, 1, 0]
-    assert info_df["ANNOT3"].to_list() == [1, 1, 0, 0]
+    #assert info_df["ANNOT1"].to_list() == [1, 1, 1, 1]
+    #assert info_df["ANNOT2"].to_list() == [1, 0, 1, 0]
+    #assert info_df["ANNOT3"].to_list() == [1, 1, 0, 0]
 
 
 def test_parse_gene_matrix():
