@@ -762,6 +762,14 @@ def risk_score() -> argparse.ArgumentParser:
         help="The path of the categorization result file",
     )
     required.add_argument(
+        '-c',
+        '--category_set',
+        dest="category_set_path",
+        required=True,
+        type=Path,
+        help="Path to a text file category information (*.category_info.txt).",
+    )
+    required.add_argument(
         "-s",
         "--sample_info",
         dest="sample_info_path",
@@ -786,15 +794,6 @@ def risk_score() -> argparse.ArgumentParser:
         default=None,
         type=Path,
         help="File listing adjustment factors of each sample. The file is required to use the adjusted values in the binomial test. (default: None)",
-    )
-    optional.add_argument(
-        '-c',
-        '--category_set',
-        dest="category_set_path",
-        required=False,
-        default=None,
-        type=Path,
-        help="Path to a text file category information (*.category_info.txt).",
     )
     optional.add_argument(
         '-d',
@@ -856,13 +855,6 @@ def risk_score() -> argparse.ArgumentParser:
         type=int,
         help="Specify the number of folds in a `(Stratified)KFold` (default: 5)",
     )
-    #optional.add_argument(
-    #    "-l",
-    #    "--logistic",
-    #    dest="logistic",
-    #    action="store_true",
-    #    help="Make a logistic model with L1 penalty. If use '-u (--use_n_carrier)', this option recommend.",
-    #)
     optional.add_argument(
         "-n",
         "--n_permute",
