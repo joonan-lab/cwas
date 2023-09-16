@@ -1,12 +1,16 @@
-import os, sys, argparse
+import argparse
+import os, sys
 import pandas as pd
 import numpy as np
-import cwas.utils.log as log
 from pathlib import Path
-from tqdm import tqdm
-#from glmnet import ElasticNet, LogitNet
+import rpy2.robjects as ro
+from rpy2.robjects import numpy2ri
+from rpy2.robjects.packages import importr
+
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
+
+import cwas.utils.log as log
 from cwas.core.common import cmp_two_arr
 from cwas.utils.check import check_is_file, check_num_proc, check_is_dir
 from cwas.runnable import Runnable
@@ -19,18 +23,18 @@ import re
 import parmap
 from functools import partial
 import zarr
+from concurrent.futures import ProcessPoolExecutor
+import gc
 
-import numpy as np
-import rpy2.robjects as ro
-from rpy2.robjects import numpy2ri
-from rpy2.robjects.packages import importr
-from sklearn.metrics import r2_score
 
 class RiskScore(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
         self._sample_info = None
+        self._categorization_root = None
         self._categorization_result = None
+        self._sample_ids = None
+        self._categories = None
         self._adj_factor = None
         self._category_set_path = None
         self._category_set = None
@@ -61,18 +65,18 @@ class RiskScore(Runnable):
             args.domain_list)        
         if args.tag:
             log.print_arg("Output tag (prefix of output files)", args.tag)
-        log.print_arg("If the number of carriers is used for calculating R2 or not", args.use_n_carrier)
+        log.print_arg("If the number of carriers is used for calculating risk score or not", args.use_n_carrier)
         log.print_arg(
             "Threshold for selecting rare categories",
             f"{args.ctrl_thres: ,d}",
         )
         log.print_arg("Fraction of the training set", f"{args.train_set_f: ,f}")
         log.print_arg(
-            "No. regression trials to calculate a mean of R squares",
+            "No. regression trials to calculate a mean of R squared values",
             f"{args.num_reg: ,d}",
         )
         log.print_arg(
-            "No. folds for CV",
+            "No. folds for Cross-Vadidation",
             f"{args.fold: ,d}",
         )
         #log.print_arg("Use Logistic regression", args.logistic)
@@ -82,7 +86,7 @@ class RiskScore(Runnable):
         )
         log.print_arg("Skip the permutation test", args.predict_only)
         log.print_arg(
-            "No. worker processes for permutation",
+            "No. worker processes",
             f"{args.num_proc: ,d}",
         )
 
@@ -104,6 +108,18 @@ class RiskScore(Runnable):
             if self.args.categorization_result_path 
             else Path(self.get_env("CATEGORIZATION_RESULT"))
         )
+    
+    @property
+    def category_set_path(self) -> Path:
+        return self.args.category_set_path.resolve()
+
+    @property
+    def sample_info_path(self) -> Path:
+        return self.args.sample_info_path.resolve()
+
+    @property
+    def out_dir(self) -> Path:
+        return(self.args.output_dir_path.resolve())
 
     @property
     def adj_factor_path(self) -> Optional[Path]:
@@ -114,70 +130,44 @@ class RiskScore(Runnable):
         )
 
     @property
-    def plot_path(self) -> Optional[Path]:
-        tag = '' if self.tag is None else ''.join([self.tag, '_'])
-        f_name = re.sub(r'.categorization_result\.zarr\.gz|.categorization_result\.zarr', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf', str(self.categorization_result_path.name))
-        return Path(
-            f"{self.out_dir}/" +
-            f"{f_name}"
-        )
+    def domain_list(self) -> str:
+        if self.args.domain_list=='run_all':
+            all_domains = ['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+            return all_domains
+        else:
+            all_domains = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+            matching_values = [self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
+            return matching_values
+
+    def _check_domain_list(self, d, all_domain_list):
+        if not d in map(str.lower, all_domain_list):
+            raise ValueError(
+                "Invalid domain name: "
+                "{}".format(d)
+            )
+        else:
+            idx = list(map(str.lower, all_domain_list)).index(d)
+            return all_domain_list[idx]
 
     @property
-    def category_set_path(self) -> Optional[Path]:
-        return (
-            self.args.category_set_path.resolve()
-            if self.args.category_set_path
-            else None
-        )
-
-    #@property
-    #def logistic(self) -> bool:
-    #    return self.args.logistic
-
-    @property
-    def out_dir(self) -> Path:
-        return(self.args.output_dir_path.resolve())
-
-    @property
-    def category_set(self) -> pd.DataFrame:
-        if self._category_set is None and self.category_set_path:
-            self._category_set = pd.read_csv(self.category_set_path, sep='\t')
-        return self._category_set
-
-    @property
-    def sample_info_path(self) -> Path:
-        return self.args.sample_info_path.resolve()
-
+    def tag(self) -> str:
+        return self.args.tag
+    
     @property
     def use_n_carrier(self) -> bool:
         return self.args.use_n_carrier
 
     @property
-    def domain_list(self) -> str:
-        if self.args.domain_list=='run_all':
-            joined_string = ','.join(['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')])
-            return joined_string
-        else:
-            first_list = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
-            second_list = self.args.domain_list.split(',')
-            matching_values = [value for value in first_list if value.lower() in map(str.lower, second_list)]
-            return ','.join(matching_values)
-
-    @property
-    def tag(self) -> str:
-        return self.args.tag
-
-    @property
-    def num_proc(self) -> int:
-        return self.args.num_proc
-
-    @property
-    def num_reg(self) -> int:
-        return self.args.num_reg
+    def ctrl_thres(self) -> int:
+        return self.args.ctrl_thres
 
     @property
     def train_set_f(self) -> float:
         return self.args.train_set_f
+
+    @property
+    def num_reg(self) -> int:
+        return self.args.num_reg
 
     @property
     def fold(self) -> int:
@@ -188,23 +178,59 @@ class RiskScore(Runnable):
         return self.args.n_permute
     
     @property
-    def ctrl_thres(self) -> int:
-        return self.args.ctrl_thres
-    
-    @property
     def predict_only(self) -> bool:
         return self.args.predict_only
-    
+
+    @property
+    def num_proc(self) -> int:
+        return self.args.num_proc
+
     @property
     def seed(self) -> int:
         return self.args.seed
     
     @property
+    def categorization_root(self):
+        if self._categorization_root is None:
+            self._categorization_root = zarr.open(self.categorization_result_path, mode='r')
+        return self._categorization_root
+    
+    @property
+    def categorization_result(self):
+        if self._categorization_result is None:
+            self._categorization_result = self.categorization_root['data']
+        return self._categorization_result
+
+    @property
+    def sample_ids(self):
+        if self._sample_ids is None:
+            self._sample_ids = self.categorization_root['metadata'].attrs['sample_id']
+        return self._sample_ids
+
+    @property
+    def categories(self):
+        if self._categories is None:
+            self._categories = self.categorization_root['metadata'].attrs['category']
+        return self._categories
+    
+            
+    @property
+    def category_set(self) -> pd.DataFrame:
+        if self._category_set is None:
+            self._category_set = pd.read_csv(self.category_set_path, sep='\t')
+            self._category_set['Category'] = pd.Categorical(self._category_set['Category'],
+                                                            categories=self.categories,
+                                                            ordered=True)
+            self._category_set.sort_values('Category', ignore_index=True, inplace=True)
+        return self._category_set
+    
+    @property
     def sample_info(self) -> pd.DataFrame:
         if self._sample_info is None:
-            self._sample_info = pd.read_table(
-                self.sample_info_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
-            )
+            self._sample_info = pd.read_table(self.sample_info_path,
+                                              index_col="SAMPLE",
+                                              dtype={"SAMPLE": str},
+                                              sep="\t").reindex(self.sample_ids)
             if ("SET" not in self._sample_info.columns):
                 log.print_log("LOG", 
                               "No 'SET' column in sample information file. "
@@ -213,120 +239,40 @@ class RiskScore(Runnable):
                 case_count = sum(self._sample_info['PHENOTYPE'] == 'case')
                 ctrl_count = sum(self._sample_info['PHENOTYPE'] == 'ctrl')
                 
-                self.case_f = round(case_count*self.train_set_f)
-                self.ctrl_f = round(ctrl_count*self.train_set_f)
+                self._case_f = round(case_count*self.train_set_f)
+                self._ctrl_f = round(ctrl_count*self.train_set_f)
                 
-                
-                log.print_log("LOG",
-                              "Use {} cases and {} controls for training set".format(self.case_f, self.ctrl_f)
-                              )
-                
-                case_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='case'].sample(n=self.case_f, random_state=42).index
-                ctrl_test_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=42).index
+                case_train_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='case'].sample(n=self._case_f, random_state=self.seed).index
+                ctrl_train_idx = self._sample_info.loc[self._sample_info.PHENOTYPE=='ctrl'].sample(n=self._ctrl_f, random_state=self.seed).index
                 self._sample_info['SET'] = ''
-                self._sample_info.loc[case_test_idx, 'SET'] = 'training'
-                self._sample_info.loc[ctrl_test_idx, 'SET'] = 'training'
+                self._sample_info.loc[case_train_idx, 'SET'] = 'training'
+                self._sample_info.loc[ctrl_train_idx, 'SET'] = 'training'
                 self._sample_info.loc[self._sample_info['SET'] == '', 'SET'] = 'test'
-                #self._sample_info["SET"] = self._sample_info['SET'].fillna('test')
-                
-                #self.min_size = int(np.rint(min(case_count, ctrl_count) * self.train_set_f))
-                #test_idx = self._sample_info.groupby('PHENOTYPE').sample(n=self.min_size, random_state=42).index
-                #self._sample_info["SET"] = np.where(self._sample_info.index.isin(test_idx), "test", "training")
             else:
-              self.case_f = sum((self._sample_info['PHENOTYPE'] == 'case') & (self._sample_info['SET'] == 'training'))
-              self.ctrl_f = sum((self._sample_info['PHENOTYPE'] == 'ctrl') & (self._sample_info['SET'] == 'training'))
-              log.print_log("LOG",
-                            "Use {} cases and {} controls for training set".format(self.case_f, self.ctrl_f)
-                            )
+                self._case_f = sum((self._sample_info['PHENOTYPE'] == 'case') & (self._sample_info['SET'] == 'training'))
+                self._ctrl_f = sum((self._sample_info['PHENOTYPE'] == 'ctrl') & (self._sample_info['SET'] == 'training'))
+              
+            log.print_log("LOG",
+                        "Use {} cases and {} controls for training set".format(self._case_f, self._ctrl_f)
+                        )
         return self._sample_info
 
     @property
     def adj_factor(self) -> pd.DataFrame:
-        if self._adj_factor is None and self.adj_factor_path:
-            self._adj_factor = pd.read_table(
-                self.adj_factor_path, index_col="SAMPLE", dtype={"SAMPLE": str}, sep="\t"
-            )
+        if (self._adj_factor is None) and (self.adj_factor_path is not None):
+            self._adj_factor = pd.read_table(self.adj_factor_path,
+                                             index_col="SAMPLE",
+                                             dtype={"SAMPLE": str},
+                                             sep="\t")
+            if not cmp_two_arr(self.sample_ids, self._adj_factor.index.values):
+                raise ValueError(
+                    "The sample IDs from the adjustment factor list are"
+                    "not the same with the sample IDs "
+                    "from the categorization result."
+                )
+            self._adj_factor = self._adj_factor.reindex(self.sample_ids) 
         return self._adj_factor
     
-    @property
-    def categorization_result(self) -> pd.DataFrame:
-        if self._categorization_result is None:
-            log.print_progress("Load the categorization result")
-            
-            root = zarr.open(self.categorization_result_path, mode='r')
-            self._categorization_result = pd.DataFrame(data=root['data'],
-                              index=root['metadata'].attrs['sample_id'],
-                              columns=root['metadata'].attrs['category'])
-            self._categorization_result.index.name = 'SAMPLE'            
-            if self.adj_factor is not None:
-                self._adjust_categorization_result()
-            if self.use_n_carrier:
-                self._categorization_result = self._categorization_result.applymap(lambda x: 1 if x > 0 else 0)
-            log.print_log("LOG",
-                          "Categorization result has {} samples and {} categories."
-                          .format(self._categorization_result.shape[0], self._categorization_result.shape[1]))
-        return self._categorization_result
-    
-    def _adjust_categorization_result(self):
-        if not self._contain_same_index(
-           self._categorization_result, self._adj_factor
-        ):
-            raise ValueError(
-                "The sample IDs from the adjustment factor list are "
-                "not the same with the sample IDs "
-                "from the categorization result."
-            )
-        '''
-        adj_factors = [
-            self.adj_factor.to_dict()["AdjustFactor"][sample_id]
-            for sample_id in self._categorization_result.index.values
-        ]
-        '''
-        adj_factors = self.adj_factor.loc[self._categorization_result.index.values, "AdjustFactor"].tolist()
-        self._categorization_result = self._categorization_result.multiply(
-            adj_factors, axis="index"
-        )
-
-    @staticmethod
-    def _contain_same_index(table1: pd.DataFrame, table2: pd.DataFrame) -> bool:
-        return cmp_two_arr(table1.index.values, table2.index.values)
-    
-    @property
-    def datasets(self) -> np.ndarray:
-        if self._datasets is None:
-            sample_ids = self.categorization_result.index.values
-            set_dict = self.sample_info.to_dict()["SET"]
-            self._datasets = np.array([set_dict[sample_id] for sample_id in sample_ids])
-        return self._datasets
-
-    @property
-    def covariates(self) -> pd.DataFrame:
-        if self._covariates is None:
-            self._covariates = self.categorization_result[self.datasets == "training"]
-        return self._covariates
-    
-    @property
-    def test_covariates(self) -> pd.DataFrame:
-        if self._test_covariates is None:
-            self._test_covariates = self.categorization_result[self.datasets == "test"]
-        return self._test_covariates
-    
-    @property
-    def response(self) -> np.ndarray:
-        if self._response is None:
-            sample_ids = self.categorization_result[self.datasets == "training"].index.values
-            phenotype_dict = self.sample_info.to_dict()["PHENOTYPE"]
-            self._response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids])
-        return self._response
-
-    @property
-    def test_response(self) -> np.ndarray:
-        if self._test_response is None:
-            sample_ids = self.categorization_result[self.datasets == "test"].index.values
-            phenotype_dict = self.sample_info.to_dict()["PHENOTYPE"]
-            self._test_response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids])
-        return self._test_response
-
     @property
     def coef_path(self) -> Path:
         tag = '' if self.tag is None else ''.join([self.tag, '_'])
@@ -353,6 +299,15 @@ class RiskScore(Runnable):
             f"{self.out_dir}/" +
             f"{f_name}"
         )
+        
+    @property
+    def plot_path(self) -> Optional[Path]:
+        tag = '' if self.tag is None else ''.join([self.tag, '_'])
+        f_name = re.sub(r'.categorization_result\.zarr\.gz|.categorization_result\.zarr', f'.lasso_histogram_{tag}thres_{self.ctrl_thres}.pdf', str(self.categorization_result_path.name))
+        return Path(
+            f"{self.out_dir}/" +
+            f"{f_name}"
+        )
 
     def run(self):
         self.prepare()
@@ -361,177 +316,213 @@ class RiskScore(Runnable):
             self.permute_pvalues()
         self.save_results()
         self.update_env()
-        log.print_progress("Done")
+        log.print_progress("Done.")
 
     def prepare(self):
-        if not self._contain_same_index(
-            self.categorization_result, self.sample_info
-        ):
+        if not cmp_two_arr(self.sample_ids, self.sample_info.index.values):
             raise ValueError(
                 "The sample IDs from the sample information are "
                 "not the same with the sample IDs "
                 "from the categorization result."
             )
-            
+
     def risk_scores(self):
         """Generate risk scores for various seeds """
         log.print_progress(self.risk_scores.__doc__)
 
-        domain_values = [domain.strip() for domain in self.domain_list.split(',')]
-        for domain in domain_values:
-            if domain == 'all':
-                filtered_combs = pd.Series(self.categorization_result.columns)
-            else:
-                filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
+        #domain_values = [domain.strip() for domain in self.domain_list.split(',')]
+        seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
+        num_proc2 = len(seeds) if self.num_proc > len(seeds) else self.num_proc
+        pool = ProcessPoolExecutor(max_workers=num_proc2)
+        
+        for domain in self.domain_list:
+            log.print_progress(f"Generate risk score for the domain: {domain}")
+            filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]["Category"] if domain != 'all' else pd.Series(self.categories)
             
-            seeds = np.arange(self.seed, self.seed + self.num_reg * 10, 10)
-
-            _risk_score_per_category = partial(self.risk_score_per_category,
-                                               swap_label = False,
-                                               filtered_combs = filtered_combs)
-            
-            map_result = parmap.map(_risk_score_per_category, seeds, pm_pbar=True, pm_processes=self.num_proc)
+            rare_categories, cov, test_cov, response, test_response = self._create_covariates(seed=self.seed,
+                                                                                              swap_label=False,
+                                                                                              filtered_combs=filtered_combs)
+            _risk_score_per_category_ = partial(self._risk_score_per_category,
+                                                swap_label = False,
+                                                rare_categories = rare_categories,
+                                                cov = cov,
+                                                test_cov = test_cov,
+                                                response = response,
+                                                test_response = test_response,
+                                                filtered_combs = filtered_combs)
+            map_result = pool.map(_risk_score_per_category_, seeds)
             self._result_dict[domain] = {key: value for x in map_result for key, value in x.items()}
-            #for seed in seeds:
-            #    self._result_dict[domain].update(self.risk_score_per_category(seed=seed, swap_label = False, filtered_combs=filtered_combs))
+            gc.collect()
             
-    def risk_score_per_category(self, seed: int = 42, swap_label: bool = False, filtered_combs = None):
-        """Lasso model selection """
-        output_dict = defaultdict(dict)
-        if swap_label:
-            np.random.seed(seed)
-            
-            perm_sample_info = self.sample_info
-            perm_sample_info['Perm_PHENOTYPE'] = np.random.permutation(self.sample_info['PHENOTYPE'])
-            perm_sample_info = perm_sample_info.drop(columns=['PHENOTYPE', 'SET'])
-            
-            perm_case_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self.case_f, random_state=seed).index
-            perm_ctrl_test_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self.ctrl_f, random_state=seed).index
-            
-            perm_sample_info['Perm_SET'] = ''
-            perm_sample_info.loc[perm_case_test_idx, 'Perm_SET'] = 'training'
-            perm_sample_info.loc[perm_ctrl_test_idx, 'Perm_SET'] = 'training'
-            perm_sample_info.loc[perm_sample_info['Perm_SET'] == '', 'Perm_SET'] = 'test'
-            #perm_sample_info["Perm_SET"] = perm_sample_info['Perm_SET'].fillna('test')
-
-            #test_idx = perm_sample_info.groupby('Perm_PHENOTYPE').sample(n=self.min_size, random_state=seed).index
-            #perm_sample_info["Perm_SET"] = np.where(perm_sample_info.index.isin(test_idx), "test", "training")
-            
-            sample_ids1 = self.categorization_result.index.values
-            set_dict = perm_sample_info.to_dict()["Perm_SET"]
-            datasets = np.array([set_dict[sample_id] for sample_id in sample_ids1])
-            
-            sample_ids2 = self.categorization_result[datasets == "test"].index.values
-            phenotype_dict = perm_sample_info.to_dict()["Perm_PHENOTYPE"]
-            test_response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids2])
-            
-            sample_ids3 = self.categorization_result[datasets == "training"].index.values
-            response = np.array([phenotype_dict[sample_id] == "case" for sample_id in sample_ids3])
-            
-            covariates = self.categorization_result[datasets == "training"]
-            test_covariates = self.categorization_result[datasets == "test"]
-            
-            ctrl_var_counts = pd.concat(
-                [covariates[filtered_combs][~response],
-                 test_covariates[filtered_combs][~test_response]],
-            ).sum()
-            rare_idx = (ctrl_var_counts < self.ctrl_thres).values
-            cov = covariates[filtered_combs].iloc[:, rare_idx]
-            test_cov = test_covariates[filtered_combs].iloc[:, rare_idx]
-        else:
-            response, test_response = self.response, self.test_response
-            
-            ctrl_var_counts = pd.concat(
-                [self.covariates[filtered_combs][~response],
-                 self.test_covariates[filtered_combs][~test_response]],
-            ).sum()
-            rare_idx = (ctrl_var_counts < self.ctrl_thres).values
-            log.print_progress(f"# of rare categories (Seed: {seed}): {rare_idx.sum()}")
-            cov = self.covariates[filtered_combs].iloc[:, rare_idx]
-            test_cov = self.test_covariates[filtered_combs].iloc[:, rare_idx]
-
-        if cov.shape[1] == 0:
-            if not swap_label:
-                log.print_warn(f"There are no rare categories (Seed: {seed}).")
-            return
-        
-        #scaler = StandardScaler().fit(cov)
-        #cov2 = scaler.transform(cov)
-        #test_cov2 = scaler.transform(test_cov)
-
-        y = np.where(response, 1.0, 0.0)
-        test_y = np.where(test_response, 1.0, 0.0)
-        if not swap_label:
-            log.print_progress(f"Running LassoCV (Seed: {seed})")
-        
-        # Convert numpy arrays to R objects
-        numpy2ri.activate()
-        X_r = ro.r.matrix(cov.values, nrow=cov.shape[0], ncol=cov.shape[1])
-        y_r = ro.FloatVector(y)
-        # Create a glmnet model
-        cvfit = self.cv_glmnet(x=X_r, y=y_r, alpha=1, foldid = numpy2ri.py2rpy(self.custom_cv_folds(seed=seed)),
-                               type_measure="deviance", standardize=True, nlambda=100)
-        # Get the lambda with the minimum mean cross-validated error
-        opt_lambda = cvfit.rx2("lambda.min")[0]
-        # The index is 1-based.
-        lambda_values = np.array(cvfit.rx2("lambda"))
-        i_choose = np.where(lambda_values == opt_lambda)[0][0]
-
-        # Get lasso coefficients
-        full_glmnet = cvfit.rx2("glmnet.fit")
-        beta_matrix = ro.r["as.matrix"](ro.r["coef"](full_glmnet, s=opt_lambda))
-
-        opt_coeff = np.zeros(len(rare_idx))
-        # beta_matrix includes the intercept term, resulting in one additional column compared to your original input data.
-        opt_coeff[rare_idx] = beta_matrix[1:, 0]
-        
-        n_select = np.sum(np.abs(opt_coeff) != 0.0)
-
-        # Compute the predictive R-squared using the test set
-        predict_function = ro.r["predict"]
-        predicted_values = predict_function(full_glmnet, newx=test_cov.values)
-        predict_y = predicted_values[:, i_choose]
-        rsq = r2_score(test_y, predict_y)
-
-        output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
-        
-        if not swap_label:
-            log.print_progress("Done")
-        
-        return output_dict
-            
-    def custom_cv_folds(self, seed: int = 42) -> Tuple[np.ndarray, np.ndarray]:
-        np.random.seed(seed)
-        nobs = np.sum(self.datasets == "training")
-        rand_idx = np.random.permutation(nobs)
-        foldid = np.repeat(0, nobs)
-        i=0
-        while i<=self.fold:
-            idx_val = rand_idx[np.arange(nobs * (i - 1) / self.fold, nobs * i / self.fold, dtype=int)]
-            foldid[idx_val] = i
-            i+=1
-        return foldid
-    
     def permute_pvalues(self):
         """Run LassoCV to get permutated pvalues"""
         log.print_progress(self.permute_pvalues.__doc__)
                     
         seeds = np.arange(self.seed, self.seed+self.n_permute)
 
-        domain_values = [domain.strip() for domain in self.domain_list.split(',')]
-        for domain in domain_values:
-            if domain == 'all':
-                filtered_combs = pd.Series(self.categorization_result.columns)
-            else:
-                filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
-                
-            _risk_score_per_category = partial(self.risk_score_per_category,
-                                               swap_label = True,
-                                               filtered_combs = filtered_combs)
+        for domain in self.domain_list:
+            log.print_progress(f"Generate permutation p-values for the domain: {domain}")
+            filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
             
-            map_result = parmap.map(_risk_score_per_category, seeds, pm_pbar=True, pm_processes=self.num_proc)
+            _risk_score_per_category_ = partial(self._risk_score_per_category,
+                                                swap_label = True,
+                                                filtered_combs = filtered_combs)
+            map_result = parmap.map(_risk_score_per_category_, seeds, pm_pbar=True, pm_processes=self.num_proc)
             self._permutation_dict[domain] = {key: value for x in map_result for key, value in x.items()}
+            gc.collect()
+    
+    def _create_covariates(self, seed: int, swap_label: bool = False, filtered_combs = None):
+        """Create covariates for risk score model"""
+        if swap_label:
+            np.random.seed(seed)
+            
+            perm_sample_info = self.sample_info.copy()
+            perm_sample_info['Perm_PHENOTYPE'] = np.random.permutation(self.sample_info['PHENOTYPE'])
+            perm_sample_info.drop(columns=['PHENOTYPE', 'SET'], inplace=True)
+                        
+            perm_case_train_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='case'].sample(n=self._case_f, random_state=seed).index
+            perm_ctrl_train_idx = perm_sample_info.loc[perm_sample_info.Perm_PHENOTYPE=='ctrl'].sample(n=self._ctrl_f, random_state=seed).index
+                        
+            perm_sample_info['Perm_SET'] = ''
+            perm_sample_info.loc[perm_case_train_idx, 'Perm_SET'] = 'training'
+            perm_sample_info.loc[perm_ctrl_train_idx, 'Perm_SET'] = 'training'
+            perm_sample_info.loc[perm_sample_info['Perm_SET'] == '', 'Perm_SET'] = 'test'
+                
+            ctrls_coords = list(np.where(perm_sample_info["Perm_PHENOTYPE"]=='ctrl')[0])
+            
+            train_samples_coords = list(np.where(perm_sample_info['Perm_SET']=='training')[0])
+            test_samples_coords = list(np.where(perm_sample_info['Perm_SET']=='test')[0])
+            
+            response = (perm_sample_info.iloc[train_samples_coords]['Perm_PHENOTYPE'] == 'case').values
+            test_response = (perm_sample_info.iloc[test_samples_coords]['Perm_PHENOTYPE'] == 'case').values
+        else:
+            ctrls_coords = list(np.where(self.sample_info.PHENOTYPE=='ctrl')[0]) # 4348
+        
+            train_samples_coords = list(np.where(self.sample_info['SET']=='training')[0])
+            test_samples_coords = list(np.where(self.sample_info['SET']=='test')[0])
+            
+            response = (self.sample_info.iloc[train_samples_coords]['PHENOTYPE'] == 'case').values
+            test_response = (self.sample_info.iloc[test_samples_coords]['PHENOTYPE'] == 'case').values
+            
+        filtered_combs_coords = filtered_combs.index.tolist()
+        
+        if not self.adj_factor is None:
+            if self.use_n_carrier:
+                ctrl_categorization_result = (self.categorization_result.get_orthogonal_selection((ctrls_coords, filtered_combs_coords)) > 0).astype('uint8')
+                ctrl_adj_factors = self.adj_factor.iloc[ctrls_coords]['AdjustFactor'].values[:,np.newaxis]
+                ctrl_var_counts = pd.Series(data=(np.where(self.categorization_result.get_orthogonal_selection((ctrls_coords, filtered_combs_coords)) > 1, 1, 0) * ctrl_adj_factors).sum(axis=0),
+                                            index=filtered_combs)
+                rare_categories = ctrl_var_counts[ctrl_var_counts < self.ctrl_thres].index.tolist()
+                rare_category_coords = list(np.where(pd.Series(self.categories).isin(rare_categories))[0])
+                
+                cov = ((self.categorization_result.get_orthogonal_selection((train_samples_coords, rare_category_coords)) > 0).astype('uint8') * self.adj_factor.iloc[train_samples_coords]['AdjustFactor'].values[:,np.newaxis]).astype('float32')
+                test_cov = ((self.categorization_result.get_orthogonal_selection((test_samples_coords, rare_category_coords)) > 0).astype('uint8') * self.adj_factor.iloc[test_samples_coords]['AdjustFactor'].values[:,np.newaxis]).astype('float32')
+            else:
+                ctrl_adj_factors = self.adj_factor.iloc[ctrls_coords]['AdjustFactor'].values[:,np.newaxis]
+                ctrl_var_counts = pd.Series(data=(self.categorization_result.get_orthogonal_selection((ctrls_coords, filtered_combs_coords)) * ctrl_adj_factors).sum(axis=0),
+                                            index=filtered_combs)
+                rare_categories = ctrl_var_counts[ctrl_var_counts < self.ctrl_thres].index.tolist()
+                rare_category_coords = list(np.where(pd.Series(self.categories).isin(rare_categories))[0])
+                
+                cov = (self.categorization_result.get_orthogonal_selection((train_samples_coords, rare_category_coords)) * self.adj_factor.iloc[train_samples_coords]['AdjustFactor'].values[:,np.newaxis]).astype('float32')
+                test_cov = (self.categorization_result.get_orthogonal_selection((test_samples_coords, rare_category_coords)) * self.adj_factor.iloc[test_samples_coords]['AdjustFactor'].values[:,np.newaxis]).astype('float32')
+        else:
+            if self.use_n_carrier:
+                ctrl_categorization_result = (self.categorization_result.get_orthogonal_selection((ctrls_coords, filtered_combs_coords)) > 0).astype('uint8')
+                ctrl_var_counts = pd.Series(data=ctrl_categorization_result.sum(axis=0),
+                                            index=filtered_combs)
+                rare_categories = ctrl_var_counts[ctrl_var_counts < self.ctrl_thres].index.tolist()
+                rare_category_coords = list(np.where(pd.Series(self.categories).isin(rare_categories))[0])
 
+                cov = (self.categorization_result.get_orthogonal_selection((train_samples_coords, rare_category_coords)) > 0).astype('uint8')
+                test_cov = (self.categorization_result.get_orthogonal_selection((test_samples_coords, rare_category_coords)) > 0).astype('uint8')
+            else:
+                ctrl_var_counts = pd.Series(data=self.categorization_result.get_orthogonal_selection((ctrls_coords, filtered_combs_coords)).sum(axis=0),
+                                            index=filtered_combs)
+                rare_categories = ctrl_var_counts[ctrl_var_counts < self.ctrl_thres].index.tolist()
+                rare_category_coords = list(np.where(pd.Series(self.categories).isin(rare_categories))[0])
+
+                cov = self.categorization_result.get_orthogonal_selection((train_samples_coords, rare_category_coords))
+                test_cov = self.categorization_result.get_orthogonal_selection((test_samples_coords, rare_category_coords))
+            
+        if not swap_label:
+            log.print_progress(f"# of rare categories (Seed: {seed}): {len(rare_categories)}")
+        
+        gc.collect()
+        return rare_categories, cov, test_cov, response, test_response
+    
+    def _risk_score_per_category(self, seed: int, swap_label: bool = False, rare_categories = None, cov = None, test_cov = None, response = None, test_response = None, filtered_combs = None):
+        """Lasso model selection"""
+        output_dict = defaultdict(dict)
+        
+        if swap_label:
+            rare_categories, cov, test_cov, response, test_response = self._create_covariates(seed, swap_label, filtered_combs)
+            
+        if cov.shape[1] == 0:
+            if not swap_label:
+                log.print_warn(f"There are no rare categories (Seed: {seed}).")
+            return
+
+        y = np.where(response, 1., 0.)
+        test_y = np.where(test_response, 1., 0.)
+        
+        if not swap_label:
+            log.print_progress(f"Running LassoCV (Seed: {seed})")
+        
+        # Create a glmnet model
+        cvfit = self.cv_glmnet(x = numpy2ri.py2rpy(cov),
+                               y = ro.FloatVector(y),
+                               alpha = 1,
+                               foldid = numpy2ri.py2rpy(self._custom_cv_folds(cov.shape[0], seed)),
+                               type_measure='deviance',
+                               nlambda=100)
+        
+        # Get the lambda with the minimum mean cross-validated error
+        opt_lambda = cvfit.rx2("lambda.min")[0]
+        # The index is 1-based.
+        lambda_values = np.array(cvfit.rx2("lambda"))
+        i_choose = np.where(lambda_values == opt_lambda)[0][0]
+        
+        # Get lasso coefficients
+        full_glmnet = cvfit.rx2("glmnet.fit")
+        beta_matrix = np.array(ro.r["as.matrix"](ro.r["coef"](full_glmnet, s=opt_lambda)))
+
+        rare_idx = filtered_combs.isin(rare_categories)
+        opt_coeff = np.zeros(len(rare_idx))
+        
+        # beta_matrix includes the intercept term, resulting in one additional column compared to your original input data.
+        opt_coeff[rare_idx] = beta_matrix[1:, 0]
+                
+        n_select = np.sum(np.abs(opt_coeff) != 0.0)
+
+        # Compute the predictive R-squared using the test set
+        predict_function = ro.r["predict"]
+        predicted_values = predict_function(full_glmnet, newx=numpy2ri.py2rpy(test_cov))
+        predict_y = np.array(predicted_values)[:, i_choose]
+        rsq = r2_score(test_y, predict_y)
+
+        output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
+                
+        if not swap_label:
+            log.print_progress(f"Done (Seed: {seed})")
+                
+        gc.collect()
+        return output_dict    
+        
+    def _custom_cv_folds(self, nobs: int, seed: int = 42) -> Tuple[np.ndarray, np.ndarray]:
+        """Customize k-fold cross-validation"""
+        np.random.seed(seed)
+        rand_idx = np.random.permutation(nobs)
+        foldid = np.repeat(0, nobs)
+        i=0
+        
+        while i<=self.fold:
+            idx_val = rand_idx[np.arange(nobs * (i - 1) / self.fold, nobs * i / self.fold, dtype=int)]
+            foldid[idx_val] = i
+            i+=1
+            
+        return foldid
+    
     def save_results(self):
         """Save the results to a file """
         log.print_progress(self.save_results.__doc__)
@@ -541,15 +532,13 @@ class RiskScore(Runnable):
         fin_res = pd.DataFrame()
 
         for domain in domain_list:
-            if domain == 'all':
-                filtered_combs = pd.Series(self.categorization_result.columns)
-            else:
-                filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category']
+            filtered_combs = self.category_set.loc[self.category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
 
             result_table = []
 
             choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
                                 for seed in self._result_dict[domain].keys()], axis=0)
+            
             ## Get the categories which are selected by the LassoCV for all seeds
             coef_df = pd.DataFrame.from_dict(
                 {seed: self._result_dict[domain][seed][3][choose_idx]
@@ -558,19 +547,11 @@ class RiskScore(Runnable):
                 columns = filtered_combs[choose_idx]
             )
 
-            # Create the initial DataFrame with the 'Domain' column
-            #domain_column_data = {'Domain': ['noncoding'] * coef_df.shape[0]}
-            #domain_df = pd.DataFrame(domain_column_data)
-            #domain_df
-
-            coef_df.to_csv(
-                str(self.coef_path).replace('.txt', f'.{domain}.txt'),
-                sep="\t"
-            )
+            coef_df.to_csv(str(self.coef_path).replace('.txt', f'.{domain}.txt'), sep="\t")
 
             for seed in self._result_dict[domain].keys():
                 result_table += [[domain] + [str(seed)] + self._result_dict[domain][seed][:-1]]
-                #[opt_lambda, rsq, n_select, opt_coeff]
+
             result_df = pd.DataFrame(result_table, columns=["Domain", "Seed", "Parameter", "R2", "N_select"])
             new_df = pd.DataFrame([domain, 'average', result_df['Parameter'].mean(), result_df['R2'].mean(), sum(choose_idx)]).T
             new_df.columns = result_df.columns
@@ -578,7 +559,7 @@ class RiskScore(Runnable):
 
             if not self.predict_only:
                 r2_scores = np.array([self._permutation_dict[domain][seed][1]
-                                    for seed in self._permutation_dict[domain].keys()])
+                                      for seed in self._permutation_dict[domain].keys()])
                 null_models.append([domain, 'average', r2_scores.mean(), r2_scores.std()])
                 null_models.extend([[domain] + [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
 
@@ -596,23 +577,12 @@ class RiskScore(Runnable):
             fin_res = pd.concat([fin_res, result_df], ignore_index=True)
 
         fin_res.to_csv(self.result_path, sep="\t", index=False)
+        
         if not self.predict_only:
-            null_models = pd.DataFrame(
-                null_models,
-                columns=["Domain", "N_perm", "R2", "std"]
-            )
+            null_models = pd.DataFrame(null_models,
+                                       columns=["Domain", "N_perm", "R2", "std"])
             null_models.to_csv(self.null_model_path, sep="\t", index=False)
-
-
-    def update_env(self):
-        """Update the environment variables """
-        log.print_progress(self.update_env.__doc__)
-        
-        self.set_env("LASSO_RESULTS", self.result_path)
-        if not self.predict_only:
-            self.set_env("LASSO_NULL_MODELS", self.null_model_path)
-        self.save_env()
-        
+  
     def draw_histogram_plot(self, domain: str, r2: float, perm_r2: np.ndarray):
         log.print_progress("Save histogram plot")
         
@@ -620,7 +590,7 @@ class RiskScore(Runnable):
         plt.rcParams.update({'font.size': 8})
         
         # Set the figure size
-        plt.figure(figsize=(4, 4))
+        plt.figure(figsize=(7, 7))
 
         # Create the histogram plot
         plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
@@ -629,17 +599,21 @@ class RiskScore(Runnable):
         text_label2 = '$R^2$={:.2f}%'.format(r2*100)
 
         # Add labels and title
+        plt.title(f'Histogram Plot (Domain: {domain})', fontsize = 8)
         plt.xlabel('$R^2$')
         plt.ylabel('Frequency')
-        plt.title('Histogram Plot', fontsize = 8)
         plt.axvline(x=r2, color='red')
         plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='black')
         plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
         plt.locator_params(axis='x', nbins=5)
         plt.tight_layout()
-
-        plt.savefig(str(self.plot_path).replace('.pdf', f'.{domain}.pdf'))
+        plt.savefig(str(self.plot_path).replace('.pdf', f'.{domain}.pdf'), bbox_inches='tight')
         
-
-
-
+    def update_env(self):
+        """Update the environment variables """
+        log.print_progress(self.update_env.__doc__)
+        
+        self.set_env("LASSO_RESULTS", self.result_path)
+        if not self.predict_only:
+            self.set_env("LASSO_NULL_MODELS", self.null_model_path)
+        self.save_env()
