@@ -119,10 +119,8 @@ class BurdenShift(Runnable):
 
     def _create_category_sets(self):
         print_progress("Create category sets combined all of GENCODE, regions, and gene list")
-        
         catsets = pd.read_csv(self.cat_set_file, sep="\t")
-        catsets_dict = catsets.to_dict('list')
-        
+        catsets_dict = catsets.to_dict('list')        
         genesets = sorted(list(set(catsets['gene_set'].unique()) - set(["Any"])))
         gencodes = ['coding','noncoding','promoter','UTR','intergenic','intron','lincRNA']
 

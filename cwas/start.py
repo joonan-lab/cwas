@@ -1,104 +1,72 @@
-import argparse
-import shutil
+"""
+Tests of the 'Start' step
+"""
 from pathlib import Path
-from typing import Optional
 
-import cwas.utils.log as log
-from cwas.runnable import Runnable
+import pytest
+from cwas.start import Start
+import cwas.cli
+import sys
 
 
-class Start(Runnable):
-    def __init__(self, args: argparse.Namespace):
-        super().__init__(args)
-        self.config_path = self.workspace / "configuration.txt"
+@pytest.fixture(scope="module")
+def args(cwas_workspace: Path) -> list:
+    return ["-w", str(cwas_workspace)]
 
-    @staticmethod
-    def _create_arg_parser() -> argparse.ArgumentParser:
-        parser = argparse.ArgumentParser(
-            description="Arguments for Initializing a CWAS workspace",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-        default_workspace = Path.home() / ".cwas"
-        parser.add_argument(
-            "-w",
-            "--workspace",
-            dest="workspace",
-            required=False,
-            type=Path,
-            default=default_workspace,
-            help="Path to your CWAS workspace directory",
-        )
-        return parser
 
-    @staticmethod
-    def _print_args(args: argparse.Namespace):
-        log.print_arg("CWAS Workspace", args.workspace)
+@pytest.fixture(scope="module", autouse=True)
+def setup(args: list):
+    sys.argv = ['cwas', 'start', *args]
+    inst = cwas.cli.main()
+    #inst = Start.get_instance(args)
+    inst.run()
 
-    @property
-    def workspace(self):
-        return self.args.workspace.resolve()
 
-    def run(self):
-        if self.workspace.is_dir():
-            log.print_warn(
-                f"The workspace '{self.workspace}' already exists. "
-                f"This will be not re-created."
-            )
-        else:
-            self._create_workspace()
+@pytest.fixture(scope="module", autouse=True)
+def teardown(cwas_workspace: Path, cwas_env_path: Path):
+    yield
+    cwas_env_path.unlink()
+    for f in cwas_workspace.glob("*"):
+        f.unlink()
+    cwas_workspace.rmdir()
 
-        self._update_env()
 
-        if self.config_path.is_file():
-            log.print_warn(
-                f"The configuration file '{self.config_path}' already exists. "
-                f"This will be not re-created"
-            )
-        else:
-            self._create_config_file()
+def test_initial_file_exist(cwas_env_path: Path, cwas_workspace: Path):
+    cwas_config_path = cwas_workspace / "configuration.txt"
+    assert cwas_env_path.is_file()
+    assert cwas_workspace.is_dir()
+    assert cwas_config_path.is_file()
 
-    def _create_workspace(self):
-        log.print_progress(f"Create CWAS workspace '{self.workspace}'")
-        try:
-            self.workspace.mkdir(exist_ok=True)
-        except NotADirectoryError:
-            log.print_err("The path to CWAS workspace is invalid.")
-            raise
 
-    def _update_env(self):
-        self.env.set_env("CWAS_WORKSPACE", self.workspace)
-        self.env.save()
+def test_config_keys(cwas_workspace: Path):
+    config_key_set = set()
+    cwas_config_path = cwas_workspace / "configuration.txt"
+    with cwas_config_path.open() as config_file:
+        for line in config_file:
+            config_key, _ = line.strip().split("=")
+            config_key_set.add(config_key)
 
-    def _create_config_file(self):
-        config = self._init_config()
-        with self.config_path.open("w") as config_file:
-            for k, v in config.items():
-                print(f"{k}={v}", file=config_file)
+    expected_key_set = {
+        "ANNOTATION_DATA_DIR",
+        "GENE_MATRIX",
+        "ANNOTATION_KEY_CONFIG",
+        "VEP",
+        "VEP_CACHE_DIR",
+        "VEP_CONSERVATION_FILE",
+        "VEP_LOFTEE",
+        "VEP_HUMAN_ANCESTOR_FA",
+        "VEP_GERP_BIGWIG",
+        "VEP_MIS_DB",
+        "VEP_MIS_INFO_KEY",
+        "VEP_MIS_THRES",
+    }
+    assert config_key_set == expected_key_set
 
-    def _init_config(self) -> dict:
-        config = {
-            "ANNOTATION_DATA_DIR": "",
-            "GENE_MATRIX": "",
-            "ANNOTATION_KEY_CONFIG": "",
-            "VEP": "",
-            "VEP_CACHE_DIR": "",
-            "VEP_CONSERVATION_FILE": "",
-            "VEP_LOFTEE": "",
-            "VEP_HUMAN_ANCESTOR_FA": "",
-            "VEP_GERP_BIGWIG": "",
-            "VEP_MIS_DB": "",
-            "VEP_MIS_INFO_KEY": "",
-            "VEP_MIS_THRES": "",
-        }
 
-        installed_vep = self._find_vep_path()
-        if installed_vep:
-            config["VEP"] = installed_vep
-
-        return config
-
-    def _find_vep_path(self) -> Optional[str]:
-        log.print_progress("Find pre-installed VEP")
-        vep = shutil.which("vep")
-        log.print_progress(f"VEP path: '{vep}'")
-        return vep
+def test_init_without_args():
+    sys.argv = ['cwas', 'start']
+    inst = cwas.cli.main()
+    #inst = Start.get_instance()
+    expect_default_workspace = Path.home() / ".cwas"
+    actual_workspace = getattr(inst, "workspace")
+    assert expect_default_workspace == actual_workspace

@@ -2,7 +2,8 @@ import cwas.cli
 
 
 def main():
-    cwas.cli.main()
+    inst = cwas.cli.main()
+    inst.run()
 
 
 if __name__ == "__main__":
