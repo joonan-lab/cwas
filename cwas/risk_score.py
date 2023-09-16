@@ -366,6 +366,11 @@ class RiskScore(Runnable):
             
             _risk_score_per_category_ = partial(self._risk_score_per_category,
                                                 swap_label = True,
+                                                rare_categories = None,
+                                                cov = None,
+                                                test_cov = None,
+                                                response = None,
+                                                test_response = None,
                                                 filtered_combs = filtered_combs)
             map_result = parmap.map(_risk_score_per_category_, seeds, pm_pbar=True, pm_processes=self.num_proc)
             self._permutation_dict[domain] = {key: value for x in map_result for key, value in x.items()}
