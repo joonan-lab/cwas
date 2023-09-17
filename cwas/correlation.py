@@ -11,6 +11,8 @@ import pandas as pd
 import numpy as np
 import pickle
 from functools import partial
+import copy
+import zarr
 
 import cwas.utils.log as log
 from cwas.core.categorization.categorizer import Categorizer
@@ -98,10 +100,15 @@ class Correlation(Runnable):
             log.print_progress("Get an intersection matrix between categories using the number of samples")
             
             categorization_result_ = np.where(self.categorization_result > 0, 1, self.categorization_result)
+            categorization_result_0 = categorization_result_.astype('float32')
+            
+            categorization_result_tp = np.transpose(categorization_result_0)
+            categorization_result_tp_ = copy.deepcopy(categorization_result_tp)
+            
             log.print_progress("Calculate a correlation matrix")
-            categorization_result_ = categorization_result_.astype('float32')
-            categorization_result_tp = np.transpose(categorization_result_)
-            intersection_matrix = np.matmul(categorization_result_tp, categorization_result_)
+            intersection_matrix = np.matmul(categorization_result_tp_, categorization_result_0)
+            
+            zarr.save('zarr/categorization_result.zarr', intersection_matrix)
             
 
         elif self.generate_matrix == "variant":
