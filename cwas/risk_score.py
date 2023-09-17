@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 import polars as pl
 import re
 import parmap
+from tqdm import tqdm
 from functools import partial
 import zarr
 from concurrent.futures import ProcessPoolExecutor
@@ -359,6 +360,7 @@ class RiskScore(Runnable):
         log.print_progress(self.permute_pvalues.__doc__)
                     
         seeds = np.arange(self.seed, self.seed+self.n_permute)
+        pool = ProcessPoolExecutor(max_workers=self.num_proc)
 
         for domain in self.domain_list:
             log.print_progress(f"Generate permutation p-values for the domain: {domain}")
@@ -372,7 +374,8 @@ class RiskScore(Runnable):
                                                 response = None,
                                                 test_response = None,
                                                 filtered_combs = filtered_combs)
-            map_result = parmap.map(_risk_score_per_category_, seeds, pm_pbar=True, pm_processes=self.num_proc)
+            #map_result = parmap.map(_risk_score_per_category_, seeds, pm_pbar=True, pm_processes=self.num_proc)
+            map_result = list(tqdm(pool.map(_risk_score_per_category_, seeds), total=len(seeds), desc="Permutation p-values"))
             self._permutation_dict[domain] = {key: value for x in map_result for key, value in x.items()}
             gc.collect()
     
