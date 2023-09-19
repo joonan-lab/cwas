@@ -458,7 +458,7 @@ class RiskScore(Runnable):
             log.print_progress(f"# of rare categories (Seed: {seed}): {len(rare_categories)}")
         
         gc.collect()
-        return rare_categories, cov, test_cov, response, test_response
+        return rare_categories, numpy2ri.py2rpy(cov), numpy2ri.py2rpy(test_cov), response, test_response
     
     def _risk_score_per_category(self, seed: int, swap_label: bool = False, rare_categories = None, cov = None, test_cov = None, response = None, test_response = None, filtered_combs = None):
         """Lasso model selection"""
@@ -467,7 +467,7 @@ class RiskScore(Runnable):
         if swap_label:
             rare_categories, cov, test_cov, response, test_response = self._create_covariates(seed, swap_label, filtered_combs)
             
-        if cov.shape[1] == 0:
+        if len(rare_categories) == 0:
             if not swap_label:
                 log.print_warn(f"There are no rare categories (Seed: {seed}).")
             return
@@ -479,10 +479,10 @@ class RiskScore(Runnable):
             log.print_progress(f"Running LassoCV (Seed: {seed})")
         
         # Create a glmnet model
-        cvfit = self.cv_glmnet(x = numpy2ri.py2rpy(cov),
+        cvfit = self.cv_glmnet(x = cov,
                                y = ro.FloatVector(y),
                                alpha = 1,
-                               foldid = numpy2ri.py2rpy(self._custom_cv_folds(cov.shape[0], seed)),
+                               foldid = numpy2ri.py2rpy(self._custom_cv_folds(len(response), seed)),
                                type_measure='deviance',
                                nlambda=100)
         
@@ -506,7 +506,7 @@ class RiskScore(Runnable):
 
         # Compute the predictive R-squared using the test set
         predict_function = ro.r["predict"]
-        predicted_values = predict_function(full_glmnet, newx=numpy2ri.py2rpy(test_cov))
+        predicted_values = predict_function(full_glmnet, newx=test_cov)
         predict_y = np.array(predicted_values)[:, i_choose]
         rsq = r2_score(test_y, predict_y)
 
