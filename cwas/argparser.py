@@ -1052,3 +1052,64 @@ def dawn() -> argparse.ArgumentParser:
     return result
 
 
+def correlation() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        prog="cwas correlation",
+        description="CWAS correlation calculation",
+        formatter_class=argparse.RawTextHelpFormatter,
+        add_help=False
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    required = result.add_argument_group("Required arguments")
+    optional = result.add_argument_group("Optional arguments")
+    other = result.add_argument_group("Other")
+    required.add_argument(
+        "-i",
+        "--input_file",
+        dest="cat_path",
+        required=True,
+        type=Path,
+        help="Categorized file (gizpped) resulted from categorization step.",
+    )
+    optional.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved. (default: {})".format(default_workspace),
+    )
+    optional.add_argument(
+        "-p",
+        "--num_proc",
+        dest="num_proc",
+        required=False,
+        type=int,
+        help="Number of worker processes for the categorization (default: 1)",
+        default=1,
+    )
+    required.add_argument(
+        "-cm",
+        "--corr_matrix",
+        dest="generate_corr_matrix",
+        required=True,
+        choices = ['variant','sample'],
+        help="Generate a correlation matrix bewteen categories.\n * variant: use the number of variants\n * sample: use the number of samples with variants",
+    )
+    optional.add_argument(
+        "-im",
+        "--intersection_matrix",
+        dest="generate_inter_matrix",
+        required=False,
+        action="store_true",
+        help="Generate a matrix with intersected number of variants (or samples with variants) bewteen categories.",
+    )
+    other.add_argument(
+        '-h',
+        '--help',
+        action="help",
+        default=argparse.SUPPRESS,
+        help="Show this help message and exit"
+    )
+    return result
