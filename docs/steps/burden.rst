@@ -51,7 +51,7 @@ For binomial tests, two types of tests are used: two-sided binomial tests and on
 
 .. code-block:: solidity
 
-    cwas binomial_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
+    cwas binomial_test -i INPUT.categorization_result.zarr -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt
 
 
 .. _permtest:
@@ -83,7 +83,7 @@ The parameters of the command are as below:
 
 .. code-block:: solidity
 
-    cwas permutation_test -i INPUT.categorization_result.txt.gz -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
+    cwas permutation_test -i INPUT.categorization_result.zarr -o_dir OUTPUT_DIR -s SAMPLE_LIST.txt -a ADJUST_FACTOR.txt -n 10000 -p 8 -b
 
 
 

@@ -249,7 +249,7 @@ def binomial_test() -> argparse.ArgumentParser:
         dest="cat_path",
         required=True,
         type=Path,
-        help="Categorized file (gizpped) resulted from categorization step.",
+        help="Categorized file (*.zarr) resulted from categorization step.",
     )
     optional.add_argument(
         "-o_dir",
@@ -759,7 +759,7 @@ def risk_score() -> argparse.ArgumentParser:
         dest="categorization_result_path",
         required=True,
         type=Path,
-        help="The path of the categorization result file",
+        help="The path of the categorization result file (*.zarr)",
     )
     required.add_argument(
         "-s",
