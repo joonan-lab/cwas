@@ -268,7 +268,7 @@ class Correlation(Runnable):
         root = zarr.open(self.matrix_path, mode='w')
         root.create_group('metadata')
         root['metadata'].attrs['category'] = self._correlation_matrix.columns.tolist()
-        root.create_dataset('data', data=self._correlation_matrix, chunks=(1000, 1000), dtype='i4')
+        root.create_dataset('data', data=self._correlation_matrix, chunks=(1000, 1000), dtype='float64')
 
     def update_env(self):
         self.save_env()

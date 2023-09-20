@@ -11,6 +11,7 @@ from cwas.runnable import Runnable
 from scipy.stats import norm
 from cwas.utils.check import check_is_file, check_is_dir
 from scipy.stats import binomtest
+import zarr
 
 class EffectiveNumTest(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -43,7 +44,7 @@ class EffectiveNumTest(Runnable):
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
-        check_is_file(args.input_path)
+        check_is_dir(args.input_path)
         check_is_dir(args.output_dir_path)
         if args.sample_info_path:
             check_is_file(args.sample_info_path)
@@ -85,19 +86,19 @@ class EffectiveNumTest(Runnable):
     @property
     def intersection_matrix(self) -> pd.DataFrame:
         if self._intersection_matrix is None and self.input_format == 'inter':
-            with self.input_path.open('rb') as f:
-                self._intersection_matrix = pickle.load(f)
-            self._intersection_matrix.index = list(map(str, self._intersection_matrix.index.tolist()))
-            self._intersection_matrix.columns = list(map(str, self._intersection_matrix.columns.tolist()))
+            root = zarr.open(self.input_path, mode='r')
+            self._intersection_matrix = pd.DataFrame(data=root['data'],
+                              index=root['metadata'].attrs['category'],
+                              columns=root['metadata'].attrs['category'])
         return self._intersection_matrix
 
     @property
     def correlation_matrix(self) -> pd.DataFrame:
         if self._correlation_matrix is None and self.input_format == 'corr':
-            with self.input_path.open('rb') as f:
-                self._correlation_matrix = pickle.load(f)
-            self._correlation_matrix.index = list(map(str, self._correlation_matrix.index.tolist()))
-            self._correlation_matrix.columns = list(map(str, self._correlation_matrix.columns.tolist()))
+            root = zarr.open(self.input_path, mode='r')
+            self._correlation_matrix = pd.DataFrame(data=root['data'],
+                              index=root['metadata'].attrs['category'],
+                              columns=root['metadata'].attrs['category'])
         return self._correlation_matrix
 
     @property
@@ -160,32 +161,20 @@ class EffectiveNumTest(Runnable):
     @property
     def replace_term(self) -> str:
         if self._replace_term is None:
-            if 'correlation_matrix.pkl' in str(self.input_path):
-                self._replace_term = r'\.correlation_matrix\.pkl\.gz|\.correlation_matrix\.pkl'
-            elif 'intersection_matrix.pkl' in str(self.input_path):
-                self._replace_term = r'\.intersection_matrix\.pkl\.gz|\.intersection_matrix\.pkl'
+            if 'correlation_matrix.zarr' in str(self.input_path):
+                self._replace_term = r'\.correlation_matrix\.zarr\.gz|\.correlation_matrix\.zarr'
+            elif 'intersection_matrix.zarr' in str(self.input_path):
+                self._replace_term = r'\.intersection_matrix\.zarr\.gz|\.intersection_matrix\.zarr'
             else:
                 self._replace_term = r'\.txt\.gz|\.txt'
         return self._replace_term
 
     @property
-    def corr_mat_path(self) -> Path:
-        if self.tag is None:
-            save_name = '.correlation_matrix.pkl'
-        else:
-            save_name = '.'.join(['', self.tag, 'correlation_matrix.pkl'])
-        f_name = re.sub(self.replace_term, save_name, self.input_path.name)
-        return Path(
-            f"{self.output_dir_path}/"
-            f"{f_name}"
-        )
-        
-    @property
     def neg_lap_path(self) -> Path:
         if self.tag is None:
-            save_name = '.neg_lap.pickle'
+            save_name = '.neg_lap.zarr'
         else:
-            save_name = '.'.join(['.neg_lap', self.tag, 'pickle'])
+            save_name = '.'.join(['.neg_lap', self.tag, 'zarr'])
         f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
@@ -195,9 +184,9 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_val_path(self) -> Path:
         if self.tag is None:
-            save_name = '.eig_vals.pickle'
+            save_name = '.eig_vals.zarr'
         else:
-            save_name = '.'.join(['.eig_vals', self.tag, 'pickle'])
+            save_name = '.'.join(['.eig_vals', self.tag, 'zarr'])
         f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
@@ -207,9 +196,9 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_vec_path(self) -> Path:
         if self.tag is None:
-            save_name = '.eig_vecs.txt.gz'
+            save_name = '.eig_vecs.zarr'
         else:
-            save_name = '.'.join(['.eig_vecs', self.tag, 'txt.gz'])
+            save_name = '.'.join(['.eig_vecs', self.tag, 'zarr'])
         f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
@@ -245,8 +234,8 @@ class EffectiveNumTest(Runnable):
         else:
             self.eigen_decomposition(save_vecs=False)
             
-        with self.eig_val_path.open('rb') as f:
-            eig_vals = pickle.load(f)
+        root = zarr.open(self.eig_val_path, mode='r')
+        eig_vals = root['data']
         
         e = 1e-12
         eig_vals = sorted(eig_vals, key=np.linalg.norm, reverse=True)
@@ -292,7 +281,7 @@ class EffectiveNumTest(Runnable):
             intermediate_mat = self.intersection_matrix.loc[filtered_combs,filtered_combs]
             intermediate_mat = intermediate_mat.mul((self.binom_p)*(1-self.binom_p))
 
-        if not os.path.isfile(self.neg_lap_path):
+        if not os.path.isdir(self.neg_lap_path):
             print_progress("Generating the negative laplacian matrix")
             neg_lap = np.abs(intermediate_mat.values)
             degrees = np.sum(neg_lap, axis=0)
@@ -300,20 +289,25 @@ class EffectiveNumTest(Runnable):
                 neg_lap[i, :] = neg_lap[i, :] / np.sqrt(degrees)
                 neg_lap[:, i] = neg_lap[:, i] / np.sqrt(degrees)
             print_progress("Writing the negative laplacian matrix to file")
-            pickle.dump(neg_lap, open(self.neg_lap_path, 'wb'), protocol=5)
+            root = zarr.open(self.neg_lap_path, mode='w')
+            root.create_dataset('data', data=neg_lap, dtype='float64')
         else:
-            with self.neg_lap_path.open('rb') as f:
-                neg_lap = pickle.load(f)
+            root = zarr.open(self.neg_lap_path, mode='r')
+            neg_lap = root['data']
 
-        if not os.path.isfile(self.eig_val_path) or not os.path.isfile(self.eig_vec_path):
+        if not os.path.isdir(self.eig_val_path) or not os.path.isdir(self.eig_vec_path):
             print_progress("Calculating the eigenvalues of the negative laplacian matrix")
             eig_vals, eig_vecs = np.linalg.eig(neg_lap)
             print_progress("Writing the eigenvalues to file")
-            pickle.dump(eig_vals, open(self.eig_val_path, 'wb'), protocol=5)
+            root = zarr.open(self.eig_val_path, mode='w')
+            root.create_dataset('data', data=eig_vals, dtype='float64')
+
             if save_vecs:
                 print_progress("Writing the eigenvectors to file")
-                pd.DataFrame(eig_vecs.real, index=filtered_combs).to_csv(self.eig_vec_path, sep='\t', index=True, header=False)
-                
+                root = zarr.open(self.eig_vec_path, mode='w')
+                root.create_group('metadata')
+                root['metadata'].attrs['category'] = filtered_combs
+                root.create_dataset('data', data=eig_vecs.real, chunks=(1000, 1000), dtype='float64')
                 
     def update_env(self):
         self.set_env("N_EFFECTIVE_TEST", self.eff_num_test_value)
