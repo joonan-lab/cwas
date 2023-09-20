@@ -26,6 +26,8 @@ class Correlation(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
         self._annotated_vcf = None
+        self._gene_matrix = None
+        self._category_domain = None
         self._categorization_result = None
         self._correlation_matrix = None
         self._intersection_matrix = None
