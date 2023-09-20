@@ -93,10 +93,10 @@ class Correlation(Runnable):
         log.print_progress("Done")
 
     def generate_correlation_matrix(self):
-        if self.generate_matrix is None:
+        if self.generate_corr_matrix is None:
             return
 
-        if self.generate_matrix == "sample":
+        if self.generate_corr_matrix == "sample":
             log.print_progress("Get an intersection matrix between categories using the number of samples")
 
             if self.num_proc == 1:
@@ -108,7 +108,7 @@ class Correlation(Runnable):
                 # Concatenate the count values
                 intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
 
-        elif self.generate_matrix == "variant":
+        elif self.generate_corr_matrix == "variant":
             log.print_progress("Get an intersection matrix between categories using the number of variants")
             #pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
             intersection_matrix = (
