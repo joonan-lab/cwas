@@ -6,6 +6,7 @@ from cwas.core.common import chunk_list
 from tqdm import tqdm
 import re
 import zarr
+import yaml
 
 import pandas as pd
 import numpy as np
@@ -16,28 +17,77 @@ from cwas.core.categorization.categorizer import Categorizer
 from cwas.runnable import Runnable
 from cwas.utils.check import check_num_proc, check_is_file, check_is_dir
 
+from cwas.core.categorization.parser import (
+    parse_annotated_vcf,
+    parse_gene_matrix,
+)
+
 class Correlation(Runnable):
     def __init__(self, args: argparse.Namespace):
         super().__init__(args)
+        self._annotated_vcf = None
         self._categorization_result = None
         self._correlation_matrix = None
         self._intersection_matrix = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
+        if args.generate_corr_matrix == 'variant':
+            log.print_arg("Annotated VCF file", args.input_path)
+        log.print_arg("Categorized file", args.cat_path)
         log.print_arg(
             "No. worker processes for the categorization",
             f"{args.num_proc: ,d}",
         )
-        log.print_arg("Categorized file", args.cat_path)
         log.print_arg("Genereate an intersection matrix", (False if args.generate_inter_matrix is None else True))
         log.print_arg("Genereate a correlation matrix", (False if args.generate_corr_matrix is None else True))
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
+        if args.generate_corr_matrix == 'variant':
+            check_is_file(args.input_path)
         check_is_dir(args.cat_path)
         check_is_dir(args.output_dir_path)
+
+    @property
+    def annotated_vcf(self) -> pd.DataFrame:
+        if self._annotated_vcf is None:
+            log.print_progress("Parse the annotated VCF")
+            self._annotated_vcf = parse_annotated_vcf(
+                Path(self.input_path)
+            )
+        return self._annotated_vcf
+
+    @property
+    def gene_matrix(self) -> dict:
+        if self._gene_matrix is None:
+            self._gene_matrix = parse_gene_matrix(
+                Path(self.get_env("GENE_MATRIX"))
+            )
+        return self._gene_matrix
+
+    @property
+    def category_domain(self) -> dict:
+        if self._category_domain is None:
+            with Path(self.get_env("CATEGORY_DOMAIN")).open(
+                "r"
+            ) as category_domain_file:
+                self._category_domain = yaml.safe_load(category_domain_file)
+        return self._category_domain
+
+    @property
+    def categorizer(self) -> Categorizer:
+        categorizer = Categorizer(self.category_domain, self.gene_matrix, self.mis_info_key, self.mis_thres)
+        return categorizer
+
+    @property
+    def mis_info_key(self) -> str:
+        return self.get_env("VEP_MIS_INFO_KEY")
+
+    @property
+    def mis_thres(self) -> float:
+        return float(self.get_env("VEP_MIS_THRES"))
 
     @property
     def num_proc(self):
@@ -100,19 +150,19 @@ class Correlation(Runnable):
             log.print_progress("Get an intersection matrix between categories using the number of samples")
 
             if self.num_proc == 1:
-                intersection_matrix = self.process_columns_single(column_range = range(self._result.shape[1]), matrix=self._result)
+                intersection_matrix = self.process_columns_single(column_range = range(self.categorization_result.shape[1]), matrix=self.categorization_result)
             else:
                 # Split the column range into evenly sized chunks based on the number of workers
-                chunks = chunk_list(range(self._result.shape[1]), self.num_proc)
+                chunks = chunk_list(range(self.categorization_result.shape[1]), self.num_proc)
                 result = parmap.map(self.process_columns, chunks, matrix=self._result, pm_pbar=True, pm_processes=self.num_proc)
                 # Concatenate the count values
                 intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
 
         elif self.generate_corr_matrix == "variant":
             log.print_progress("Get an intersection matrix between categories using the number of variants")
-            #pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self._result.columns.tolist())
+            #pre_intersection_matrix = self.categorizer.get_intersection_variant_level(self.annotated_vcf, self.categorization_result.columns.tolist())
             intersection_matrix = (
-                self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self._result.columns)
+                self.get_intersection_matrix(self.annotated_vcf, self.categorizer, self.categorization_result.columns)
                 if self.num_proc == 1
                 else self.get_intersection_matrix_with_mp()
             )
@@ -183,7 +233,7 @@ class Correlation(Runnable):
         split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 
-                                           categories=self._result.columns)
+                                           categories=self.categorization_result.columns)
         
         with mp.Pool(self.num_proc//3 + 1) as pool:
             return sum(pool.map(
