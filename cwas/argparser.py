@@ -214,14 +214,6 @@ def categorization() -> argparse.ArgumentParser:
         help="Number of worker processes for the categorization (default: 1)",
         default=1,
     )
-    optional.add_argument(
-        "-m",
-        "--matrix",
-        dest="generate_matrix",
-        required=False,
-        choices = ['variant','sample'],
-        help="Generate a correlation matrix and a matrix with intersected number of variants (or samples with variants) bewteen categories.\n * variant: use the number of variants\n * sample: use the number of samples with variants",
-    )
     other.add_argument(
         '-h',
         '--help',
@@ -482,7 +474,7 @@ def extract_variant() -> argparse.ArgumentParser:
         help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz) (default: None)",
     )
     result.add_argument(
-        '-c',
+        '-c_set',
         '--category_set',
         dest="category_set_path",
         required=False,
@@ -581,16 +573,35 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=str,
-        help="Tag used for the name of the output files (e.g., corr_mat_<tag>.pickle) (default: None)",
+        help="Tag used for the name of the output files (e.g., <tag>.correlation_matrix.pkl). (default: None)",
     )
     optional.add_argument(
-        "-c",
-        "--category_set_path",
+        "-c_set",
+        "--category_set",
         dest="category_set_path",
         required=False,
         default=None,
         type=Path,
         help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used. (default: None)",
+    )
+    optional.add_argument(
+        '-c_info',
+        '--category_info',
+        dest="category_info_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file with category information (*.category_info.txt).",
+    )
+    optional.add_argument(
+        '-d',
+        '--domain_list',
+        dest="domain_list",
+        required=False,
+        default='all',
+        type=str,
+        help="Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested (default: all).\n"\
+             "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
     )
     optional.add_argument(
         "-thr",
@@ -599,7 +610,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=int,
-        help="The number of variants (or samples) to filter categories (counts≥threshold)",
+        help="The number of variants (or samples) to filter categories (counts≥threshold).",
     )
     optional.add_argument(
         "-ef",
@@ -607,7 +618,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="eff_num_test",
         required=False,
         action="store_true",
-        help="Calculate and output the effective number of tests",
+        help="Calculate and output the effective number of tests. Only eigenvalues are generated with this option.",
     )
     other.add_argument(
         '-h',
@@ -647,12 +658,12 @@ def burden_shift() -> argparse.ArgumentParser:
         help='Path to the result of burden shift from permutation test (*.binom_pvals.txt.gz)',
     )
     required.add_argument(
-        '-c_set',
-        '--cat_set',
+        '-c_info',
+        '--category_info',
         dest='cat_set_file',
         required=True,
         type=Path,
-        help='Path of the categories set file from permutation test (*.category_info.txt).',
+        help='Path to a text file with category information (*.category_info.txt).',
     )
     required.add_argument(
         '-c_count',
@@ -699,8 +710,8 @@ def burden_shift() -> argparse.ArgumentParser:
         help="P-value of threshold (default: 0.05).",
     )
     optional.add_argument(
-        "-c_list",
-        "--cat_set_list",
+        "-c_set",
+        "--category_set",
         dest="cat_set_list",
         required=False,
         type=Path,
@@ -788,13 +799,13 @@ def risk_score() -> argparse.ArgumentParser:
         help="File listing adjustment factors of each sample. The file is required to use the adjusted values in the binomial test. (default: None)",
     )
     optional.add_argument(
-        '-c',
-        '--category_set',
+        '-c_info',
+        '--category_info',
         dest="category_set_path",
         required=False,
         default=None,
         type=Path,
-        help="Path to a text file category information (*.category_info.txt).",
+        help="Path to a text file with category information (*.category_info.txt).",
     )
     optional.add_argument(
         '-d',
@@ -856,13 +867,6 @@ def risk_score() -> argparse.ArgumentParser:
         type=int,
         help="Specify the number of folds in a `(Stratified)KFold` (default: 5)",
     )
-    #optional.add_argument(
-    #    "-l",
-    #    "--logistic",
-    #    dest="logistic",
-    #    action="store_true",
-    #    help="Make a logistic model with L1 penalty. If use '-u (--use_n_carrier)', this option recommend.",
-    #)
     optional.add_argument(
         "-n",
         "--n_permute",

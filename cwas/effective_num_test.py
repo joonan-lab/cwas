@@ -34,6 +34,8 @@ class EffectiveNumTest(Runnable):
             print_arg("Sample information file", args.sample_info_path)
         if args.category_count_file:
             print_arg("Using variant (or sample) counts file: ", args.category_count_file)
+        if args.domain_list:
+            print_arg("Domain list", args.domain_list)  
         if args.tag:
             print_arg("Output tag (prefix of output files)", args.tag)
         if args.category_set_path :
@@ -66,6 +68,17 @@ class EffectiveNumTest(Runnable):
     def category_count(self):
         category_count_ = pd.read_table(self.args.category_count_file, sep="\t")
         return category_count_
+
+    @property
+    def domain_list(self) -> str:
+        if self.args.domain_list=='run_all':
+            joined_string = ','.join(['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')])
+            return joined_string
+        else:
+            first_list = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+            second_list = self.args.domain_list.split(',')
+            matching_values = [value for value in first_list if value.lower() in map(str.lower, second_list)]
+            return ','.join(matching_values)
     
     @property
     def intersection_matrix(self) -> pd.DataFrame:
@@ -156,9 +169,9 @@ class EffectiveNumTest(Runnable):
     @property
     def corr_mat_path(self) -> Path:
         if self.tag is None:
-            save_name = '.correlation_matrix.pickle'
+            save_name = '.correlation_matrix.pkl'
         else:
-            save_name = '.'.join(['.correlation_matrix', self.tag, 'pickle'])
+            save_name = '.'.join(['', self.tag, 'correlation_matrix.pkl'])
         f_name = re.sub(self.replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/"
@@ -203,6 +216,13 @@ class EffectiveNumTest(Runnable):
 
     def run(self):
         print_arg("Number of simulations", self.num_eig)
+        for i in self.domain_list:
+            if self.eff_num_test:
+                self.get_n_etests()
+                self.update_env()
+            else:
+                self.eigen_decomposition()
+        
         if self.eff_num_test:
             #self.eigen_decomposition()
             self.get_n_etests()
