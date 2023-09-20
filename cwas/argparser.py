@@ -564,7 +564,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="sample_info_path",
         required=False,
         type=Path,
-        help="File listing information of your samples. Required only when input format is set to 'inter' or '-thr' is not given",
+        help="File listing information of your samples to calculate threshold of the number of variants (samples) of given categories. Required when '-thr' is not given.",
     )
     optional.add_argument(
         "-t",
@@ -610,7 +610,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=int,
-        help="The number of variants (or samples) to filter categories (counts≥threshold).",
+        help="The number of variants (or samples) to filter categories (counts ≥ threshold)",
     )
     optional.add_argument(
         "-ef",
@@ -771,6 +771,14 @@ def risk_score() -> argparse.ArgumentParser:
         required=True,
         type=Path,
         help="The path of the categorization result file (*.zarr)",
+    )
+    required.add_argument(
+        '-c',
+        '--category_set',
+        dest="category_set_path",
+        required=True,
+        type=Path,
+        help="Path to a text file category information (*.category_info.txt).",
     )
     required.add_argument(
         "-s",

@@ -51,6 +51,8 @@ class EffectiveNumTest(Runnable):
             check_is_file(args.category_count_file)
         if args.category_set_path :
             check_is_file(args.category_set_path)
+        if (args.sample_info_path is None) & (args.count_thres is None):
+            raise Exception("Enter -s (--sample_info) or -thr (--threshold) to calculate threshold of the number of variants (or samples) of given categories")
 
     @property
     def input_path(self) -> Path:
