@@ -214,14 +214,6 @@ def categorization() -> argparse.ArgumentParser:
         help="Number of worker processes for the categorization (default: 1)",
         default=1,
     )
-    optional.add_argument(
-        "-m",
-        "--matrix",
-        dest="generate_matrix",
-        required=False,
-        choices = ['variant','sample'],
-        help="Generate a correlation matrix and a matrix with intersected number of variants (or samples with variants) bewteen categories.\n * variant: use the number of variants\n * sample: use the number of samples with variants",
-    )
     other.add_argument(
         '-h',
         '--help',
@@ -482,7 +474,7 @@ def extract_variant() -> argparse.ArgumentParser:
         help="Tag used for the name of the output file (i.e., output.<tag>.extracted_variants.txt.gz) (default: None)",
     )
     result.add_argument(
-        '-c',
+        '-c_set',
         '--category_set',
         dest="category_set_path",
         required=False,
@@ -581,16 +573,35 @@ def effective_num_test() -> argparse.ArgumentParser:
         required=False,
         default=None,
         type=str,
-        help="Tag used for the name of the output files (e.g., corr_mat_<tag>.pickle) (default: None)",
+        help="Tag used for the name of the output files (e.g., <tag>.correlation_matrix.pkl). (default: None)",
     )
     optional.add_argument(
-        "-c",
-        "--category_set_path",
+        "-c_set",
+        "--category_set",
         dest="category_set_path",
         required=False,
         default=None,
         type=Path,
         help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used. (default: None)",
+    )
+    optional.add_argument(
+        '-c_info',
+        '--category_info',
+        dest="category_info_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file with category information (*.category_info.txt).",
+    )
+    optional.add_argument(
+        '-d',
+        '--domain_list',
+        dest="domain_list",
+        required=False,
+        default='all',
+        type=str,
+        help="Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested (default: all).\n"\
+             "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
     )
     optional.add_argument(
         "-thr",
@@ -607,7 +618,7 @@ def effective_num_test() -> argparse.ArgumentParser:
         dest="eff_num_test",
         required=False,
         action="store_true",
-        help="Calculate and output the effective number of tests",
+        help="Calculate and output the effective number of tests. Only eigenvalues are generated with this option.",
     )
     other.add_argument(
         '-h',
@@ -647,12 +658,12 @@ def burden_shift() -> argparse.ArgumentParser:
         help='Path to the result of burden shift from permutation test (*.binom_pvals.txt.gz)',
     )
     required.add_argument(
-        '-c_set',
-        '--cat_set',
+        '-c_info',
+        '--category_info',
         dest='cat_set_file',
         required=True,
         type=Path,
-        help='Path of the categories set file from permutation test (*.category_info.txt).',
+        help='Path to a text file with category information (*.category_info.txt).',
     )
     required.add_argument(
         '-c_count',
@@ -699,8 +710,8 @@ def burden_shift() -> argparse.ArgumentParser:
         help="P-value of threshold (default: 0.05).",
     )
     optional.add_argument(
-        "-c_list",
-        "--cat_set_list",
+        "-c_set",
+        "--category_set",
         dest="cat_set_list",
         required=False,
         type=Path,
@@ -794,6 +805,15 @@ def risk_score() -> argparse.ArgumentParser:
         default=None,
         type=Path,
         help="File listing adjustment factors of each sample. The file is required to use the adjusted values in the binomial test. (default: None)",
+    )
+    optional.add_argument(
+        '-c_info',
+        '--category_info',
+        dest="category_set_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file with category information (*.category_info.txt).",
     )
     optional.add_argument(
         '-d',
@@ -1044,3 +1064,72 @@ def dawn() -> argparse.ArgumentParser:
     return result
 
 
+def correlation() -> argparse.ArgumentParser:
+    result = argparse.ArgumentParser(
+        prog="cwas correlation",
+        description="CWAS correlation calculation",
+        formatter_class=argparse.RawTextHelpFormatter,
+        add_help=False
+    )
+    default_workspace = dotenv.dotenv_values(dotenv_path=Path.home() / ".cwas_env").get("CWAS_WORKSPACE")
+    required = result.add_argument_group("Required arguments")
+    optional = result.add_argument_group("Optional arguments")
+    other = result.add_argument_group("Other")
+    required.add_argument(
+        "-i",
+        "--input_file",
+        dest="cat_path",
+        required=True,
+        type=Path,
+        help="Categorized file (*.zarr) resulted from categorization step.",
+    )
+    required.add_argument(
+        "-v",
+        "--annotated_vcf",
+        dest="annot_path",
+        required=False,
+        type=Path,
+        help="Annotated VCF file. Required for variant-level correlation matrix (--cm variant).",
+    )
+    optional.add_argument(
+        "-o_dir",
+        "--output_directory",
+        dest="output_dir_path",
+        required=False,
+        default=default_workspace,
+        type=Path,
+        help="Directory where output file will be saved. (default: {})".format(default_workspace),
+    )
+    optional.add_argument(
+        "-p",
+        "--num_proc",
+        dest="num_proc",
+        required=False,
+        type=int,
+        help="Number of worker processes for the categorization (default: 1)",
+        default=1,
+    )
+    required.add_argument(
+        "-cm",
+        "--corr_matrix",
+        dest="generate_corr_matrix",
+        required=True,
+        choices = ['variant','sample'],
+        help="Generate a correlation matrix bewteen categories.\n * variant: use the number of variants\n * sample: use the number of samples with variants",
+    )
+    optional.add_argument(
+        "-im",
+        "--intersection_matrix",
+        dest="generate_inter_matrix",
+        required=False,
+        action="store_true",
+        help="Generate a matrix with intersected number of variants (or samples with variants) bewteen categories.",
+    )
+    other.add_argument(
+        '-h',
+        '--help',
+        action="help",
+        default=argparse.SUPPRESS,
+        help="Show this help message and exit"
+    )
+    return result
