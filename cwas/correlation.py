@@ -258,7 +258,6 @@ class Correlation(Runnable):
     def save_result(self):
         if self.generate_inter_matrix == True:
             log.print_progress("Save the intersection matrix to file")
-            #pickle.dump(self._intersection_matrix, open(self.intersection_matrix_path, 'wb'), protocol=5)
 
             root = zarr.open(self.intersection_matrix_path, mode='w')
             root.create_group('metadata')
@@ -266,8 +265,6 @@ class Correlation(Runnable):
             root.create_dataset('data', data=self._intersection_matrix, chunks=(1000, 1000), dtype='i4')
 
         log.print_progress("Save the correlation matrix to file")
-        #pickle.dump(self._correlation_matrix, open(self.matrix_path, 'wb'), protocol=5)
-
         root = zarr.open(self.matrix_path, mode='w')
         root.create_group('metadata')
         root['metadata'].attrs['category'] = self._correlation_matrix.columns.tolist()
