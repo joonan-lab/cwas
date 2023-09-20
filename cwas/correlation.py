@@ -51,6 +51,10 @@ class Correlation(Runnable):
         check_is_dir(args.output_dir_path)
 
     @property
+    def annot_path(self):
+        return self.args.annot_path.resolve()
+
+    @property
     def annotated_vcf(self) -> pd.DataFrame:
         if self._annotated_vcf is None:
             log.print_progress("Parse the annotated VCF")
