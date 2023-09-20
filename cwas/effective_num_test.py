@@ -49,6 +49,8 @@ class EffectiveNumTest(Runnable):
             check_is_file(args.category_count_file)
         if args.category_set_path :
             check_is_file(args.category_set_path)
+        if (args.sample_info_path is None) & (args.count_thres is None):
+            raise Exception("Enter -s (--sample_info) or -thr (--threshold) to calculate threshold of the number of variants (or samples) of given categories")
 
     @property
     def input_path(self) -> Path:
@@ -214,6 +216,7 @@ class EffectiveNumTest(Runnable):
     def get_n_etests(self):
         """Get the number of effective tests """
         print_progress(self.get_n_etests.__doc__)
+        print(self.eig_val_path)
         if os.path.isfile(self.eig_val_path):
             print_log(
                 "NOTICE",
