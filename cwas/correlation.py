@@ -33,7 +33,7 @@ class Correlation(Runnable):
     @staticmethod
     def _print_args(args: argparse.Namespace):
         if args.generate_corr_matrix == 'variant':
-            log.print_arg("Annotated VCF file", args.input_path)
+            log.print_arg("Annotated VCF file", args.annot_path)
         log.print_arg("Categorized file", args.cat_path)
         log.print_arg(
             "No. worker processes for the categorization",
@@ -46,7 +46,7 @@ class Correlation(Runnable):
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
         if args.generate_corr_matrix == 'variant':
-            check_is_file(args.input_path)
+            check_is_file(args.annot_path)
         check_is_dir(args.cat_path)
         check_is_dir(args.output_dir_path)
 
@@ -55,7 +55,7 @@ class Correlation(Runnable):
         if self._annotated_vcf is None:
             log.print_progress("Parse the annotated VCF")
             self._annotated_vcf = parse_annotated_vcf(
-                Path(self.input_path)
+                Path(self.annot_path)
             )
         return self._annotated_vcf
 

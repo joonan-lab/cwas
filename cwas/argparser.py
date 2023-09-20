@@ -1075,6 +1075,14 @@ def correlation() -> argparse.ArgumentParser:
         type=Path,
         help="Categorized file (*.zarr) resulted from categorization step.",
     )
+    required.add_argument(
+        "-v",
+        "--annotated_vcf",
+        dest="annot_path",
+        required=False,
+        type=Path,
+        help="Annotated VCF file. Required for variant-level correlation matrix (--cm variant).",
+    )
     optional.add_argument(
         "-o_dir",
         "--output_directory",
