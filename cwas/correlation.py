@@ -36,7 +36,7 @@ class Correlation(Runnable):
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
-        check_is_file(args.cat_path)
+        check_is_dir(args.cat_path)
         check_is_dir(args.output_dir_path)
 
     @property
