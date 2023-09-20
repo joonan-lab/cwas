@@ -216,7 +216,6 @@ class EffectiveNumTest(Runnable):
     def get_n_etests(self):
         """Get the number of effective tests """
         print_progress(self.get_n_etests.__doc__)
-        print(self.eig_val_path)
         if os.path.isfile(self.eig_val_path):
             print_log(
                 "NOTICE",
