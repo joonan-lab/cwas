@@ -1069,7 +1069,7 @@ def correlation() -> argparse.ArgumentParser:
         dest="cat_path",
         required=True,
         type=Path,
-        help="Categorized file (gizpped) resulted from categorization step.",
+        help="Categorized file (*.zarr) resulted from categorization step.",
     )
     optional.add_argument(
         "-o_dir",
