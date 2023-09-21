@@ -186,7 +186,6 @@ class Correlation(Runnable):
         f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'correlation_matrix.zarr', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.domain_list}." +
             f"{f_name}"
         )
 
@@ -195,7 +194,6 @@ class Correlation(Runnable):
         f_name = re.sub(r'categorization_result\.zarr\.gz|categorization_result\.zarr', 'intersection_matrix.zarr', self.cat_path.name)
         return Path(
             f"{self.output_dir_path}/" +
-            f"{self.domain_list}." +
             f"{f_name}"
         )
 
