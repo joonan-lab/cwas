@@ -16,7 +16,6 @@ from rpy2.robjects.packages import importr
 from tqdm import tqdm
 from scipy.stats import norm
 import random
-import polars as pl
 import zarr
 
 from cwas.core.dawn.clustering import kmeans_cluster

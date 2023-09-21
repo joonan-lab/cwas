@@ -74,15 +74,31 @@ class EffectiveNumTest(Runnable):
 
     @property
     def domain_list(self) -> str:
-        if self.args.domain_list=='run_all':
-            joined_string = ','.join(['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')])
-            return joined_string
+        if self.args.domain_list == 'all':
+            return ['all']
+        elif self.args.domain_list=='run_all':
+            all_domains = ['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+            return all_domains
         else:
-            first_list = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
-            second_list = self.args.domain_list.split(',')
-            matching_values = [value for value in first_list if value.lower() in map(str.lower, second_list)]
-            return ','.join(matching_values)
-    
+            if 'all' in self.args.domain_list:
+                all_domains = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+                matching_values = ['all']+[self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
+                return matching_values
+            else:
+                all_domains = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+                matching_values = [self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
+                return matching_values
+
+    def _check_domain_list(self, d, all_domain_list):
+        if not d in map(str.lower, all_domain_list):
+            raise ValueError(
+                "Invalid domain name: "
+                "{}".format(d)
+            )
+        else:
+            idx = list(map(str.lower, all_domain_list)).index(d)
+            return all_domain_list[idx]
+
     @property
     def intersection_matrix(self) -> pd.DataFrame:
         if self._intersection_matrix is None and self.input_format == 'inter':
