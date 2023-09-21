@@ -303,13 +303,13 @@ class Correlation(Runnable):
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
-        log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
-        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
+        #log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
+        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 
                                            categories=self.categorization_result.columns)
         
-        with mp.Pool(self.num_proc//3 + 1) as pool:
+        with mp.Pool(self.num_proc) as pool:
             return sum(pool.map(
                 _get_intersection_matrix,
                 split_vcfs

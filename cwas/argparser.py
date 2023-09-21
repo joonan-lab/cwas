@@ -1106,7 +1106,7 @@ def correlation() -> argparse.ArgumentParser:
         dest="num_proc",
         required=False,
         type=int,
-        help="Number of worker processes for the categorization (default: 1)",
+        help="Number of worker processes for the categorization. Recommend using only one-third of available cores to prevent memory errors. (default: 1)",
         default=1,
     )
     required.add_argument(
