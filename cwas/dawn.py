@@ -86,7 +86,7 @@ class Dawn(Runnable):
         if self._corr_mat is None:
             root = zarr.open(self.corr_mat_file, mode='r')
             self._corr_mat = root['data']
-            column_indices = [root['metadata'].attrs['category'].index(col) for col in self.category_set]
+            column_indices = list(map(lambda x: root['metadata'].attrs['category'].index(x), self.category_set))
             self._corr_mat = self._corr_mat[column_indices, column_indices].astype(np.float64)
             #self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
         return self._corr_mat

@@ -148,20 +148,19 @@ class Correlation(Runnable):
             return 'all'
         elif self.args.domain_list=='run_all':
             all_domains = ['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')]
-            return all_domains[0]
+            return all_domains
         else:
             if 'all' in self.args.domain_list:
                 all_domains = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
                 matching_values = ['all']+[self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
-                return matching_values[0]
+                return matching_values
             else:
                 all_domains = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
                 matching_values = [self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
-                return matching_values[0]
+                return matching_values
 
     @property
     def filtered_combs(self) -> list:
-        log.print_progress(f"Domain: {self.domain_list}")
         filtered_combs = self.category_set.loc[self.category_set['is_'+self.domain_list]==1]['Category'] if self.domain_list != 'all' else pd.Series(self.categories)
         return filtered_combs
 
@@ -223,9 +222,10 @@ class Correlation(Runnable):
         )
 
     def run(self):
-        self.generate_correlation_matrix()
-        self.save_result()
-        self.update_env()
+        for i in self.domain_list:
+            log.print_progress(f"Generate correlation matrix for domain: {i}")
+            self.generate_correlation_matrix()
+            self.save_result()
         log.print_progress("Done")
 
     def generate_correlation_matrix(self):
@@ -350,5 +350,3 @@ class Correlation(Runnable):
         root['metadata'].attrs['category'] = self._correlation_matrix.columns.tolist()
         root.create_dataset('data', data=self._correlation_matrix, chunks=(1000, 1000), dtype='float64')
 
-    def update_env(self):
-        self.save_env()
