@@ -339,13 +339,15 @@ class Correlation(Runnable):
         if self.generate_inter_matrix == True:
             log.print_progress("Save the intersection matrix to file")
 
-            root = zarr.open(self.intersection_matrix_path, mode='w')
+            domain_int_path = Path(str(self.intersection_matrix_path).replace('.zarr', f'.{self._domain}.zarr'))
+            root = zarr.open(domain_int_path, mode='w')
             root.create_group('metadata')
             root['metadata'].attrs['category'] = self._intersection_matrix.columns.tolist()
             root.create_dataset('data', data=self._intersection_matrix, chunks=(1000, 1000), dtype='i4')
 
         log.print_progress("Save the correlation matrix to file")
-        root = zarr.open(self.matrix_path, mode='w')
+        domain_corr_path = Path(str(self.matrix_path).replace('.zarr', f'.{self._domain}.zarr'))
+        root = zarr.open(domain_corr_path, mode='w')
         root.create_group('metadata')
         root['metadata'].attrs['category'] = self._correlation_matrix.columns.tolist()
         root.create_dataset('data', data=self._correlation_matrix, chunks=(1000, 1000), dtype='float64')
