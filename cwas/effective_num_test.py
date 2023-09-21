@@ -176,7 +176,7 @@ class EffectiveNumTest(Runnable):
     @property
     def neg_lap_path(self) -> Path:
         replace_term = r'\.intersection_matrix|\.correlation_matrix'
-        save_name = '.neg_lap.zarr' if self.tag is None else f'.neg_lap.{self.tag}.zarr'
+        save_name = '.neg_lap' if self.tag is None else f'.neg_lap.{self.tag}'
         f_name = re.sub(replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
@@ -186,7 +186,7 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_val_path(self) -> Path:
         replace_term = r'\.intersection_matrix|\.correlation_matrix'
-        save_name = '.eig_vals.zarr' if self.tag is None else f'.eig_vals.{self.tag}.zarr'
+        save_name = '.eig_vals' if self.tag is None else f'.eig_vals.{self.tag}'
         f_name = re.sub(replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
@@ -196,7 +196,7 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_vec_path(self) -> Path:
         replace_term = r'\.intersection_matrix|\.correlation_matrix'
-        save_name = '.eig_vecs.zarr' if self.tag is None else f'.eig_vecs.{self.tag}.zarr'
+        save_name = '.eig_vecs' if self.tag is None else f'.eig_vecs.{self.tag}'
         f_name = re.sub(replace_term, save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
