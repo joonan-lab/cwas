@@ -1125,6 +1125,23 @@ def correlation() -> argparse.ArgumentParser:
         action="store_true",
         help="Generate a matrix with intersected number of variants (or samples with variants) bewteen categories.",
     )
+    optional.add_argument(
+        '-c_info',
+        '--category_info',
+        dest="category_info_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file with category information (*.category_info.txt).",
+    )
+    optional.add_argument(
+        '-d',
+        '--domain_list',
+        default='all',
+        type=str,
+        help="Domain list to filter categories based on GENCODE domain. (default: all).\n"\
+             "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
+    )
     other.add_argument(
         '-h',
         '--help',
