@@ -94,7 +94,7 @@ class supernodeWGS_func:
 
         #cor_block = self.corr_mat.iloc[idx1, idx2]
         cor_block = self.corr_mat[idx1][:, idx2]
-        cor_block.reset_index(drop=True, inplace=True)
+        #cor_block.reset_index(drop=True, inplace=True)
 
         file_dir = os.path.join(self.supernodeDir, '{}.pickle'.format(i))
         cor_block.to_pickle(file_dir)
