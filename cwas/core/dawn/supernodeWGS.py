@@ -332,7 +332,7 @@ class supernodeWGS_func:
         
         layout = g.layout(layout='auto')
         layout_mat = pd.DataFrame(layout[:], columns=['X.pos','Y.pos'])
-        layout_mat = pd.concat([pd.DataFrame({'Cluster.index':g.vs['name']}), layout_mat, pd.DataFrame({"node.size":node_size, "node.color":node_col})], axis=1)
+        layout_mat = pd.concat([pd.DataFrame({'Cluster.index':g.vs['name']}), layout_mat, pd.DataFrame({"node.size":node_size, "node.color":node_col, "zvalue":zval})], axis=1)
         
         comm_leiden = g.community_leiden(objective_function='modularity')
         comm_membership = [comm_leiden.membership[v] for v in range(g.vcount())]
