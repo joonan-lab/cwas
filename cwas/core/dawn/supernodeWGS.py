@@ -92,7 +92,8 @@ class supernodeWGS_func:
         idx1 = list(np.where([x == idx[0] for x in self.clusters])[0])
         idx2 = list(np.where([x == idx[1] for x in self.clusters])[0])
 
-        cor_block = self.corr_mat.iloc[idx1, idx2]
+        #cor_block = self.corr_mat.iloc[idx1, idx2]
+        cor_block = self.corr_mat[idx1][:, idx2]
         cor_block.reset_index(drop=True, inplace=True)
 
         file_dir = os.path.join(self.supernodeDir, '{}.pickle'.format(i))
