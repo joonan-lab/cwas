@@ -534,7 +534,9 @@ class data_collection:
     def _cor_func_(self, i):
         idx = self._pair_to_index_(int(self._combn_mat[i][0]), int(self._combn_mat[i][1]), max_val=self.max_cluster)
         cor_block = 0
-        cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
+        with open(os.path.join(self.path, "{}.pickle".format(idx)), 'rb') as pickle_file:
+            cor_block = pickle.load(pickle_file)
+        #cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
         return np.mean(cor_block)
     
     def form_testvec(self, vec, clustering=None, flag_vec=None, k=200, sparse=False, sumabsv=4):
@@ -570,8 +572,11 @@ class data_collection:
 
         idx = self._pair_to_index_(int(i), int(i), max_val=self.max_cluster)
         cor_block = 0
-        cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
-        cor_block = cor_block.iloc[keep_idx, keep_idx]
+        with open(os.path.join(self.path, "{}.pickle".format(idx)), 'rb') as pickle_file:
+            cor_block = pickle.load(pickle_file)
+        #cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
+        #cor_block = cor_block.iloc[keep_idx, keep_idx]
+        cor_block = cor_block[keep_idx,keep_idx]
 
         if len(cor_block)==0:
             return {'vec':np.nan, 'index':np.nan, 'sparsity':np.nan}
@@ -726,7 +731,7 @@ class data_collection:
     def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):      
         mat = mat.astype(np.float64)
          
-        if sparse & (len(mat.columns)>sumabsv**2):
+        if sparse & (mat.shape[1]>sumabsv**2):
             mat = np.array(mat)
             out = self.SPC(np.array(mat), trace = False, sumabsv = sumabsv)
             return out['v'][:,0]
