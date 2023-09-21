@@ -218,6 +218,8 @@ class EffectiveNumTest(Runnable):
     def get_n_etests(self):
         """Get the number of effective tests """
         print_progress(self.get_n_etests.__doc__)
+        file_extension = '' if self._domain == 'all' else f'.{self._domain}'
+        #str(self.coef_path).replace('.txt', f'{file_extension}.txt')
         if os.path.isdir(Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr'))):
             print_log(
                 "NOTICE",
