@@ -159,11 +159,6 @@ class Correlation(Runnable):
                 matching_values = [self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
                 return matching_values
 
-    @property
-    def filtered_combs(self) -> str:
-        filtered_combs = self.category_set.loc[self.category_set['is_'+self.domain_list]==1]['Category'] if self.domain_list != 'all' else pd.Series(self.categories)
-        return filtered_combs
-
     def _check_domain_list(self, d, all_domain_list):
         if not d in map(str.lower, all_domain_list):
             raise ValueError(
@@ -173,23 +168,6 @@ class Correlation(Runnable):
         else:
             idx = list(map(str.lower, all_domain_list)).index(d)
             return all_domain_list[idx]
-
-    @property
-    def categorization_result(self) -> pd.DataFrame:
-        if self._categorization_result is None:
-            log.print_progress("Load the categorization result")
-        if self.domain_list != 'all':
-            column_indices = [self.categories.index(col) for col in self.filtered_combs]
-            self._categorization_result = pd.DataFrame(self.categorization_root['data'][:, column_indices].astype(np.float64),
-                              index=self.sample_ids,
-                              columns=self.filtered_combs)
-            self._categorization_result.index.name = 'SAMPLE'
-        else:
-            self._categorization_result = pd.DataFrame(self.categorization_root['data'].astype(np.float64),
-                              index=self.sample_ids,
-                              columns=self.categories)
-            self._categorization_result.index.name = 'SAMPLE'
-        return self._categorization_result
 
     @property
     def output_dir_path(self):
@@ -230,6 +208,7 @@ class Correlation(Runnable):
         log.print_progress("Done")
 
     def generate_correlation_matrix(self):
+        self.filtered_combs = self.category_set.loc[self.category_set['is_'+self._domain]==1]['Category'] if self._domain != 'all' else pd.Series(self.categories)
         if self._domain != 'all':
             column_indices = [self.categories.index(col) for col in self.filtered_combs]
             self.categorization_result = pd.DataFrame(self.categorization_root['data'][:, column_indices].astype(np.float64),
