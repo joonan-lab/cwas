@@ -160,7 +160,7 @@ class Correlation(Runnable):
                 return matching_values
 
     @property
-    def filtered_combs(self) -> list:
+    def filtered_combs(self) -> str:
         filtered_combs = self.category_set.loc[self.category_set['is_'+self.domain_list]==1]['Category'] if self.domain_list != 'all' else pd.Series(self.categories)
         return filtered_combs
 
