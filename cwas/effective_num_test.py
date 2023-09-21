@@ -187,8 +187,9 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_val_path(self) -> Path:
         replace_term = r'\.intersection_matrix|\.correlation_matrix'
-        save_name = '.eig_vals' if self.tag is None else f'.eig_vals.{self.tag}'
-        f_name = re.sub(replace_term, save_name, self.input_path.name)
+        f_name = re.sub(replace_term, '.eig_vals', self.input_path.name)
+        save_name = '.zarr' if self.tag is None else f'.{self.tag}.zarr'
+        f_name = re.sub('.zarr', save_name, f_name)
         return Path(
             f"{self.output_dir_path}/" +
             f"{f_name}"
@@ -197,8 +198,9 @@ class EffectiveNumTest(Runnable):
     @property
     def eig_vec_path(self) -> Path:
         replace_term = r'\.intersection_matrix|\.correlation_matrix'
-        save_name = '.eig_vecs' if self.tag is None else f'.eig_vecs.{self.tag}'
-        f_name = re.sub(replace_term, save_name, self.input_path.name)
+        f_name = re.sub(replace_term, '.eig_vecs', self.input_path.name)
+        save_name = '.zarr' if self.tag is None else f'.{self.tag}.zarr'
+        f_name = re.sub('.zarr', save_name, f_name)
         return Path(
             f"{self.output_dir_path}/" +
             f"{f_name}"
