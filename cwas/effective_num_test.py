@@ -224,24 +224,19 @@ class EffectiveNumTest(Runnable):
     def run(self):
         print_arg("Number of simulations", self.num_eig)
         for i in self.domain_list:
+            print_progress(f"Eigen decomposition for domain: {i}")
+            self._domain = i
             if self.eff_num_test:
                 self.get_n_etests()
                 self.update_env()
             else:
                 self.eigen_decomposition()
-        
-        if self.eff_num_test:
-            #self.eigen_decomposition()
-            self.get_n_etests()
-            self.update_env()
-        else:
-            self.eigen_decomposition()
         print_progress("Done")
     
     def get_n_etests(self):
         """Get the number of effective tests """
         print_progress(self.get_n_etests.__doc__)
-        if os.path.isfile(self.eig_val_path):
+        if os.path.isdir(Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr'))):
             print_log(
                 "NOTICE",
                 "You already have eigen values for the selected categories.",
@@ -250,7 +245,7 @@ class EffectiveNumTest(Runnable):
         else:
             self.eigen_decomposition(save_vecs=False)
             
-        root = zarr.open(self.eig_val_path, mode='r')
+        root = zarr.open(Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr')), mode='r')
         eig_vals = root['data']
         
         e = 1e-12
@@ -286,7 +281,12 @@ class EffectiveNumTest(Runnable):
         print_progress(f"Categories with at least {self.count_thres} counts will be used")
         c2 = self.category_count[self.category_count['Raw_counts'] >= self.count_thres]['Category'].tolist()
         
-        filtered_combs = [x for x in c1 if x in c2]
+        filtered_combs1 = [x for x in c1 if x in c2]
+        if self._domain != 'all':
+            filtered_combs2 = self.category_set.loc[self.category_set['is_'+self._domain]==1]["Category"]
+        else:
+            filtered_combs2 = pd.Series(filtered_combs1)
+        filtered_combs = list(set(filtered_combs1) & set(filtered_combs2))
         
         print_progress(f"Use # of categories: {len(filtered_combs)}")
 
@@ -297,7 +297,8 @@ class EffectiveNumTest(Runnable):
             intermediate_mat = self.intersection_matrix.loc[filtered_combs,filtered_combs]
             intermediate_mat = intermediate_mat.mul((self.binom_p)*(1-self.binom_p))
 
-        if not os.path.isdir(self.neg_lap_path):
+        domain_neg_lap_path = Path(str(self.neg_lap_path).replace('.zarr', f'.{self._domain}.zarr'))
+        if not os.path.isdir(domain_neg_lap_path):
             print_progress("Generating the negative laplacian matrix")
             neg_lap = np.abs(intermediate_mat.values)
             degrees = np.sum(neg_lap, axis=0)
@@ -305,22 +306,25 @@ class EffectiveNumTest(Runnable):
                 neg_lap[i, :] = neg_lap[i, :] / np.sqrt(degrees)
                 neg_lap[:, i] = neg_lap[:, i] / np.sqrt(degrees)
             print_progress("Writing the negative laplacian matrix to file")
-            root = zarr.open(self.neg_lap_path, mode='w')
+            root = zarr.open(domain_neg_lap_path, mode='w')
             root.create_dataset('data', data=neg_lap, dtype='float64')
         else:
-            root = zarr.open(self.neg_lap_path, mode='r')
+            root = zarr.open(domain_neg_lap_path, mode='r')
             neg_lap = root['data']
 
-        if not os.path.isdir(self.eig_val_path) or not os.path.isdir(self.eig_vec_path):
+        domain_eig_val_path = Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr'))
+        domain_eig_vec_path = Path(str(self.eig_vec_path).replace('.zarr', f'.{self._domain}.zarr'))
+        if not os.path.isdir(domain_eig_val_path) or not os.path.isdir(domain_eig_vec_path):
             print_progress("Calculating the eigenvalues of the negative laplacian matrix")
             eig_vals, eig_vecs = np.linalg.eig(neg_lap)
             print_progress("Writing the eigenvalues to file")
-            root = zarr.open(self.eig_val_path, mode='w')
+            
+            root = zarr.open(domain_eig_val_path, mode='w')
             root.create_dataset('data', data=eig_vals, dtype='float64')
 
             if save_vecs:
                 print_progress("Writing the eigenvectors to file")
-                root = zarr.open(self.eig_vec_path, mode='w')
+                root = zarr.open(domain_eig_vec_path, mode='w')
                 root.create_group('metadata')
                 root['metadata'].attrs['category'] = filtered_combs
                 root.create_dataset('data', data=eig_vecs.real, chunks=(1000, 1000), dtype='float64')
