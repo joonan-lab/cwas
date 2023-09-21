@@ -223,15 +223,24 @@ class Correlation(Runnable):
 
     def run(self):
         for i in self.domain_list:
+            self._domain = i
             log.print_progress(f"Generate correlation matrix for domain: {i}")
             self.generate_correlation_matrix()
             self.save_result()
         log.print_progress("Done")
 
     def generate_correlation_matrix(self):
-        if self.generate_corr_matrix is None:
-            return
-
+        if self._domain != 'all':
+            column_indices = [self.categories.index(col) for col in self.filtered_combs]
+            self.categorization_result = pd.DataFrame(self.categorization_root['data'][:, column_indices].astype(np.float64),
+                                                      index=self.sample_ids,
+                                                      columns=self.filtered_combs)
+            self.categorization_result.index.name = 'SAMPLE'
+        else:
+            self.categorization_result = pd.DataFrame(self.categorization_root['data'].astype(np.float64),
+                                                      index=self.sample_ids,
+                                                      columns=self.categories)
+            self.categorization_result.index.name = 'SAMPLE'
         if self.generate_corr_matrix == "sample":
             log.print_progress("Get an intersection matrix between categories using the number of samples")
 
