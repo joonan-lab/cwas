@@ -11,6 +11,7 @@ import os
 from scipy.optimize import minimize_scalar
 from scipy.stats import norm
 from scipy.stats import rankdata
+import pickle
 import random
 import igraph
 import itertools
@@ -97,7 +98,10 @@ class supernodeWGS_func:
         #cor_block.reset_index(drop=True, inplace=True)
 
         file_dir = os.path.join(self.supernodeDir, '{}.pickle'.format(i))
-        cor_block.to_pickle(file_dir)
+        #cor_block.to_pickle(file_dir)
+        with open(file_dir, 'wb') as pickle_file:
+            pickle.dump(cor_block, pickle_file)
+
 
     def _index_to_pair(self, val, max_val=200):
         assert (isinstance(val, int)) and (val % 1 == 0) and (val > 0) and (val <= max_val*(max_val-1)/2+max_val)
