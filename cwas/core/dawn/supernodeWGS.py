@@ -208,7 +208,7 @@ class supernodeWGS_func:
         seedindex = np.array(seedindex)[idx]
 
         i_vec = np.int64(z > norm.ppf(1-pthres, loc=null_mean, scale=(1 if np.isnan(null_sigma) else null_sigma)))
-        assert sum(i_vec) == 0, "There is no risk category"
+        assert sum(i_vec) != 0, "There is no risk category"
         
         b = 0; c = 0
 
