@@ -249,7 +249,6 @@ class Dawn(Runnable):
         adj_mat = pd.DataFrame(np.array(g.get_adjacency().data), index=g.vs['name'], columns=g.vs['name'])
         adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.adjacency_matrix.csv".format(self.tag)), sep=",")
         
-        
         print_progress("[DAWN] Compute the test statistics with z-scores")
         testvec_res = form_data.form_testvec(vec=cat_count_permut['P'],
                                              clustering=clusters,

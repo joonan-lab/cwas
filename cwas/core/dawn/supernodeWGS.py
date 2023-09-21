@@ -531,7 +531,7 @@ class data_collection:
         idx = self._pair_to_index_(int(self._combn_mat[i][0]), int(self._combn_mat[i][1]), max_val=self.max_cluster)
         cor_block = 0
         cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
-        return np.mean(np.array(cor_block))
+        return np.mean(cor_block)
     
     def form_testvec(self, vec, clustering=None, flag_vec=None, k=200, sparse=False, sumabsv=4):
         self._vec = vec
