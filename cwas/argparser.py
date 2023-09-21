@@ -1137,6 +1137,8 @@ def correlation() -> argparse.ArgumentParser:
     optional.add_argument(
         '-d',
         '--domain_list',
+        dest="domain_list",
+        required=False,
         default='all',
         type=str,
         help="Domain list to filter categories based on GENCODE domain. (default: all).\n"\
