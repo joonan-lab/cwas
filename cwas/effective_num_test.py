@@ -176,7 +176,7 @@ class EffectiveNumTest(Runnable):
     @property
     def neg_lap_path(self) -> Path:
         replace_term = r'\.intersection_matrix|\.correlation_matrix'
-        f_name = re.sub(replace_term, 'neg_lap', self.input_path.name)
+        f_name = re.sub(replace_term, '.neg_lap', self.input_path.name)
         save_name = '.zarr' if self.tag is None else f'.{self.tag}.zarr'
         f_name = re.sub('.zarr', save_name, f_name)
         return Path(
