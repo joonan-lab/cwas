@@ -118,7 +118,7 @@ class Dawn(Runnable):
             else: # self.args.k_val is None
                 km_cluster = kmeans_cluster(self._tsne_out, self.seed)
                 ## k 입력이 없으면 k_range 가지고 optimal k를 찾음, k_range는 default 값이 있으므로 user input이 없어도 적용됨
-                print_progress("K is not seleted. Find the optimal K between the range ({})".format(self.k_range))
+                print_progress("K is not selected. Find the optimal K between the range ({})".format(self.k_range))
                 output_name = os.path.join(self.output_dir_path, "{}_choose_K_silhouette_score_plot.pdf".format(self.tag)) # silhouette score plot (dawn output 1)
                 self._k_val = km_cluster.optimal_k(self.k_range, output_name)
 
