@@ -576,7 +576,7 @@ class data_collection:
             cor_block = pickle.load(pickle_file)
         #cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
         #cor_block = cor_block.iloc[keep_idx, keep_idx]
-        cor_block = cor_block[keep_idx,keep_idx]
+        cor_block = cor_block[keep_idx][:, keep_idx]
 
         if len(cor_block)==0:
             return {'vec':np.nan, 'index':np.nan, 'sparsity':np.nan}
