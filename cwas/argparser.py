@@ -559,6 +559,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         default=10000
     )
     optional.add_argument(
+        "-thr",
+        "--threshold",
+        dest="count_thres",
+        required=False,
+        default=None,
+        type=int,
+        help="The number of variants (or samples) to filter categories (counts ≥ threshold)",
+    )
+    optional.add_argument(
         "-s",
         "--sample_info",
         dest="sample_info_path",
@@ -602,15 +611,6 @@ def effective_num_test() -> argparse.ArgumentParser:
         type=str,
         help="Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested (default: all).\n"\
              "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
-    )
-    optional.add_argument(
-        "-thr",
-        "--threshold",
-        dest="count_thres",
-        required=False,
-        default=None,
-        type=int,
-        help="The number of variants (or samples) to filter categories (counts ≥ threshold)",
     )
     optional.add_argument(
         "-ef",
