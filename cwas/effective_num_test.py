@@ -219,7 +219,6 @@ class EffectiveNumTest(Runnable):
         """Get the number of effective tests """
         print_progress(self.get_n_etests.__doc__)
         file_extension = '' if self._domain == 'all' else f'.{self._domain}'
-        #str(self.coef_path).replace('.txt', f'{file_extension}.txt')
         if os.path.isdir(Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr'))):
             print_log(
                 "NOTICE",
@@ -229,7 +228,7 @@ class EffectiveNumTest(Runnable):
         else:
             self.eigen_decomposition(save_vecs=False)
             
-        root = zarr.open(Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr')), mode='r')
+        root = zarr.open(Path(str(self.eig_val_path).replace('.zarr', f'.{file_extension}.zarr')), mode='r')
         eig_vals = root['data']
         
         e = 1e-12
@@ -254,6 +253,7 @@ class EffectiveNumTest(Runnable):
         
     def eigen_decomposition(self, save_vecs: bool = True):
         print_progress(f"Calculate eigen values")
+        file_extension = '' if self._domain == 'all' else f'.{self._domain}'
         if self.category_set_path:
             c1 = self.category_set["Category"].tolist()
         else:
@@ -281,7 +281,7 @@ class EffectiveNumTest(Runnable):
             intermediate_mat = self.intersection_matrix.loc[filtered_combs,filtered_combs]
             intermediate_mat = intermediate_mat.mul((self.binom_p)*(1-self.binom_p))
 
-        domain_neg_lap_path = Path(str(self.neg_lap_path).replace('.zarr', f'.{self._domain}.zarr'))
+        domain_neg_lap_path = Path(str(self.neg_lap_path).replace('.zarr', f'.{file_extension}.zarr'))
         if not os.path.isdir(domain_neg_lap_path):
             print_progress("Generating the negative laplacian matrix")
             neg_lap = np.abs(intermediate_mat.values)
@@ -296,8 +296,8 @@ class EffectiveNumTest(Runnable):
             root = zarr.open(domain_neg_lap_path, mode='r')
             neg_lap = root['data']
 
-        domain_eig_val_path = Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr'))
-        domain_eig_vec_path = Path(str(self.eig_vec_path).replace('.zarr', f'.{self._domain}.zarr'))
+        domain_eig_val_path = Path(str(self.eig_val_path).replace('.zarr', f'.{file_extension}.zarr'))
+        domain_eig_vec_path = Path(str(self.eig_vec_path).replace('.zarr', f'.{file_extension}.zarr'))
         if not os.path.isdir(domain_eig_val_path) or not os.path.isdir(domain_eig_vec_path):
             print_progress("Calculating the eigenvalues of the negative laplacian matrix")
             eig_vals, eig_vecs = np.linalg.eig(neg_lap)
