@@ -87,6 +87,7 @@ class Dawn(Runnable):
             root = zarr.open(self.corr_mat_file, mode='r')
             self._corr_mat = root['data']
             column_indices = list(map(lambda x: root['metadata'].attrs['category'].index(x), self.category_set))
+            print(column_indices)
             self._corr_mat = self._corr_mat[column_indices, column_indices].astype(np.float64)
             self._corr_mat = pd.DataFrame(self._corr_mat, index=self.category_set, columns=self.category_set)
             #self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
