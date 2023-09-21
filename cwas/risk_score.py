@@ -132,7 +132,7 @@ class RiskScore(Runnable):
 
     @property
     def domain_list(self) -> str:
-        if self.args.domian_list == 'all':
+        if self.args.domain_list == 'all':
             return ['all']
         elif self.args.domain_list=='run_all':
             all_domains = ['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')]
