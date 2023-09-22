@@ -92,7 +92,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    conda create -n cwas python=3.10
+    conda create -n cwas python=3.10 r-base=4.2.2
     conda activate cwas
     git clone https://github.com/joonan-lab/cwas.git
     pip install cwas
@@ -101,7 +101,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   .. code-block:: solidity
     
-    conda create -n cwas python=3.10
+    conda create -n cwas python=3.10 r-base=4.2.2
     conda activate cwas
     pip install cwas
 

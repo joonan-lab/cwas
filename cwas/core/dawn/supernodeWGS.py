@@ -11,6 +11,7 @@ import os
 from scipy.optimize import minimize_scalar
 from scipy.stats import norm
 from scipy.stats import rankdata
+import pickle
 import random
 import igraph
 import itertools
@@ -92,11 +93,15 @@ class supernodeWGS_func:
         idx1 = list(np.where([x == idx[0] for x in self.clusters])[0])
         idx2 = list(np.where([x == idx[1] for x in self.clusters])[0])
 
-        cor_block = self.corr_mat.iloc[idx1, idx2]
-        cor_block.reset_index(drop=True, inplace=True)
+        #cor_block = self.corr_mat.iloc[idx1, idx2]
+        cor_block = self.corr_mat[idx1][:, idx2]
+        #cor_block.reset_index(drop=True, inplace=True)
 
         file_dir = os.path.join(self.supernodeDir, '{}.pickle'.format(i))
-        cor_block.to_pickle(file_dir)
+        #cor_block.to_pickle(file_dir)
+        with open(file_dir, 'wb') as pickle_file:
+            pickle.dump(cor_block, pickle_file)
+
 
     def _index_to_pair(self, val, max_val=200):
         assert (isinstance(val, int)) and (val % 1 == 0) and (val > 0) and (val <= max_val*(max_val-1)/2+max_val)
@@ -332,7 +337,7 @@ class supernodeWGS_func:
         
         layout = g.layout(layout='auto')
         layout_mat = pd.DataFrame(layout[:], columns=['X.pos','Y.pos'])
-        layout_mat = pd.concat([pd.DataFrame({'Cluster.index':g.vs['name']}), layout_mat, pd.DataFrame({"node.size":node_size, "node.color":node_col})], axis=1)
+        layout_mat = pd.concat([pd.DataFrame({'Cluster.index':g.vs['name']}), layout_mat, pd.DataFrame({"node.size":node_size, "node.color":node_col, "zvalue":zval})], axis=1)
         
         comm_leiden = g.community_leiden(objective_function='modularity')
         comm_membership = [comm_leiden.membership[v] for v in range(g.vcount())]
@@ -529,8 +534,10 @@ class data_collection:
     def _cor_func_(self, i):
         idx = self._pair_to_index_(int(self._combn_mat[i][0]), int(self._combn_mat[i][1]), max_val=self.max_cluster)
         cor_block = 0
-        cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
-        return np.mean(np.array(cor_block))
+        with open(os.path.join(self.path, "{}.pickle".format(idx)), 'rb') as pickle_file:
+            cor_block = pickle.load(pickle_file)
+        #cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
+        return np.mean(cor_block)
     
     def form_testvec(self, vec, clustering=None, flag_vec=None, k=200, sparse=False, sumabsv=4):
         self._vec = vec
@@ -565,8 +572,11 @@ class data_collection:
 
         idx = self._pair_to_index_(int(i), int(i), max_val=self.max_cluster)
         cor_block = 0
-        cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
-        cor_block = cor_block.iloc[keep_idx, keep_idx]
+        with open(os.path.join(self.path, "{}.pickle".format(idx)), 'rb') as pickle_file:
+            cor_block = pickle.load(pickle_file)
+        #cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
+        #cor_block = cor_block.iloc[keep_idx, keep_idx]
+        cor_block = cor_block[keep_idx][:, keep_idx]
 
         if len(cor_block)==0:
             return {'vec':np.nan, 'index':np.nan, 'sparsity':np.nan}
@@ -721,7 +731,7 @@ class data_collection:
     def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):      
         mat = mat.astype(np.float64)
          
-        if sparse & (len(mat.columns)>sumabsv**2):
+        if sparse & (mat.shape[1]>sumabsv**2):
             mat = np.array(mat)
             out = self.SPC(np.array(mat), trace = False, sumabsv = sumabsv)
             return out['v'][:,0]

@@ -16,7 +16,7 @@ from rpy2.robjects.packages import importr
 from tqdm import tqdm
 from scipy.stats import norm
 import random
-import polars as pl
+import zarr
 
 from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection
@@ -40,23 +40,22 @@ class Dawn(Runnable):
             "No. worker processes for the DAWN",
             f"{args.num_proc: ,d}",
         )
-        print_arg("Eigen vector file in input files", args.eig_vector_file)
-        print_arg("Correlation matrix file in input files", args.corr_mat_file)
-        print_arg("Permutation test file in input files", args.permut_test_file)
-        print_arg("Category variant (or sample) counts file (burden test result) in input files: ", args.category_count_file)
+        print_arg("Eigen vector file", args.eig_vector_file)
+        print_arg("Correlation matrix file", args.corr_mat_file)
+        print_arg("Permutation test file", args.permut_test_file)
+        print_arg("Category variant (or sample) counts file (burden test result): ", args.category_count_file)
         print_arg("Output directory", args.output_dir_path)
         print_arg("Thresholds of count / correlation / size: ", ", ".join(list(map(str, [args.count_threshold, args.corr_threshold, args.size_threshold]))))
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
         check_num_proc(args.num_proc)
-        check_is_file(args.eig_vector_file)
-        check_is_file(args.corr_mat_file)
+        check_is_dir(args.eig_vector_file)
+        check_is_dir(args.corr_mat_file)
         check_is_file(args.permut_test_file)
         check_is_file(args.category_count_file)
         check_is_dir(args.output_dir_path)
 
-    
     @property
     def num_proc(self):
         return self.args.num_proc
@@ -72,9 +71,10 @@ class Dawn(Runnable):
     @property
     def eig_vector(self):
         if self._eig_vector is None:
-            self._eig_vector = pl.read_csv(self.eig_vector_file, separator='\t', has_header=False).to_pandas()
-            self._eig_vector.index = self._eig_vector.iloc[:,0].tolist()
-            self._eig_vector = self._eig_vector.iloc[:,1:]
+            root = zarr.open(self.eig_vector_file, mode='r')
+            self._eig_vector = pd.DataFrame(data=root['data'],
+                              index=root['metadata'].attrs['category'])
+            #self._eig_vector = self._eig_vector.iloc[:,1:]
         return self._eig_vector
     
     @property
@@ -84,8 +84,12 @@ class Dawn(Runnable):
     @property
     def corr_mat(self):
         if self._corr_mat is None:
-            self._corr_mat = pd.read_pickle(self.corr_mat_file)
-            self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
+            root = zarr.open(self.corr_mat_file, mode='r')
+            self._corr_mat = root['data']
+            column_indices = list(map(lambda x: root['metadata'].attrs['category'].index(x), self.category_set))
+            self._corr_mat = self._corr_mat[column_indices][:, column_indices].astype(np.float64)
+            #self._corr_mat = pd.DataFrame(self._corr_mat, index=self.category_set, columns=self.category_set)
+            #self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
         return self._corr_mat
 
     @property
@@ -114,7 +118,7 @@ class Dawn(Runnable):
             else: # self.args.k_val is None
                 km_cluster = kmeans_cluster(self._tsne_out, self.seed)
                 ## k 입력이 없으면 k_range 가지고 optimal k를 찾음, k_range는 default 값이 있으므로 user input이 없어도 적용됨
-                print_progress("K is not seleted. Find the optimal K between the range ({})".format(self.k_range))
+                print_progress("K is not selected. Find the optimal K between the range ({})".format(self.k_range))
                 output_name = os.path.join(self.output_dir_path, "{}_choose_K_silhouette_score_plot.pdf".format(self.tag)) # silhouette score plot (dawn output 1)
                 self._k_val = km_cluster.optimal_k(self.k_range, output_name)
 
@@ -244,7 +248,6 @@ class Dawn(Runnable):
                                                              k=cluster_idx)
         adj_mat = pd.DataFrame(np.array(g.get_adjacency().data), index=g.vs['name'], columns=g.vs['name'])
         adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.adjacency_matrix.csv".format(self.tag)), sep=",")
-        
         
         print_progress("[DAWN] Compute the test statistics with z-scores")
         testvec_res = form_data.form_testvec(vec=cat_count_permut['P'],

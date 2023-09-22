@@ -559,6 +559,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         default=10000
     )
     optional.add_argument(
+        "-thr",
+        "--threshold",
+        dest="count_thres",
+        required=False,
+        default=None,
+        type=int,
+        help="The number of variants (or samples) to filter categories (counts ≥ threshold)",
+    )
+    optional.add_argument(
         "-s",
         "--sample_info",
         dest="sample_info_path",
@@ -602,15 +611,6 @@ def effective_num_test() -> argparse.ArgumentParser:
         type=str,
         help="Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested (default: all).\n"\
              "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
-    )
-    optional.add_argument(
-        "-thr",
-        "--threshold",
-        dest="count_thres",
-        required=False,
-        default=None,
-        type=int,
-        help="The number of variants (or samples) to filter categories (counts ≥ threshold)",
     )
     optional.add_argument(
         "-ef",
@@ -1106,7 +1106,7 @@ def correlation() -> argparse.ArgumentParser:
         dest="num_proc",
         required=False,
         type=int,
-        help="Number of worker processes for the categorization (default: 1)",
+        help="Number of worker processes for the categorization. Recommend using only one-third of available cores to prevent memory errors. (default: 1)",
         default=1,
     )
     required.add_argument(
@@ -1124,6 +1124,25 @@ def correlation() -> argparse.ArgumentParser:
         required=False,
         action="store_true",
         help="Generate a matrix with intersected number of variants (or samples with variants) bewteen categories.",
+    )
+    optional.add_argument(
+        '-c_info',
+        '--category_info',
+        dest="category_info_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file with category information (*.category_info.txt).",
+    )
+    optional.add_argument(
+        '-d',
+        '--domain_list',
+        dest="domain_list",
+        required=False,
+        default='all',
+        type=str,
+        help="Domain list to filter categories based on GENCODE domain. (default: all).\n"\
+             "Available options: run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA",
     )
     other.add_argument(
         '-h',

@@ -29,8 +29,14 @@ class Correlation(Runnable):
         self._gene_matrix = None
         self._category_domain = None
         self._categorization_result = None
+        self._categorization_root = None
         self._correlation_matrix = None
         self._intersection_matrix = None
+        self._sample_ids = None
+        self._categories = None
+        self._adj_factor = None
+        self._category_set_path = None
+        self._category_set = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -104,15 +110,64 @@ class Correlation(Runnable):
         return self.args.cat_path.resolve()
 
     @property
-    def categorization_result(self) -> pd.DataFrame:
-        if self._categorization_result is None:
-            log.print_progress("Load the categorization result")
-            root = zarr.open(self.cat_path, mode='r')
-            self._categorization_result = pd.DataFrame(data=root['data'],
-                              index=root['metadata'].attrs['sample_id'],
-                              columns=root['metadata'].attrs['category'])
-            self._categorization_result.index.name = 'SAMPLE'            
-        return self._categorization_result
+    def category_info_path(self) -> Path:
+        return self.args.category_info_path.resolve()
+
+    @property
+    def categorization_root(self):
+        if self._categorization_root is None:
+            self._categorization_root = zarr.open(self.cat_path, mode='r')
+        return self._categorization_root
+
+    @property
+    def sample_ids(self):
+        if self._sample_ids is None:
+            self._sample_ids = self.categorization_root['metadata'].attrs['sample_id']
+        return self._sample_ids
+
+    @property
+    def categories(self):
+        if self._categories is None:
+            self._categories = self.categorization_root['metadata'].attrs['category']
+        return self._categories
+
+    @property
+    def category_set(self) -> pd.DataFrame:
+        if self._category_set is None:
+            self._category_set = pd.read_csv(self.category_info_path, sep='\t')
+            self._category_set = self._category_set.loc[self._category_set["Category"].isin(self.categories)]
+            self._category_set['Category'] = pd.Categorical(self._category_set['Category'],
+                                                            categories=self.categories,
+                                                            ordered=True)
+            self._category_set.sort_values('Category', ignore_index=True, inplace=True)
+        return self._category_set
+
+    @property
+    def domain_list(self) -> str:
+        if self.args.domain_list == 'all':
+            return 'all'
+        elif self.args.domain_list=='run_all':
+            all_domains = ['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+            return all_domains
+        else:
+            if 'all' in self.args.domain_list:
+                all_domains = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+                matching_values = ['all']+[self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
+                return matching_values
+            else:
+                all_domains = [col[3:] for col in self.category_set.columns if col.startswith('is_')]
+                matching_values = [self._check_domain_list(str.lower(d.strip()), all_domains) for d in self.args.domain_list.split(',')]
+                return matching_values
+
+    def _check_domain_list(self, d, all_domain_list):
+        if not d in map(str.lower, all_domain_list):
+            raise ValueError(
+                "Invalid domain name: "
+                "{}".format(d)
+            )
+        else:
+            idx = list(map(str.lower, all_domain_list)).index(d)
+            return all_domain_list[idx]
 
     @property
     def output_dir_path(self):
@@ -143,15 +198,26 @@ class Correlation(Runnable):
         )
 
     def run(self):
-        self.generate_correlation_matrix()
-        self.save_result()
-        self.update_env()
+        for i in self.domain_list:
+            self._domain = i
+            log.print_progress(f"Generate correlation matrix for domain: {i}")
+            self.generate_correlation_matrix()
+            self.save_result()
         log.print_progress("Done")
 
     def generate_correlation_matrix(self):
-        if self.generate_corr_matrix is None:
-            return
-
+        self.filtered_combs = self.category_set.loc[self.category_set['is_'+self._domain]==1]['Category'] if self._domain != 'all' else pd.Series(self.categories)
+        if self._domain != 'all':
+            column_indices = [self.categories.index(col) for col in self.filtered_combs]
+            self.categorization_result = pd.DataFrame(self.categorization_root['data'][:, column_indices].astype(np.float64),
+                                                      index=self.sample_ids,
+                                                      columns=self.filtered_combs)
+            self.categorization_result.index.name = 'SAMPLE'
+        else:
+            self.categorization_result = pd.DataFrame(self.categorization_root['data'].astype(np.float64),
+                                                      index=self.sample_ids,
+                                                      columns=self.categories)
+            self.categorization_result.index.name = 'SAMPLE'
         if self.generate_corr_matrix == "sample":
             log.print_progress("Get an intersection matrix between categories using the number of samples")
 
@@ -160,7 +226,7 @@ class Correlation(Runnable):
             else:
                 # Split the column range into evenly sized chunks based on the number of workers
                 chunks = chunk_list(range(self.categorization_result.shape[1]), self.num_proc)
-                result = parmap.map(self.process_columns, chunks, matrix=self._result, pm_pbar=True, pm_processes=self.num_proc)
+                result = parmap.map(self.process_columns, chunks, matrix=self.categorization_result, pm_pbar=True, pm_processes=self.num_proc)
                 # Concatenate the count values
                 intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
 
@@ -235,13 +301,13 @@ class Correlation(Runnable):
 
     def get_intersection_matrix_with_mp(self):
         ## use only one third of the cores to avoid memory error
-        log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
-        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc//3 + 1)
+        #log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
+        split_vcfs = np.array_split(self.annotated_vcf, self.num_proc)
         _get_intersection_matrix = partial(self.get_intersection_matrix,
                                            categorizer=self.categorizer, 
                                            categories=self.categorization_result.columns)
         
-        with mp.Pool(self.num_proc//3 + 1) as pool:
+        with mp.Pool(self.num_proc) as pool:
             return sum(pool.map(
                 _get_intersection_matrix,
                 split_vcfs
@@ -259,16 +325,16 @@ class Correlation(Runnable):
         if self.generate_inter_matrix == True:
             log.print_progress("Save the intersection matrix to file")
 
-            root = zarr.open(self.intersection_matrix_path, mode='w')
+            domain_int_path = Path(str(self.intersection_matrix_path).replace('.zarr', f'.{self._domain}.zarr'))
+            root = zarr.open(domain_int_path, mode='w')
             root.create_group('metadata')
             root['metadata'].attrs['category'] = self._intersection_matrix.columns.tolist()
             root.create_dataset('data', data=self._intersection_matrix, chunks=(1000, 1000), dtype='i4')
 
         log.print_progress("Save the correlation matrix to file")
-        root = zarr.open(self.matrix_path, mode='w')
+        domain_corr_path = Path(str(self.matrix_path).replace('.zarr', f'.{self._domain}.zarr'))
+        root = zarr.open(domain_corr_path, mode='w')
         root.create_group('metadata')
         root['metadata'].attrs['category'] = self._correlation_matrix.columns.tolist()
-        root.create_dataset('data', data=self._correlation_matrix, chunks=(1000, 1000), dtype='i4')
+        root.create_dataset('data', data=self._correlation_matrix, chunks=(1000, 1000), dtype='float64')
 
-    def update_env(self):
-        self.save_env()
