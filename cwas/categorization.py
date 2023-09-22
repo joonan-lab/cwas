@@ -4,16 +4,13 @@ from functools import reduce
 from itertools import product
 from math import ceil
 from pathlib import Path
-import parmap
 from cwas.core.common import chunk_list
-from tqdm import tqdm
 import re
 import zarr
 from collections import OrderedDict
 import pandas as pd
 import numpy as np
-import yaml, pickle
-from functools import partial
+import yaml
 
 from cwas.utils.log import print_arg, print_progress
 from cwas.core.categorization.categorizer import Categorizer
