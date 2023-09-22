@@ -360,7 +360,7 @@ class RiskScore(Runnable):
                     self.permute_pvalues()
                 self.gather_results_for_n_of_one_leave(i)
                 self.save_results_for_n_of_one_leave()
-        if not (self.do_loop and self.n_of_one_leave):
+        if not (self.do_loop or self.n_of_one_leave):
             self.filtered_category_set = self.category_set
             self.risk_scores()
             if not self.predict_only:
