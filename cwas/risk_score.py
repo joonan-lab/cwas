@@ -716,7 +716,7 @@ class RiskScore(Runnable):
                                       for seed in self._permutation_dict[domain].keys()])
                 new_df['Perm_P'] = (np.sum(r2_scores >= new_df['R2'].values[0]) + 1) / (len(r2_scores) + 1)
 
-            fin_res = pd.concat([fin_res, result_df], ignore_index=True)
+            fin_res = pd.concat([fin_res, new_df], ignore_index=True)
 
         #fin_res.to_csv(self.result_path, sep="\t", index=False)
         self._result_for_loop[annotation] = fin_res
