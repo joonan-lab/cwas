@@ -846,7 +846,7 @@ def risk_score() -> argparse.ArgumentParser:
         "--n_of_one_leave",
         dest="n_of_one_leave",
         action="store_true",
-        help="Calculate the risk score while excluding one annotation from functional annotation. This option is not used when the '--do_loop' flag is enabled.",
+        help="Calculate risk score while excluding one annotation from functional annotation. This option is not used when the '--do_loop' flag is enabled.",
     )
     optional.add_argument(
         "-u",
