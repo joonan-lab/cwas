@@ -74,7 +74,7 @@ class Dawn(Runnable):
             root = zarr.open(self.eig_vector_file, mode='r')
             self._eig_vector = pd.DataFrame(data=root['data'],
                               index=root['metadata'].attrs['category'])
-            self._eig_vector = self._eig_vector.iloc[:,1:]
+            #self._eig_vector = self._eig_vector.iloc[:,1:]
         return self._eig_vector
     
     @property
