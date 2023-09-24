@@ -76,12 +76,12 @@ Due to the sizes of BigWig files for conservation scores, you must install them 
 
 ### Installation
 
-We recomment using _[conda virtual environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)_ to build environment for CWAS. Installing CWAS-Plus within a conda environment will prevent its installation in the global environment. When creating a conda environment, also install Python to enable local installations using pip. Run the following statements in your shell.
+We recomment using _[conda virtual environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)_ to build environment for CWAS. Installing CWAS-Plus within a conda environment will prevent its installation in the global environment. When creating a conda environment, also install Python to enable local installations using pip. We recommend installing R too. Run the following statements in your shell.
 
 ##### pip
 
 ```bash
-conda env create -n cwas python=3.9
+conda create -n cwas python=3.10 r-base=4.2.2
 conda activate cwas
 pip install cwas
 ```
@@ -89,7 +89,7 @@ pip install cwas
 ##### github
 
 ```bash
-conda env create -n cwas python=3.9
+conda create -n cwas python=3.10 r-base=4.2.2
 conda activate cwas
 git clone https://github.com/joonan-lab/cwas.git
 cd cwas
@@ -168,7 +168,7 @@ This step merges the BED files to annotate variants. Run the following command.
 cwas preparation -p 4
 ```
 
-`4` is the number of worker processes. You can adjust this.
+You can adjust the number of worker processes with `-p`.
 
 After running this, merged BED file and its index will be generated in your _CWAS workspace_.
 
@@ -188,7 +188,7 @@ This step annotate your VCF file using _VEP_. Run this command.
 cwas annotation -v /path/to/your/vcf -p 4
 ```
 
-`4` is the number of worker processes. You can adjust this.
+You can adjust the number of worker processes with `-p`.
 
 Here is the result file.
 
@@ -207,16 +207,18 @@ This step categorize your variants using the annotation datasets. Run this comma
 cwas categorization -i /path/to/your/annotated/vcf -p 4
 ```
 
-`4` is the number of worker processes. You can adjust this.
+You can adjust the number of worker processes with `-p`.
 
 After running this, you will get...
 
 ```bash
 .cwas
 ...
-├── {Your VCF filename}.categorization_result.txt.gz
+├── {Your VCF filename}.categorization_result.zarr
 ...
 ```
+
+Categorized results are generated in [zarr format](https://zarr.readthedocs.io/en/stable/index.html). Outputs are easily stored and loaded with zarr.
 
 #### 6. Burden Test (Binomial Test)
 
