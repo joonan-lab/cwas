@@ -22,9 +22,9 @@ Users must prepare following data for CWAS because it is very essential but cann
 
 ```
 #CHROM  POS ID  REF ALT QUAL    FILTER  INFO
-chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1;BATCH=P231
-chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1;BATCH=P231
-chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
+chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1
+chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1
+chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1
 ```
 
 - The input VCF data must follow the [specification of VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf).
@@ -32,17 +32,17 @@ chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;B
 
 #### 2. List of samples
 
-|  SAMPLE  | FAMILY | PHENOTYPE |
-| :------: | :----: | :-------: |
-| 11000.p1 | 11000  |   case    |
-| 11000.s1 | 11000  |   ctrl    |
-| 11002.p1 | 11002  |   case    |
-| 11002.s1 | 11002  |   ctrl    |
+|  SAMPLE  | PHENOTYPE |
+| :------: | :-------: |
+| 11000.p1 |   case    |
+| 11000.s1 |   ctrl    |
+| 11002.p1 |   case    |
+| 11002.s1 |   ctrl    |
 
 - CWAS requires the file like above listing sample IDs with its family IDs and phenotypes (Case=_case_, Control=_ctrl_).
 - Here are details of the required format.
   - Tab separated
-  - 3 essential columns: _SAMPLE_, _FAMILY_, and _PHENOTYPE_
+  - 2 essential columns: _SAMPLE_ and _PHENOTYPE_
   - A value in the _PHENOTYPE_ must be _case_ or _ctrl_.
 - The values in the _SAMPLE_ must be matched with the sample IDs of variants in the input VCF file.
 
@@ -83,7 +83,7 @@ We recomment using _[conda virtual environment](https://docs.conda.io/projects/c
 ```bash
 conda env create -n cwas python=3.9
 conda activate cwas
-pip install cwas_plus
+pip install cwas
 ```
 
 ##### github
