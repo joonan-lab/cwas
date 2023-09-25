@@ -4,12 +4,15 @@ from functools import reduce
 from itertools import product
 from math import ceil
 from pathlib import Path
+from cwas.core.common import chunk_list
 import re
 import zarr
+from collections import OrderedDict
 import pandas as pd
+import numpy as np
 import yaml
 
-import cwas.utils.log as log
+from cwas.utils.log import print_arg, print_progress
 from cwas.core.categorization.categorizer import Categorizer
 from cwas.core.categorization.parser import (
     parse_annotated_vcf,
@@ -25,19 +28,19 @@ class Categorization(Runnable):
         self._gene_matrix = None
         self._category_domain = None
         self._annotated_vcf_groupby_sample = None
+        self._redundant_categories = None
         self._sample_ids = None
+        self._categories = None
         self._result = None
-        self._correlation_matrix = None
-        self._intersection_matrix = None
-        self._shm = None
+
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
-        log.print_arg(
+        print_arg(
             "No. worker processes for the categorization",
             f"{args.num_proc: ,d}",
         )
-        log.print_arg("Annotated VCF file", args.input_path)
+        print_arg("Annotated VCF file", args.input_path)
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -76,7 +79,7 @@ class Categorization(Runnable):
     @property
     def annotated_vcf(self) -> pd.DataFrame:
         if self._annotated_vcf is None:
-            log.print_progress("Parse the annotated VCF")
+            print_progress("Parse the annotated VCF")
             self._annotated_vcf = parse_annotated_vcf(
                 Path(self.input_path)
             )
@@ -93,9 +96,7 @@ class Categorization(Runnable):
     @property
     def category_domain(self) -> dict:
         if self._category_domain is None:
-            with Path(self.get_env("CATEGORY_DOMAIN")).open(
-                "r"
-            ) as category_domain_file:
+            with open(self.get_env('CATEGORY_DOMAIN'), 'r') as category_domain_file:
                 self._category_domain = yaml.safe_load(category_domain_file)
         return self._category_domain
 
@@ -107,9 +108,7 @@ class Categorization(Runnable):
     @property
     def annotated_vcf_groupby_sample(self):
         if self._annotated_vcf_groupby_sample is None:
-            self._annotated_vcf_groupby_sample = self.annotated_vcf.groupby(
-                "SAMPLE"
-            )
+            self._annotated_vcf_groupby_sample = self.annotated_vcf.groupby("SAMPLE")
         return self._annotated_vcf_groupby_sample
 
     @property 
@@ -127,17 +126,19 @@ class Categorization(Runnable):
 
     @property
     def redundant_categories(self) -> set:
-        redundant_category_table = pd.read_table(
-            self.get_env("REDUNDANT_CATEGORY")
-        )
-        return reduce(
-            lambda x, y: x.union(y),
-            [
-                self._get_redundant_categories_from_row(row)
-                for _, row in redundant_category_table.iterrows()
-            ],
-            set(),
-        )
+        if self._redundant_categories is None:
+            redundant_category_table = pd.read_table(
+                self.get_env("REDUNDANT_CATEGORY")
+            )
+            self._redundant_categories = reduce(
+                lambda x, y: x.union(y),
+                [
+                    self._get_redundant_categories_from_row(row)
+                    for _, row in redundant_category_table.iterrows()
+                ],
+                set()
+            )
+        return self._redundant_categories
 
     def _get_redundant_categories_from_row(self, row: pd.Series) -> list:
         annotation_term_lists = {}
@@ -160,10 +161,9 @@ class Categorization(Runnable):
 
     def run(self):
         self.categorize_vcf()
-        self.remove_redundant_category()
         self.save_result()
         self.update_env()
-        log.print_progress("Done")
+        print_progress("Done")
 
     def categorize_vcf(self):
         results_each_sample = (
@@ -171,36 +171,26 @@ class Categorization(Runnable):
             if self.num_proc == 1
             else self.categorize_vcf_for_each_sample_with_mp()
         )
-        log.print_progress("Organize the results")
-        self._result = pd.DataFrame(results_each_sample).fillna(0)
-        self._result = self._result.astype(int)
-        self._result["SAMPLE"] = self.sample_ids
-        self._result.set_index("SAMPLE", inplace=True)
-
-    def remove_redundant_category(self):
-        log.print_progress("Remove redundant categories from the result")
-        self._result.drop(
-            self.redundant_categories,
-            axis="columns",
-            inplace=True,
-            errors="ignore",
-        )
-        log.print_progress(
-            f"{len(self._result.columns):,d} categories have remained."
-        )
+        print_progress("Remove redundant categories from the result")
+        all_categories = list(OrderedDict.fromkeys(k for d in results_each_sample for k in d.keys()))
+        self._categories = [x for x in all_categories if not x in self.redundant_categories]
+        print_progress(f"{len(self._categories):,d} categories have remained.")
+        print_progress("Organize the results")
+        all_values = [d.get(k, 0) for d in results_each_sample for k in self._categories]
+        self._result = np.reshape(all_values, (len(self.sample_ids), len(self._categories)))
 
     def categorize_vcf_for_each_sample(self):
         result = []
         for i, sample_vcf in enumerate(self.annotated_vcf_split_by_sample, 1):
             if i % 100 == 0:
-                log.print_progress(f"Categorize variants of {i} samples")
+                print_progress(f"Categorize variants of {i} samples")
             result.append(self.categorizer.categorize_variant(sample_vcf))
         return result
 
     def categorize_vcf_for_each_sample_with_mp(self):
         sample_vcfs = self.annotated_vcf_split_by_sample
         with mp.Pool(self.num_proc) as pool:
-            log.print_progress("Categorize your input variants")
+            print_progress("Categorize your input variants")
             return pool.map(
                 self.categorizer.categorize_variant,
                 sample_vcfs,
@@ -208,13 +198,14 @@ class Categorization(Runnable):
             )
 
     def save_result(self):
-        log.print_progress(f"Save the result to the file {self.result_path}")
+        print_progress(f"Save the result to the file {self.result_path}")
         root = zarr.open(self.result_path, mode='w')
         root.create_group('metadata')
-        root['metadata'].attrs['sample_id'] = self._result.index.tolist()
-        root['metadata'].attrs['category'] = self._result.columns.tolist()
+        root['metadata'].attrs['sample_id'] = self.sample_ids
+        root['metadata'].attrs['category'] = self._categories
         root.create_dataset('data', data=self._result, chunks=(1000, 1000), dtype='i4')
 
     def update_env(self):
         self.set_env("CATEGORIZATION_RESULT", self.result_path)
         self.save_env()
+        
