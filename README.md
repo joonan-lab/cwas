@@ -22,9 +22,9 @@ Users must prepare following data for CWAS because it is very essential but cann
 
 ```
 #CHROM  POS ID  REF ALT QUAL    FILTER  INFO
-chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1;BATCH=P231
-chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1;BATCH=P231
-chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;BATCH=P231
+chr1    3747728 .        T       C       .       .       SAMPLE=11000.p1
+chr1    38338861        .       C       A       .       .       SAMPLE=11000.p1
+chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1
 ```
 
 - The input VCF data must follow the [specification of VCF](https://samtools.github.io/hts-specs/VCFv4.2.pdf).
@@ -32,17 +32,17 @@ chr1    117942118       .      T       G       .       .       SAMPLE=11000.p1;B
 
 #### 2. List of samples
 
-|  SAMPLE  | FAMILY | PHENOTYPE |
-| :------: | :----: | :-------: |
-| 11000.p1 | 11000  |   case    |
-| 11000.s1 | 11000  |   ctrl    |
-| 11002.p1 | 11002  |   case    |
-| 11002.s1 | 11002  |   ctrl    |
+|  SAMPLE  | PHENOTYPE |
+| :------: | :-------: |
+| 11000.p1 |   case    |
+| 11000.s1 |   ctrl    |
+| 11002.p1 |   case    |
+| 11002.s1 |   ctrl    |
 
 - CWAS requires the file like above listing sample IDs with its family IDs and phenotypes (Case=_case_, Control=_ctrl_).
 - Here are details of the required format.
   - Tab separated
-  - 3 essential columns: _SAMPLE_, _FAMILY_, and _PHENOTYPE_
+  - 2 essential columns: _SAMPLE_ and _PHENOTYPE_
   - A value in the _PHENOTYPE_ must be _case_ or _ctrl_.
 - The values in the _SAMPLE_ must be matched with the sample IDs of variants in the input VCF file.
 
@@ -76,20 +76,20 @@ Due to the sizes of BigWig files for conservation scores, you must install them 
 
 ### Installation
 
-We recomment using _[conda virtual environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)_ to build environment for CWAS. Installing CWAS-Plus within a conda environment will prevent its installation in the global environment. When creating a conda environment, also install Python to enable local installations using pip. Run the following statements in your shell.
+We recomment using _[conda virtual environment](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)_ to build environment for CWAS. Installing CWAS-Plus within a conda environment will prevent its installation in the global environment. When creating a conda environment, also install Python to enable local installations using pip. We recommend installing R too. Run the following statements in your shell.
 
 ##### pip
 
 ```bash
-conda env create -n cwas python=3.9
+conda create -n cwas python=3.10 r-base=4.2.2
 conda activate cwas
-pip install cwas_plus
+pip install cwas
 ```
 
 ##### github
 
 ```bash
-conda env create -n cwas python=3.9
+conda create -n cwas python=3.10 r-base=4.2.2
 conda activate cwas
 git clone https://github.com/joonan-lab/cwas.git
 cd cwas
@@ -168,7 +168,7 @@ This step merges the BED files to annotate variants. Run the following command.
 cwas preparation -p 4
 ```
 
-`4` is the number of worker processes. You can adjust this.
+You can adjust the number of worker processes with `-p`.
 
 After running this, merged BED file and its index will be generated in your _CWAS workspace_.
 
@@ -188,7 +188,7 @@ This step annotate your VCF file using _VEP_. Run this command.
 cwas annotation -v /path/to/your/vcf -p 4
 ```
 
-`4` is the number of worker processes. You can adjust this.
+You can adjust the number of worker processes with `-p`.
 
 Here is the result file.
 
@@ -207,16 +207,18 @@ This step categorize your variants using the annotation datasets. Run this comma
 cwas categorization -i /path/to/your/annotated/vcf -p 4
 ```
 
-`4` is the number of worker processes. You can adjust this.
+You can adjust the number of worker processes with `-p`.
 
 After running this, you will get...
 
 ```bash
 .cwas
 ...
-├── {Your VCF filename}.categorization_result.txt.gz
+├── {Your VCF filename}.categorization_result.zarr
 ...
 ```
+
+Categorized results are generated in [zarr format](https://zarr.readthedocs.io/en/stable/index.html). Outputs are easily stored and loaded with zarr.
 
 #### 6. Burden Test (Binomial Test)
 

@@ -145,7 +145,7 @@ class Correlation(Runnable):
     @property
     def domain_list(self) -> str:
         if self.args.domain_list == 'all':
-            return 'all'
+            return ['all']
         elif self.args.domain_list=='run_all':
             all_domains = ['all'] + [col[3:] for col in self.category_set.columns if col.startswith('is_')]
             return all_domains
