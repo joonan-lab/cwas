@@ -105,7 +105,7 @@ class ExtractVariant(Runnable):
             f"{f_name}"
         )
     
-    def extract_idx_by_int(n: int) -> list:
+    def extract_idx_by_int(self, n: int) -> list:
         """Get an index from the input list by using the input integer"""
         i = 0
         result = []
