@@ -275,7 +275,7 @@ class ExtractVariant(Runnable):
         #self._result.to_csv(self.result_path, sep='\t', compression='gzip', index=False)
         root = zarr.open(self.result_path, mode = 'w')
         root.create_group('metadata')
-        root['metadata'].attrs['columns'] = self._result.columns
+        root['metadata'].attrs['columns'] = self._result.columns.tolist()
         root.create_dataset('data', data = self._result.values)
     
     def run(self):
