@@ -1,19 +1,16 @@
 from pathlib import Path
 from typing import Optional
-import argparse
-
+import argparse, zarr, gzip, re
+from cwas.core.categorization.parser import _parse_annot_field
 import numpy as np
 import pandas as pd
-import re
-
-from collections import defaultdict
-from itertools import product
-
 from cwas.runnable import Runnable
 from cwas.utils.log import print_progress
 from cwas.core.categorization.parser import (
-    parse_annotated_vcf)
+    parse_annotated_vcf,
+)
 from cwas.utils.check import check_is_file, check_is_dir
+from numcodecs import JSON
 
 class ExtractVariant(Runnable):
     def __init__(self, args: Optional[argparse.Namespace] = None):
@@ -23,6 +20,7 @@ class ExtractVariant(Runnable):
         self._tag = None
         self._category_set_path = None
         self._category_set = None
+        self._annot_field_names = None
 
     @staticmethod
     def _check_args_validity(args: argparse.Namespace):
@@ -63,6 +61,17 @@ class ExtractVariant(Runnable):
                 Path(self.input_path)
             )
         return self._annotated_vcf
+    
+    @property
+    def annot_field_names(self) -> list:
+        if self._annot_field_names is None:
+            with gzip.open(self.input_path, "rb") as vep_vcf_file:
+                for line_bytes in vep_vcf_file:
+                    line = line_bytes.decode("utf-8")
+                    if line.startswith("#"):
+                        if line.startswith("##INFO=<ID=ANNOT"):
+                            self._annot_field_names = _parse_annot_field(line)
+        return self._annot_field_names
 
     @property
     def gene_matrix(self) -> pd.DataFrame:
@@ -88,15 +97,28 @@ class ExtractVariant(Runnable):
     @property
     def result_path(self) -> Path:
         if self.tag is None:
-            save_name = 'extracted_variants.txt.gz'
+            save_name = 'extracted_variants.zarr'
         else:
-            save_name = '.'.join([self.tag, 'extracted_variants.txt.gz'])
+            save_name = '.'.join([self.tag, 'extracted_variants.zarr'])
         f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
             f"{f_name}"
         )
     
+    def extract_idx_by_int(self, n: int) -> list:
+        """Get an index from the input list by using the input integer"""
+        i = 0
+        result = []
+
+        while n != 0:
+            if n % 2 == 1:
+                result.append(i)
+            n >>= 1
+            i += 1
+
+        return result
+
     def annotate_variants(self):
         print_progress("Annotate variants with annotation dataset")
         self.annotated_vcf['CLASS'] = np.where(self.annotated_vcf['REF'].str.len() > 1, 'Deletion',
@@ -205,7 +227,16 @@ class ExtractVariant(Runnable):
                                                   (merged_df['is_lincRnaRegion'] == 0) &
                                                   (merged_df['ProteinCoding'] == 0),
                                                   1, 0)
-        self._result = merged_df
+        
+        root_data = np.zeros((len(self.annotated_vcf), len(self.annot_field_names)))
+        for i in range(0, self.annotated_vcf.shape[0]):
+            index = self.extract_idx_by_int(int(self.annotated_vcf.loc[i,'ANNOT']))
+            if len(index)!=0:
+                root_data[i, index] = 1
+        root_df = pd.DataFrame(root_data,
+                               columns=self.annot_field_names)
+        # Append df2 to df1 vertically (row-wise)
+        self._result = pd.concat([merged_df, root_df], axis=1, ignore_index=False)
 
     def allocate_variants(self, category: pd.DataFrame):
         if category['variant_type'] == 'All':
@@ -242,7 +273,11 @@ class ExtractVariant(Runnable):
     
     def save_result(self):
         print_progress(f"Save the result to the file {self.result_path}")
-        self._result.to_csv(self.result_path, sep='\t', compression='gzip', index=False)
+        #self._result.to_csv(str(self.result_path).replace('.zarr', '.txt.gz'), sep='\t', compression='gzip', index=False)
+        root = zarr.open(self.result_path, mode = 'w')
+        root.create_group('metadata')
+        root['metadata'].attrs['columns'] = self._result.columns.tolist()
+        root.create_dataset('data', data = self._result.values, chunks=(1000, 1000), dtype=object, object_codec=JSON())
     
     def run(self):
         self.annotate_variants()
