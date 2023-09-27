@@ -10,6 +10,7 @@ from cwas.core.categorization.parser import (
     parse_annotated_vcf,
 )
 from cwas.utils.check import check_is_file, check_is_dir
+from numcodecs import JSON
 
 class ExtractVariant(Runnable):
     def __init__(self, args: Optional[argparse.Namespace] = None):
@@ -272,11 +273,11 @@ class ExtractVariant(Runnable):
     
     def save_result(self):
         print_progress(f"Save the result to the file {self.result_path}")
-        #self._result.to_csv(self.result_path, sep='\t', compression='gzip', index=False)
+        #self._result.to_csv(str(self.result_path).replace('.zarr', '.txt.gz'), sep='\t', compression='gzip', index=False)
         root = zarr.open(self.result_path, mode = 'w')
         root.create_group('metadata')
         root['metadata'].attrs['columns'] = self._result.columns.tolist()
-        root.create_dataset('data', data = self._result.values)
+        root.create_dataset('data', data = self._result.values, chunks=(1000, 1000), dtype=object, object_codec=JSON())
     
     def run(self):
         self.annotate_variants()
