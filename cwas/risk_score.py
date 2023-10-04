@@ -588,8 +588,12 @@ class RiskScore(Runnable):
 
             result_table = []
 
-            choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
-                                for seed in self._result_dict[domain].keys()], axis=0)
+            #choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
+            #                    for seed in self._result_dict[domain].keys()], axis=0)
+            seed_arrays = [self._result_dict[domain][seed][3] for seed in self._result_dict[domain].keys()]
+            stacked_arrays = np.stack(seed_arrays, axis=0)
+            non_zero_proportion = np.mean(stacked_arrays != 0, axis=0)
+            choose_idx = non_zero_proportion > 0.5
             
             ## Get the categories which are selected by the LassoCV for all seeds
             coef_df = pd.DataFrame.from_dict(
