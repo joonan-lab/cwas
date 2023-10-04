@@ -11,5 +11,5 @@ readthedocs-sphinx-search==0.1.1
 #
 sphinx-markdown-tables==0.0.4
 recommonmark==0.7.1
-urllib3==1.26.13
+urllib3==1.26.17
     # via requests
