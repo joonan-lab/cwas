@@ -1,5 +1,4 @@
 import argparse
-import os, sys
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -7,7 +6,6 @@ import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri
 from rpy2.robjects.packages import importr
 
-from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import r2_score
 
 import cwas.utils.log as log
@@ -15,12 +13,9 @@ from cwas.core.common import cmp_two_arr
 from cwas.utils.check import check_is_file, check_num_proc, check_is_dir
 from cwas.runnable import Runnable
 from typing import Optional, Tuple
-from contextlib import contextmanager
 from collections import defaultdict
 import matplotlib.pyplot as plt
-import polars as pl
 import re
-import parmap
 from tqdm import tqdm
 from functools import partial
 import zarr
@@ -424,7 +419,6 @@ class RiskScore(Runnable):
                                                 response = None,
                                                 test_response = None,
                                                 filtered_combs = filtered_combs)
-            #map_result = parmap.map(_risk_score_per_category_, seeds, pm_pbar=True, pm_processes=self.num_proc)
             map_result = list(tqdm(pool.map(_risk_score_per_category_, seeds), total=len(seeds), desc="Permutation p-values"))
             self._permutation_dict[domain] = {key: value for x in map_result for key, value in x.items()}
             gc.collect()
