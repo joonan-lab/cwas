@@ -246,6 +246,8 @@ class RiskScore(Runnable):
     def category_set(self) -> pd.DataFrame:
         if self._category_set is None:
             self._category_set = pd.read_csv(self.category_set_path, sep='\t')
+            if sorted(self._category_set['Category'].tolist()) != sorted(self.categories):
+                raise ValueError("The categories in the 'input_file' and 'category_set' do not match.")
             self._category_set = self._category_set.loc[self._category_set["Category"].isin(self.categories)]
             self._category_set['Category'] = pd.Categorical(self._category_set['Category'],
                                                             categories=self.categories,
