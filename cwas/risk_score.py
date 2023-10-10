@@ -213,6 +213,14 @@ class RiskScore(Runnable):
         return self.args.seed
     
     @property
+    def plotsize(self) -> str:
+        return self.args.plotsize
+
+    @property
+    def fontsize(self) -> float:
+        return self.args.fontsize
+    
+    @property
     def categorization_root(self):
         if self._categorization_root is None:
             self._categorization_root = zarr.open(self.categorization_result_path, mode='r')
@@ -649,8 +657,10 @@ class RiskScore(Runnable):
         # Set the font size
         plt.rcParams.update({'font.size': self.fontsize})
         
+        width, height = list(map(float, self.plotsize.replace("\s", "").split(",")))
+        
         # Set the figure size
-        plt.figure(figsize=(7, 7))
+        plt.figure(figsize=(width, height))
 
         # Create the histogram plot
         plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
@@ -659,12 +669,12 @@ class RiskScore(Runnable):
         text_label2 = '$R^2$={:.2f}%'.format(r2*100)
 
         # Add labels and title
-        plt.title(f'Histogram Plot (Domain: {domain})', fontsize = 8)
+        plt.title(f'Histogram Plot (Domain: {domain})')
         plt.xlabel('$R^2$')
         plt.ylabel('Frequency')
         plt.axvline(x=r2, color='red')
-        plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='black')
-        plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
+        plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', color='black')
+        plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', color='red')
         plt.locator_params(axis='x', nbins=5)
         plt.tight_layout()
         plt.savefig(str(self.plot_path).replace('.pdf', f'.{domain}.pdf'), bbox_inches='tight')
