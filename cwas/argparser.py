@@ -1042,6 +1042,15 @@ def dawn() -> argparse.ArgumentParser:
         help="Tag used for the name of output files (e.g. intergenic, coding etc.) (default: None).",
     )
     optional.add_argument(
+        "-l",
+        "--lambda",
+        dest="lambda_val",
+        required=False,
+        default=5.25,
+        type=float,
+        help="Lambda value for parameter tuning (default: 5.25).",
+    )
+    optional.add_argument(
         "-C",
         "--count_threshold",
         dest="count_threshold",
