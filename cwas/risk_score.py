@@ -647,7 +647,7 @@ class RiskScore(Runnable):
         log.print_progress("Save histogram plot")
         
         # Set the font size
-        plt.rcParams.update({'font.size': 8})
+        plt.rcParams.update({'font.size': self.fontsize})
         
         # Set the figure size
         plt.figure(figsize=(7, 7))
@@ -655,7 +655,7 @@ class RiskScore(Runnable):
         # Create the histogram plot
         plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
         
-        text_label1 = 'P={:.2f}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
+        text_label1 = 'P={:.1e}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
         text_label2 = '$R^2$={:.2f}%'.format(r2*100)
 
         # Add labels and title
