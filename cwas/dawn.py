@@ -45,6 +45,7 @@ class Dawn(Runnable):
         print_arg("Permutation test file", args.permut_test_file)
         print_arg("Category variant (or sample) counts file (burden test result): ", args.category_count_file)
         print_arg("Output directory", args.output_dir_path)
+        print_arg("Lambda value:", args.lambda_val)
         print_arg("Thresholds of count / correlation / size: ", ", ".join(list(map(str, [args.count_threshold, args.corr_threshold, args.size_threshold]))))
 
     @staticmethod
@@ -59,7 +60,11 @@ class Dawn(Runnable):
     @property
     def num_proc(self):
         return self.args.num_proc
-    
+
+    @property
+    def lambda_val(self) -> float:
+        return self.args.lambda_val
+
     @property
     def input_dir_path(self) -> Path:
         return self.args.input_dir_path
@@ -255,7 +260,7 @@ class Dawn(Runnable):
                                              flag_vec=cat_count_permut['flag'],
                                              k=cluster_idx,
                                              sparse=True,
-                                             sumabsv=5.25)
+                                             sumabsv=self.lambda_val)
         zval_supernode = testvec_res['vec']
        
         print_progress("[DAWN] Compute the test statistics with relative risks")

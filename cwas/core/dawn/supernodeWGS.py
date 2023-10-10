@@ -539,7 +539,7 @@ class data_collection:
         #cor_block = pd.read_pickle(os.path.join(self.path, "{}.pickle".format(idx)))
         return np.mean(cor_block)
     
-    def form_testvec(self, vec, clustering=None, flag_vec=None, k=200, sparse=False, sumabsv=4):
+    def form_testvec(self, vec, clustering=None, flag_vec=None, k=200, sparse=False, sumabsv=5.25):
         self._vec = vec
         self._clustering = clustering
         self._flag_vec = flag_vec
@@ -724,11 +724,11 @@ class data_collection:
         
         return out
 
-    def SPC(self, x, sumabsv=4, niter=20, K=1, orth=False, trace=True, v=None, center=True, cnames=None, vpos=False, vneg=False, compute_pve=True):
+    def SPC(self, x, sumabsv=5.25, niter=20, K=1, orth=False, trace=True, v=None, center=True, cnames=None, vpos=False, vneg=False, compute_pve=True):
         result = self.PMDL1L1(x, sumabsu=np.sqrt(x.shape[0]), sumabsv=sumabsv, niter=niter, K=K, orth=orth, trace=trace, v=v, center=center, cnames=cnames, upos=False, uneg=False, vpos=vpos, vneg=vneg)
         return result
     
-    def _extract_eigenvector_(self, mat, sparse=False, sumabsv=4):      
+    def _extract_eigenvector_(self, mat, sparse=False, sumabsv=5.25):      
         mat = mat.astype(np.float64)
          
         if sparse & (mat.shape[1]>sumabsv**2):
