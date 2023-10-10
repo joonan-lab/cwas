@@ -917,9 +917,9 @@ def risk_score() -> argparse.ArgumentParser:
         "--plotsize",
         dest="plotsize",
         required=False,
-        type=float,
-        default=7,
-        help="Title size of main histogram plot of risk score and permutation p-values."
+        type=str,
+        default='7,7',
+        help="Plot size of main histogram plot of risk score and permutation p-values. Separate width and height by comma (e.g. 7,7). If only one value is given, draw a plot with the same width and height."
     )
     optional.add_argument(
         "-fs",
