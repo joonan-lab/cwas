@@ -60,6 +60,7 @@ CWAS-Plus workflow
    steps/annotation.rst
    steps/categorization.rst
    steps/burden.rst
+   steps/correlation.rst
    steps/effective_num_test.rst
    steps/risk_score.rst
    steps/burdenshift.rst
