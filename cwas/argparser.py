@@ -773,14 +773,6 @@ def risk_score() -> argparse.ArgumentParser:
         help="The path of the categorization result file (*.zarr)",
     )
     required.add_argument(
-        '-c',
-        '--category_set',
-        dest="category_set_path",
-        required=True,
-        type=Path,
-        help="Path to a text file category information (*.category_info.txt).",
-    )
-    required.add_argument(
         "-s",
         "--sample_info",
         dest="sample_info_path",
