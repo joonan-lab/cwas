@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cwas"
-version = "0.1.2"
+version = "0.1.3"
 description = """Category-wide association study (CWAS). This is a data analytic tool to perform stringent association tests to find non-coding loci associated with autism spectrum disorder (ASD)."""
 authors = ["Minwoo Jeong <jeongmwj@gmail.com>",
     "Yujin Kim <yujinkim4896@gmail.com>",
