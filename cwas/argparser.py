@@ -763,14 +763,6 @@ def risk_score() -> argparse.ArgumentParser:
         help="The path of the categorization result file (*.zarr)",
     )
     required.add_argument(
-        '-c',
-        '--category_set',
-        dest="category_set_path",
-        required=True,
-        type=Path,
-        help="Path to a text file category information (*.category_info.txt).",
-    )
-    required.add_argument(
         "-s",
         "--sample_info",
         dest="sample_info_path",
@@ -1048,6 +1040,15 @@ def dawn() -> argparse.ArgumentParser:
         default=None,
         type=str,
         help="Tag used for the name of output files (e.g. intergenic, coding etc.) (default: None).",
+    )
+    optional.add_argument(
+        "-l",
+        "--lambda",
+        dest="lambda_val",
+        required=False,
+        default=5.25,
+        type=float,
+        help="Lambda value for parameter tuning (default: 5.25).",
     )
     optional.add_argument(
         "-C",

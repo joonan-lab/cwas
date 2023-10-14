@@ -22,4 +22,3 @@ The parameters of the command are as below:
 
     cwas categorization -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -p 8
 
-    cwas categorization -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -p 8 -m variant
