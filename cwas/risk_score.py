@@ -50,7 +50,7 @@ class RiskScore(Runnable):
         self.cv_glmnet = importr("glmnet").cv_glmnet
         self._annotation_list = None
         self._result_for_loop = defaultdict(dict)
-        self._result_for_n_of_one_leave = defaultdict(dict)
+        self._result_for_leave_one_out = defaultdict(dict)
     
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -70,10 +70,10 @@ class RiskScore(Runnable):
         if args.tag:
             log.print_arg("Output tag (prefix of output files)", args.tag)
         log.print_arg("If the number of carriers is used for calculating risk score or not", args.use_n_carrier)
-        if args.do_loop:
-            log.print_arg("Use each annotation from functional annotation to calculate risk score", args.do_loop)
-        if args.n_of_one_leave:
-            log.print_arg("Exclude one annotation from functional annotation and functional score and calculate risk score", args.n_of_one_leave)
+        if args.do_each_one:
+            log.print_arg("Use each annotation from functional annotation to calculate risk score", args.do_each_one)
+        if args.leave_one_out:
+            log.print_arg("Exclude one annotation from functional annotation and functional score and calculate risk score", args.leave_one_out)
         log.print_arg(
             "Threshold for selecting rare categories",
             f"{args.ctrl_thres: ,d}",
@@ -169,12 +169,12 @@ class RiskScore(Runnable):
         return self.args.tag
     
     @property
-    def do_loop(self) -> bool:
-        return self.args.do_loop
+    def do_each_one(self) -> bool:
+        return self.args.do_each_one
 
     @property
-    def n_of_one_leave(self) -> bool:
-        return False if self.do_loop else self.args.n_of_one_leave
+    def leave_one_out(self) -> bool:
+        return False if self.do_each_one else self.args.leave_one_out
 
     @property
     def use_n_carrier(self) -> bool:
@@ -342,7 +342,7 @@ class RiskScore(Runnable):
 
     def run(self):
         self.prepare()
-        if self.do_loop:
+        if self.do_each_one:
             for i in self.annotation_list:
                 log.print_progress("Start loop for each annotation")
                 log.print_progress(f"Generate risk scores for annotation: {i}")
@@ -352,7 +352,7 @@ class RiskScore(Runnable):
                     self.permute_pvalues()
                 self.gather_results_for_loop(i)
             self.save_results_for_loop()
-        if self.n_of_one_leave:
+        if self.leave_one_out:
             for i in self.annotation_list:
                 log.print_progress("Start N of one leave for each annotation")
                 log.print_progress(f"Generate risk scores excluding annotation: {i}")
@@ -362,7 +362,7 @@ class RiskScore(Runnable):
                     self.permute_pvalues()
                 self.gather_results_for_loop(i)
                 self.save_results_for_loop()
-        if not (self.do_loop or self.n_of_one_leave):
+        if not (self.do_each_one or self.leave_one_out):
             self.filtered_category_set = self.category_set
             self.risk_scores()
             if not self.predict_only:
@@ -526,7 +526,7 @@ class RiskScore(Runnable):
         y = np.where(response, 1., 0.)
         test_y = np.where(test_response, 1., 0.)
         
-        if not (swap_label or self.do_loop or self.n_of_one_leave):
+        if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Running LassoCV (Seed: {seed})")
         
         # Create a glmnet model
@@ -563,7 +563,7 @@ class RiskScore(Runnable):
 
         output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
                 
-        if not (swap_label or self.do_loop or self.n_of_one_leave):
+        if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Done (Seed: {seed})")
                 
         gc.collect()
@@ -636,7 +636,7 @@ class RiskScore(Runnable):
             
             fin_res = pd.concat([fin_res, result_df], ignore_index=True)
 
-        fin_res.to_csv(self.result_path, sep="\t", index=False)
+        fin_res.to_csv(str(self.result_path).replace('.txt', f'.{domain}.txt'), sep="\t", index=False)
         
         if not self.predict_only:
             null_models = pd.DataFrame(null_models,
@@ -701,7 +701,7 @@ class RiskScore(Runnable):
                 columns = filtered_combs[choose_idx]
             )
 
-            file_suffix = '' if self.do_loop else '.excluded'
+            file_suffix = '' if self.do_each_one else '.excluded'
             file_name = f".{domain}.{annotation}{file_suffix}.txt"
             coef_df.to_csv(str(self.coef_path).replace('.txt', file_name), sep="\t")
 
@@ -726,7 +726,7 @@ class RiskScore(Runnable):
     def save_results_for_loop(self):
         # Initialize an empty list to store the DataFrames
         dataframe_list = []
-        key_name = 'Annotation' if self.do_loop else 'Annotation_excluded'
+        key_name = 'Annotation' if self.do_each_one else 'Annotation_excluded'
         # Loop through the dictionary and append DataFrames to the list
         for key, df in self._result_for_loop.items():
             # Add a new column 'Domain' with the key from the dictionary
@@ -737,6 +737,6 @@ class RiskScore(Runnable):
         column_order = [key_name] + [col for col in fin_res.columns if col != key_name]
         fin_res = fin_res[column_order]
 
-        file_suffix = 'each_annot_loop' if self.do_loop else 'n_of_one_leave'
+        file_suffix = 'do_each_one' if self.do_each_one else 'leave_one_out'
         file_name = f".{file_suffix}.txt"
         fin_res.to_csv(str(self.result_path).replace('.txt', file_name), sep="\t", index=False)
