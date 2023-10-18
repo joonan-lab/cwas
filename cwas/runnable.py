@@ -12,8 +12,9 @@ class Runnable(ABC):
     def __init__(self, args: Optional[argparse.Namespace] = None):
         self.env = Env()
         self._args = args
-        self._print_args(args)
-        self._check_args_validity(args)
+        if args is not None:
+            self._print_args(args)
+            self._check_args_validity(args)
 
     @property
     def args(self) -> Optional[argparse.Namespace]:
