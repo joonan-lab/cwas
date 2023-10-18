@@ -152,9 +152,9 @@ def test_run(binomial_test):
     expected_columns = [
         "variant_type",
         "gene_list",
-        "conservation",
+        "functional_score",
         "gencode",
-        "region",
+        "functional_annotation",
         "Case_DNV_Count",
         "Ctrl_DNV_Count",
         "Relative_Risk",
