@@ -75,34 +75,34 @@ Users can perform two types of risk score analyses in a loop to identify annotat
 
     .. code-block:: solidity
     
-    cwas risk_score -i INPUT.categorization_result.txt.gz \
-    -o_dir OUTPUT_DIR \
-    -s SAMPLE_LIST.txt \
-    -a ADJUST_FACTOR.txt \
-    -c_info CATEGORY_SET.txt \
-    -thr 3 \
-    -tf 0.7 \
-    -n_reg 10 \
-    -f 5 \
-    -n 1000 \
-    -p 8 \
-    --do_each_one
+        cwas risk_score -i INPUT.categorization_result.txt.gz \
+        -o_dir OUTPUT_DIR \
+        -s SAMPLE_LIST.txt \
+        -a ADJUST_FACTOR.txt \
+        -c_info CATEGORY_SET.txt \
+        -thr 3 \
+        -tf 0.7 \
+        -n_reg 10 \
+        -f 5 \
+        -n 1000 \
+        -p 8 \
+        --do_each_one
 
 2. Risk score analysis for categories with one annotation excluded from the total annotations
 
     .. code-block:: solidity
-    
-    cwas risk_score -i INPUT.categorization_result.txt.gz \
-    -o_dir OUTPUT_DIR \
-    -s SAMPLE_LIST.txt \
-    -a ADJUST_FACTOR.txt \
-    -c_info CATEGORY_SET.txt \
-    -thr 3 \
-    -tf 0.7 \
-    -n_reg 10 \
-    -f 5 \
-    -n 1000 \
-    -p 8 \
-    --leave_one_out
+        
+        cwas risk_score -i INPUT.categorization_result.txt.gz \
+        -o_dir OUTPUT_DIR \
+        -s SAMPLE_LIST.txt \
+        -a ADJUST_FACTOR.txt \
+        -c_info CATEGORY_SET.txt \
+        -thr 3 \
+        -tf 0.7 \
+        -n_reg 10 \
+        -f 5 \
+        -n 1000 \
+        -p 8 \
+        --leave_one_out
 
 
