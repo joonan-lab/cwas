@@ -30,7 +30,9 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
   .. code-block:: solidity
     
     cd $HOME/.vep/Plugins
-    git clone -b grch38 https://github.com/konradjk/loftee.git
+    wget https://github.com/konradjk/loftee/archive/refs/tags/v1.0.4_GRCh38.tar.gz
+    tar -zxvf v1.0.4_GRCh38.tar.gz
+    mv loftee-1.0.4_GRCh38 loftee
     
     
 - **gerp bigwig**: This file will be used for loftee plugin.

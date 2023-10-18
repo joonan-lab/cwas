@@ -319,8 +319,8 @@ Below are the output files generated.
   - -c_info, --category_info: Path to a text file category information (`*.category_info.txt`).
   - -d, --domain_list: Domain list to filter categories based on GENCODE domain. If 'run_all' is given, all available options will be tested. Available options are `run_all,all,coding,noncoding,ptv,missense,damaging_missense,promoter,noncoding_wo_promoter,intron,intergenic,utr,lincRNA`. By default, all.
   - -t, --tag: Tag used for the name of the output files. By default, None.
-  - -loop, --do_loop: Use each annotation from functional annotation to calculate risk score. By default, False.
-  - -n_one, --n_of_one_leave: Calculate risk score while excluding one annotation from functional annotation. This option is not used when the `--do_loop` flag is enabled. By default, False.
+  - --do_each_one: Use each annotation from functional annotation to calculate risk score. By default, False.
+  - --leave_one_out: Calculate risk score while excluding one annotation from functional annotation. This option is not used when the `--do_each_one` flag is enabled. By default, False.
   - -u, --use_n_carrier: Enables the sample-level analysis (the use of the number of samples with variants in each category for burden test instead of the number of variants). With this option, CWAS-Plus counts the number of samples that carry at least one variant of each category.
   - -thr, --threshold: The number of variants in controls (or the number of control carriers) used to select rare categories. For example, if set to 3, categories with less than 3 variants in controls will be used for training. By default, 3.
   - -tf, --train_set_fraction: The fraction of the training set. For example, if set to 0.7, 70% of the samples will be used as training set and 30% will be used as test set. By default, 0.7.
@@ -362,7 +362,7 @@ Below are the output files generated.
     ...
 
 
-10.  :ref:`Burden shift analysis <burdenshift>`
+10.   :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
@@ -401,7 +401,7 @@ Below are the output files generated.
 
 
 
-11.   :ref:`DAWN analysis <dawn>`
+11.    :ref:`DAWN analysis <dawn>`
 ####################################
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.

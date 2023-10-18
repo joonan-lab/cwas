@@ -1,9 +1,11 @@
 import pandas as pd
 import pytest
 from cwas.binomial_test import BinomialTest
-import sys
+import sys, os
 import cwas.cli
 import zarr
+from pathlib import Path
+import shutil
 
 class BinomialTestMock(BinomialTest):
     """This class do not make outputs"""
@@ -14,9 +16,52 @@ class BinomialTestMock(BinomialTest):
     def update_env(self):
         pass
 
+# Fixture to create a temporary directory for the test
 @pytest.fixture(scope="module")
 def cat_path(cwas_workspace):
-    return cwas_workspace / "categorized.zarr"
+    cat_path = cwas_workspace / "categorized.zarr"
+    yield cat_path  # fixture를 사용하고, 여기서 제어를 반환함
+
+    # 여기에서 정리 작업을 수행
+    if cat_path.exists():
+        shutil.rmtree(cat_path)
+        shutil.rmtree(cwas_workspace)
+
+@pytest.fixture(scope="module")
+def sample_info_path(cwas_workspace):
+    sample_info_path = Path(cwas_workspace / "sample_list.txt")
+    yield sample_info_path  # fixture를 사용하고, 여기서 제어를 반환함
+
+    # 여기에서 정리 작업을 수행
+    if sample_info_path.exists():
+        os.remove(sample_info_path)
+
+@pytest.fixture(scope="module")
+def adjustment_factor_path(cwas_workspace):
+    adjustment_factor_path = Path(cwas_workspace / "adj_factor.txt")
+    yield adjustment_factor_path  # fixture를 사용하고, 여기서 제어를 반환함
+
+    # 여기에서 정리 작업을 수행
+    if adjustment_factor_path.exists():
+        os.remove(adjustment_factor_path)
+
+@pytest.fixture(scope="module")
+def sample_info_other_sample_path(cwas_workspace):
+    sample_info_other_sample_path = Path(cwas_workspace / "other_sample_list.txt")
+    yield sample_info_other_sample_path  # fixture를 사용하고, 여기서 제어를 반환함
+
+    # 여기에서 정리 작업을 수행
+    if sample_info_other_sample_path.exists():
+        os.remove(sample_info_other_sample_path)
+
+@pytest.fixture(scope="module")
+def adjustment_factor_other_sample_path(cwas_workspace):
+    adjustment_factor_other_sample_path = Path(cwas_workspace / "other_adj_factor.txt")
+    yield adjustment_factor_other_sample_path  # fixture를 사용하고, 여기서 제어를 반환함
+
+    # 여기에서 정리 작업을 수행
+    if adjustment_factor_other_sample_path.exists():
+        os.remove(adjustment_factor_other_sample_path)
 
 @pytest.fixture
 def categorization_result():
@@ -38,16 +83,25 @@ def create_zarr_group(cat_path, categorization_result):
     root.create_group('metadata')
     root['metadata'].attrs['sample_id'] = categorization_result.index.tolist()
     root['metadata'].attrs['category'] = categorization_result.columns.tolist()
-    root.create_dataset('data', data=categorization_result, chunks=(1000, 1000), dtype='i4')
+    root.create_dataset('data', data=categorization_result.values, chunks=(1000, 1000), dtype='i4')
+    return cat_path
+
+# Test function that uses the created Zarr group
+def test_zarr_data(create_zarr_group, create_sample_info, create_adjustment_factor, create_sample_info_other_sample, create_adjustment_factor_other_sample):
+    cat_path = create_zarr_group
+    sample_info_path = create_sample_info
+    adjustment_factor_path = create_adjustment_factor
+    sample_info_other_sample_path = create_sample_info_other_sample
+    adjustment_factor_other_sample_path = create_adjustment_factor_other_sample
+    # Your test logic that uses cat_path
+    assert Path(cat_path).is_dir()  # Example test assertion
+    assert Path(sample_info_path).is_file()
+    assert Path(adjustment_factor_path).is_file()
+    assert Path(sample_info_other_sample_path).is_file()
+    assert Path(adjustment_factor_other_sample_path).is_file()
 
 @pytest.fixture
-def setup(cat_path, categorization_result):
-    #cwas_workspace.mkdir()
-    #set_env(cwas_workspace, annotation_dir)
-    create_zarr_group(cat_path, categorization_result)
-
-@pytest.fixture
-def sample_info():
+def create_sample_info(sample_info_path):
     samples = [
         {"SAMPLE": "Sample1", "PHENOTYPE": "case"},
         {"SAMPLE": "Sample2", "PHENOTYPE": "ctrl"},
@@ -56,11 +110,11 @@ def sample_info():
         {"SAMPLE": "Sample5", "PHENOTYPE": "ctrl"},
         {"SAMPLE": "Sample6", "PHENOTYPE": "ctrl"},
     ]
-    return pd.DataFrame(samples).set_index("SAMPLE")
-
+    pd.DataFrame(samples).set_index("SAMPLE").to_csv(str(sample_info_path), sep='\t')
+    return sample_info_path
 
 @pytest.fixture
-def adjustment_factor():
+def create_adjustment_factor(adjustment_factor_path):
     adj_factors = [
         {"SAMPLE": "Sample1", "AdjustFactor": 2.0},
         {"SAMPLE": "Sample2", "AdjustFactor": 0.5},
@@ -69,55 +123,60 @@ def adjustment_factor():
         {"SAMPLE": "Sample5", "AdjustFactor": 0.5},
         {"SAMPLE": "Sample6", "AdjustFactor": 0.2},
     ]
-    return pd.DataFrame(adj_factors).set_index("SAMPLE")
-
+    pd.DataFrame(adj_factors).set_index("SAMPLE").to_csv(str(adjustment_factor_path), sep='\t')
+    return adjustment_factor_path
 
 @pytest.fixture
-def sample_info_other_sample():
+def create_sample_info_other_sample(sample_info_other_sample_path):
     samples = [
         {"SAMPLE": "SampleA", "PHENOTYPE": "case"},
         {"SAMPLE": "SampleB", "PHENOTYPE": "ctrl"},
     ]
-    return pd.DataFrame(samples).set_index("SAMPLE")
-
+    pd.DataFrame(samples).set_index("SAMPLE").to_csv(str(sample_info_other_sample_path), sep='\t')
+    return sample_info_other_sample_path
 
 @pytest.fixture
-def adjustment_factor_other_sample():
+def create_adjustment_factor_other_sample(adjustment_factor_other_sample_path):
     adj_factors = [
         {"SAMPLE": "SampleA", "AdjustFactor": 2.0},
         {"SAMPLE": "SampleB", "AdjustFactor": 0.5},
     ]
-    return pd.DataFrame(adj_factors).set_index("SAMPLE")
+    pd.DataFrame(adj_factors).set_index("SAMPLE").to_csv(str(adjustment_factor_other_sample_path), sep='\t')
+    return adjustment_factor_other_sample_path
 
 
 @pytest.fixture
 def binomial_test(
-    cat_path, categorization_result, sample_info, adjustment_factor,
+    cat_path, sample_info_path, adjustment_factor_path,
 ):
     # This is not an appropriate usage.
-    sys.argv = ['cwas', 'binomial_test', '-i', str(cat_path), '-s', sample_info, '-a', adjustment_factor]
-    binom_inst = cwas.cli.main()
-    inst = BinomialTestMock(binom_inst)
-    inst._categorization_result = categorization_result
-    inst._sample_info = sample_info
-    inst._adj_factor = adjustment_factor
+    #sys.argv = ['cwas', 'binomial_test', '-i', str(cat_path), '-s', str(sample_info_path), '-a', str(adjustment_factor_path)]
+    #binom_inst = cwas.cli.main()
+    factory_inst = cwas.factory.create("binomial_test")
+    args = factory_inst.argparser().parse_args(['-i', str(cat_path), '-s', str(sample_info_path), '-a', str(adjustment_factor_path)])
+    args.cat_path = cat_path
+    args.sample_info_path = sample_info_path
+    args.adj_factor_path = adjustment_factor_path
+    #inst = BinomialTestMock(binom_inst)
+    inst = BinomialTestMock(factory_inst.runnable(args))
     return inst
-
 
 @pytest.fixture
 def binomial_test_with_inconsistent_sample(
-    categorization_result,
-    sample_info_other_sample,
-    adjustment_factor_other_sample,
+    cat_path,
+    sample_info_other_sample_path,
+    adjustment_factor_other_sample_path,
 ):
     # This is not an appropriate usage.
-    sys.argv = ['cwas', 'binomial_test', '-i', categorization_result, '-s', sample_info_other_sample, '-a', adjustment_factor_other_sample]
-    binom_inst = cwas.cli.main()
-    inst = BinomialTestMock(binom_inst)
-    #inst = BinomialTestMock()
-    inst._categorization_result = categorization_result
-    inst._sample_info = sample_info_other_sample
-    inst._adj_factor = adjustment_factor_other_sample
+    #sys.argv = ['cwas', 'binomial_test', '-i', str(cat_path), '-s', str(sample_info_other_sample_path), '-a', str(adjustment_factor_other_sample_path)]
+    #binom_inst = cwas.cli.main()
+    factory_inst = cwas.factory.create("binomial_test")
+    args = factory_inst.argparser().parse_args(['-i', str(cat_path), '-s', str(sample_info_other_sample_path), '-a', str(adjustment_factor_other_sample_path)])
+    #inst = BinomialTestMock(binom_inst)
+    args.cat_path = cat_path
+    args.sample_info_path = sample_info_other_sample_path
+    args.adj_factor_path = adjustment_factor_other_sample_path
+    inst = BinomialTestMock(factory_inst.runnable(args))
     return inst
 
 
@@ -152,9 +211,9 @@ def test_run(binomial_test):
     expected_columns = [
         "variant_type",
         "gene_list",
-        "conservation",
+        "functional_score",
         "gencode",
-        "region",
+        "functional_annotation",
         "Case_DNV_Count",
         "Ctrl_DNV_Count",
         "Relative_Risk",
