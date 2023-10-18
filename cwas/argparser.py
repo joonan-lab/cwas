@@ -822,23 +822,21 @@ def risk_score() -> argparse.ArgumentParser:
         "--tag",
         dest="tag",
         required=False,
-        default='all',
+        default=None,
         type=str,
         help="Tag used for the name of output files",
     )
     optional.add_argument(
-        "-loop",
-        "--do_loop",
-        dest="do_loop",
+        "--do_each_one",
+        dest="do_each_one",
         action="store_true",
         help="Use each annotation from functional annotation to calculate risk score.",
     )
     optional.add_argument(
-        "-n_one",
-        "--n_of_one_leave",
-        dest="n_of_one_leave",
+        "--leave_one_out",
+        dest="leave_one_out",
         action="store_true",
-        help="Calculate risk score while excluding one annotation from functional annotation. This option is not used when the '--do_loop' flag is enabled.",
+        help="Calculate risk score while excluding one annotation from functional annotation. This option is not used when the '--do_each_one' flag is enabled.",
     )
     optional.add_argument(
         "-u",
