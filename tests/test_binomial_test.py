@@ -4,6 +4,8 @@ from cwas.binomial_test import BinomialTest
 import sys
 import cwas.cli
 import zarr
+from pathlib import Path
+import shutil
 
 class BinomialTestMock(BinomialTest):
     """This class do not make outputs"""
@@ -14,9 +16,16 @@ class BinomialTestMock(BinomialTest):
     def update_env(self):
         pass
 
+# Fixture to create a temporary directory for the test
 @pytest.fixture(scope="module")
 def cat_path(cwas_workspace):
-    return cwas_workspace / "categorized.zarr"
+    cat_path = cwas_workspace / "categorized.zarr"
+    yield cat_path  # fixture를 사용하고, 여기서 제어를 반환함
+
+    # 여기에서 정리 작업을 수행
+    if cat_path.exists():
+        shutil.rmtree(cat_path)
+        shutil.rmtree(cwas_workspace)
 
 @pytest.fixture
 def categorization_result():
@@ -38,13 +47,14 @@ def create_zarr_group(cat_path, categorization_result):
     root.create_group('metadata')
     root['metadata'].attrs['sample_id'] = categorization_result.index.tolist()
     root['metadata'].attrs['category'] = categorization_result.columns.tolist()
-    root.create_dataset('data', data=categorization_result, chunks=(1000, 1000), dtype='i4')
+    root.create_dataset('data', data=categorization_result.values, chunks=(1000, 1000), dtype='i4')
+    return cat_path
 
-@pytest.fixture
-def setup(cat_path, categorization_result):
-    #cwas_workspace.mkdir()
-    #set_env(cwas_workspace, annotation_dir)
-    create_zarr_group(cat_path, categorization_result)
+# Test function that uses the created Zarr group
+def test_zarr_data(create_zarr_group):
+    cat_path = create_zarr_group
+    # Your test logic that uses cat_path
+    assert Path(cat_path).is_dir()  # Example test assertion
 
 @pytest.fixture
 def sample_info():
@@ -95,9 +105,15 @@ def binomial_test(
     cat_path, categorization_result, sample_info, adjustment_factor,
 ):
     # This is not an appropriate usage.
-    sys.argv = ['cwas', 'binomial_test', '-i', str(cat_path), '-s', sample_info, '-a', adjustment_factor]
-    binom_inst = cwas.cli.main()
-    inst = BinomialTestMock(binom_inst)
+    factory_inst = cwas.factory.create("binomial_test")
+    #sys.argv = ['cwas', 'binomial_test', None]
+    #binom_inst = cwas.cli.main()
+    #factory_inst.argparser().parse_args(['do'])
+    #args = factory_inst.argparser().parse_args(['-i', str(cat_path)])
+    args = factory_inst.argparser().parse_args([])
+    
+    args.cat_path = cat_path
+    inst = BinomialTestMock(factory_inst.runnable(factory_inst.argparser()))
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info
     inst._adj_factor = adjustment_factor
@@ -106,14 +122,19 @@ def binomial_test(
 
 @pytest.fixture
 def binomial_test_with_inconsistent_sample(
+    cat_path,
     categorization_result,
     sample_info_other_sample,
     adjustment_factor_other_sample,
 ):
     # This is not an appropriate usage.
-    sys.argv = ['cwas', 'binomial_test', '-i', categorization_result, '-s', sample_info_other_sample, '-a', adjustment_factor_other_sample]
-    binom_inst = cwas.cli.main()
-    inst = BinomialTestMock(binom_inst)
+    factory_inst = cwas.factory.create("binomial_test")
+    #sys.argv = ['cwas', 'binomial_test', None]
+    #binom_inst = cwas.cli.main()
+    factory_inst._categorization_result = categorization_result
+    factory_inst._cat_path = cat_path
+    
+    inst = BinomialTestMock(factory_inst.runnable(None))
     #inst = BinomialTestMock()
     inst._categorization_result = categorization_result
     inst._sample_info = sample_info_other_sample
