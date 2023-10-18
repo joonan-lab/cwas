@@ -190,6 +190,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     tar -zxvf functional_annotations.tar.gz # Decompress bed files
     mv functional_annotations/* . # Move bed files to the parent directory
     sh download_vep_resources.sh
+    mv $HOME/cwas-dataset/MPC_hg38.vcf.bgz* $HOME/.vep/ # Move MPC files to VEP_CACHE_DIR
 
   The downloading time could be close to three hours, depending on the speed of the network.
 
@@ -209,7 +210,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
-  For example run, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory.
+  **For example run**, you can copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory.
 
   .. code-block:: solidity
     
