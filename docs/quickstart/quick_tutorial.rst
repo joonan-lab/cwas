@@ -362,7 +362,7 @@ Below are the output files generated.
     ...
 
 
-1.   :ref:`Burden shift analysis <burdenshift>`
+10.   :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
@@ -401,7 +401,7 @@ Below are the output files generated.
 
 
 
-1.    :ref:`DAWN analysis <dawn>`
+11.    :ref:`DAWN analysis <dawn>`
 ####################################
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
