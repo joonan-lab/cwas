@@ -367,7 +367,7 @@ class RiskScore(Runnable):
                     self.gather_results_for_loop(k, i)
             self.save_results_for_loop()
         if not (self.do_each_one or self.leave_one_out):
-            self.filtered_category_set = self.category_set
+            self.filtered_category_set = self.category_set.copy()
             self.risk_scores()
             if not self.predict_only:
                 self.permute_pvalues()
@@ -394,7 +394,7 @@ class RiskScore(Runnable):
         
         for domain in self.domain_list:
             log.print_progress(f"Generate risk score for the domain: {domain}")
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]["Category"] if domain != 'all' else pd.Series(self.categories)
+            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]["Category"] if domain != 'all' else self.filtered_category_set['Category']
             
             rare_categories, cov, test_cov, response, test_response = self._create_covariates(seed=self.seed,
                                                                                               swap_label=False,
@@ -420,7 +420,7 @@ class RiskScore(Runnable):
 
         for domain in self.domain_list:
             log.print_progress(f"Generate permutation p-values for the domain: {domain}")
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
+            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
             
             _risk_score_per_category_ = partial(self._risk_score_per_category,
                                                 swap_label = True,
@@ -596,7 +596,7 @@ class RiskScore(Runnable):
         fin_res = pd.DataFrame()
 
         for domain in domain_list:
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
+            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
 
             result_table = []
 
@@ -690,7 +690,7 @@ class RiskScore(Runnable):
         fin_res = pd.DataFrame()
 
         for domain in domain_list:
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
+            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
 
             result_table = []
 
