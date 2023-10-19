@@ -48,7 +48,7 @@ class RiskScore(Runnable):
         self._permutation_dict = defaultdict(dict)
         self._filtered_combs = None
         self.cv_glmnet = importr("glmnet").cv_glmnet
-        self._annotation_list = None
+        self._annotation_dict = None
         self._result_for_loop = defaultdict(dict)
         self._result_for_leave_one_out = defaultdict(dict)
     
@@ -237,10 +237,12 @@ class RiskScore(Runnable):
         return self._categories
 
     @property
-    def annotation_list(self):
-        if self._annotation_list is None:
-            self._annotation_list = sorted([value for value in np.unique(self.category_set['functional_annotation']) if value != 'Any'])
-        return self._annotation_list
+    def annotation_dict(self):
+        if self._annotation_dict is None:
+            self._annotation_dict = {'gene_set': sorted([value for value in np.unique(self.category_set['gene_set']) if value != 'Any']),
+                                     'functional_score': sorted([value for value in np.unique(self.category_set['functional_score']) if value != 'All']),
+                                     'functional_annotation': sorted([value for value in np.unique(self.category_set['functional_annotation']) if value != 'Any'])}
+        return self._annotation_dict
             
     @property
     def category_set(self) -> pd.DataFrame:
@@ -343,25 +345,27 @@ class RiskScore(Runnable):
     def run(self):
         self.prepare()
         if self.do_each_one:
-            for i in self.annotation_list:
-                log.print_progress("Start loop for each annotation")
-                log.print_progress(f"Generate risk scores for annotation: {i}")
-                self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] == i]
-                self.risk_scores()
-                if not self.predict_only:
-                    self.permute_pvalues()
-                self.gather_results_for_loop(i)
+            log.print_progress("Start loop for each annotation")
+            for k in self.annotation_dict:
+                for i in self.annotation_dict[k]:
+                    log.print_progress(f"Generate risk scores for annotation: {i}")
+                    self.filtered_category_set = self.category_set[self.category_set[k] == i]
+                    self.risk_scores()
+                    if not self.predict_only:
+                        self.permute_pvalues()
+                    self.gather_results_for_loop(k, i)
             self.save_results_for_loop()
         if self.leave_one_out:
-            for i in self.annotation_list:
-                log.print_progress("Start N of one leave for each annotation")
-                log.print_progress(f"Generate risk scores excluding annotation: {i}")
-                self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] != i]
-                self.risk_scores()
-                if not self.predict_only:
-                    self.permute_pvalues()
-                self.gather_results_for_loop(i)
-                self.save_results_for_loop()
+            log.print_progress("Start leave one out for each annotation")
+            for k in self.annotation_dict:
+                for i in self.annotation_dict[k]:
+                    log.print_progress(f"Generate risk scores excluding annotation: {i}")
+                    self.filtered_category_set = self.category_set[self.category_set[k] != i]
+                    self.risk_scores()
+                    if not self.predict_only:
+                        self.permute_pvalues()
+                    self.gather_results_for_loop(k, i)
+            self.save_results_for_loop()
         if not (self.do_each_one or self.leave_one_out):
             self.filtered_category_set = self.category_set
             self.risk_scores()
@@ -678,7 +682,7 @@ class RiskScore(Runnable):
             self.set_env("LASSO_NULL_MODELS", self.null_model_path)
         self.save_env()
 
-    def gather_results_for_loop(self, annotation):
+    def gather_results_for_loop(self, key, annotation):
         """Gather the results"""
         log.print_progress(self.gather_results_for_loop.__doc__)
 
@@ -721,7 +725,7 @@ class RiskScore(Runnable):
             fin_res = pd.concat([fin_res, new_df], ignore_index=True)
 
         #fin_res.to_csv(self.result_path, sep="\t", index=False)
-        self._result_for_loop[annotation] = fin_res
+        self._result_for_loop[key][annotation] = fin_res
 
     def save_results_for_loop(self):
         # Initialize an empty list to store the DataFrames
