@@ -749,7 +749,7 @@ Below are the output files generated.
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
 
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if -t TFBS corr -n 10000 -c_set $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if corr -t TFBS -n 10000 -c_set $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
 
   This process uses all of the cores. With 40 cores, it takes about 90 minutes.
 
