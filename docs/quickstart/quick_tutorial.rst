@@ -224,7 +224,7 @@ Example run:
 
 .. code-block:: solidity
     
-    cwas correlation -v $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -c_info $HOME/cwas_output/de_novo_variants.category_info.txt
+    cwas correlation -v $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -c_info $HOME/cwas_output/de_novo_variants.category_info.txt -p 8 -cm variant -im
 
 Below are the output files generated.
 
