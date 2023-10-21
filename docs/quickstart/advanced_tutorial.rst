@@ -640,7 +640,7 @@ The parameters of the command are as below:
 
 .. code-block:: solidity
 
-    cwas correlation -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -c_info OUTPUT.category_info.txt -p 8 -cm variant -im
+    cwas correlation -i INPUT.categorization_result.zarr -v INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -c_info OUTPUT.category_info.txt -p 8 -cm variant -im
 
 Calculating the correlation matrix takes about 139 minutes with eight cores.
 
@@ -654,7 +654,7 @@ Example run:
 
 .. code-block:: solidity
     
-    cwas correlation -v $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -c_info $HOME/cwas_output/de_novo_variants.category_info.txt
+    cwas correlation -i $HOME/cwas_output/de_novo_variants.categorization_result.zarr -v $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -c_info $HOME/cwas_output/de_novo_variants.category_info.txt -p 8 -cm variant -im
 
 Below are the output files generated.
 

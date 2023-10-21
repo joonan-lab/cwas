@@ -25,4 +25,4 @@ The parameters of the command are as below:
 
 .. code-block:: solidity
 
-    cwas correlation -v INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -c_info OUTPUT.category_info.txt -p 8 -cm variant -im
+    cwas correlation -i INPUT.categorization_result.zarr -v INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -c_info OUTPUT.category_info.txt -p 8 -cm variant -im
