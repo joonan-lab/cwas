@@ -21,7 +21,7 @@ The parameters of the command are as below:
   - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter`` or ``-thr`` is not given. By default, None.
   - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
   - -t, --tag: Tag used for the name of the output files. By default, None.
-  - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
+  - -c_set, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
 
   +-------------------------------------------------------+
   |Category                                               |

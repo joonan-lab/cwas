@@ -255,7 +255,7 @@ Below are the output files generated.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter`` or ``-thr`` is not given. By default, None.
     - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
     - -t, --tag: Tag used for the name of the output files. By default, None.
-    - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
+    - -c_set, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
 
     +-------------------------------------------------------+
     |Category                                               |
@@ -280,7 +280,7 @@ Below are the output files generated.
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
 
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if -t TFBS corr -n 10000 -c $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if -t TFBS corr -n 10000 -c_set $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
 
 
   Below are the output files generated.
@@ -362,7 +362,7 @@ Below are the output files generated.
     ...
 
 
-1.   :ref:`Burden shift analysis <burdenshift>`
+10.   :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
@@ -401,7 +401,7 @@ Below are the output files generated.
 
 
 
-1.    :ref:`DAWN analysis <dawn>`
+11.    :ref:`DAWN analysis <dawn>`
 ####################################
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.

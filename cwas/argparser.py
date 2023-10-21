@@ -584,15 +584,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         type=Path,
         help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used. (default: None)",
     )
-    optional.add_argument(
-        '-c_info',
-        '--category_info',
-        dest="category_info_path",
-        required=False,
-        default=None,
-        type=Path,
-        help="Path to a text file with category information (*.category_info.txt).",
-    )
+    #optional.add_argument(
+    #    '-c_info',
+    #    '--category_info',
+    #    dest="category_info_path",
+    #    required=False,
+    #    default=None,
+    #    type=Path,
+    #    help="Path to a text file with category information (*.category_info.txt).",
+    #)
     optional.add_argument(
         '-d',
         '--domain_list',
