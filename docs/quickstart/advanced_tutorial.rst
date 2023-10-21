@@ -105,6 +105,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     conda activate cwas
     pip install cwas
 
+  The installation of R package **glmnet** is also required for risk score analysis.
 
   CWAS-Plus requires a working directory for efficiency. Users can create the working directory through command below.
 
@@ -207,6 +208,19 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - PhyloP46way and PhastCons46Way
     - Due to the large file sizes, we provide an alternative download link for the original files.
 
+
+  When preparing the ANNOTATION_KEY_CONFIG yaml file, please avoid using underscores ('_') in the annotation name. Underscores are used for distinguishing different domains within a single category.
+
+  For example, check below.
+
+  .. code-block:: solidity
+
+    functional_score:
+      bed1.bed.gz: annot1
+      bed2.bed.gz: annot2
+    functional_annotation:
+      bed3.bed.gz: annot_3 # Do not use underscores like this. Users can use 'annot3' instead.
+      bed4.bed.gz: annot4
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
@@ -749,7 +763,7 @@ Below are the output files generated.
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
 
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if -t TFBS corr -n 10000 -c_set $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if corr -t TFBS -n 10000 -c_set $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
 
   This process uses all of the cores. With 40 cores, it takes about 90 minutes.
 
