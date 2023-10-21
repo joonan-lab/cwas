@@ -32,6 +32,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     pip install cwas
     cwas start
 
+  The installation of R package **glmnet** is also required for risk score analysis.
 
   Download example input.
 
@@ -65,6 +66,19 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     cp $HOME/cwas-dataset/configuration.txt $HOME/.cwas/
 
   After copying, modify the path of the *VEP*, *ANNOTATION_DATA_DIR* and *VEP_CACHE_DIR* to the exact path from the user's environment.
+
+  When preparing the ANNOTATION_KEY_CONFIG yaml file, please avoid using underscores ('_') in the annotation name. Underscores are used for distinguishing different domains within a single category.
+
+  For example, check below.
+
+  .. code-block:: solidity
+
+    functional_score:
+      bed1.bed.gz: annot1
+      bed2.bed.gz: annot2
+    functional_annotation:
+      bed3.bed.gz: annot_3 # Do not use underscores like this. Users can use 'annot3' instead.
+      bed4.bed.gz: annot4
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory and fill the ``.cwas_env`` file in the home directory for storing environmental variables.
 

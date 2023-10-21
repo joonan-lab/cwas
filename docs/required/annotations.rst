@@ -53,7 +53,7 @@ All files should be indexed using tabix.
 +------+--------+--------+
 
 
-1. Functional scores
+3. Functional scores
 #########################
 
 The users can utilize functional scores, such as conservation scores or pathogenicity scores. This file is in bed format. Functional scores contain genomic intervals, same as functional annotations. The dataset should be filtered by a reliable threeshold that is required for assuring that a specific region have this feature, such as conservation. For example, cutoff of 2 was applied to filter conserved regions in phyloP database.

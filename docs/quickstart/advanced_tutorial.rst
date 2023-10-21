@@ -105,6 +105,7 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     conda activate cwas
     pip install cwas
 
+  The installation of R package **glmnet** is also required for risk score analysis.
 
   CWAS-Plus requires a working directory for efficiency. Users can create the working directory through command below.
 
@@ -207,6 +208,19 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
     - PhyloP46way and PhastCons46Way
     - Due to the large file sizes, we provide an alternative download link for the original files.
 
+
+  When preparing the ANNOTATION_KEY_CONFIG yaml file, please avoid using underscores ('_') in the annotation name. Underscores are used for distinguishing different domains within a single category.
+
+  For example, check below.
+
+  .. code-block:: solidity
+
+    functional_score:
+      bed1.bed.gz: annot1
+      bed2.bed.gz: annot2
+    functional_annotation:
+      bed3.bed.gz: annot_3 # Do not use underscores like this. Users can use 'annot3' instead.
+      bed4.bed.gz: annot4
 
   After preparing all resources, fill in the ``configuration.txt`` file with specific paths to the file.
 
