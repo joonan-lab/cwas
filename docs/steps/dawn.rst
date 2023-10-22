@@ -13,6 +13,7 @@ The users can investigate the relationship between categories and identify the s
   - -r, --range: Range (i.e., (start,end)) to find optimal K for k-means clustering. It must contain two integers that are comma-separated. The first integer refers to the start number and must be above 1. The second integer refers to the end.
   - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
+  - -T, --tsen_method: Gradient calculation algorithm for t-SNE, which is used in TSNE of sklearn. If the dataset is large, 'barnes_hut' is recommended. By default, exact.
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -c_count, --cat_count: Path of the categories counts file from burden test.
   - -C, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
