@@ -385,6 +385,7 @@ Below are the output files generated.
 
   - -i, --input_file: Path to the input file which is the result of binomial burden test (\*.burden_test.txt).
   - -b, --burden_res: Path to the result of burden shift from permutation test (\*.binom_pvals.txt.gz).
+  - -c_info, --category_info: Path to a text file with category information (`*.category_info.txt`).
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -c_set, --cat_set: Path to the category information file from binomial burden test (\*.category_info.txt).
   - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
@@ -397,7 +398,7 @@ Below are the output files generated.
     cwas burden_shift -i $HOME/cwas_output/de_novo_variants.burden_test.txt \
     -b $HOME/cwas_output/de_novo_variants.binom_pvals.txt.gz \
     -o_dir $HOME/cwas_output \
-    -c_set $HOME/cwas_output/de_novo_variants.category_info.txt \
+    -c_info $HOME/cwas_output/de_novo_variants.category_info.txt \
     -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
     -c_cutoff 7 \
     --pval 0.05
