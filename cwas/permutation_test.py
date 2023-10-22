@@ -6,6 +6,7 @@ from multiprocessing import Pool
 import numpy as np
 import pandas as pd
 import re
+from tqdm import tqdm
 
 from cwas.runnable import Runnable
 
