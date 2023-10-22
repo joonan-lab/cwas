@@ -46,13 +46,13 @@ The parameters of the command are as below:
 
     .. code-block:: solidity
             
-        cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 8 -c_count INPUT.category_counts.txt
+        cwas effective_num_test -i INPUT.correlation_matrix.zarr -o_dir OUTPUT_DIR -if corr -n 10000 -ef -thr 8 -c_count INPUT.category_counts.txt
 
     - Without specified cutoff: The cutoff is automatically calculated and applied to filter categories with a value (number of variants or samples) greater than or equal to cutoff. The cutoff represents the minimum number of variants (or samples) required for a one-sided binomial test with p\<0.05, assuming the null hypothesis is a Binomial(m, No. cases/No. total samples) distribution with 1 mutation in controls and m-1 mutations in cases.
 
     .. code-block:: solidity
         
-        cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -ef -c_count INPUT.category_counts.txt
+        cwas effective_num_test -i INPUT.correlation_matrix.zarr -o_dir OUTPUT_DIR -if corr -n 10000 -ef -c_count INPUT.category_counts.txt
 
 2. Generate inputs for DAWN analysis
 
@@ -60,5 +60,5 @@ The parameters of the command are as below:
 
     .. code-block:: solidity
             
-        cwas effective_num_test -i INPUT.correlation_matrix.pkl -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt -c_count INPUT.category_counts.txt
+        cwas effective_num_test -i INPUT.correlation_matrix.zarr -o_dir OUTPUT_DIR -if corr -n 10000 -c CATEGORY_SET.txt -c_count INPUT.category_counts.txt
 
