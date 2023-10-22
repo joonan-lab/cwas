@@ -423,7 +423,7 @@ Below are the output files generated.
 
   The parameters of the command are as below:
 
-  - -e, --eig_vector: Eigen vector file. This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.txt.gz``.
+  - -e, --eig_vector: Eigen vector file. This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.zarr``.
   - -c, --corr_mat: Category correlation matrix file. This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.zarr``.
   - -P, --permut_test: Permutation test file. This is the output file from :ref:`burden test <permtest>`. The file name must have pattern ``*permutation_test*.txt.gz``.
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
@@ -442,7 +442,7 @@ Below are the output files generated.
   .. code-block:: solidity
   
       cwas dawn \
-      -e $HOME/cwas_output/de_novo_variants.eig_vecs.TFBS.txt.gz \
+      -e $HOME/cwas_output/de_novo_variants.eig_vecs.TFBS.zarr \
       -c $HOME/cwas_output/de_novo_variants.correlation_matrix.zarr \
       -P $HOME/cwas_output/de_novo_variants.permutation_test.txt.gz \
       -o_dir $HOME/cwas_output \
