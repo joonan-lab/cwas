@@ -354,21 +354,23 @@ class RiskScore(Runnable):
             log.print_progress("Start loop for each annotation")
             for i in self.annotation_list:
                 log.print_progress(f"Generate risk scores for annotation: {i}")
-                self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] == i]
-                self.risk_scores()
-                if not self.predict_only:
-                    self.permute_pvalues()
-                self.gather_results_for_loop(i)
+                for domain in self.domain_list:
+                    self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] == i]
+                    self.risk_scores(domain)
+                    if not self.predict_only:
+                        self.permute_pvalues(domain)
+                    self.gather_results_for_loop(i)
             self.save_results_for_loop()
         if self.leave_one_out:
             log.print_progress("Start N of one leave for each annotation")
             for i in self.annotation_list:
                 log.print_progress(f"Generate risk scores excluding annotation: {i}")
-                self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] != i]
-                self.risk_scores()
-                if not self.predict_only:
-                    self.permute_pvalues()
-                self.gather_results_for_loop(i)
+                for domain in self.domain_list:
+                    self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] != i]
+                    self.risk_scores(domain)
+                    if not self.predict_only:
+                        self.permute_pvalues(domain)
+                    self.gather_results_for_loop(i)
                 self.save_results_for_loop()
         if not (self.do_each_one or self.leave_one_out):
             for domain in self.domain_list:
