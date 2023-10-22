@@ -378,7 +378,7 @@ class RiskScore(Runnable):
                 if not self.predict_only:
                     log.print_progress(f"Generate permutation p-values for the domain: {domain}")
                     self.permute_pvalues(domain)
-                self.save_results()
+                self.save_results(domain)
         self.update_env()
         log.print_progress("Done.")
 
@@ -590,65 +590,61 @@ class RiskScore(Runnable):
             
         return foldid
     
-    def save_results(self):
+    def save_results(self, domain):
         """Save the results to a file """
         log.print_progress(self.save_results.__doc__)
 
-        domain_list = list(self._result_dict.keys())
+        #domain_list = list(self._result_dict.keys())
         null_models = []
-        fin_res = pd.DataFrame()
 
-        for domain in domain_list:
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
+        filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
+    
+        result_table = []
+    
+        choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
+                            for seed in self._result_dict[domain].keys()], axis=0)
+        
+        ## Get the categories which are selected by the LassoCV for all seeds
+        coef_df = pd.DataFrame.from_dict(
+            {seed: self._result_dict[domain][seed][3][choose_idx]
+            for seed in self._result_dict[domain].keys()},
+            orient="index",
+            columns = filtered_combs[choose_idx]
+        )
+    
+        coef_df.to_csv(str(self.coef_path).replace('.txt', f'.{domain}.txt'), sep="\t")
+    
+        for seed in self._result_dict[domain].keys():
+            result_table += [[domain] + [str(seed)] + self._result_dict[domain][seed][:-1]]
 
-            result_table = []
+        result_df = pd.DataFrame(result_table, columns=["Domain", "Seed", "Parameter", "R2", "N_select"])
+        new_df = pd.DataFrame([domain, 'average', result_df['Parameter'].mean(), result_df['R2'].mean(), sum(choose_idx)]).T
+        new_df.columns = result_df.columns
+        result_df = pd.concat([new_df, result_df], ignore_index=True)
+        
+        if not self.predict_only:
+            r2_scores = np.array([self._permutation_dict[domain][seed][1]
+                                  for seed in self._permutation_dict[domain].keys()])
+            null_models.append([domain, 'average', r2_scores.mean(), r2_scores.std()])
+            null_models.extend([[domain] + [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
 
-            choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
-                                for seed in self._result_dict[domain].keys()], axis=0)
-            
-            ## Get the categories which are selected by the LassoCV for all seeds
-            coef_df = pd.DataFrame.from_dict(
-                {seed: self._result_dict[domain][seed][3][choose_idx]
-                for seed in self._result_dict[domain].keys()},
-                orient="index",
-                columns = filtered_combs[choose_idx]
-            )
-
-            coef_df.to_csv(str(self.coef_path).replace('.txt', f'.{domain}.txt'), sep="\t")
-
-            for seed in self._result_dict[domain].keys():
-                result_table += [[domain] + [str(seed)] + self._result_dict[domain][seed][:-1]]
-
-            result_df = pd.DataFrame(result_table, columns=["Domain", "Seed", "Parameter", "R2", "N_select"])
-            new_df = pd.DataFrame([domain, 'average', result_df['Parameter'].mean(), result_df['R2'].mean(), sum(choose_idx)]).T
-            new_df.columns = result_df.columns
-            result_df = pd.concat([new_df, result_df], ignore_index=True)
-
-            if not self.predict_only:
-                r2_scores = np.array([self._permutation_dict[domain][seed][1]
-                                      for seed in self._permutation_dict[domain].keys()])
-                null_models.append([domain, 'average', r2_scores.mean(), r2_scores.std()])
-                null_models.extend([[domain] + [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
-
-                new_values = []
-                for row in result_df['R2']:
-                    new_value = (np.sum(r2_scores >= row) + 1) / (len(r2_scores) + 1)
-                    new_values.append(new_value)
-
-                result_df['Perm_P'] = new_values
+            new_values = []
+            for row in result_df['R2']:
+                new_value = (np.sum(r2_scores >= row) + 1) / (len(r2_scores) + 1)
+                new_values.append(new_value)
                 
-                self.draw_histogram_plot(domain=domain,
-                                         r2 = float(result_df.loc[result_df['Seed'] == 'average']['R2'].values),
-                                         perm_r2 = r2_scores)
+            result_df['Perm_P'] = new_values
             
-            fin_res = pd.concat([fin_res, result_df], ignore_index=True)
-
-        fin_res.to_csv(str(self.result_path).replace('.txt', f'.{domain}.txt'), sep="\t", index=False)
+            self.draw_histogram_plot(domain=domain,
+                                     r2 = float(result_df.loc[result_df['Seed'] == 'average']['R2'].values),
+                                     perm_r2 = r2_scores)
+            
+        result_df.to_csv(str(self.result_path).replace('.txt', f'.{domain}.txt'), sep="\t", index=False)
         
         if not self.predict_only:
             null_models = pd.DataFrame(null_models,
                                        columns=["Domain", "N_perm", "R2", "std"])
-            null_models.to_csv(self.null_model_path, sep="\t", index=False)
+            null_models.to_csv(str(self.null_model_path).replace('.txt', f'.{domain}.txt'), sep="\t", index=False)
   
     def draw_histogram_plot(self, domain: str, r2: float, perm_r2: np.ndarray):
         log.print_progress("Save histogram plot")
