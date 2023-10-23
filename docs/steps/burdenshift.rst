@@ -10,6 +10,7 @@ The parameters of the command are as below:
 
 - -i, --input_file: Path to the input file which is the result of binomial burden test (\*.burden_test.txt).
 - -b, --burden_res: Path to the result of burden shift from permutation test (\*.binom_pvals.txt.gz).
+- -c_info, --category_info: Path to a text file with category information (`*.category_info.txt`).
 - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 - -c_set, --cat_set: Path to the category information file from binomial burden test (\*.category_info.txt).
 - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
@@ -24,7 +25,7 @@ The parameters of the command are as below:
   cwas burden_shift -i INPUT.burden_test.txt \
   -b INPUT.binom_pvals.txt.gz \
   -o_dir OUTPUT_DIR \
-  -c_set INPUT.category_info.txt \
+  -c_info INPUT.category_info.txt \
   -c_count INPUT.category_counts.txt \
   -c_cutoff 7 \
   --pval 0.05

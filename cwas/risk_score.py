@@ -45,7 +45,7 @@ class RiskScore(Runnable):
         self.cv_glmnet = importr("glmnet").cv_glmnet
         self._annotation_list = None
         self._result_for_loop = defaultdict(dict)
-        self._result_for_n_of_one_leave = defaultdict(dict)
+        self._result_for_leave_one_out = defaultdict(dict)
     
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -65,10 +65,10 @@ class RiskScore(Runnable):
         if args.tag:
             log.print_arg("Output tag (prefix of output files)", args.tag)
         log.print_arg("If the number of carriers is used for calculating risk score or not", args.use_n_carrier)
-        if args.do_loop:
-            log.print_arg("Use each annotation from functional annotation to calculate risk score", args.do_loop)
-        if args.n_of_one_leave:
-            log.print_arg("Exclude one annotation from functional annotation and functional score and calculate risk score", args.n_of_one_leave)
+        if args.do_each_one:
+            log.print_arg("Use each annotation from functional annotation to calculate risk score", args.do_each_one)
+        if args.leave_one_out:
+            log.print_arg("Exclude one annotation from functional annotation and functional score and calculate risk score", args.leave_one_out)
         log.print_arg(
             "Threshold for selecting rare categories",
             f"{args.ctrl_thres: ,d}",
@@ -164,12 +164,12 @@ class RiskScore(Runnable):
         return self.args.tag
     
     @property
-    def do_loop(self) -> bool:
-        return self.args.do_loop
+    def do_each_one(self) -> bool:
+        return self.args.do_each_one
 
     @property
-    def n_of_one_leave(self) -> bool:
-        return False if self.do_loop else self.args.n_of_one_leave
+    def leave_one_out(self) -> bool:
+        return False if self.do_each_one else self.args.leave_one_out
 
     @property
     def use_n_carrier(self) -> bool:
@@ -208,6 +208,14 @@ class RiskScore(Runnable):
         return self.args.seed
     
     @property
+    def plotsize(self) -> str:
+        return self.args.plotsize
+
+    @property
+    def fontsize(self) -> float:
+        return self.args.fontsize
+    
+    @property
     def categorization_root(self):
         if self._categorization_root is None:
             self._categorization_root = zarr.open(self.categorization_result_path, mode='r')
@@ -241,6 +249,8 @@ class RiskScore(Runnable):
     def category_set(self) -> pd.DataFrame:
         if self._category_set is None:
             self._category_set = pd.read_csv(self.category_set_path, sep='\t')
+            if sorted(self._category_set['Category'].tolist()) != sorted(self.categories):
+                raise ValueError("The categories in the 'input_file' and 'category_set' do not match.")
             self._category_set = self._category_set.loc[self._category_set["Category"].isin(self.categories)]
             self._category_set['Category'] = pd.Categorical(self._category_set['Category'],
                                                             categories=self.categories,
@@ -335,32 +345,37 @@ class RiskScore(Runnable):
 
     def run(self):
         self.prepare()
-        if self.do_loop:
+        if self.do_each_one:
+            log.print_progress("Start loop for each annotation")
             for i in self.annotation_list:
-                log.print_progress("Start loop for each annotation")
                 log.print_progress(f"Generate risk scores for annotation: {i}")
-                self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] == i]
-                self.risk_scores()
-                if not self.predict_only:
-                    self.permute_pvalues()
-                self.gather_results_for_loop(i)
+                for domain in self.domain_list:
+                    self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] == i]
+                    self.risk_scores(domain)
+                    if not self.predict_only:
+                        self.permute_pvalues(domain)
+                    self.gather_results_for_loop(i)
             self.save_results_for_loop()
-        if self.n_of_one_leave:
+        if self.leave_one_out:
+            log.print_progress("Start N of one leave for each annotation")
             for i in self.annotation_list:
-                log.print_progress("Start N of one leave for each annotation")
                 log.print_progress(f"Generate risk scores excluding annotation: {i}")
-                self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] != i]
-                self.risk_scores()
-                if not self.predict_only:
-                    self.permute_pvalues()
-                self.gather_results_for_loop(i)
+                for domain in self.domain_list:
+                    self.filtered_category_set = self.category_set[self.category_set['functional_annotation'] != i]
+                    self.risk_scores(domain)
+                    if not self.predict_only:
+                        self.permute_pvalues(domain)
+                    self.gather_results_for_loop(i)
                 self.save_results_for_loop()
-        if not (self.do_loop or self.n_of_one_leave):
-            self.filtered_category_set = self.category_set
-            self.risk_scores()
-            if not self.predict_only:
-                self.permute_pvalues()
-            self.save_results()
+        if not (self.do_each_one or self.leave_one_out):
+            for domain in self.domain_list:
+                log.print_progress(f"Generate risk score for the domain: {domain}")
+                self.filtered_category_set = self.category_set
+                self.risk_scores(domain)
+                if not self.predict_only:
+                    log.print_progress(f"Generate permutation p-values for the domain: {domain}")
+                    self.permute_pvalues(domain)
+                self.save_results(domain)
         self.update_env()
         log.print_progress("Done.")
 
@@ -372,7 +387,7 @@ class RiskScore(Runnable):
                 "from the categorization result."
             )
 
-    def risk_scores(self):
+    def risk_scores(self, domain):
         """Generate risk scores for various seeds """
         log.print_progress(self.risk_scores.__doc__)
 
@@ -381,47 +396,44 @@ class RiskScore(Runnable):
         num_proc2 = len(seeds) if self.num_proc > len(seeds) else self.num_proc
         pool = ProcessPoolExecutor(max_workers=num_proc2)
         
-        for domain in self.domain_list:
-            log.print_progress(f"Generate risk score for the domain: {domain}")
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]["Category"] if domain != 'all' else pd.Series(self.categories)
+        filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]["Category"] if domain != 'all' else self.filtered_category_set['Category']
+        
+        rare_categories, cov, test_cov, response, test_response = self._create_covariates(seed=self.seed,
+                                                                                          swap_label=False,
+                                                                                          filtered_combs=filtered_combs)
+        _risk_score_per_category_ = partial(self._risk_score_per_category,
+                                            swap_label = False,
+                                            rare_categories = rare_categories,
+                                            cov = cov,
+                                            test_cov = test_cov,
+                                            response = response,
+                                            test_response = test_response,
+                                            filtered_combs = filtered_combs)
+        map_result = pool.map(_risk_score_per_category_, seeds)
+        self._result_dict[domain] = {key: value for x in map_result for key, value in x.items()}
+        gc.collect()
             
-            rare_categories, cov, test_cov, response, test_response = self._create_covariates(seed=self.seed,
-                                                                                              swap_label=False,
-                                                                                              filtered_combs=filtered_combs)
-            _risk_score_per_category_ = partial(self._risk_score_per_category,
-                                                swap_label = False,
-                                                rare_categories = rare_categories,
-                                                cov = cov,
-                                                test_cov = test_cov,
-                                                response = response,
-                                                test_response = test_response,
-                                                filtered_combs = filtered_combs)
-            map_result = pool.map(_risk_score_per_category_, seeds)
-            self._result_dict[domain] = {key: value for x in map_result for key, value in x.items()}
-            gc.collect()
-            
-    def permute_pvalues(self):
+    def permute_pvalues(self, domain):
         """Run LassoCV to get permutated pvalues"""
         log.print_progress(self.permute_pvalues.__doc__)
                     
         seeds = np.arange(self.seed, self.seed+self.n_permute)
         pool = ProcessPoolExecutor(max_workers=self.num_proc)
 
-        for domain in self.domain_list:
-            log.print_progress(f"Generate permutation p-values for the domain: {domain}")
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
-            
-            _risk_score_per_category_ = partial(self._risk_score_per_category,
-                                                swap_label = True,
-                                                rare_categories = None,
-                                                cov = None,
-                                                test_cov = None,
-                                                response = None,
-                                                test_response = None,
-                                                filtered_combs = filtered_combs)
-            map_result = list(tqdm(pool.map(_risk_score_per_category_, seeds), total=len(seeds), desc="Permutation p-values"))
-            self._permutation_dict[domain] = {key: value for x in map_result for key, value in x.items()}
-            gc.collect()
+        filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
+        
+        _risk_score_per_category_ = partial(self._risk_score_per_category,
+                                            swap_label = True,
+                                            rare_categories = None,
+                                            cov = None,
+                                            test_cov = None,
+                                            response = None,
+                                            test_response = None,
+                                            filtered_combs = filtered_combs)
+        #map_result = parmap.map(_risk_score_per_category_, seeds, pm_pbar=True, pm_processes=self.num_proc)
+        map_result = list(tqdm(pool.map(_risk_score_per_category_, seeds), total=len(seeds), desc="Permutation p-values"))
+        self._permutation_dict[domain] = {key: value for x in map_result for key, value in x.items()}
+        gc.collect()
     
     def _create_covariates(self, seed: int, swap_label: bool = False, filtered_combs = None):
         """Create covariates for risk score model"""
@@ -518,7 +530,7 @@ class RiskScore(Runnable):
         y = np.where(response, 1., 0.)
         test_y = np.where(test_response, 1., 0.)
         
-        if not (swap_label or self.do_loop or self.n_of_one_leave):
+        if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Running LassoCV (Seed: {seed})")
         
         # Create a glmnet model
@@ -555,7 +567,7 @@ class RiskScore(Runnable):
 
         output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
                 
-        if not (swap_label or self.do_loop or self.n_of_one_leave):
+        if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Done (Seed: {seed})")
                 
         gc.collect()
@@ -575,92 +587,86 @@ class RiskScore(Runnable):
             
         return foldid
     
-    def save_results(self):
+    def save_results(self, domain):
         """Save the results to a file """
         log.print_progress(self.save_results.__doc__)
 
-        domain_list = list(self._result_dict.keys())
+        #domain_list = list(self._result_dict.keys())
         null_models = []
-        fin_res = pd.DataFrame()
 
-        for domain in domain_list:
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
+        filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
+    
+        result_table = []
+    
+        choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
+                            for seed in self._result_dict[domain].keys()], axis=0)
+        
+        ## Get the categories which are selected by the LassoCV for all seeds
+        coef_df = pd.DataFrame.from_dict(
+            {seed: self._result_dict[domain][seed][3][choose_idx]
+            for seed in self._result_dict[domain].keys()},
+            orient="index",
+            columns = filtered_combs[choose_idx]
+        )
+    
+        coef_df.to_csv(str(self.coef_path).replace('.txt', f'.{domain}.txt'), sep="\t")
+    
+        for seed in self._result_dict[domain].keys():
+            result_table += [[domain] + [str(seed)] + self._result_dict[domain][seed][:-1]]
 
-            result_table = []
+        result_df = pd.DataFrame(result_table, columns=["Domain", "Seed", "Parameter", "R2", "N_select"])
+        new_df = pd.DataFrame([domain, 'average', result_df['Parameter'].mean(), result_df['R2'].mean(), sum(choose_idx)]).T
+        new_df.columns = result_df.columns
+        result_df = pd.concat([new_df, result_df], ignore_index=True)
+        
+        if not self.predict_only:
+            r2_scores = np.array([self._permutation_dict[domain][seed][1]
+                                  for seed in self._permutation_dict[domain].keys()])
+            null_models.append([domain, 'average', r2_scores.mean(), r2_scores.std()])
+            null_models.extend([[domain] + [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
 
-            #choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
-            #                    for seed in self._result_dict[domain].keys()], axis=0)
-            seed_arrays = [self._result_dict[domain][seed][3] for seed in self._result_dict[domain].keys()]
-            stacked_arrays = np.stack(seed_arrays, axis=0)
-            non_zero_proportion = np.mean(stacked_arrays != 0, axis=0)
-            choose_idx = non_zero_proportion > 0.5
-            
-            ## Get the categories which are selected by the LassoCV for all seeds
-            coef_df = pd.DataFrame.from_dict(
-                {seed: self._result_dict[domain][seed][3][choose_idx]
-                for seed in self._result_dict[domain].keys()},
-                orient="index",
-                columns = filtered_combs[choose_idx]
-            )
-
-            coef_df.to_csv(str(self.coef_path).replace('.txt', f'.{domain}.txt'), sep="\t")
-
-            for seed in self._result_dict[domain].keys():
-                result_table += [[domain] + [str(seed)] + self._result_dict[domain][seed][:-1]]
-
-            result_df = pd.DataFrame(result_table, columns=["Domain", "Seed", "Parameter", "R2", "N_select"])
-            new_df = pd.DataFrame([domain, 'average', result_df['Parameter'].mean(), result_df['R2'].mean(), sum(choose_idx)]).T
-            new_df.columns = result_df.columns
-            result_df = pd.concat([new_df, result_df], ignore_index=True)
-
-            if not self.predict_only:
-                r2_scores = np.array([self._permutation_dict[domain][seed][1]
-                                      for seed in self._permutation_dict[domain].keys()])
-                null_models.append([domain, 'average', r2_scores.mean(), r2_scores.std()])
-                null_models.extend([[domain] + [i+1] + [str(r2_scores[i])] + [''] for i in range(len(r2_scores))])
-
-                new_values = []
-                for row in result_df['R2']:
-                    new_value = (np.sum(r2_scores >= row) + 1) / (len(r2_scores) + 1)
-                    new_values.append(new_value)
-
-                result_df['Perm_P'] = new_values
+            new_values = []
+            for row in result_df['R2']:
+                new_value = (np.sum(r2_scores >= row) + 1) / (len(r2_scores) + 1)
+                new_values.append(new_value)
                 
-                self.draw_histogram_plot(domain=domain,
-                                         r2 = float(result_df.loc[result_df['Seed'] == 'average']['R2'].values),
-                                         perm_r2 = r2_scores)
+            result_df['Perm_P'] = new_values
             
-            fin_res = pd.concat([fin_res, result_df], ignore_index=True)
-
-        fin_res.to_csv(self.result_path, sep="\t", index=False)
+            self.draw_histogram_plot(domain=domain,
+                                     r2 = float(result_df.loc[result_df['Seed'] == 'average']['R2'].values),
+                                     perm_r2 = r2_scores)
+            
+        result_df.to_csv(str(self.result_path).replace('.txt', f'.{domain}.txt'), sep="\t", index=False)
         
         if not self.predict_only:
             null_models = pd.DataFrame(null_models,
                                        columns=["Domain", "N_perm", "R2", "std"])
-            null_models.to_csv(self.null_model_path, sep="\t", index=False)
+            null_models.to_csv(str(self.null_model_path).replace('.txt', f'.{domain}.txt'), sep="\t", index=False)
   
     def draw_histogram_plot(self, domain: str, r2: float, perm_r2: np.ndarray):
         log.print_progress("Save histogram plot")
         
         # Set the font size
-        plt.rcParams.update({'font.size': 8})
+        plt.rcParams.update({'font.size': self.fontsize})
+        
+        width, height = list(map(float, self.plotsize.replace("\s", "").split(",")))
         
         # Set the figure size
-        plt.figure(figsize=(7, 7))
+        plt.figure(figsize=(width, height))
 
         # Create the histogram plot
         plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
         
-        text_label1 = 'P={:.2f}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
+        text_label1 = 'P={:.1e}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
         text_label2 = '$R^2$={:.2f}%'.format(r2*100)
 
         # Add labels and title
-        plt.title(f'Histogram Plot (Domain: {domain})', fontsize = 8)
+        plt.title(f'Histogram Plot (Domain: {domain})')
         plt.xlabel('$R^2$')
         plt.ylabel('Frequency')
         plt.axvline(x=r2, color='red')
-        plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='black')
-        plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', fontsize=8, color='red')
+        plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', color='black')
+        plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', color='red')
         plt.locator_params(axis='x', nbins=5)
         plt.tight_layout()
         plt.savefig(str(self.plot_path).replace('.pdf', f'.{domain}.pdf'), bbox_inches='tight')
@@ -682,7 +688,7 @@ class RiskScore(Runnable):
         fin_res = pd.DataFrame()
 
         for domain in domain_list:
-            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else pd.Series(self.categories)
+            filtered_combs = self.filtered_category_set.loc[self.filtered_category_set['is_'+domain]==1]['Category'] if domain != 'all' else self.filtered_category_set['Category']
 
             result_table = []
 
@@ -697,7 +703,7 @@ class RiskScore(Runnable):
                 columns = filtered_combs[choose_idx]
             )
 
-            file_suffix = '' if self.do_loop else '.excluded'
+            file_suffix = '' if self.do_each_one else '.excluded'
             file_name = f".{domain}.{annotation}{file_suffix}.txt"
             coef_df.to_csv(str(self.coef_path).replace('.txt', file_name), sep="\t")
 
@@ -722,7 +728,7 @@ class RiskScore(Runnable):
     def save_results_for_loop(self):
         # Initialize an empty list to store the DataFrames
         dataframe_list = []
-        key_name = 'Annotation' if self.do_loop else 'Annotation_excluded'
+        key_name = 'Annotation' if self.do_each_one else 'Annotation_excluded'
         # Loop through the dictionary and append DataFrames to the list
         for key, df in self._result_for_loop.items():
             # Add a new column 'Domain' with the key from the dictionary
@@ -733,6 +739,6 @@ class RiskScore(Runnable):
         column_order = [key_name] + [col for col in fin_res.columns if col != key_name]
         fin_res = fin_res[column_order]
 
-        file_suffix = 'each_annot_loop' if self.do_loop else 'n_of_one_leave'
+        file_suffix = 'do_each_one' if self.do_each_one else 'leave_one_out'
         file_name = f".{file_suffix}.txt"
         fin_res.to_csv(str(self.result_path).replace('.txt', file_name), sep="\t", index=False)

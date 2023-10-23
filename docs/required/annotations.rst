@@ -40,6 +40,8 @@ The users should prepare functional annotations in bed format. In preparation, u
 
 The bed file contains intervals of genomic features, such as epigenomic marks. The first three columns contain positional information, and the fourth column contains features.
 
+All files should be indexed using tabix.
+
 +------+--------+--------+
 |chr1  | 10000  |  10600 |
 +------+--------+--------+
@@ -55,6 +57,8 @@ The bed file contains intervals of genomic features, such as epigenomic marks. T
 #########################
 
 The users can utilize functional scores, such as conservation scores or pathogenicity scores. This file is in bed format. Functional scores contain genomic intervals, same as functional annotations. The dataset should be filtered by a reliable threeshold that is required for assuring that a specific region have this feature, such as conservation. For example, cutoff of 2 was applied to filter conserved regions in phyloP database.
+
+All files should be indexed using tabix.
 
 +----+--------+-------+
 |chr1|  12180 | 12181 |
