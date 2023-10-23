@@ -30,7 +30,9 @@ For CWAS-Plus to run, the users need to (1) install conda and Ensembl Variant Ef
   .. code-block:: solidity
     
     cd $HOME/.vep/Plugins
-    git clone -b grch38 https://github.com/konradjk/loftee.git
+    wget https://github.com/konradjk/loftee/archive/refs/tags/v1.0.4_GRCh38.tar.gz
+    tar -zxvf v1.0.4_GRCh38.tar.gz
+    mv loftee-1.0.4_GRCh38 loftee
     
     
 - **gerp bigwig**: This file will be used for loftee plugin.
@@ -82,6 +84,9 @@ Users can instasll CWAS-Plus through pip or github. We recommend installing unde
     conda create -n cwas python=3.10 r-base=4.2.2
     conda activate cwas
     pip install cwas
+
+
+The installation of R package **glmnet** is also required for risk score analysis.
 
 
 To start CWAS-Plus, type the command below. This will create a workspace (``.cwas``) for CWAS-Plus in home directory. You can specify the directory that will be used as a working directory. As a default, ``$HOME/.cwas`` will be set. If you have a pre-installed VEP, this process will find it automatically and type it to the configuration file.

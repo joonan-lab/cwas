@@ -222,7 +222,7 @@ class EffectiveNumTest(Runnable):
         """Get the number of effective tests """
         print_progress(self.get_n_etests.__doc__)
         file_extension = '' if self._domain == 'all' else f'.{self._domain}'
-        if os.path.isdir(Path(str(self.eig_val_path).replace('.zarr', f'.{self._domain}.zarr'))):
+        if os.path.isdir(Path(str(self.eig_val_path).replace('.eig_vals', f'{file_extension}.eig_vals'))):
             print_log(
                 "NOTICE",
                 "You already have eigen values for the selected categories.",
@@ -231,7 +231,7 @@ class EffectiveNumTest(Runnable):
         else:
             self.eigen_decomposition(save_vecs=False)
             
-        root = zarr.open(Path(str(self.eig_val_path).replace('.zarr', f'.{file_extension}.zarr')), mode='r')
+        root = zarr.open(Path(str(self.eig_val_path).replace('.eig_vals', f'{file_extension}.eig_vals')), mode='r')
         eig_vals = root['data']
         
         e = 1e-12
