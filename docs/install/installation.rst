@@ -86,6 +86,9 @@ Users can instasll CWAS-Plus through pip or github. We recommend installing unde
     pip install cwas
 
 
+The installation of R package **glmnet** is also required for risk score analysis.
+
+
 To start CWAS-Plus, type the command below. This will create a workspace (``.cwas``) for CWAS-Plus in home directory. You can specify the directory that will be used as a working directory. As a default, ``$HOME/.cwas`` will be set. If you have a pre-installed VEP, this process will find it automatically and type it to the configuration file.
 
 - -w: Path to the CWAS working directory. All default CWAS processes will save their output here if no specific output directory is given. By default, the directory is set to ``$HOME/.cwas``.

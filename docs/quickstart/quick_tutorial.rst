@@ -32,6 +32,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     pip install cwas
     cwas start
 
+  The installation of R package **glmnet** is also required for risk score analysis.
 
   Download example input.
 
@@ -65,6 +66,19 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     cp $HOME/cwas-dataset/configuration.txt $HOME/.cwas/
 
   After copying, modify the path of the *VEP*, *ANNOTATION_DATA_DIR* and *VEP_CACHE_DIR* to the exact path from the user's environment.
+
+  When preparing the ANNOTATION_KEY_CONFIG yaml file, please avoid using underscores ('_') in the annotation name. Underscores are used for distinguishing different domains within a single category.
+
+  For example, check below.
+
+  .. code-block:: solidity
+
+    functional_score:
+      bed1.bed.gz: annot1
+      bed2.bed.gz: annot2
+    functional_annotation:
+      bed3.bed.gz: annot_3 # Do not use underscores like this. Users can use 'annot3' instead.
+      bed4.bed.gz: annot4
 
   After filling the configuration file, ``cwas configuration`` command will create symlinks of annotation datasets into the working directory and fill the ``.cwas_env`` file in the home directory for storing environmental variables.
 
@@ -133,8 +147,8 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     $HOME/cwas_output
     ...
     ├── de_novo_variants.categorization_result.zarr
-    ├── de_novo_variants.intersection_matrix.pkl
-    ├── de_novo_variants.correlation_matrix.pkl
+    ├── de_novo_variants.intersection_matrix.zarr
+    ├── de_novo_variants.correlation_matrix.zarr
     ...
 
 
@@ -218,13 +232,13 @@ The parameters of the command are as below:
 
 .. code-block:: solidity
 
-    cwas correlation -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -c_info OUTPUT.category_info.txt -p 8 -cm variant -im
+    cwas correlation -i INPUT.categorization_result.zarr -v INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -c_info OUTPUT.category_info.txt -p 8 -cm variant -im
 
 Example run:
 
 .. code-block:: solidity
     
-    cwas correlation -v $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -c_info $HOME/cwas_output/de_novo_variants.category_info.txt
+    cwas correlation -i $HOME/cwas_output/de_novo_variants.categorization_result.zarr -v $HOME/cwas_output/de_novo_variants.annotated.vcf.gz -o_dir $HOME/cwas_output -c_info $HOME/cwas_output/de_novo_variants.category_info.txt -p 8 -cm variant -im
 
 Below are the output files generated.
 
@@ -255,7 +269,7 @@ Below are the output files generated.
     - -s, --sample_info: Path to the txt file containing the sample information for each sample. This file must have three columns (``SAMPLE``, ``FAMILY``, ``PHENOTYPE``) with the exact name. Required only when input format is set to ``inter`` or ``-thr`` is not given. By default, None.
     - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
     - -t, --tag: Tag used for the name of the output files. By default, None.
-    - -c, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
+    - -c_set, --category_set: Path to a text file containing categories for eigen decomposition. If not specified, all of the categories (surpassing the cutoff) will be used. This file must contain ``Category`` column with the name of categories to be used.
 
     +-------------------------------------------------------+
     |Category                                               |
@@ -275,12 +289,12 @@ Below are the output files generated.
 
   .. code-block:: solidity
     
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -ef -thr 8 -if corr -n 10000 -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.zarr -o_dir $HOME/cwas_output -ef -thr 8 -if corr -n 10000 -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
 
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | head -1 > $HOME/cwas_output/subset_categories.txt
     cat $HOME/cwas_output/de_novo_variants.category_info.txt | awk '$12 == 1 && $6 == "EncodeTFBS"' >> $HOME/cwas_output/subset_categories.txt
 
-    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl -o_dir $HOME/cwas_output -thr 8 -if -t TFBS corr -n 10000 -c $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
+    cwas effective_num_test -i $HOME/cwas_output/de_novo_variants.correlation_matrix.zarr -o_dir $HOME/cwas_output -thr 8 -if corr -t TFBS -n 10000 -c_set $HOME/cwas_output/subset_categories.txt -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt
 
 
   Below are the output files generated.
@@ -362,7 +376,7 @@ Below are the output files generated.
     ...
 
 
-1.   :ref:`Burden shift analysis <burdenshift>`
+10.   :ref:`Burden shift analysis <burdenshift>`
 ################################################
 
   Identify the overrepresented domains associated to the phenotype.
@@ -371,6 +385,7 @@ Below are the output files generated.
 
   - -i, --input_file: Path to the input file which is the result of binomial burden test (\*.burden_test.txt).
   - -b, --burden_res: Path to the result of burden shift from permutation test (\*.binom_pvals.txt.gz).
+  - -c_info, --category_info: Path to a text file with category information (`*.category_info.txt`).
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -c_set, --cat_set: Path to the category information file from binomial burden test (\*.category_info.txt).
   - -c_count, --cat_count: Path of the categories counts file from binomial burden test (\*.category_counts.txt).
@@ -383,7 +398,7 @@ Below are the output files generated.
     cwas burden_shift -i $HOME/cwas_output/de_novo_variants.burden_test.txt \
     -b $HOME/cwas_output/de_novo_variants.binom_pvals.txt.gz \
     -o_dir $HOME/cwas_output \
-    -c_set $HOME/cwas_output/de_novo_variants.category_info.txt \
+    -c_info $HOME/cwas_output/de_novo_variants.category_info.txt \
     -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
     -c_cutoff 7 \
     --pval 0.05
@@ -401,20 +416,21 @@ Below are the output files generated.
 
 
 
-1.    :ref:`DAWN analysis <dawn>`
+11.    :ref:`DAWN analysis <dawn>`
 ####################################
 
   Investigate the relationship between categories and identify the specific type of categories clustered within the network.
 
   The parameters of the command are as below:
 
-  - -e, --eig_vector: Eigen vector file. This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.txt.gz``.
-  - -c, --corr_mat: Category correlation matrix file. This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.pkl``.
+  - -e, --eig_vector: Eigen vector file. This is the output file from :ref:`calculation of effective number of tests <effnumtest>`. The file name must have pattern ``*eig_vecs*.zarr``.
+  - -c, --corr_mat: Category correlation matrix file. This is the output file from :ref:`categorization <categorization>`. The file name must have pattern ``*correlation_matrix*.zarr``.
   - -P, --permut_test: Permutation test file. This is the output file from :ref:`burden test <permtest>`. The file name must have pattern ``*permutation_test*.txt.gz``.
   - -o_dir, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
   - -r, --range: Range (i.e., (start,end)) to find optimal K for k-means clustering. It must contain two integers that are comma-separated. The first integer refers to the start number and must be above 1. The second integer refers to the end.
   - -k, --k_val: K for K-means clustering. With this argument, users can determine K manually. ``-r`` and ``-k`` arguments are mutually exclusive. If ``-k`` is given, ``-r`` will be ignored.
   - -s, --seed: Seed value for t-SNE. Same seed will generate same results for the same inputs.
+  - -T, --tsen_method: Gradient calculation algorithm for t-SNE, which is used in TSNE of sklearn. If the dataset is large, 'barnes_hut' is recommended. By default, exact.
   - -t, --tag: Tag used for the name of the output files. By default, None.
   - -c_count, --cat_count: Path of the categories counts file from burden test.
   - -C, --count_threshold: The treshold of variant (or sample) counts. The least amount of variants a category should have.
@@ -426,12 +442,13 @@ Below are the output files generated.
   .. code-block:: solidity
   
       cwas dawn \
-      -e $HOME/cwas_output/de_novo_variants.eig_vecs.TFBS.txt.gz \
-      -c $HOME/cwas_output/de_novo_variants.correlation_matrix.pkl \
+      -e $HOME/cwas_output/de_novo_variants.eig_vecs.TFBS.zarr \
+      -c $HOME/cwas_output/de_novo_variants.correlation_matrix.zarr \
       -P $HOME/cwas_output/de_novo_variants.permutation_test.txt.gz \
       -o_dir $HOME/cwas_output \
       -r 2,200 \
       -s 123 \
+      -T exact \
       -t TFBS.exact \
       -c_count $HOME/cwas_output/de_novo_variants.category_counts.txt \
       -C 20 \

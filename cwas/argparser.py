@@ -340,7 +340,6 @@ def binomial_test() -> argparse.ArgumentParser:
     )
     return result
 
-
 def permutation_test() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         prog="cwas permutation_test",
@@ -411,14 +410,6 @@ def permutation_test() -> argparse.ArgumentParser:
         action="store_true",
         help="Generate a file of binomial p-values for each burden-shifted data",
         )
-    #optional.add_argument(
-    #    "-rr",
-    #    "--perm_rr",
-    #    dest="save_perm_rr",
-    #    required=False,
-    #    action="store_true",
-    #    help="Generate a file of relative risks (RRs) for each burden-shifted data",
-    #)
     optional.add_argument(
         "-u",
         "--use_n_carrier",
@@ -593,15 +584,15 @@ def effective_num_test() -> argparse.ArgumentParser:
         type=Path,
         help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used. (default: None)",
     )
-    optional.add_argument(
-        '-c_info',
-        '--category_info',
-        dest="category_info_path",
-        required=False,
-        default=None,
-        type=Path,
-        help="Path to a text file with category information (*.category_info.txt).",
-    )
+    #optional.add_argument(
+    #    '-c_info',
+    #    '--category_info',
+    #    dest="category_info_path",
+    #    required=False,
+    #    default=None,
+    #    type=Path,
+    #    help="Path to a text file with category information (*.category_info.txt).",
+    #)
     optional.add_argument(
         '-d',
         '--domain_list',
@@ -628,7 +619,6 @@ def effective_num_test() -> argparse.ArgumentParser:
         help="Show this help message and exit."
     )
     return result
-
 
 def burden_shift() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
@@ -911,6 +901,24 @@ def risk_score() -> argparse.ArgumentParser:
         default=42,
         type=int,
         help="Seed of random state (default: 42)."
+    )
+    optional.add_argument(
+        "-pt",
+        "--plotsize",
+        dest="plotsize",
+        required=False,
+        type=str,
+        default='7,7',
+        help="Plot size of main histogram plot of risk score and permutation p-values. Separate width and height by comma (e.g. 7,7). If only one value is given, draw a plot with the same width and height."
+    )
+    optional.add_argument(
+        "-fs",
+        "--fontsize",
+        dest='fontsize',
+        required=False,
+        default=10,
+        type=float,
+        help="Font size of main histogram plot of risk score and permutation p-values."
     )
     other.add_argument(
         '-h',

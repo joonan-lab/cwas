@@ -72,6 +72,13 @@ CWAS-Plus workflow
 
    utils/extract_variants.rst
 
+.. toctree::
+   :maxdepth: 1
+   :caption: FAQ
+
+   faq/faq.rst
+   faq/tips.rst
+
 Misc.
 ######
 
