@@ -763,6 +763,14 @@ def risk_score() -> argparse.ArgumentParser:
         help="The path of the categorization result file (*.zarr)",
     )
     required.add_argument(
+        '-c_info',
+        '--category_info',
+        dest="category_set_path",
+        required=True,
+        type=Path,
+        help="Path to a text file with category information (*.category_info.txt).",
+    )
+    required.add_argument(
         "-s",
         "--sample_info",
         dest="sample_info_path",
@@ -787,15 +795,6 @@ def risk_score() -> argparse.ArgumentParser:
         default=None,
         type=Path,
         help="File listing adjustment factors of each sample. The file is required to use the adjusted values in the binomial test. (default: None)",
-    )
-    optional.add_argument(
-        '-c_info',
-        '--category_info',
-        dest="category_set_path",
-        required=False,
-        default=None,
-        type=Path,
-        help="Path to a text file with category information (*.category_info.txt).",
     )
     optional.add_argument(
         '-d',
