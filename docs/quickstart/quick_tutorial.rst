@@ -13,6 +13,15 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
   
   ``cwas start`` command creates a working directory (``-w``) along with a configuration file.
 
+  - pip
+
+  .. code-block:: solidity
+    
+    conda create -n cwas python=3.10 r-base=4.2.2
+    conda activate cwas
+    pip install cwas
+    cwas start
+
   - Github
 
   .. code-block:: solidity
@@ -20,15 +29,6 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     conda create -n cwas python=3.10 r-base=4.2.2
     conda activate cwas
     git clone https://github.com/joonan-lab/cwas.git
-    pip install cwas
-    cwas start
-
-  - pip
-
-  .. code-block:: solidity
-    
-    conda create -n cwas python=3.10 r-base=4.2.2
-    conda activate cwas
     pip install cwas
     cwas start
 
