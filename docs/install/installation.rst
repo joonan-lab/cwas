@@ -68,6 +68,14 @@ Install CWAS-Plus
 
 Users can instasll CWAS-Plus through pip or github. We recommend installing under a conda environment to avoid global installation.
 
+- pip
+
+.. code-block:: solidity
+    
+    conda create -n cwas python=3.10 r-base=4.2.2
+    conda activate cwas
+    pip install cwas
+
 - Github
 
 .. code-block:: solidity
@@ -75,14 +83,6 @@ Users can instasll CWAS-Plus through pip or github. We recommend installing unde
     conda create -n cwas python=3.10 r-base=4.2.2
     conda activate cwas
     git clone https://github.com/joonan-lab/cwas.git
-    pip install cwas
-
-- pip
-
-.. code-block:: solidity
-    
-    conda create -n cwas python=3.10 r-base=4.2.2
-    conda activate cwas
     pip install cwas
 
 
