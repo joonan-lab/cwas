@@ -97,9 +97,9 @@ class ExtractVariant(Runnable):
     @property
     def result_path(self) -> Path:
         if self.tag is None:
-            save_name = 'extracted_variants.zarr'
+            save_name = 'extracted_variants.txt.gz'
         else:
-            save_name = '.'.join([self.tag, 'extracted_variants.zarr'])
+            save_name = '.'.join([self.tag, 'extracted_variants.txt.gz'])
         f_name = re.sub(r'annotated\.vcf\.gz|annotated\.vcf', save_name, self.input_path.name)
         return Path(
             f"{self.output_dir_path}/" +
@@ -273,11 +273,11 @@ class ExtractVariant(Runnable):
     
     def save_result(self):
         print_progress(f"Save the result to the file {self.result_path}")
-        #self._result.to_csv(str(self.result_path).replace('.zarr', '.txt.gz'), sep='\t', compression='gzip', index=False)
-        root = zarr.open(self.result_path, mode = 'w')
-        root.create_group('metadata')
-        root['metadata'].attrs['columns'] = self._result.columns.tolist()
-        root.create_dataset('data', data = self._result.values, chunks=(1000, 1000), dtype=object, object_codec=JSON())
+        self._result.to_csv(self.result_path, sep='\t', compression='gzip', index=False)
+        #root = zarr.open(self.result_path, mode = 'w')
+        #root.create_group('metadata')
+        #root['metadata'].attrs['columns'] = self._result.columns.tolist()
+        #root.create_dataset('data', data = self._result.values, chunks=(1000, 1000), dtype=object, object_codec=JSON())
     
     def run(self):
         self.annotate_variants()
