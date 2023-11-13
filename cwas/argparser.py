@@ -798,6 +798,15 @@ def risk_score() -> argparse.ArgumentParser:
         help="Path to a text file with category information (*.category_info.txt).",
     )
     optional.add_argument(
+        '-c_set',
+        '--category_set',
+        dest="cat_list_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file containing categories for risk score analysis (default: None)",
+    )
+    optional.add_argument(
         '-d',
         '--domain_list',
         dest="domain_list",
