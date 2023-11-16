@@ -361,6 +361,7 @@ def apply_region_mapping(df: pd.DataFrame):
         'is_noncoding': lambda x: x['gencode'].isin(noncoding_region).astype(int),
         'is_noncoding_wo_promoter': lambda x: x['gencode'].isin(set(noncoding_region) - set(['NoncodingRegion', 'PromoterRegion'])).astype(int),
         'is_promoter': lambda x: (x['gencode'] == 'PromoterRegion').astype(int),
+        'is_splice': lambda x: (x['gencode'] == 'SpliceSiteNoncanonRegion').astype(int),
         'is_intron': lambda x: (x['gencode'] == 'IntronRegion').astype(int),
         'is_intergenic': lambda x: (x['gencode'] == 'IntergenicRegion').astype(int),
         'is_UTR': lambda x: (x['gencode'] == 'UTRsRegion').astype(int),
