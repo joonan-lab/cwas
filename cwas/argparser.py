@@ -584,15 +584,6 @@ def effective_num_test() -> argparse.ArgumentParser:
         type=Path,
         help="Path to a text file containing categories for eigen decomposition. If not specified, all of the categories will be used. (default: None)",
     )
-    #optional.add_argument(
-    #    '-c_info',
-    #    '--category_info',
-    #    dest="category_info_path",
-    #    required=False,
-    #    default=None,
-    #    type=Path,
-    #    help="Path to a text file with category information (*.category_info.txt).",
-    #)
     optional.add_argument(
         '-d',
         '--domain_list',
@@ -786,6 +777,15 @@ def risk_score() -> argparse.ArgumentParser:
         default=default_workspace,
         type=Path,
         help="Directory where output file will be saved (default: {})".format(default_workspace),
+    )
+    optional.add_argument(
+        '-c_set',
+        '--category_set',
+        dest="cat_list_path",
+        required=False,
+        default=None,
+        type=Path,
+        help="Path to a text file containing categories for risk score analysis",
     )
     optional.add_argument(
         "-a",
