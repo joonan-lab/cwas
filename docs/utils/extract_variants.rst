@@ -4,12 +4,14 @@ Extract variants
 
 This process is to extract variants that are allocated to a specific category. When there is a category of interest, the users can extract the variants that belong to the category and look through.
 
+If you have too many categories to extract, ``-c_set`` option will take a while. In this case, try without ``-c_set`` option and then filter variants based on the annotation you desire.
+
 The parameters of the command are as below:
 
 - -i, --input_file: Path to the annotated VCF, resulted from annotation process. This file should be gzipped.
 - -o, --output_directory: Path to the directory where the output files will be saved. By default, outputs will be saved at ``$CWAS_WORKSPACE``.
 - -t, --tag: Tag used for the name of the output file. By default, None.
-- -c, --category_set_path: Path to a txt file containing categories for extracting variants. By default, None. This file must contain ``Category`` column with the name of categories to be extracted.
+- -c_set, --category_set: Path to a txt file containing categories for extracting variants. By default, None. This file must contain ``Category`` column with the name of categories to be extracted.
 
   +-------------------------------------------------------+
   |Category                                               |
@@ -34,4 +36,4 @@ The parameters of the command are as below:
 
 .. code-block:: solidity
 
-    cwas extract_variant -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -t filtered -ai -c CATEGORY_SET.txt -ai
+    cwas extract_variant -i INPUT.annotated.vcf.gz -o_dir OUTPUT_DIR -t filtered -ai -c_set CATEGORY_SET.txt -ai

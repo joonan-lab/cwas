@@ -406,8 +406,10 @@ class RiskScore(Runnable):
             for domain in self.domain_list:
                 log.print_progress(f"Generate risk score for the domain: {domain}")
                 self.filtered_category_set = self.category_set.copy()
+                
                 if self.args.cat_list_path:
                     self.filtered_category_set = self.filtered_category_set[self.filtered_category_set['Category'].isin(self.cat_list['Category'])]
+
                 self.risk_scores(domain)
                 if not self.predict_only:
                     log.print_progress(f"Generate permutation p-values for the domain: {domain}")
