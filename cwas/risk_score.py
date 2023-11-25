@@ -44,6 +44,7 @@ class RiskScore(Runnable):
         self._filtered_combs = None
         self.cv_glmnet = importr("glmnet").cv_glmnet
         self._annotation_dict = None
+        self._feature_selection_group = None
         self._result_for_loop = defaultdict(dict)
         self._result_for_leave_one_out = defaultdict(dict)
     
@@ -131,6 +132,20 @@ class RiskScore(Runnable):
             if self.args.adj_factor_path
             else None
         )
+
+    @property
+    def feature_selection_group(self) -> str:
+        if self._feature_selection_group is None:
+            allowed_values = ['gene_set', 'functional_score', 'functional_annotation']
+            # Split the input string by commas
+            selected_features = [feature.strip().lower() for feature in self.args.feature_selection_group.split(',')]
+            # Check if all split values are in the allowed list
+            if all(feature in allowed_values for feature in selected_features):
+                self._feature_selection_group = selected_features
+                return self._feature_selection_group
+            else:
+                # Raise a ValueError if any value is not in the allowed list
+                raise ValueError(f"Invalid feature selection group. Allowed values are {', '.join(allowed_values)}.")
 
     @property
     def domain_list(self) -> str:
@@ -242,9 +257,12 @@ class RiskScore(Runnable):
     @property
     def annotation_dict(self):
         if self._annotation_dict is None:
-            self._annotation_dict = {'gene_set': sorted([value for value in np.unique(self.category_set['gene_set']) if value != 'Any']),
-                                     'functional_score': sorted([value for value in np.unique(self.category_set['functional_score']) if value != 'All']),
-                                     'functional_annotation': sorted([value for value in np.unique(self.category_set['functional_annotation']) if value != 'Any'])}
+            tmp_dict = {'gene_set': sorted([value for value in np.unique(self.category_set['gene_set']) if value != 'Any']),
+                        'functional_score': sorted([value for value in np.unique(self.category_set['functional_score']) if value != 'All']),
+                        'functional_annotation': sorted([value for value in np.unique(self.category_set['functional_annotation']) if value != 'Any'])}
+
+            self._annotation_dict = {key: value for key, value in tmp_dict.items() if key in self.feature_selection_group}
+
         return self._annotation_dict
             
     @property
