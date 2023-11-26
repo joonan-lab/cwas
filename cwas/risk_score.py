@@ -262,7 +262,7 @@ class RiskScore(Runnable):
                         'functional_score': sorted([value for value in np.unique(self.category_set['functional_score']) if value != 'All']),
                         'functional_annotation': sorted([value for value in np.unique(self.category_set['functional_annotation']) if value != 'Any'])}
 
-            self._annotation_dict = {key: value for key, value in tmp_dict.items() if key in self.feature_selection_group}
+            self._annotation_dict = {key: tmp_dict[key] for key in self.feature_selection_group}
 
         return self._annotation_dict
             
