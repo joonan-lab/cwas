@@ -828,6 +828,16 @@ def risk_score() -> argparse.ArgumentParser:
         help="Calculate risk score while excluding one annotation from functional annotation. This option is not used when the '--do_each_one' flag is enabled.",
     )
     optional.add_argument(
+        "-fs_group",
+        "--feature_selection_group",
+        dest="feature_selection_group",
+        required=False,
+        default="gene_set,functional_score,functional_annotation",
+        type=str,
+        help="Specify the list of groups for feature selection. By default, 'gene_set,functional_score,functional_annotation'.\n"\
+        "Available options: gene_set,functional_score,functional_annotation"
+    )
+    optional.add_argument(
         "-u",
         "--use_n_carrier",
         dest="use_n_carrier",
