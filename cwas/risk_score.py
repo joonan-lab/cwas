@@ -557,14 +557,22 @@ class RiskScore(Runnable):
         if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Running LassoCV (Seed: {seed})")
         
-        # Create a glmnet model
-        cvfit = self.cv_glmnet(x = cov,
-                               y = ro.FloatVector(y),
-                               alpha = 1,
-                               foldid = numpy2ri.py2rpy(self._custom_cv_folds(len(response), seed)),
-                               type_measure='deviance',
-                               nlambda=100)
-        
+        try:
+            # Create a glmnet model
+            cvfit = self.cv_glmnet(x = cov,
+                                   y = ro.FloatVector(y),
+                                   alpha = 1,
+                                   foldid = numpy2ri.py2rpy(self._custom_cv_folds(len(response), seed)),
+                                   type_measure='deviance',
+                                   nlambda=100)
+        except rpy2.rinterface_lib.embedded.RRuntimeError as e:
+            # Check if the error code is 7777 and log a message
+            if 'error code 7777' in str(e):
+                print("Skipping due to glmnet error (code 7777): All used predictors have zero variance")
+            else:
+                # Re-raise the exception if it's a different error
+                raise e
+
         # Get the lambda with the minimum mean cross-validated error
         opt_lambda = cvfit.rx2("lambda.min")[0]
         # The index is 1-based.
