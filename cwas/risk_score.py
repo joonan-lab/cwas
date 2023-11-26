@@ -5,6 +5,7 @@ from pathlib import Path
 import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri
 from rpy2.robjects.packages import importr
+from rpy2.rinterface_lib.embedded import RRuntimeError
 
 from sklearn.metrics import r2_score
 
@@ -565,40 +566,44 @@ class RiskScore(Runnable):
                                    foldid = numpy2ri.py2rpy(self._custom_cv_folds(len(response), seed)),
                                    type_measure='deviance',
                                    nlambda=100)
-        except rpy2.rinterface_lib.embedded.RRuntimeError as e:
+
+            # Get the lambda with the minimum mean cross-validated error
+            opt_lambda = cvfit.rx2("lambda.min")[0]
+            # The index is 1-based.
+            lambda_values = np.array(cvfit.rx2("lambda"))
+            i_choose = np.where(lambda_values == opt_lambda)[0][0]
+            
+            # Get lasso coefficients
+            full_glmnet = cvfit.rx2("glmnet.fit")
+            beta_matrix = np.array(ro.r["as.matrix"](ro.r["coef"](full_glmnet, s=opt_lambda)))
+    
+            rare_idx = filtered_combs.isin(rare_categories)
+            opt_coeff = np.zeros(len(rare_idx))
+            
+            # beta_matrix includes the intercept term, resulting in one additional column compared to your original input data.
+            opt_coeff[rare_idx] = beta_matrix[1:, 0]
+                    
+            n_select = np.sum(np.abs(opt_coeff) != 0.0)
+    
+            # Compute the predictive R-squared using the test set
+            predict_function = ro.r["predict"]
+            predicted_values = predict_function(full_glmnet, newx=test_cov)
+            predict_y = np.array(predicted_values)[:, i_choose]
+            rsq = r2_score(test_y, predict_y)
+    
+            output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
+
+        except RRuntimeError as e:
             # Check if the error code is 7777 and log a message
             if 'error code 7777' in str(e):
                 print("Skipping due to glmnet error (code 7777): All used predictors have zero variance")
+                rare_idx = filtered_combs.isin(rare_categories)
+                opt_coeff = np.zeros(len(rare_idx))
+                output_dict[seed] = [np.nan, np.nan, np.nan, opt_coeff]
             else:
                 # Re-raise the exception if it's a different error
                 raise e
 
-        # Get the lambda with the minimum mean cross-validated error
-        opt_lambda = cvfit.rx2("lambda.min")[0]
-        # The index is 1-based.
-        lambda_values = np.array(cvfit.rx2("lambda"))
-        i_choose = np.where(lambda_values == opt_lambda)[0][0]
-        
-        # Get lasso coefficients
-        full_glmnet = cvfit.rx2("glmnet.fit")
-        beta_matrix = np.array(ro.r["as.matrix"](ro.r["coef"](full_glmnet, s=opt_lambda)))
-
-        rare_idx = filtered_combs.isin(rare_categories)
-        opt_coeff = np.zeros(len(rare_idx))
-        
-        # beta_matrix includes the intercept term, resulting in one additional column compared to your original input data.
-        opt_coeff[rare_idx] = beta_matrix[1:, 0]
-                
-        n_select = np.sum(np.abs(opt_coeff) != 0.0)
-
-        # Compute the predictive R-squared using the test set
-        predict_function = ro.r["predict"]
-        predicted_values = predict_function(full_glmnet, newx=test_cov)
-        predict_y = np.array(predicted_values)[:, i_choose]
-        rsq = r2_score(test_y, predict_y)
-
-        output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
-                
         if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Done (Seed: {seed})")
                 
