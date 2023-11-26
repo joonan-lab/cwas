@@ -5,6 +5,7 @@ from pathlib import Path
 import rpy2.robjects as ro
 from rpy2.robjects import numpy2ri
 from rpy2.robjects.packages import importr
+from rpy2.rinterface_lib.embedded import RRuntimeError
 
 from sklearn.metrics import r2_score
 
@@ -44,6 +45,7 @@ class RiskScore(Runnable):
         self._filtered_combs = None
         self.cv_glmnet = importr("glmnet").cv_glmnet
         self._annotation_dict = None
+        self._feature_selection_group = None
         self._result_for_loop = defaultdict(dict)
         self._result_for_leave_one_out = defaultdict(dict)
     
@@ -131,6 +133,20 @@ class RiskScore(Runnable):
             if self.args.adj_factor_path
             else None
         )
+
+    @property
+    def feature_selection_group(self) -> str:
+        if self._feature_selection_group is None:
+            allowed_values = ['gene_set', 'functional_score', 'functional_annotation']
+            # Split the input string by commas
+            selected_features = [feature.strip().lower() for feature in self.args.feature_selection_group.split(',')]
+            # Check if all split values are in the allowed list
+            if all(feature in allowed_values for feature in selected_features):
+                self._feature_selection_group = selected_features
+                return self._feature_selection_group
+            else:
+                # Raise a ValueError if any value is not in the allowed list
+                raise ValueError(f"Invalid feature selection group. Allowed values are {', '.join(allowed_values)}.")
 
     @property
     def domain_list(self) -> str:
@@ -242,9 +258,12 @@ class RiskScore(Runnable):
     @property
     def annotation_dict(self):
         if self._annotation_dict is None:
-            self._annotation_dict = {'gene_set': sorted([value for value in np.unique(self.category_set['gene_set']) if value != 'Any']),
-                                     'functional_score': sorted([value for value in np.unique(self.category_set['functional_score']) if value != 'All']),
-                                     'functional_annotation': sorted([value for value in np.unique(self.category_set['functional_annotation']) if value != 'Any'])}
+            tmp_dict = {'gene_set': sorted([value for value in np.unique(self.category_set['gene_set']) if value != 'Any']),
+                        'functional_score': sorted([value for value in np.unique(self.category_set['functional_score']) if value != 'All']),
+                        'functional_annotation': sorted([value for value in np.unique(self.category_set['functional_annotation']) if value != 'Any'])}
+
+            self._annotation_dict = {key: tmp_dict[key] for key in self.feature_selection_group}
+
         return self._annotation_dict
             
     @property
@@ -539,40 +558,52 @@ class RiskScore(Runnable):
         if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Running LassoCV (Seed: {seed})")
         
-        # Create a glmnet model
-        cvfit = self.cv_glmnet(x = cov,
-                               y = ro.FloatVector(y),
-                               alpha = 1,
-                               foldid = numpy2ri.py2rpy(self._custom_cv_folds(len(response), seed)),
-                               type_measure='deviance',
-                               nlambda=100)
-        
-        # Get the lambda with the minimum mean cross-validated error
-        opt_lambda = cvfit.rx2("lambda.min")[0]
-        # The index is 1-based.
-        lambda_values = np.array(cvfit.rx2("lambda"))
-        i_choose = np.where(lambda_values == opt_lambda)[0][0]
-        
-        # Get lasso coefficients
-        full_glmnet = cvfit.rx2("glmnet.fit")
-        beta_matrix = np.array(ro.r["as.matrix"](ro.r["coef"](full_glmnet, s=opt_lambda)))
+        try:
+            # Create a glmnet model
+            cvfit = self.cv_glmnet(x = cov,
+                                   y = ro.FloatVector(y),
+                                   alpha = 1,
+                                   foldid = numpy2ri.py2rpy(self._custom_cv_folds(len(response), seed)),
+                                   type_measure='deviance',
+                                   nlambda=100)
 
-        rare_idx = filtered_combs.isin(rare_categories)
-        opt_coeff = np.zeros(len(rare_idx))
-        
-        # beta_matrix includes the intercept term, resulting in one additional column compared to your original input data.
-        opt_coeff[rare_idx] = beta_matrix[1:, 0]
-                
-        n_select = np.sum(np.abs(opt_coeff) != 0.0)
+            # Get the lambda with the minimum mean cross-validated error
+            opt_lambda = cvfit.rx2("lambda.min")[0]
+            # The index is 1-based.
+            lambda_values = np.array(cvfit.rx2("lambda"))
+            i_choose = np.where(lambda_values == opt_lambda)[0][0]
+            
+            # Get lasso coefficients
+            full_glmnet = cvfit.rx2("glmnet.fit")
+            beta_matrix = np.array(ro.r["as.matrix"](ro.r["coef"](full_glmnet, s=opt_lambda)))
+    
+            rare_idx = filtered_combs.isin(rare_categories)
+            opt_coeff = np.zeros(len(rare_idx))
+            
+            # beta_matrix includes the intercept term, resulting in one additional column compared to your original input data.
+            opt_coeff[rare_idx] = beta_matrix[1:, 0]
+                    
+            n_select = np.sum(np.abs(opt_coeff) != 0.0)
+    
+            # Compute the predictive R-squared using the test set
+            predict_function = ro.r["predict"]
+            predicted_values = predict_function(full_glmnet, newx=test_cov)
+            predict_y = np.array(predicted_values)[:, i_choose]
+            rsq = r2_score(test_y, predict_y)
+    
+            output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
 
-        # Compute the predictive R-squared using the test set
-        predict_function = ro.r["predict"]
-        predicted_values = predict_function(full_glmnet, newx=test_cov)
-        predict_y = np.array(predicted_values)[:, i_choose]
-        rsq = r2_score(test_y, predict_y)
+        except RRuntimeError as e:
+            # Check if the error code is 7777 and log a message
+            if 'error code 7777' in str(e):
+                print("Skipping due to glmnet error (code 7777): All used predictors have zero variance")
+                rare_idx = filtered_combs.isin(rare_categories)
+                opt_coeff = np.zeros(len(rare_idx))
+                output_dict[seed] = [np.nan, np.nan, np.nan, opt_coeff]
+            else:
+                # Re-raise the exception if it's a different error
+                raise e
 
-        output_dict[seed] = [opt_lambda, rsq, n_select, opt_coeff]
-                
         if not (swap_label or self.do_each_one or self.leave_one_out):
             log.print_progress(f"Done (Seed: {seed})")
                 
@@ -604,9 +635,13 @@ class RiskScore(Runnable):
     
         result_table = []
     
-        choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
-                            for seed in self._result_dict[domain].keys()], axis=0)
-        
+        #choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
+        #                    for seed in self._result_dict[domain].keys()], axis=0)
+        seed_arrays = [self._result_dict[domain][seed][3] for seed in self._result_dict[domain].keys()]
+        stacked_arrays = np.stack(seed_arrays, axis=0)
+        non_zero_proportion = np.mean(stacked_arrays != 0, axis=0)
+        choose_idx = non_zero_proportion > 0.5
+
         ## Get the categories which are selected by the LassoCV for all seeds
         coef_df = pd.DataFrame.from_dict(
             {seed: self._result_dict[domain][seed][3][choose_idx]
@@ -698,9 +733,13 @@ class RiskScore(Runnable):
 
             result_table = []
 
-            choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
-                                for seed in self._result_dict[domain].keys()], axis=0)
-            
+            #choose_idx = np.all([self._result_dict[domain][seed][3] != 0 
+            #                    for seed in self._result_dict[domain].keys()], axis=0)
+            seed_arrays = [self._result_dict[domain][seed][3] for seed in self._result_dict[domain].keys()]
+            stacked_arrays = np.stack(seed_arrays, axis=0)
+            non_zero_proportion = np.mean(stacked_arrays != 0, axis=0)
+            choose_idx = non_zero_proportion > 0.5
+
             ## Get the categories which are selected by the LassoCV for all seeds
             coef_df = pd.DataFrame.from_dict(
                 {seed: self._result_dict[domain][seed][3][choose_idx]
