@@ -39,23 +39,86 @@ class Categorizer:
 
         return result
 
+    #def get_intersection(self, annotated_vcf: pd.DataFrame):
+    #    result = defaultdict(lambda: defaultdict(int))
+
+    #    for annotation_term_lists in tqdm(self.annotate_each_variant(annotated_vcf), total=len(annotated_vcf)):
+    #        for combination in product(*annotation_term_lists):
+    #            for combination2 in product(*annotation_term_lists):
+    #                result["_".join(combination)]["_".join(combination2)] += 1
+
+    #    return result
+
     def get_intersection(self, annotated_vcf: pd.DataFrame):
-        result = defaultdict(lambda: defaultdict(int))
+        counts = defaultdict(lambda: defaultdict(int))
+        for annotated_ints in tqdm(self.annotate_each_variant_int(annotated_vcf), desc="Counting combinations", total=len(annotated_vcf)):
+            combos = self.generate_integer_combinations(*annotated_ints)
+            for combo1 in combos:
+                for combo2 in combos:
+                    counts[combo1][combo2] += 1
+        return counts
 
-        for annotation_term_lists in tqdm(self.annotate_each_variant(annotated_vcf), total=len(annotated_vcf)):
-            for combination in product(*annotation_term_lists):
-                for combination2 in product(*annotation_term_lists):
-                    result["_".join(combination)]["_".join(combination2)] += 1
+    def annotate_each_variant(self, annotated_vcf):
+      variant_type_annotation_ints = self.annotate_variant_type(annotated_vcf)
+      gene_set_annotation_ints = self.annotate_gene_set(annotated_vcf)
+      gencode_annotation_ints = self.annotate_gencode(annotated_vcf)
+      functional_ints = annotated_vcf['ANNOT']
+      for ints in zip(variant_type_annotation_ints, gene_set_annotation_ints, gencode_annotation_ints, functional_ints):
+          yield ints
 
-        return result
+    def generate_integer_combinations(self, *categories):
+        """
+        Generate all possible bitwise combinations of the given categories, where only one bit is allowed in combination
+        in each category.
+        :param categories: List of integers representing categories.
+        :return: List of tuples representing all possible combinations.
+        """
+        # Function to find all individual set bits of a binary number
+        def extract_int_sublist_by_int(n: int) -> list:
+            """Get a sublist from the input list by using the input integer"""
+            i = 0
+            result = []
+            while n != 0:
+                if n % 2 == 1:
+                    result.append(i)
+                n >>= 1
+                i += 1
+            return result
+
+        def parse_functional_annotation_by_int(tmp_list: list):
+            functional_score = []
+            functional_annotation = []
+            if len(tmp_list)==0:
+                functional_score.append(0)
+                functional_annotation.append(0)
+            else:
+                # Add 1 to each elements as 
+                tmp_list_add1 = [element + 1 for element in tmp_list]
+                functional_score.append(0)
+                functional_annotation.append(0)
+
+                # Integers for functional score and annotation are merged into a single list. We will separate them as two independent lists.
+                first_list = [element for element in tmp_list_add1 if element <= (len(self._category_domain['functional_score'])-1)]
+                second_list = [element for element in tmp_list_add1 if element > (len(self._category_domain['functional_score'])-1)]
+                second_list_ = [element - (len(self._category_domain['functional_score'])-1) for element in second_list]
+
+                functional_score.extend(first_list)
+                functional_annotation.extend(second_list_)
+            return functional_score, functional_annotation
+
+        # Generate all individual set bits for each category
+        list_1=[extract_int_sublist_by_int(int(category)) for category in categories[:3]] # variant type, gene set, gencode
+        list_2=parse_functional_annotation_by_int(extract_int_sublist_by_int(int(categories[3]))) # functional score & functional annotation
+        
+        # Create set of annotations for each variant in specific order (variant type, gene set, functional score, gencode, functional annotation)
+        all_set_bits = [list_1[0], list_1[1], list_2[0], list_1[2], list_2[1]]
+
+        # Generate all possible combinations, taking one bit from each category
+        all_combinations = list(product(*all_set_bits))
+
+        return all_combinations
 
     def get_intersection_variant_level(self, annotated_vcf, category_combinations):
-      # Generate unique category combinations
-      #category_combinations = set()
-      #for annotation_term_lists in annotate_each_variant(annotated_vcf):
-      #    for combination in product(*annotation_term_lists):
-      #        category_combinations.add("_".join(combination))
-      
       # Create a matrix with zeros
       num_variants = annotated_vcf.shape[0]
       num_categories = len(category_combinations)
