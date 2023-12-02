@@ -172,7 +172,7 @@ class PermutationTest(BurdenTest):
     def _burden_test(seed_range: tuple, case_cnt: int, ctrl_cnt: int, var_counts: np.ndarray, use_n_carrier: bool, burden_shift: bool):
         array_list = []
         total_cnt = case_cnt + ctrl_cnt
-        for seed in range(10001 + seed_range[0], 10001 + seed_range[1]):
+        for seed in tqdm(range(10001 + seed_range[0], 10001 + seed_range[1]), desc="Processing", position=0, leave=True):
             ## Make an array for random swapping
             swap_labels = np.full(total_cnt, 'ctrl')
             ## For reproducibility
