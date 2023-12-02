@@ -159,7 +159,7 @@ class PermutationTest(BurdenTest):
                 seed_range.append(r)
             seed_range.append((range_len * (self.args.num_proc - 1), num_perm))
             def mute():
-                sys.stderr = open(os.devnull, 'w')  
+                sys.stdout = open(os.devnull, 'w')
             with Pool(self.args.num_proc, initializer=mute) as pool:
                 sub_lists = pool.map(_burden_test_partial, seed_range)
             array_list = []
