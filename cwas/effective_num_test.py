@@ -102,7 +102,7 @@ class EffectiveNumTest(Runnable):
     def intersection_matrix(self) -> pd.DataFrame:
         if self._intersection_matrix is None and self.input_format == 'inter':
             root = zarr.open(self.input_path, mode='r')
-            self._intersection_matrix = pd.DataFrame(data=root['data'],
+            self._intersection_matrix = pd.DataFrame(data=root['corr'],
                               index=root['metadata'].attrs['category'],
                               columns=root['metadata'].attrs['category'])
         return self._intersection_matrix
@@ -111,7 +111,7 @@ class EffectiveNumTest(Runnable):
     def correlation_matrix(self) -> pd.DataFrame:
         if self._correlation_matrix is None and self.input_format == 'corr':
             root = zarr.open(self.input_path, mode='r')
-            self._correlation_matrix = pd.DataFrame(data=root['data'],
+            self._correlation_matrix = pd.DataFrame(data=root['corr'],
                               index=root['metadata'].attrs['category'],
                               columns=root['metadata'].attrs['category'])
         return self._correlation_matrix
