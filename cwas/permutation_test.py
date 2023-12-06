@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import re
 from tqdm import tqdm
+import warnings
 
 from cwas.runnable import Runnable
 
@@ -160,11 +161,15 @@ class PermutationTest(BurdenTest):
             seed_range.append((range_len * (self.args.num_proc - 1), num_perm))
             def mute():
                 sys.stdout = open(os.devnull, 'w')
-            with Pool(self.args.num_proc, initializer=mute) as pool:
-                sub_lists = pool.map(_burden_test_partial, seed_range)
-            array_list = []
-            for sub_list in sub_lists:
-                array_list.extend(sub_list)
+
+            # Ignore RuntimeWarnings only for the multiprocessing part
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", category=RuntimeWarning)
+                with Pool(self.args.num_proc, initializer=mute) as pool:
+                    sub_lists = pool.map(_burden_test_partial, seed_range)
+                array_list = []
+                for sub_list in sub_lists:
+                    array_list.extend(sub_list)
 
         return array_list
     
