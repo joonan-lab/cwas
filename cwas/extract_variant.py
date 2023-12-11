@@ -173,10 +173,14 @@ class ExtractVariant(Runnable):
                                                 merged_df['is_SilentRegion'], 0)
         ## UTRs
         # Define the list of string patterns to search for
-        patterns = ['_UTR_']
-        merged_df['is_UTRsRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
-        merged_df['is_UTRsRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1),
-                                              merged_df['is_UTRsRegion'], 0)
+        patterns = ['3_prime_UTR_variant']
+        merged_df['is_3PrimeUTRsRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
+        merged_df['is_3PrimeUTRsRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1),
+                                                    merged_df['is_3PrimeUTRsRegion'], 0)
+        patterns = ['5_prime_UTR_variant']
+        merged_df['is_5PrimeUTRsRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
+        merged_df['is_5PrimeUTRsRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1),
+                                                    merged_df['is_5PrimeUTRsRegion'], 0)        
         ## Promoter
         patterns = ['upstream_gene_variant']
         merged_df['is_PromoterRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
@@ -192,12 +196,12 @@ class ExtractVariant(Runnable):
                                                   merged_df['is_IntronRegion'], 0)
         ## SpliceSite non-canonical
         patterns = ['splice_region_variant']
-        merged_df['is_SpliceSiteNoncanonRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
-        merged_df['is_SpliceSiteNoncanonRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1) &
+        merged_df['is_SpliceSiteRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
+        merged_df['is_SpliceSiteRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1) &
                                                   (merged_df['is_UTRsRegion'] == 0) &
                                                   (merged_df['is_PromoterRegion'] == 0) &
                                                   (merged_df['is_IntronRegion'] == 0),
-                                                  merged_df['is_SpliceSiteNoncanonRegion'], 0)
+                                                  merged_df['is_SpliceSiteRegion'], 0)
         ## Intergenic
         patterns = ['downstream_gene_variant', 'intergenic_variant']
         merged_df['is_IntergenicRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
@@ -205,14 +209,14 @@ class ExtractVariant(Runnable):
                                                   (merged_df['is_UTRsRegion'] == 0) &
                                                   (merged_df['is_PromoterRegion'] == 0) &
                                                   (merged_df['is_IntronRegion'] == 0) &
-                                                  (merged_df['is_SpliceSiteNoncanonRegion'] == 0),
+                                                  (merged_df['is_SpliceSiteRegion'] == 0),
                                                   merged_df['is_IntergenicRegion'], 0)
         ## lincRNA
         merged_df['is_lincRnaRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1) &
                                                   (merged_df['is_UTRsRegion'] == 0) &
                                                   (merged_df['is_PromoterRegion'] == 0) &
                                                   (merged_df['is_IntronRegion'] == 0) &
-                                                  (merged_df['is_SpliceSiteNoncanonRegion'] == 0) &
+                                                  (merged_df['is_SpliceSiteRegion'] == 0) &
                                                   (merged_df['is_IntergenicRegion'] == 0) &
                                                   (merged_df['lincRNA'] == 1) &
                                                   (merged_df['ProteinCoding'] == 0),
@@ -222,7 +226,7 @@ class ExtractVariant(Runnable):
                                                   (merged_df['is_UTRsRegion'] == 0) &
                                                   (merged_df['is_PromoterRegion'] == 0) &
                                                   (merged_df['is_IntronRegion'] == 0) &
-                                                  (merged_df['is_SpliceSiteNoncanonRegion'] == 0) &
+                                                  (merged_df['is_SpliceSiteRegion'] == 0) &
                                                   (merged_df['is_IntergenicRegion'] == 0) &
                                                   (merged_df['is_lincRnaRegion'] == 0) &
                                                   (merged_df['ProteinCoding'] == 0),

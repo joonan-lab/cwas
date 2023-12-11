@@ -311,7 +311,7 @@ class Categorizer:
                     )
                 elif "splice_region_variant" in gencode:
                     annotation_int += (
-                        2 ** gencode_annotation_idx["SpliceSiteNoncanonRegion"]
+                        2 ** gencode_annotation_idx["SpliceSiteRegion"]
                     )
                 elif "intron_variant" in gencode:
                     annotation_int += (
