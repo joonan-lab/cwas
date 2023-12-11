@@ -20,7 +20,7 @@ _default_domains = {
         "DamagingMissenseRegion",
         "MissenseRegion",
         "NoncodingRegion",
-        "SpliceSiteNoncanonRegion",
+        "SpliceSiteRegion",
         "IntronRegion",
         "PromoterRegion",
         "IntergenicRegion",
