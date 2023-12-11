@@ -122,7 +122,7 @@ class BurdenShift(Runnable):
         catsets = pd.read_csv(self.cat_set_file, sep="\t")
         catsets_dict = catsets.to_dict('list')        
         genesets = sorted(list(set(catsets['gene_set'].unique()) - set(["Any"])))
-        gencodes = ['coding','noncoding','promoter','UTR','intergenic','intron','lincRNA']
+        gencodes = ['coding','noncoding','promoter','3primeUTR','5primeUTR','splice','intergenic','intron','lincRNA']
 
         ## all gencodes
         for b in gencodes:
@@ -270,8 +270,8 @@ class BurdenShift(Runnable):
                 return x
             
     def _create_shiftResPlot_df(self, df, isin_inf=False):
-        main_domain = ['Coding', 'PTV', 'Missense', 'Damaging', 'Noncoding', 'Promoter', 'Intron', 'Intergenic', 'UTR', 'LincRNA']
-        domain_order = ['Coding (All)','PTV','Missense','Coding w/o PTV','Noncoding (All)','Promoter','Intron','Intergenic','UTR','LincRNA','CRE','Others']
+        main_domain = ['Coding', 'PTV', 'Missense', 'Damaging', 'Noncoding', 'Promoter', 'Intron', 'Intergenic', '5primeUTR', '3primeUTR', 'SpliceSite', 'LincRNA']
+        domain_order = ['Coding (All)','PTV','Missense','Coding w/o PTV','Noncoding (All)','Promoter','Intron','Intergenic','5primeUTR', '3primeUTR', 'SpliceSite', 'LincRNA','CRE','Others']
         
         ## modify dataframe as validated form
         df = df.loc[(df['Category_set'] != 'All')&(df['Category_set']!='is_lincRNA_lincRNA')]
