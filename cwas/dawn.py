@@ -17,6 +17,7 @@ from tqdm import tqdm
 from scipy.stats import norm
 import random
 import zarr
+from statsmodels.stats import multitest
 
 from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection
@@ -124,7 +125,7 @@ class Dawn(Runnable):
                 km_cluster = kmeans_cluster(self._tsne_out, self.seed)
                 ## k 입력이 없으면 k_range 가지고 optimal k를 찾음, k_range는 default 값이 있으므로 user input이 없어도 적용됨
                 print_progress("K is not selected. Find the optimal K between the range ({})".format(self.k_range))
-                output_name = os.path.join(self.output_dir_path, "{}_choose_K_silhouette_score_plot.pdf".format(self.tag)) # silhouette score plot (dawn output 1)
+                output_name = os.path.join(self.output_dir_path, "DAWN.{}_choose_K_silhouette_score_plot.pdf".format(self.tag)) # silhouette score plot (dawn output 1)
                 self._k_val = km_cluster.optimal_k(self.k_range, output_name)
 
                 print_progress("Find the optimal K = {}".format(self._k_val))
@@ -252,7 +253,7 @@ class Dawn(Runnable):
                                                              func=lambda x: x>self.corr_threshold,
                                                              k=cluster_idx)
         adj_mat = pd.DataFrame(np.array(g.get_adjacency().data), index=g.vs['name'], columns=g.vs['name'])
-        adj_mat.to_csv(os.path.join(self.output_dir_path, "{}.adjacency_matrix.csv".format(self.tag)), sep=",")
+        adj_mat.to_csv(os.path.join(self.output_dir_path, "DAWN.{}.adjacency_matrix.csv".format(self.tag)), sep=",")
         
         print_progress("[DAWN] Compute the test statistics with z-scores")
         testvec_res = form_data.form_testvec(vec=cat_count_permut['P'],
@@ -291,8 +292,11 @@ class Dawn(Runnable):
         cluster_pval[np.where(risk_supernode >= 1)[0]] = 1 - norm.cdf(zval_supernode[np.where(risk_supernode >= 1)[0]])
         cluster_pval[np.where(risk_supernode < 1)[0]] = norm.cdf(zval_supernode[np.where(risk_supernode < 1)[0]])
 
-        mat = pd.DataFrame({"Cluster.idx":g.vs['name'], "Pval.cluster":cluster_pval, "Risk":risk_supernode})
-        mat.to_csv(os.path.join(self.output_dir_path, "{}.ipvalue_fdr_ipvalue_risk.csv".format(self.tag)), sep=",", index=False)
+        # Perform FDR correction
+        reject, adjusted_pvals, _, _ = multitest.multipletests(cluster_pval, method='fdr_bh')
+
+        mat = pd.DataFrame({"Cluster.idx":g.vs['name'], "Risk":risk_supernode, "Pvalue":cluster_pval, "FDR":adjusted_pvals})
+        mat.to_csv(os.path.join(self.output_dir_path, "DAWN.{}.cluster_risk_pvalue_table.csv".format(self.tag)), sep=",", index=False)
 
         ## save dawn plots and tables
         ### annotation table
@@ -321,7 +325,7 @@ class Dawn(Runnable):
             annot_mat.iloc[:len(annot[i]), i] = annot[i]
         
         annot_mat.columns = cluster_indices
-        annot_mat.to_csv(os.path.join(self.output_dir_path, "{}.cluster_annotation.csv".format(self.tag)), sep=",", index=False)
+        annot_mat.to_csv(os.path.join(self.output_dir_path, "DAWN.{}.cluster_annotation.csv".format(self.tag)), sep=",", index=False)
         
         ## dawn plots
         print_progress("[DAWN] Draw DAWN clusters network graph and save graph layout")
