@@ -180,7 +180,11 @@ class ExtractVariant(Runnable):
         patterns = ['5_prime_UTR_variant']
         merged_df['is_5PrimeUTRsRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
         merged_df['is_5PrimeUTRsRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1),
-                                                    merged_df['is_5PrimeUTRsRegion'], 0)        
+                                                    merged_df['is_5PrimeUTRsRegion'], 0)
+
+        merged_df['is_UTRsRegion'] = np.where((merged_df['is_3PrimeUTRsRegion'] == 1) | (merged_df['is_5PrimeUTRsRegion'] == 1),
+                                              1, 0)          
+        
         ## Promoter
         patterns = ['upstream_gene_variant']
         merged_df['is_PromoterRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
