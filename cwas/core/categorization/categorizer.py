@@ -169,6 +169,11 @@ class Categorizer:
         gene_set_annotation_idx = get_idx_dict(
             self._category_domain["gene_set"]
         )
+
+        # Remove the key 'lincRNA'
+        if 'lincRNA' in gene_set_annotation_idx:
+            gene_set_annotation_idx.pop('lincRNA')
+
         gene_symbols = annotated_vcf["SYMBOL"].values
         gene_nearests = annotated_vcf["NEAREST"].values
         gencodes = annotated_vcf["Consequence"].values  # GENCODE annotations
