@@ -148,7 +148,6 @@ class BurdenShift(Runnable):
             
             ## all regions
             for b in gencodes:
-                #if 'lincRNA' != b:
                 col = f'is_{b}_{r}'
                 catsets_dict[col] = list(((catsets['functional_annotation'] == r)&(catsets[f'is_{b}'] == 1)).astype(int))
 
@@ -165,7 +164,6 @@ class BurdenShift(Runnable):
 
             ## all conserved & all gencodes
             for b in gencodes:
-                #if 'lincRNA' != b:
                 col = f'is_{b}_{c}'
                 catsets_dict[col] = list(((catsets['functional_score'] == c)&(catsets[f'is_{b}'] == 1)).astype(int))
 
