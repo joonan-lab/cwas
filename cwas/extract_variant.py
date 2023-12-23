@@ -191,21 +191,24 @@ class ExtractVariant(Runnable):
         merged_df['is_PromoterRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1) &
                                                   (merged_df['is_UTRsRegion'] == 0),
                                                   merged_df['is_PromoterRegion'], 0)
-        ## Intron
-        patterns = ['intron_variant']
-        merged_df['is_IntronRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
-        merged_df['is_IntronRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1) &
-                                                  (merged_df['is_UTRsRegion'] == 0) &
-                                                  (merged_df['is_PromoterRegion'] == 0),
-                                                  merged_df['is_IntronRegion'], 0)
+
         ## SpliceSite non-canonical
         patterns = ['splice_region_variant']
         merged_df['is_SpliceSiteRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
         merged_df['is_SpliceSiteRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1) &
                                                   (merged_df['is_UTRsRegion'] == 0) &
-                                                  (merged_df['is_PromoterRegion'] == 0) &
-                                                  (merged_df['is_IntronRegion'] == 0),
+                                                  (merged_df['is_PromoterRegion'] == 0),
                                                   merged_df['is_SpliceSiteRegion'], 0)
+
+        ## Intron
+        patterns = ['intron_variant']
+        merged_df['is_IntronRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
+        merged_df['is_IntronRegion'] = np.where((merged_df['is_NoncodingRegion'] == 1) &
+                                                  (merged_df['is_UTRsRegion'] == 0) &
+                                                  (merged_df['is_PromoterRegion'] == 0) &
+                                                  (merged_df['is_SpliceSiteRegion'] == 0),
+                                                  merged_df['is_IntronRegion'], 0)
+
         ## Intergenic
         patterns = ['downstream_gene_variant', 'intergenic_variant']
         merged_df['is_IntergenicRegion'] = merged_df['Consequence'].str.contains('|'.join(patterns)).astype(int)
