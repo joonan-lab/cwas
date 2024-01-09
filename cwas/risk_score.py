@@ -85,11 +85,13 @@ class RiskScore(Runnable):
             f"{args.fold: ,d}",
         )
         #log.print_arg("Use Logistic regression", args.logistic)
-        log.print_arg(
-            "No. permutation used to calculate the p-value",
-            f"{args.n_permute: ,d}",
-        )
-        log.print_arg("Skip the permutation test", args.predict_only)
+        if args.predict_only:
+            log.print_arg("Skip the permutation test", args.predict_only)
+        else:
+            log.print_arg(
+                "No. permutation used to calculate the p-value",
+                f"{args.n_permute: ,d}",
+            )
         log.print_arg(
             "No. worker processes",
             f"{args.num_proc: ,d}",
