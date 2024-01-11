@@ -698,16 +698,16 @@ class RiskScore(Runnable):
         plt.figure(figsize=(width, height))
 
         # Create the histogram plot
-        plt.hist(perm_r2, bins=20, color='lightgrey', edgecolor='black')
+        plt.hist(perm_r2*100, bins=20, color='lightgrey', edgecolor='black')
         
         text_label1 = 'P={:.1e}'.format((sum(perm_r2>=r2)+1)/(len(perm_r2)+1))
         text_label2 = '$R^2$={:.2f}%'.format(r2*100)
 
         # Add labels and title
         plt.title(f'Histogram Plot (Domain: {domain})')
-        plt.xlabel('$R^2$')
+        plt.xlabel('$R^2$ (%)')
         plt.ylabel('Frequency')
-        plt.axvline(x=r2, color='red')
+        plt.axvline(x=r2*100, color='red')
         plt.text(0.05, 0.95, text_label1, transform=plt.gca().transAxes, ha='left', va='top', color='black')
         plt.text(0.05, 0.85, text_label2, transform=plt.gca().transAxes, ha='left', va='top', color='red')
         plt.locator_params(axis='x', nbins=5)
