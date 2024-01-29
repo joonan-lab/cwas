@@ -196,6 +196,7 @@ class supernodeWGS_func:
         return g
 
     def hmrf(self, z, adj, seedindex=None, null_mean=0, null_sigma=np.nan, pthres=0.05, iter=100, verbose=False, tol=1e-3):
+        random.seed(self.seed)
         assert len(z) == len(seedindex) and adj.shape[0] == len(z) and adj.shape[1] == len(z)
 
         if seedindex is None:
