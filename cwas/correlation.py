@@ -238,15 +238,6 @@ class Correlation(Runnable):
                 if self.num_proc == 1
                 else self.get_intersection_matrix_with_mp()
             )
-            #if self.num_proc == 1:
-            #    intersection_matrix = self.process_columns_single(column_range = range(pre_intersection_matrix.shape[1]), matrix=pre_intersection_matrix)
-            #else:
-            #    # Split the column range into evenly sized chunks based on the number of workers
-            #    log.print_progress(f"This step will use only {self.num_proc//3 + 1} worker processes to avoid memory error")
-            #    chunks = chunk_list(range(pre_intersection_matrix.shape[1]), (self.num_proc//3 + 1))
-            #    result = parmap.map(self.process_columns, chunks, matrix=pre_intersection_matrix, pm_pbar=True, pm_processes=(self.num_proc//3 + 1))
-            #    # Concatenate the count values
-            #    intersection_matrix = pd.concat([pd.concat(chunk_results, axis=1) for chunk_results in result], axis=1)
         
         diag_sqrt = np.sqrt(np.diag(intersection_matrix))
         log.print_progress("Calculate a correlation matrix")
@@ -312,14 +303,38 @@ class Correlation(Runnable):
                 _get_intersection_matrix,
                 split_vcfs
             ))
+
+    def set_category_to_index(self, df: pd.DataFrame): 
+        # Define the desired order of keys
+        desired_key_order = ['variant_type', 'gene_set', 'functional_score', 'gencode', 'functional_annotation']
+
+        # Sort the dictionary based on the desired key order
+        sorted_category_domain = dict(sorted(self.category_domain.items(), key=lambda x: desired_key_order.index(x[0])))
+
+        def map_numerical_to_string(numerical_values, category_domain):
+            return tuple(category_domain[key][value] for key, value in zip(category_domain.keys(), numerical_values))
         
-    @staticmethod
-    def get_intersection_matrix(annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
-        return pd.DataFrame(
-            categorizer.get_intersection(annotated_vcf), 
-            index=categories, 
-            columns=categories
-        ).fillna(0).astype(int)
+        def map_numerical_values_to_string(values_list, category_domain):
+            result_strings_list = []
+            for values in values_list:
+                resulting_strings = map_numerical_to_string(values, category_domain)
+                result_strings_list.append('_'.join(resulting_strings))
+            return result_strings_list
+        
+        # convert integer combination to string
+        df.columns = map_numerical_values_to_string(df.columns.tolist(), sorted_category_domain)
+        df.index = map_numerical_values_to_string(df.index.tolist(), sorted_category_domain)
+
+        return df
+
+
+    #@staticmethod
+    def get_intersection_matrix(self, annotated_vcf: pd.DataFrame, categorizer: Categorizer, categories: pd.Index): 
+        df = self.set_category_to_index(pd.DataFrame(
+            categorizer.get_intersection(annotated_vcf)
+            ).fillna(0).astype(int))
+        filtered_df = df.loc[:, categories].loc[categories]
+        return filtered_df
 
     def save_result(self):
         if self.generate_inter_matrix == True:
