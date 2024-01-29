@@ -200,7 +200,7 @@ class supernodeWGS_func:
         assert len(z) == len(seedindex) and adj.shape[0] == len(z) and adj.shape[1] == len(z)
 
         if seedindex is None:
-            seedindex = [0 for x in len(z)]
+            seedindex = [0] * len(z)
 
         d = len(z)
         idx = random.sample(range(d), d)
