@@ -196,14 +196,16 @@ class supernodeWGS_func:
         return g
 
     def hmrf(self, z, adj, seedindex=None, null_mean=0, null_sigma=np.nan, pthres=0.05, iter=100, verbose=False, tol=1e-3):
-        np.random.seed(self.seed)
         assert len(z) == len(seedindex) and adj.shape[0] == len(z) and adj.shape[1] == len(z)
+        
+        random.seed(self.seed)
 
         if seedindex is None:
             seedindex = [0] * len(z)
 
         d = len(z)
         idx = random.sample(range(d), d)
+        
         z = np.array(z)[idx]
         adj = adj.iloc[idx,idx]
         seedindex = np.array(seedindex)[idx]
@@ -309,7 +311,7 @@ class supernodeWGS_func:
 
     def report_results(self, vec, posterior, pvalue, Iupdate):
         assert len(vec) == len(posterior) and len(vec) == len(pvalue) and len(vec) == len(Iupdate)
-
+        
         d = len(posterior)
         rankpost = np.sort(posterior)
         localfdr = list(map(lambda x: np.mean(rankpost[:x]), range(1, d+1)))
@@ -483,11 +485,12 @@ class supernodeWGS_func:
         
 
 class data_collection:
-    def __init__(self, path: str, cores: int, max_cluster=None, verbose=True) -> None:
+    def __init__(self, path: str, cores: int, max_cluster=None, verbose=True, seed=42) -> None:
         self._path = path
         self._cores = cores
         self._verbose = verbose
         self._max_cluster = max_cluster
+        self.seed = seed
     
     @property
     def path(self) -> str:
@@ -564,7 +567,9 @@ class data_collection:
         res = pd.DataFrame(pool.map(self._test_func_, cluster_vec))
         return res
 
-    def _test_func_(self, i):            
+    def _test_func_(self, i):
+        random.seed(self.seed)
+        
         cluster_idx_tmp = np.where(np.array(self._clustering) == i)[0]
         testvec = np.array(self._vec)[cluster_idx_tmp]
         testflag = np.array(self._flag_vec)[cluster_idx_tmp]
@@ -592,6 +597,7 @@ class data_collection:
                 'sparsity':len(np.array(keep_idx)[np.where(np.abs(eig) >= 1e-5)[0]])/len(eig)}
 
     def _determine_sign_(self, vec):
+        np.random.seed(self.seed)
         pos = len(np.where(vec > 0)[0])
         neg = len(np.where(vec < 0)[0])
         if (pos > neg):
@@ -610,6 +616,7 @@ class data_collection:
         return a
 
     def safesvd(self, x):
+        np.random.seed(self.seed)
         i = 1
         while i < 10:
             try:
@@ -664,6 +671,7 @@ class data_collection:
         return (lam1 + lam2) / 2
 
     def SMD(self, x, sumabsu, sumabsv, niter=20, trace=True, v=None, upos=False, uneg=False, vpos=False, vneg=False):
+        np.random.seed(self.seed)
         nas = np.isnan(x)
         v_init = v
         xoo = x.copy()
