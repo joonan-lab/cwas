@@ -247,7 +247,8 @@ class Dawn(Runnable):
         form_data = data_collection(path=os.path.join(self.output_dir_path, "supernodeWGS_results", "blocks_"+self.tag),
                                     cores=self.num_proc,
                                     max_cluster=self.k_val,
-                                    verbose=True)
+                                    verbose=True,
+                                    seed=self.seed)
         cor_mat = form_data.form_correlation(k=cluster_idx)
         g = supernodeWGS_process.form_graph_from_correlation(cor_mat,
                                                              func=lambda x: x>self.corr_threshold,
@@ -293,6 +294,7 @@ class Dawn(Runnable):
         cluster_pval[np.where(risk_supernode < 1)[0]] = norm.cdf(zval_supernode[np.where(risk_supernode < 1)[0]])
 
         # Perform FDR correction
+        random.seed(self.seed)
         reject, adjusted_pvals, _, _ = multitest.multipletests(cluster_pval, method='fdr_bh')
 
         mat = pd.DataFrame({"Cluster.idx":g.vs['name'], "Risk":risk_supernode, "Pvalue":cluster_pval, "FDR":adjusted_pvals})
