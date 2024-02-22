@@ -991,6 +991,15 @@ def dawn() -> argparse.ArgumentParser:
         "Available options: eigen_vector, corr_mat",
     )
     optional.add_argument(
+        "-res",
+        "--resolution",
+        dest="resolution",
+        required=False,
+        default=1,
+        type=float,
+        help="Resolution for leiden clustering (default: 1).",
+    )
+    optional.add_argument(
         "-p",
         "--num_proc",
         dest="num_proc",

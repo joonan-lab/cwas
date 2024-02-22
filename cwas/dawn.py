@@ -24,7 +24,7 @@ from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file, check_is_dir, check_num_proc
-from cwas.utils.log import print_arg, print_progress
+from cwas.utils.log import print_arg, print_progress, print_warn
 
 class Dawn(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -43,7 +43,6 @@ class Dawn(Runnable):
             f"{args.num_proc: ,d}",
         )
         print_arg("Eigen vector file", args.eig_vector_file)
-        print_arg("Clustering input", args.clustering_input)
         print_arg("Correlation matrix file", args.corr_mat_file)
         print_arg("Permutation test file", args.permut_test_file)
         print_arg("Category variant (or sample) counts file (burden test result): ", args.category_count_file)
@@ -65,6 +64,10 @@ class Dawn(Runnable):
     @property
     def num_proc(self):
         return self.args.num_proc
+
+    @property
+    def leiden_clustering(self) -> str:
+        return self.args.leiden_clustering
 
     @property
     def lambda_val(self) -> float:
@@ -143,6 +146,10 @@ class Dawn(Runnable):
         return self.args.seed
 
     @property
+    def resolution(self) -> float:
+        return self.args.resolution
+
+    @property
     def tsne_method(self):
         return self.args.tsne_method
 
@@ -174,10 +181,47 @@ class Dawn(Runnable):
         return self.args.size_threshold
 
     def run(self):
-        self.tsne_projection()
-        self.kmeans_clustering()
+        if self.leiden_clustering is None:
+            self.tsne_projection()
+            self.kmeans_clustering()
+        else:
+            self.do_leiden_clustering()
         self.dawn_analysis()
         print_progress("Done")
+
+    def do_leiden_clustering(self):
+        random.seed(self.seed)
+        if self.leiden_clustering=='eigen_vector':
+            print_progress("Do leiden clustering for {}".format(self.eig_vector_file))
+            adata = sc.AnnData(X=self.eig_vector)
+            names = self.eig_vector.index.tolist()
+            adata.obs['category'] = names
+        elif self.leiden_clustering=='corr_mat':
+            print_progress("Do leiden clustering for {}".format(self.corr_mat_file))
+            adata = sc.AnnData(X=self.corr_mat)
+            names = self.eig_vector.index.tolist()
+            adata.obs['category'] = names
+        else:
+            print_warn("This argument only accepts 'eigen_vector' or 'corr_mat'.")
+        
+        # Compute neighbors
+        sc.pp.neighbors(adata, use_rep='X', n_pcs=50)
+        sc.tl.umap(adata,
+                   random_state = self.seed,
+                   maxiter=500,
+                   n_components=2,
+                   resolution=self.resolution)
+        sc.tl.leiden(adata, key_added = "leiden_key", n_iterations=-1)
+        
+        cluster_idx = adata.obs['leiden_key']
+        cluster_idx = list(map(int, cluster_idx))
+        self.k_val = len(set(cluster_idx))
+        fit_res = {}
+        fit_res['annotation'] = self.category_set
+        fit_res['cluster'] = adata.obs['leiden_key']
+        self._fit_res = fit_res
+        
+        print_progress("Leiden clustering resulted in {} clusters.".format(self.k_val))
 
     def tsne_projection(self): ## t-SNE and k-means clustering by optimal K
         random.seed(self.seed)
