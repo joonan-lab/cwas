@@ -204,14 +204,26 @@ class Dawn(Runnable):
         else:
             print_warn("This argument only accepts 'eigen_vector' or 'corr_mat'.")
         
+        sc.tl.pca(adata,
+                  random_state = self.seed)
         # Compute neighbors
-        sc.pp.neighbors(adata, use_rep='X', n_pcs=50)
+        sc.pp.neighbors(adata,
+                        # use_rep='X_pca',
+                        n_pcs=50,
+                        random_state = self.seed)
         sc.tl.umap(adata,
                    random_state = self.seed,
                    maxiter=500,
-                   n_components=2,
-                   resolution=self.resolution)
-        sc.tl.leiden(adata, key_added = "leiden_key", n_iterations=-1)
+                   n_components=2)
+        sc.tl.leiden(adata,
+                     key_added = "leiden_key",
+                     n_iterations=-1,
+                     random_state=self.seed,
+                     resolution=self.resolution)
+
+        sc.tl.paga(adata, groups='leiden_key')
+        sc.pl.paga(adata, plot=False)
+        sc.tl.umap(adata, init_pos='paga')        
         
         cluster_idx = adata.obs['leiden_key']
         cluster_idx = list(map(int, cluster_idx))
