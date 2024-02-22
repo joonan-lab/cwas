@@ -18,6 +18,7 @@ from scipy.stats import norm
 import random
 import zarr
 from statsmodels.stats import multitest
+import scanpy as sc
 
 from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection
@@ -42,10 +43,13 @@ class Dawn(Runnable):
             f"{args.num_proc: ,d}",
         )
         print_arg("Eigen vector file", args.eig_vector_file)
+        print_arg("Clustering input", args.clustering_input)
         print_arg("Correlation matrix file", args.corr_mat_file)
         print_arg("Permutation test file", args.permut_test_file)
         print_arg("Category variant (or sample) counts file (burden test result): ", args.category_count_file)
         print_arg("Output directory", args.output_dir_path)
+        if args.leiden_clustering:
+            print_arg("Do leiden clustering with input type", args.leiden_clustering)
         print_arg("Lambda value:", args.lambda_val)
         print_arg("Thresholds of count / correlation / size: ", ", ".join(list(map(str, [args.count_threshold, args.corr_threshold, args.size_threshold]))))
 
@@ -94,8 +98,8 @@ class Dawn(Runnable):
             self._corr_mat = root['data']
             column_indices = list(map(lambda x: root['metadata'].attrs['category'].index(x), self.category_set))
             self._corr_mat = self._corr_mat[column_indices][:, column_indices].astype(np.float64)
-            #self._corr_mat = pd.DataFrame(self._corr_mat, index=self.category_set, columns=self.category_set)
-            #self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
+            # self._corr_mat = pd.DataFrame(self._corr_mat, index=self.category_set, columns=self.category_set)
+            # self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
         return self._corr_mat
 
     @property

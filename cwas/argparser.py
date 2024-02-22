@@ -982,6 +982,15 @@ def dawn() -> argparse.ArgumentParser:
         help="File path of category counts file resulted from burden test (for each variant) or sign test (for each sample).",
     )
     optional.add_argument(
+        "--leiden",
+        dest="leiden_clustering",
+        required=False,
+        default=None,
+        type=str,
+        help="Do leiden clustering. Declare which type of input matrix to use. (default: None).\n"\
+        "Available options: eigen_vector, corr_mat",
+    )
+    optional.add_argument(
         "-p",
         "--num_proc",
         dest="num_proc",
