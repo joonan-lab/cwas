@@ -35,6 +35,7 @@ class Dawn(Runnable):
         self._category_set = None
         self._k_val = None
         self.kmeans_r = importr('stats').kmeans
+        self._k_for_leiden = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -128,6 +129,9 @@ class Dawn(Runnable):
         if self._k_val is None: # initialization
             if self.args.k_val is not None:
                 self._k_val = self.args.k_val
+                print_arg("K for K-means clustering algorithm", self._k_val)
+            elif self.leiden_clustering is not None:
+                self._k_val = self._k_for_leiden
             else: # self.args.k_val is None
                 km_cluster = kmeans_cluster(self._tsne_out, self.seed)
                 ## k 입력이 없으면 k_range 가지고 optimal k를 찾음, k_range는 default 값이 있으므로 user input이 없어도 적용됨
@@ -136,10 +140,8 @@ class Dawn(Runnable):
                 self._k_val = km_cluster.optimal_k(self.k_range, output_name)
 
                 print_progress("Find the optimal K = {}".format(self._k_val))
-                
-            ## k 입력이 있는 경우 k_range를 무시하고 k를 사용함, k와 k_range 값이 둘 다 있으면 k가 우선됨
-            print_arg("K for K-means clustering algorithm", self._k_val)
-        return self._k_val      
+                print_arg("K for K-means clustering algorithm", self._k_val)            
+        return self._k_val
 
     @property
     def seed(self):
@@ -227,10 +229,10 @@ class Dawn(Runnable):
         
         cluster_idx = adata.obs['leiden_key']
         cluster_idx = list(map(int, cluster_idx))
-        self.k_val = len(set(cluster_idx))
+        self._k_for_leiden = len(set(cluster_idx))
         fit_res = {}
         fit_res['annotation'] = self.category_set
-        fit_res['cluster'] = adata.obs['leiden_key']
+        fit_res['cluster'] = cluster_idx
         self._fit_res = fit_res
         
         print_progress("Leiden clustering resulted in {} clusters.".format(self.k_val))
