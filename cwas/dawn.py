@@ -18,12 +18,13 @@ from scipy.stats import norm
 import random
 import zarr
 from statsmodels.stats import multitest
+import scanpy as sc
 
 from cwas.core.dawn.clustering import kmeans_cluster
 from cwas.core.dawn.supernodeWGS import supernodeWGS_func, data_collection
 from cwas.runnable import Runnable
 from cwas.utils.check import check_is_file, check_is_dir, check_num_proc
-from cwas.utils.log import print_arg, print_progress
+from cwas.utils.log import print_arg, print_progress, print_warn
 
 class Dawn(Runnable):
     def __init__(self, args: argparse.Namespace):
@@ -34,6 +35,7 @@ class Dawn(Runnable):
         self._category_set = None
         self._k_val = None
         self.kmeans_r = importr('stats').kmeans
+        self._k_for_leiden = None
 
     @staticmethod
     def _print_args(args: argparse.Namespace):
@@ -46,6 +48,8 @@ class Dawn(Runnable):
         print_arg("Permutation test file", args.permut_test_file)
         print_arg("Category variant (or sample) counts file (burden test result): ", args.category_count_file)
         print_arg("Output directory", args.output_dir_path)
+        if args.leiden_clustering:
+            print_arg("Do leiden clustering with input type", args.leiden_clustering)
         print_arg("Lambda value:", args.lambda_val)
         print_arg("Thresholds of count / correlation / size: ", ", ".join(list(map(str, [args.count_threshold, args.corr_threshold, args.size_threshold]))))
 
@@ -61,6 +65,10 @@ class Dawn(Runnable):
     @property
     def num_proc(self):
         return self.args.num_proc
+
+    @property
+    def leiden_clustering(self) -> str:
+        return self.args.leiden_clustering
 
     @property
     def lambda_val(self) -> float:
@@ -94,8 +102,8 @@ class Dawn(Runnable):
             self._corr_mat = root['data']
             column_indices = list(map(lambda x: root['metadata'].attrs['category'].index(x), self.category_set))
             self._corr_mat = self._corr_mat[column_indices][:, column_indices].astype(np.float64)
-            #self._corr_mat = pd.DataFrame(self._corr_mat, index=self.category_set, columns=self.category_set)
-            #self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
+            # self._corr_mat = pd.DataFrame(self._corr_mat, index=self.category_set, columns=self.category_set)
+            # self._corr_mat = self._corr_mat.loc[self.category_set, self.category_set].astype(np.float64)
         return self._corr_mat
 
     @property
@@ -121,6 +129,9 @@ class Dawn(Runnable):
         if self._k_val is None: # initialization
             if self.args.k_val is not None:
                 self._k_val = self.args.k_val
+                print_arg("K for K-means clustering algorithm", self._k_val)
+            elif self.leiden_clustering is not None:
+                self._k_val = self._k_for_leiden
             else: # self.args.k_val is None
                 km_cluster = kmeans_cluster(self._tsne_out, self.seed)
                 ## k 입력이 없으면 k_range 가지고 optimal k를 찾음, k_range는 default 값이 있으므로 user input이 없어도 적용됨
@@ -129,14 +140,16 @@ class Dawn(Runnable):
                 self._k_val = km_cluster.optimal_k(self.k_range, output_name)
 
                 print_progress("Find the optimal K = {}".format(self._k_val))
-                
-            ## k 입력이 있는 경우 k_range를 무시하고 k를 사용함, k와 k_range 값이 둘 다 있으면 k가 우선됨
-            print_arg("K for K-means clustering algorithm", self._k_val)
-        return self._k_val      
+                print_arg("K for K-means clustering algorithm", self._k_val)            
+        return self._k_val
 
     @property
     def seed(self):
         return self.args.seed
+
+    @property
+    def resolution(self) -> float:
+        return self.args.resolution
 
     @property
     def tsne_method(self):
@@ -170,10 +183,59 @@ class Dawn(Runnable):
         return self.args.size_threshold
 
     def run(self):
-        self.tsne_projection()
-        self.kmeans_clustering()
+        if self.leiden_clustering is None:
+            self.tsne_projection()
+            self.kmeans_clustering()
+        else:
+            self.do_leiden_clustering()
         self.dawn_analysis()
         print_progress("Done")
+
+    def do_leiden_clustering(self):
+        random.seed(self.seed)
+        if self.leiden_clustering=='eigen_vector':
+            print_progress("Do leiden clustering for {}".format(self.eig_vector_file))
+            adata = sc.AnnData(X=self.eig_vector)
+            names = self.eig_vector.index.tolist()
+            adata.obs['category'] = names
+        elif self.leiden_clustering=='corr_mat':
+            print_progress("Do leiden clustering for {}".format(self.corr_mat_file))
+            adata = sc.AnnData(X=self.corr_mat)
+            names = self.eig_vector.index.tolist()
+            adata.obs['category'] = names
+        else:
+            print_warn("This argument only accepts 'eigen_vector' or 'corr_mat'.")
+        
+        sc.tl.pca(adata,
+                  random_state = self.seed)
+        # Compute neighbors
+        sc.pp.neighbors(adata,
+                        # use_rep='X_pca',
+                        n_pcs=50,
+                        random_state = self.seed)
+        sc.tl.umap(adata,
+                   random_state = self.seed,
+                   maxiter=500,
+                   n_components=2)
+        sc.tl.leiden(adata,
+                     key_added = "leiden_key",
+                     n_iterations=-1,
+                     random_state=self.seed,
+                     resolution=self.resolution)
+
+        sc.tl.paga(adata, groups='leiden_key')
+        sc.pl.paga(adata, plot=False)
+        sc.tl.umap(adata, init_pos='paga')        
+        
+        cluster_idx = adata.obs['leiden_key']
+        cluster_idx = list(map(int, cluster_idx))
+        self._k_for_leiden = len(set(cluster_idx))
+        fit_res = {}
+        fit_res['annotation'] = self.category_set
+        fit_res['cluster'] = cluster_idx
+        self._fit_res = fit_res
+        
+        print_progress("Leiden clustering resulted in {} clusters.".format(self.k_val))
 
     def tsne_projection(self): ## t-SNE and k-means clustering by optimal K
         random.seed(self.seed)
