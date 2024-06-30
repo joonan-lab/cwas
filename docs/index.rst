@@ -13,7 +13,7 @@ Here are the reference papers:
 
 * `An analytical framework for whole genome sequence association studies and its implications for autism spectrum disorder <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5961723/>`_ (Werling et al., 2018)
 * `Genome-wide de novo risk score implicates promoter variation in autism spectrum disorder <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6432922/>`_ (An et al., 2018)
-* `CWAS-Plus: Estimating category-wide association of rare noncoding variation from whole-genome sequencing data with cell-type-specific functional data <https://www.medrxiv.org/content/10.1101/2024.04.15.24305828v1>` (Kim et al., in press)
+* `CWAS-Plus: Estimating category-wide association of rare noncoding variation from whole-genome sequencing data with cell-type-specific functional data <https://www.medrxiv.org/content/10.1101/2024.04.15.24305828v1>`_ (Kim et al., in press)
 
 
 CWAS-Plus workflow
