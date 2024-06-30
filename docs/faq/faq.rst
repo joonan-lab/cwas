@@ -14,7 +14,7 @@ For LOFTEE plugin, the installation location for cpanm, perl, and VEP should be 
 
 To install VEP version 110, users can use the following command. If users want to install other versions, users can modify the number `110` to their desired specific version.
 
-(The provided commands are referenced from `VEP document <https://asia.ensembl.org/info/docs/tools/vep/script/vep_download.html>`.)
+(The provided commands are referenced from `VEP document <https://asia.ensembl.org/info/docs/tools/vep/script/vep_download.html>`_.)
 
 .. code-block:: solidity
   
