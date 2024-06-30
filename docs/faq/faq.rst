@@ -12,7 +12,7 @@ For easy installation of VEP, we provide the following commands for installation
 
 For LOFTEE plugin, the installation location for cpanm, perl, and VEP should be the same. For example, for conda, all tools should be located under the same conda environment for VEP to locate other tools.
 
-To install VEP version 110, users can use the following command. If users want to install other versions, users can modify the number `110` to their desired specific version.
+To install VEP version 110, users can use the following command. If users want to install other versions, users can modify the number **110** to their desired specific version.
 
 (The provided commands are referenced from `VEP document <https://asia.ensembl.org/info/docs/tools/vep/script/vep_download.html>`_.)
 
