@@ -13,7 +13,7 @@ Here are the reference papers:
 
 * `An analytical framework for whole genome sequence association studies and its implications for autism spectrum disorder <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5961723/>`_ (Werling et al., 2018)
 * `Genome-wide de novo risk score implicates promoter variation in autism spectrum disorder <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6432922/>`_ (An et al., 2018)
-* CWAS-Plus: Estimating genome-wide evaluation of noncoding variation from whole genome sequencing data. (Kim et al., in preperation)
+* `CWAS-Plus: Estimating category-wide association of rare noncoding variation from whole-genome sequencing data with cell-type-specific functional data <https://www.medrxiv.org/content/10.1101/2024.04.15.24305828v1>` (Kim et al., in press)
 
 
 CWAS-Plus workflow
@@ -24,7 +24,7 @@ CWAS-Plus workflow
    :width: 90%
    :align: center
 
-   **A.** Workflow\: Variants extracted from whole-genome sequencing data of samples (sample variant) serve as inputs. The three steps depicted in the black box correspond to the final outputs obtained from CWAS-Plus. **B-G.** Graphic descriptions of each process in CWAS-Plus\: Red (case) and blue (control) represent the phenotype. **F.** Representative network pointed by the purple arrow provides an enlarged view of a subset of the network. The color indicates the direction of the burden in each category (red, case burden; blue, control burden). **G.** The color of the clusters reflects the scale of the normalized z-score, which represents the degree of disease association of the cluster. Darker red indicates a higher association. Circle size represents the number of categories within the cluster.
+   **A.** Workflow\: Variants extracted from whole-genome sequencing data of samples (sample variant) serve as inputs. **B-G.** Graphic descriptions of each process in CWAS-Plus\: Red (case) and blue (control) represent the phenotype. **F.** Representative network pointed by the purple arrow provides an enlarged view of a subset of the network. Node color indicates the direction of the burden in each category (red, case burden; blue, control burden). **G.** Node color reflects the scale of the normalized z-score, which represents the degree of disease association of the cluster. Darker red indicates a higher association. Node size represents the number of categories within the cluster.
 
 
 .. toctree::
@@ -77,7 +77,6 @@ CWAS-Plus workflow
    :caption: FAQ
 
    faq/faq.rst
-   faq/tips.rst
 
 Misc.
 ######
