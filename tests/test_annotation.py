@@ -18,16 +18,22 @@ class AnnotationMock(Annotation):
 
 @pytest.fixture(scope="module")
 def vcf_path(cwas_workspace):
-    return cwas_workspace / "test_target.vcf"
-
+    vcf = cwas_workspace / "test_target.vcf"
+    create_vcf_file(vcf)
+    return vcf
 
 @pytest.fixture(scope="module", autouse=True)
-def setup(cwas_workspace, annotation_dir, vcf_path):
-    cwas_workspace.mkdir()
+def setup(cwas_workspace, annotation_dir):
+    cwas_workspace.mkdir(exist_ok=True)  # This line creates the workspace directory
     set_env(cwas_workspace, annotation_dir)
-    create_vcf_file(vcf_path)
-    create_annotation_key_yaml(cwas_workspace / "annotation_keys.yaml")
+    annotation_key_path = cwas_workspace / "annotation_keys.yaml"
+    annotation_key_path.parent.mkdir(parents=True, exist_ok=True)  # Ensure parent directory exists
+    create_annotation_key_yaml(annotation_key_path)
 
+@pytest.fixture(scope="module")
+def output_dir_path(cwas_workspace):
+    output_dir = cwas_workspace 
+    return output_dir
 
 @pytest.fixture(scope="module", autouse=True)
 def teardown(cwas_workspace):
@@ -80,21 +86,18 @@ def create_vcf_file(vcf_path):
         print(*vcf_header, sep="\t", file=vcf_file)
 
 @pytest.fixture(scope="module")
-def required_args(vcf_path):
-    return ["-v", str(vcf_path)]
+def required_args(vcf_path, output_dir_path):
+    return ["-v", str(vcf_path), "-o", str(output_dir_path)]
 
 
-def test_parse_args(required_args, vcf_path):
+def test_parse_args(required_args, vcf_path, output_dir_path):
     sys.argv = ['cwas', 'annotation', *required_args]
     inst = cwas.cli.main()
-    #inst = AnnotationMock.get_instance(required_args)
-    assert getattr(inst, "vcf_path") == vcf_path
-
+    assert getattr(inst.args, "vcf_path") == vcf_path
+    assert getattr(inst.args, "output_dir_path") == output_dir_path
 
 def test_parse_args_without_required_arg():
-    #args = []
     with pytest.raises(SystemExit):
         sys.argv = ['cwas', 'annotation']
         cwas.cli.main()
-        #AnnotationMock.get_instance(args)
 
