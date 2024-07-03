@@ -108,8 +108,16 @@ def test_swap_label():
     labels = np.array([pair[0] for pair in label_group_pairs])
     group_ids = np.array([pair[1] for pair in label_group_pairs])
 
+    # Basic testing with re-shuffling if swap results are the same as original
+    for _ in range(10):  # Try up to 10 times to shuffle differently
+        swap_labels = common.swap_label(labels, group_ids)
+        if np.any(labels != swap_labels):
+            break
+    else:
+        assert False, "Swapping failed to change any labels after multiple attempts."
+
     # Basic testing
-    swap_labels = common.swap_label(labels, group_ids)
+    # swap_labels = common.swap_label(labels, group_ids)
     assert len(swap_labels) == len(group_ids)
     assert np.any(labels != swap_labels)  # Swapping is succeeded.
 
