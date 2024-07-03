@@ -1,0 +1,11 @@
+Category	variant_type	gene_set	functional_score	gencode	functional_annotation	is_coding	is_coding_no_ptv	is_PTV	is_missense	is_damaging_missense	is_noncoding	is_noncoding_wo_promoter	is_promoter	is_splice	is_intron	is_intergenic	is_3primeUTR	is_5primeUTR	is_UTR	is_lincRNA
+a_b_c_d_e	a	b	c	d	e	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+b_c_d_e_f	b	c	d	e	f	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+c_d_e_f_g	c	d	e	f	g	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+d_e_f_g_h	d	e	f	g	h	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+e_f_g_h_i	e	f	g	h	i	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+f_g_h_i_j	f	g	h	i	j	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+g_h_i_j_k	g	h	i	j	k	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+h_i_j_k_l	h	i	j	k	l	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+i_j_k_l_m	i	j	k	l	m	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+j_k_l_m_n	j	k	l	m	n	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0

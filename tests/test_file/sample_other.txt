@@ -1,0 +1,3 @@
+SAMPLE	PHENOTYPE
+SampleA	case
+SampleB	ctrl

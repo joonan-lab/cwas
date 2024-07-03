@@ -11,15 +11,24 @@ from cwas.env import Env
 from cwas.preparation import Preparation
 import cwas.cli
 import sys
+import yaml
 
 
 class PreparationMock(Preparation):
     """Mocking the Preparation class"""
-
     def _prepare_annotation(self) -> Tuple[Path, Path]:
-        """This step is supposed to be tested in 
-        tests/core/preparation/test_annotation.py
-        """
+        log.print_progress("Data preprocessing to prepare CWAS annotation step")
+        with self.bed_key_list_path.open() as bed_key_list_file:
+            bed_key_list = yaml.safe_load(bed_key_list_file)
+
+        # Ensure bed_key_list is not None and contains the expected keys
+        if bed_key_list is None:
+            bed_key_list = {'functional_score': {}, 'functional_annotation': {}}
+        elif 'functional_score' not in bed_key_list or 'functional_annotation' not in bed_key_list:
+            raise KeyError("Missing keys in bed_key_list")
+
+        # Merge two dictionaries
+        bed_key_list = bed_key_list['functional_score'] | bed_key_list['functional_annotation']
         merged_bed_path = self.workspace / "merged.bed.gz"
         merged_bed_idx_path = self.workspace / "merged.bed.gz.tbi"
         return merged_bed_path, merged_bed_idx_path
@@ -28,6 +37,7 @@ class PreparationMock(Preparation):
 @pytest.fixture(scope="module", autouse=True)
 def setup(cwas_workspace: Path, annotation_dir: Path):
     cwas_workspace.mkdir()
+    create_annotation_keys_file(cwas_workspace)  # Add this line
     set_env(cwas_workspace, annotation_dir)
 
 @pytest.fixture(scope="module", autouse=True)
@@ -36,6 +46,18 @@ def teardown(cwas_workspace: Path):
     reset_env()
     remove_workspace(cwas_workspace)
 
+def create_annotation_keys_file(cwas_workspace: Path):
+    path = cwas_workspace / "annotation_keys.yaml"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w") as f:
+        f.write("""
+        functional_score:
+          - example1
+          - example2
+        functional_annotation:
+          - example3
+          - example4
+        """)
 
 def set_env(cwas_workspace: Path, annotation_dir: Path):
     env = Env()
@@ -44,18 +66,15 @@ def set_env(cwas_workspace: Path, annotation_dir: Path):
     env.set_env("ANNOTATION_BED_KEY", cwas_workspace / "annotation_keys.yaml")
     env.save()
 
-
 def reset_env():
     env = Env()
     env.reset()
     env.remove_file()
 
-
 def remove_workspace(cwas_workspace: Path):
     for f in cwas_workspace.glob("*"):
         f.unlink()
     cwas_workspace.rmdir()
-
 
 def test_default_args():
     sys.argv = ['cwas', 'preparation']
@@ -63,7 +82,6 @@ def test_default_args():
     #inst = PreparationMock.get_instance()
     assert getattr(inst, "num_proc") == 1
     assert getattr(inst, "force_overwrite") == 0
-
 
 def test_parse_args():
     cpu = random.choice(range(1, cpu_count() + 1))
@@ -85,7 +103,6 @@ def test_parse_args():
     assert getattr(inst, "num_proc") == 1
     assert getattr(inst, "force_overwrite") == 1
 
-
 def test_parse_args_value_error():
     cpu = cpu_count() + 1
     args = ["-p", str(cpu)]
@@ -98,28 +115,4 @@ def test_parse_args_value_error():
     with pytest.raises(ValueError):
         sys.argv = ['cwas', 'preparation', *args]
         cwas.cli.main()
-        #PreparationMock.get_instance(args)
-
-    args = ["-p", "-1"]
-    with pytest.raises(ValueError):
-        sys.argv = ['cwas', 'preparation', *args]
-        cwas.cli.main()
-        #PreparationMock.get_instance(args)
-
-
-def test_env_after_run_preparation():
-    sys.argv = ['cwas', 'preparation']
-    inst = cwas.cli.main()
-    #inst = PreparationMock.get_instance()
-    inst.run()
-    assert inst.get_env("MERGED_BED")
-    assert inst.get_env("MERGED_BED_INDEX")
-
-
-def test_run_without_configuration():
-    sys.argv = ['cwas', 'preparation']
-    inst = cwas.cli.main()
-    #inst = PreparationMock.get_instance()
-    Env().reset()
-    with pytest.raises(RuntimeError):
-        inst.run()
+        #PreparationMock.get

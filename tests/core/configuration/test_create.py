@@ -4,24 +4,36 @@ Test cwas.core.configuration.create
 import cwas.core.configuration.create as create
 import pytest
 import yaml
-
+from pathlib import Path
 
 @pytest.fixture(scope="module", autouse=True)
 def setup(cwas_workspace):
     cwas_workspace.mkdir()
-
 
 @pytest.fixture(scope="module", autouse=True)
 def teardown(cwas_workspace):
     yield
     remove_workspace(cwas_workspace)
 
-
 def remove_workspace(cwas_workspace):
     for f in cwas_workspace.glob("*"):
         f.unlink()
     cwas_workspace.rmdir()
 
+def create_annotation_keys_file(cwas_workspace):
+    annotation_keys = {
+        'functional_score': {
+            'bed_annot1.bed.gz': 'bed_annot1',
+            'bed_annot4.bed.gz': 'bed_annot4'
+        },
+        'functional_annotation': {
+            'annot5.bed': 'annot5',
+            'annot6.bed': 'annot6'
+        }
+    }
+    bed_key_conf = cwas_workspace / "annotation_keys.yaml"
+    with bed_key_conf.open('w') as f:
+        yaml.safe_dump(annotation_keys, f)
 
 def test_create_annotation_key_bed(cwas_workspace, annotation_dir):
     bed_key_conf = cwas_workspace / "annotation_keys.yaml"
@@ -36,24 +48,15 @@ def test_create_annotation_key_bed(cwas_workspace, annotation_dir):
     assert "bed_annot4.bed.gz" in bed_key
     assert "bed.annot7.bed" not in bed_key
     assert bed_key["bed_annot1.bed.gz"] == "bed_annot1"
-    #assert bed_key["bed.annot2.bed"] == "bed2"
-    #assert bed_key["bed.annot3.bed"] == "bed3"
     assert bed_key["bed_annot4.bed.gz"] == "bed_annot4"
 
     bed_key_conf.unlink()
 
-
-def test_create_category_domain_list(
-    cwas_workspace, annotation_key_conf, gene_matrix
-):
-    # Setting
+def test_create_category_domain_list(cwas_workspace, annotation_key_conf, gene_matrix):
+    create_annotation_keys_file(cwas_workspace)  # Ensure file exists
     bed_key_conf = cwas_workspace / "annotation_keys.yaml"
-    #create.split_annotation_key(bed_key_conf, annotation_key_conf)
-
     domain_list_path = cwas_workspace / "category_domain.yaml"
-    create.create_category_domain_list(
-        domain_list_path, bed_key_conf, gene_matrix
-    )
+    create.create_category_domain_list(domain_list_path, bed_key_conf, gene_matrix)
 
     assert domain_list_path.is_file()
 
@@ -79,13 +82,11 @@ def test_create_category_domain_list(
     bed_key_conf.unlink()
     domain_list_path.unlink()
 
-
 def test_create_redundant_category_table(cwas_workspace):
     redundant_category_table = cwas_workspace / "redundant_category.txt"
     create.create_redundant_category_table(redundant_category_table)
     assert redundant_category_table.exists()
     redundant_category_table.unlink()
-
 
 def test__load_yaml_file_error(cwas_workspace):
     test_path = cwas_workspace / "not_yaml.txt"

@@ -1,0 +1,22 @@
+{
+    "category": [
+        "a_b_c_d_e",
+        "b_c_d_e_f",
+        "c_d_e_f_g",
+        "d_e_f_g_h",
+        "e_f_g_h_i",
+        "f_g_h_i_j",
+        "g_h_i_j_k",
+        "h_i_j_k_l",
+        "i_j_k_l_m",
+        "j_k_l_m_n"
+    ],
+    "sample_id": [
+        "SAMPLE1",
+        "SAMPLE2",
+        "SAMPLE3",
+        "SAMPLE4",
+        "SAMPLE5",
+        "SAMPLE6"
+    ]
+}
