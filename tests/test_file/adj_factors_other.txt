@@ -1,0 +1,3 @@
+SAMPLE	AdjustFactor
+SampleA	2.0
+SampleB	0.5
