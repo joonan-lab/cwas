@@ -180,6 +180,8 @@ This is an advanced tutorial for CWAS-Plus. Specific descriptions of arguments a
   
   To use VEP, users need cache file matching to the VEP version. The cache file can be found `here <https://asia.ensembl.org/info/docs/tools/vep/script/vep_cache.html#cache>`_. Please download the file in the *VEP_CACHE_DIR*.
 
+  (For installation of VEP, check :ref:`FAQ <faq>`)
+
   To download required resources and annotation datasets in GRCh38 version in one step, run the command below. It will create directory (``$HOME/.vep``) and download resources in the directory. By default, the resources are in the child directory of the home directory.
 
   .. code-block:: solidity
