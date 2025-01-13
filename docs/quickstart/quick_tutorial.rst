@@ -371,10 +371,10 @@ Below are the output files generated.
 
     $HOME/cwas_output
     ...
-    ├── de_novo_variants.lasso_coef_thres_3.txt
-    ├── de_novo_variants.lasso_null_models_thres_3.txt
-    ├── de_novo_variants.lasso_results_thres_3.txt
-    ├── de_novo_variants.lasso_histogram_thres_3.pdf
+    ├── de_novo_variants.lasso_coef_thres_3.noncoding.txt
+    ├── de_novo_variants.lasso_null_models_thres_3.noncoding.txt
+    ├── de_novo_variants.lasso_results_thres_3.noncoding.txt
+    ├── de_novo_variants.lasso_histogram_thres_3.noncoding.pdf
     ...
 
 
