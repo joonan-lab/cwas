@@ -21,6 +21,15 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential libz-dev libbz2-dev liblzma-dev
   
+    - name: Install R and dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y r-base libtirpc-dev
+        echo "R installed:"
+        R --version
+        export R_HOME=$(R RHOME)
+        echo "R_HOME set to $R_HOME"
+
     - name: Add conda to system path
       run: |
         # $CONDA is an environment variable pointing to the root of the miniconda directory

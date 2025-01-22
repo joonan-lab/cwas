@@ -61,6 +61,8 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
 
   Copy the ``configuration.txt`` in the ``cwas-dataset`` to the CWAS-Plus working directory (by default, ``$HOME/.cwas``).
 
+  (For installation of VEP, check :ref:`FAQ <faq>`)
+
   .. code-block:: solidity
     
     cp $HOME/cwas-dataset/configuration.txt $HOME/.cwas/
@@ -87,7 +89,7 @@ This is a quick tutorial for CWAS-Plus. Specific descriptions of arguments are d
     cwas configuration
 
 
-3. :ref:`Prepare annotation datasets <data-prep-label>`
+1. :ref:`Prepare annotation datasets <data-prep-label>`
 ###########################################
 
   The parameters of the command are as below:
@@ -369,10 +371,10 @@ Below are the output files generated.
 
     $HOME/cwas_output
     ...
-    ├── de_novo_variants.lasso_coef_thres_3.txt
-    ├── de_novo_variants.lasso_null_models_thres_3.txt
-    ├── de_novo_variants.lasso_results_thres_3.txt
-    ├── de_novo_variants.lasso_histogram_thres_3.pdf
+    ├── de_novo_variants.lasso_coef_thres_3.noncoding.txt
+    ├── de_novo_variants.lasso_null_models_thres_3.noncoding.txt
+    ├── de_novo_variants.lasso_results_thres_3.noncoding.txt
+    ├── de_novo_variants.lasso_histogram_thres_3.noncoding.pdf
     ...
 
 
