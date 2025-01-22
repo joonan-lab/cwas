@@ -20,6 +20,7 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libz-dev libbz2-dev liblzma-dev
+        sudo apt-get install -y r-base
   
     - name: Add conda to system path
       run: |
