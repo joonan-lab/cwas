@@ -165,3 +165,36 @@ def _parse_gene_matrix(gene_matrix_file: TextIOWrapper) -> dict:
         result[gene_symbol] = set(gene_types)
 
     return result
+
+
+def _parse_gene_matrix(gene_matrix_file: TextIOWrapper) -> dict:
+    result = dict()
+    header = gene_matrix_file.readline()
+    header_cols = header.rstrip("\n").split("\t")
+
+    # 🔎 Find gene symbol column (minimal flexibility)
+    gene_col_candidates = {"gene_name", "gene_symbol", "symbol"}
+    gene_col_idx = None
+    for i, col in enumerate(header_cols):
+        if col.lower() in gene_col_candidates:
+            gene_col_idx = i
+            break
+
+    if gene_col_idx is None:
+        raise ValueError(
+            "Header must contain one of: gene_name, gene_symbol, symbol. "
+            f"Found: {header_cols}"
+        )
+
+    all_gene_types = np.array(header_cols[gene_col_idx + 1 :])
+
+    for line in gene_matrix_file:
+        cols = line.rstrip("\n").split("\t")
+
+        gene_symbol = cols[gene_col_idx]
+        gene_matrix_values = cols[gene_col_idx + 1 :]
+
+        gene_types = all_gene_types[np.array(gene_matrix_values) == "1"]
+        result[gene_symbol] = set(gene_types)
+
+    return result
