@@ -14,10 +14,10 @@ def test_parse_info_field():
     assert parser._parse_vcf_info_field(info_field) == csq_field_names
 
 
-#def test_parse_annot_field():
-#    annot_field_names = ["ANNOT1", "ANNOT2", "ANNOT3"]
-#    annot_field = f"##INFO=<ID=ANNOT,Key={'|'.join(annot_field_names)}>"
-#    assert parser._parse_annot_field(annot_field) == annot_field_names
+def test_parse_annot_field():
+    annot_field_names = ["ANNOT1", "ANNOT2", "ANNOT3"]
+    annot_field = f"##INFO=<ID=ANNOT,Key={'|'.join(annot_field_names)}>"
+    assert parser._parse_annot_field(annot_field) == annot_field_names
 
 
 def test_parse_vcf_header_line():

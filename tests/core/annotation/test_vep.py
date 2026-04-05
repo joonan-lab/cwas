@@ -116,16 +116,10 @@ def create_vep_dir(
     vep_dir.rmdir()
     print("[TEST] Temporary VEP directory has deleted.")
 
-#def test_cmd_for_bw_custom_annotation(vep_path, input_vcf_path, annotation_dir):
-#    vep_inst = VepCmdGenerator(vep_path, input_vcf_path)
-#    bw_paths = [
-#        (bw_path, f"test{i + 1}")
-#        for i, bw_path in enumerate(annotation_dir.glob("*.bw"))
-#    ]
-#    for bw_path, bw_key in bw_paths:
-#        vep_inst.add_bw_custom_annotation(str(bw_path), bw_key)
-
-#    for bw_path, bw_key in bw_paths:
-#        assert (
-#            f"--custom {bw_path},{bw_key},bigwig,overlap,0" in vep_inst.cmd_str
-#        )
+def test_cmd_for_custom_annotation(vep_path, input_vcf_path, vep_dir, vep_conserv, vep_loftee, vep_ances, vep_gerp, vep_msdb, vep_mskey):
+    vep_inst = VepCmdGenerator(vep_path=vep_path, input_vcf_path=input_vcf_path,
+                               vep_cache_path=str(vep_dir), vep_conservation_path=vep_conserv, vep_loftee_path=vep_loftee,
+                               vep_human_ancestor_fa_path=vep_ances, vep_gerp_bw_path=vep_gerp,
+                               vep_mis_db_path=vep_msdb, vep_mis_info_key=vep_mskey, num_proc=1)
+    expected_custom = f"--custom {vep_msdb},MisDb,vcf,exact,0,{vep_mskey}"
+    assert expected_custom in vep_inst.cmd_str

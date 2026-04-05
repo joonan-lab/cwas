@@ -64,3 +64,49 @@ class TestRunnable(unittest.TestCase):
         # Teardown
         test_file.unlink()
         test_dir.rmdir()
+
+    def test_args_property_returns_copy(self):
+        randint = random.randint(1, 1000000)
+        test_dir = pathlib.Path.home() / f".cwas-runnable-test-{randint}"
+        test_dir.mkdir()
+        test_file = test_dir / "test.txt"
+        test_file.touch()
+
+        argv = ["-d", str(test_dir), "-f", str(test_file), "-n", str(randint)]
+        inst = RunnableMock()
+        inst._args = inst._create_arg_parser().parse_args(argv)
+        args1 = inst.args
+        args2 = inst.args
+        assert args1 is not args2
+        assert vars(args1) == vars(args2)
+
+        test_file.unlink()
+        test_dir.rmdir()
+
+    def test_args_property_none_when_no_args(self):
+        inst = RunnableMock()
+        assert inst.args is None
+
+    def test_args_values_correct(self):
+        randint = random.randint(1, 1000000)
+        test_dir = pathlib.Path.home() / f".cwas-runnable-test-{randint}"
+        test_dir.mkdir()
+        test_file = test_dir / "test.txt"
+        test_file.touch()
+
+        argv = ["-d", str(test_dir), "-f", str(test_file), "-n", str(randint)]
+        inst = RunnableMock()
+        inst._args = inst._create_arg_parser().parse_args(argv)
+        assert inst.args.test_dir == test_dir
+        assert inst.args.test_file == test_file
+        assert inst.args.test_int == randint
+
+        test_file.unlink()
+        test_dir.rmdir()
+
+    def test_args_copy_mutation_does_not_affect_original(self):
+        inst = RunnableMock()
+        inst._args = inst._create_arg_parser().parse_args(["-n", "42"])
+        args_copy = inst.args
+        args_copy.test_int = 999
+        assert inst.args.test_int == 42
