@@ -81,9 +81,15 @@ def create_vcf_file(vcf_path):
         "FILTER",
         "INFO",
     )
-    # TODO: Add VCF entries (variants)
+    vcf_entries = [
+        ("chr1", "100", ".", "A", "G", ".", "PASS", "."),
+        ("chr1", "200", ".", "C", "T", ".", "PASS", "."),
+        ("chr2", "300", ".", "G", "A", ".", "PASS", "."),
+    ]
     with vcf_path.open("w") as vcf_file:
         print(*vcf_header, sep="\t", file=vcf_file)
+        for entry in vcf_entries:
+            print(*entry, sep="\t", file=vcf_file)
 
 @pytest.fixture(scope="module")
 def required_args(vcf_path, output_dir_path):

@@ -115,4 +115,4 @@ def test_parse_args_value_error():
     with pytest.raises(ValueError):
         sys.argv = ['cwas', 'preparation', *args]
         cwas.cli.main()
-        #PreparationMock.get
+        #PreparationMock.get_instance(args)
