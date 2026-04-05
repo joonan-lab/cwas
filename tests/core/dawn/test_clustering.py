@@ -11,7 +11,7 @@ import pytest
 try:
     from cwas.core.dawn.clustering import kmeans_cluster
     HAS_RPY2 = True
-except (ImportError, OSError):
+except Exception:
     HAS_RPY2 = False
 
 

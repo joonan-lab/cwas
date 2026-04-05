@@ -7,7 +7,14 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from unittest.mock import patch
-from cwas.dawn import Dawn
+
+try:
+    from cwas.dawn import Dawn
+    HAS_RPY2 = True
+except Exception:
+    HAS_RPY2 = False
+
+pytestmark = pytest.mark.skipif(not HAS_RPY2, reason="rpy2/R not available")
 
 
 @pytest.fixture

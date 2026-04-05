@@ -7,7 +7,14 @@ import numpy as np
 from pathlib import Path
 from unittest.mock import patch
 from collections import defaultdict
-from cwas.risk_score import RiskScore
+
+try:
+    from cwas.risk_score import RiskScore
+    HAS_RPY2 = True
+except Exception:
+    HAS_RPY2 = False
+
+pytestmark = pytest.mark.skipif(not HAS_RPY2, reason="rpy2/R not available")
 
 
 @pytest.fixture
